@@ -1,15 +1,13 @@
 ﻿// https://suresh-kamrushi.medium.com/c-reading-excel-file-using-epplus-package-95cfb0ed98c5
+// https://htmlcolorcodes.com/
 
 using System.Globalization;
-using System.Numerics;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 
 internal enum SetStatus
 {
-    FullSet,    // Полный расчет: Ожидание = Приходу = Расходу + Остаток 0
-    InWork,     // В работе: Ожидание != Приходу != Расходу + Остаток не 0 и дата последнего выкупа + сегодня < 14
-    OnSearch    // На поиске: Ожидание != Приходу != Расходу + Остаток не 0 и дата последнего выкупа + сегодня > 14
+    FullSet, InWork, OnSearch, Regrading, Lost
 }
 
 internal enum RedemptionStatus
@@ -103,7 +101,7 @@ internal class Article
     public List<Item> Items { get; private set; }
     public ItemBalance Balance { get; private set; }
     public DateTime MaxRedemptionDate { get; private set; }
-    public bool IsDeadlineHavePassed { get; private set; }
+    public bool IsDeadline { get; private set; } = false;
     public SetStatus Status { get; private set; }
 
     public System.Drawing.Color SetStatusColor { get; set; }
@@ -117,7 +115,6 @@ internal class Article
     public void SetMaxRedemptionDate(DateTime date)
     {
         MaxRedemptionDate = date;
-        this.IsDeadlineHavePassed = (this.MaxRedemptionDate - DateTime.Now).Duration().Days > DEADLINE_DAYS;
     }
 
     public void ChangeBalance(ItemBalanceUnit unit, int value)
@@ -127,17 +124,112 @@ internal class Article
 
     public void Analize()
     {
-        if (Balance.WaitBalance == Balance.Coming && Balance.Coming  == Balance.Consumption && Balance.FinBalance == 0)
+        bool isOnWayCount = Items.Any(e => e.ItemStatus == RedemptionStatus.OnWay);
+        this.IsDeadline = (this.MaxRedemptionDate - DateTime.Now).Duration().Days > DEADLINE_DAYS;
+
+        if(IsDeadline)
         {
-            Status = SetStatus.FullSet;
-        } else if (Balance.WaitBalance != Balance.Coming && Balance.Coming != Balance.Consumption && Balance.FinBalance != 0 && !IsDeadlineHavePassed) {
+            if(Balance.WaitBalance == Balance.Consumption && Balance.FinBalance == 0)
+            {
+                Status = SetStatus.FullSet;
+            } else
+            {
+                if(Balance.FinBalance < 0)
+                {
+                    Status = SetStatus.Regrading;
+                } else
+                {
+                    if(Balance.Coming < Balance.WaitBalance || (Balance.Consumption < Balance.WaitBalance && Balance.FinBalance == 0))
+                    {
+                        Status = SetStatus.Lost;
+                    }
+                    else
+                    {
+                        Status = SetStatus.OnSearch;
+                    } 
+                }
+            } 
+        }
+        else
+        {
             Status = SetStatus.InWork;
-        } else if (Balance.WaitBalance != Balance.Coming && Balance.Coming != Balance.Consumption && Balance.FinBalance != 0 && IsDeadlineHavePassed)
-        {
-            Status = SetStatus.OnSearch;
         }
 
-        switch (Status)
+
+            // FullSet
+            // InWork
+            // OnSearch
+            // Regrading
+            // Lost
+   
+
+
+            //// Если не дедлайн
+            //if(!IsDeadlineHavePassed)
+            //{
+            //    // Если нет в пути
+            //    if(!isOnWayCount)
+            //    {
+            //        // Расчет: Ожидание = Приход && Приход == Расход && остаток == 0
+            //        if (Balance.WaitBalance == Balance.Coming && Balance.Coming == Balance.Consumption && Balance.FinBalance == 0)
+            //        {
+            //            Status = SetStatus.FullSet;
+            //        }
+            //    }
+            //    // Есть в пути 
+            //    else
+            //    {
+            //        // В работе: Ожидание > Прихода || Ожидание > Расхода
+            //        if(Balance.WaitBalance > Balance.Coming || Balance.WaitBalance > Balance.Consumption)
+            //        {
+            //            Status = SetStatus.InWork;
+            //        }
+            //    }
+            //}
+            //// Если дедлайн
+            //else
+            //{
+            //    // Если нет в пути
+            //    if (!isOnWayCount)
+            //    {
+            //        // Пересорт: Остаток < 0
+            //        if (Balance.FinBalance < 0)
+            //        {
+            //            Status = SetStatus.Regrading;
+            //        }
+            //        // На поиске: Остаток >= 0
+            //        else if (Balance.FinBalance >= 0)
+            //        {
+            //            Status = SetStatus.OnSearch;
+            //        // Потерян: Остаток меньше прихода
+            //        } else if(Balance.FinBalance < Balance.Consumption)
+            //        {
+            //            Status = SetStatus.Lost;
+            //        }
+            //    }
+            //}
+
+
+
+            //if (Balance.WaitBalance == Balance.Coming && Balance.Coming == Balance.Consumption && !isOnWayCount && Balance.FinBalance == 0)
+            //{
+            //    Status = SetStatus.FullSet;
+            //} else if ((Balance.WaitBalance > Balance.Coming || Balance.WaitBalance > Balance.Consumption || isOnWayCount) && !IsDeadlineHavePassed) {
+            //    Status = SetStatus.InWork;
+            //} else if (Balance.FinBalance < 0)
+            //{
+            //    Status = SetStatus.Regrading;
+            //}
+            //else if (Balance.Consumption < Balance.WaitBalance && IsDeadlineHavePassed)
+            //{ 
+            //    Status = SetStatus.OnSearch;
+            //}
+            //else if (!isOnWayCount && Balance.WaitBalance > Balance.Coming && IsDeadlineHavePassed)
+            //{
+            //    Status = SetStatus.Lost;
+            //}
+
+            switch (Status)
         {
             case SetStatus.FullSet:
                 this.SetStatusColor = System.Drawing.ColorTranslator.FromHtml("#d4efdf");
@@ -147,6 +239,12 @@ internal class Article
                 break;
             case SetStatus.OnSearch:
                 this.SetStatusColor = System.Drawing.ColorTranslator.FromHtml("#fadbd8");
+                break;
+            case SetStatus.Regrading:
+                this.SetStatusColor = System.Drawing.ColorTranslator.FromHtml("#ebdef0");
+                break;
+            case SetStatus.Lost:
+                this.SetStatusColor = System.Drawing.ColorTranslator.FromHtml("#f1948a");
                 break;
             default:
                 break;
@@ -168,13 +266,6 @@ internal class Program
     private const string outputPath = "/Users/dmitrijsamarcev/Documents/Clients/Kirill/ClientReport.xlsx";
 
     private static readonly Dictionary<int, Article> articleDict = new();
-
-    private static readonly Dictionary<SetStatus, System.Drawing.Color> SetStatusColors = new()
-    {
-        { SetStatus.FullSet,System.Drawing.ColorTranslator.FromHtml("#d4efdf") },
-        { SetStatus.InWork,System.Drawing.ColorTranslator.FromHtml("#fdebd0") },
-        { SetStatus.OnSearch,System.Drawing.ColorTranslator.FromHtml("#fadbd8") }
-    };
 
     #endregion
 
