@@ -9,8 +9,12 @@
 
   <ItemGroup>
     <None Remove="EPPlus" />
+    <None Remove="Objects\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="EPPlus" Version="6.2.8" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Objects\" />
   </ItemGroup>
 </Project>

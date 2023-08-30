@@ -1,14 +1,14 @@
 ﻿<Properties StartupConfiguration="{BC98D5C8-C18E-422D-B63F-5E7F8CDCF571}|Default">
-  <MonoDevelop.Ide.Workbench ActiveDocument="TableAnalizer/Program.cs">
-    <Files>
-      <File FileName="TableAnalizer/Program.cs" Line="297" Column="41" />
-    </Files>
-  </MonoDevelop.Ide.Workbench>
-  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
-  <MonoDevelop.Ide.ItemProperties.TableAnalizer PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
   <MultiItemStartupConfigurations />
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.ItemProperties.TableAnalizer PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="TableAnalizer/Program.cs">
+    <Files>
+      <File FileName="TableAnalizer/Program.cs" Line="430" Column="1" />
+    </Files>
+  </MonoDevelop.Ide.Workbench>
 </Properties>

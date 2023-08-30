@@ -1,256 +1,11 @@
 ﻿// https://suresh-kamrushi.medium.com/c-reading-excel-file-using-epplus-package-95cfb0ed98c5
 // https://htmlcolorcodes.com/
 
-using System.Globalization;
+#nullable enable
+
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
-
-internal enum SetStatus
-{
-    FullSet, InWork, OnSearch, Regrading, Lost
-}
-
-internal enum RedemptionStatus
-{
-    Delivered,  // Доставлен на ПВЗ
-    WithDrawn,  // Забран с ПВЗ
-    Canceled,   // Отменен 
-    OnWay,      // В пути
-    Unknown     // Неизвестный
-}
-
-internal enum ItemBalanceUnit
-{
-    WaitBalance, InitBalance, Coming, Consumption, FinBalance
-}
-
-internal class ItemBalance
-{
-    public int WaitBalance { get; private set; } = 0;    // -
-    public int InitBalance { get; private set; } = 0;    // 14
-    public int Coming { get; private set; } = 0;         // 15
-    public int Consumption { get; private set; } = 0;    // 16
-    public int FinBalance { get; private set; } = 0;     // 17
-
-    public void ChangeBalance(ItemBalanceUnit unit, int value)
-    {
-        switch (unit)
-        {
-            case ItemBalanceUnit.WaitBalance:
-                WaitBalance = value;
-                break;
-            case ItemBalanceUnit.InitBalance:
-                InitBalance += value;
-                break;
-            case ItemBalanceUnit.Coming:
-                Coming += value;
-                break;
-            case ItemBalanceUnit.Consumption:
-                Consumption += value;
-                break;
-            case ItemBalanceUnit.FinBalance:
-                FinBalance += value;
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void GetWaitBalance(int delivered, int withDrawn)
-    {
-        WaitBalance = delivered + withDrawn;
-    }
-}
-
-internal class Item
-{
-    private const string DATE_TIME_FORMAT = "dd.MM.yyyy HH:mm";
-
-    public DateTime RedemptionDate { get;  }            // 8
-    public RedemptionStatus ItemStatus { get; }         // 10
-
-    public Item(string redemptionDate, string itemStatus)
-    {
-        this.RedemptionDate = DateTime.ParseExact(redemptionDate, DATE_TIME_FORMAT, CultureInfo.GetCultureInfo("ru-RU"));
-        this.ItemStatus = GetStatus(itemStatus);
-    }
-
-    private static RedemptionStatus GetStatus(string statusText)
-    {
-        return statusText switch
-        {
-            "Доставлен на ПВЗ" => RedemptionStatus.Delivered,
-            "Забран с ПВЗ" => RedemptionStatus.WithDrawn,
-            "Отменен" => RedemptionStatus.Canceled,
-            "В пути" => RedemptionStatus.OnWay,
-            _ => RedemptionStatus.Unknown
-        };
-    }
-
-
-    public override string ToString()
-    {
-        return $"{RedemptionDate}, {ItemStatus}";
-    }
-}
-
-internal class Article
-{
-    private const int DEADLINE_DAYS = 14;
-
-    public List<Item> Items { get; private set; }
-    public ItemBalance Balance { get; private set; }
-    public DateTime MaxRedemptionDate { get; private set; }
-    public bool IsDeadline { get; private set; } = false;
-    public SetStatus Status { get; private set; }
-
-    public System.Drawing.Color SetStatusColor { get; set; }
-
-    public Article(Item item)
-    {
-        Items = new List<Item> { item };
-        Balance = new ItemBalance();
-    }
-
-    public void SetMaxRedemptionDate(DateTime date)
-    {
-        MaxRedemptionDate = date;
-    }
-
-    public void ChangeBalance(ItemBalanceUnit unit, int value)
-    {
-        this.Balance.ChangeBalance(unit, value);
-    }
-
-    public void Analize()
-    {
-        bool isOnWayCount = Items.Any(e => e.ItemStatus == RedemptionStatus.OnWay);
-        this.IsDeadline = (this.MaxRedemptionDate - DateTime.Now).Duration().Days > DEADLINE_DAYS;
-
-        if(IsDeadline)
-        {
-            if(Balance.WaitBalance == Balance.Consumption && Balance.FinBalance == 0)
-            {
-                Status = SetStatus.FullSet;
-            } else
-            {
-                if(Balance.FinBalance < 0)
-                {
-                    Status = SetStatus.Regrading;
-                } else
-                {
-                    if(Balance.Coming < Balance.WaitBalance || (Balance.Consumption < Balance.WaitBalance && Balance.FinBalance == 0))
-                    {
-                        Status = SetStatus.Lost;
-                    }
-                    else
-                    {
-                        Status = SetStatus.OnSearch;
-                    } 
-                }
-            } 
-        }
-        else
-        {
-            Status = SetStatus.InWork;
-        }
-
-
-            // FullSet
-            // InWork
-            // OnSearch
-            // Regrading
-            // Lost
-   
-
-
-            //// Если не дедлайн
-            //if(!IsDeadlineHavePassed)
-            //{
-            //    // Если нет в пути
-            //    if(!isOnWayCount)
-            //    {
-            //        // Расчет: Ожидание = Приход && Приход == Расход && остаток == 0
-            //        if (Balance.WaitBalance == Balance.Coming && Balance.Coming == Balance.Consumption && Balance.FinBalance == 0)
-            //        {
-            //            Status = SetStatus.FullSet;
-            //        }
-            //    }
-            //    // Есть в пути 
-            //    else
-            //    {
-            //        // В работе: Ожидание > Прихода || Ожидание > Расхода
-            //        if(Balance.WaitBalance > Balance.Coming || Balance.WaitBalance > Balance.Consumption)
-            //        {
-            //            Status = SetStatus.InWork;
-            //        }
-            //    }
-            //}
-            //// Если дедлайн
-            //else
-            //{
-            //    // Если нет в пути
-            //    if (!isOnWayCount)
-            //    {
-            //        // Пересорт: Остаток < 0
-            //        if (Balance.FinBalance < 0)
-            //        {
-            //            Status = SetStatus.Regrading;
-            //        }
-            //        // На поиске: Остаток >= 0
-            //        else if (Balance.FinBalance >= 0)
-            //        {
-            //            Status = SetStatus.OnSearch;
-            //        // Потерян: Остаток меньше прихода
-            //        } else if(Balance.FinBalance < Balance.Consumption)
-            //        {
-            //            Status = SetStatus.Lost;
-            //        }
-            //    }
-            //}
-
-
-
-            //if (Balance.WaitBalance == Balance.Coming && Balance.Coming == Balance.Consumption && !isOnWayCount && Balance.FinBalance == 0)
-            //{
-            //    Status = SetStatus.FullSet;
-            //} else if ((Balance.WaitBalance > Balance.Coming || Balance.WaitBalance > Balance.Consumption || isOnWayCount) && !IsDeadlineHavePassed) {
-            //    Status = SetStatus.InWork;
-            //} else if (Balance.FinBalance < 0)
-            //{
-            //    Status = SetStatus.Regrading;
-            //}
-            //else if (Balance.Consumption < Balance.WaitBalance && IsDeadlineHavePassed)
-            //{ 
-            //    Status = SetStatus.OnSearch;
-            //}
-            //else if (!isOnWayCount && Balance.WaitBalance > Balance.Coming && IsDeadlineHavePassed)
-            //{
-            //    Status = SetStatus.Lost;
-            //}
-
-            switch (Status)
-        {
-            case SetStatus.FullSet:
-                this.SetStatusColor = System.Drawing.ColorTranslator.FromHtml("#d4efdf");
-                break;
-            case SetStatus.InWork:
-                this.SetStatusColor = System.Drawing.ColorTranslator.FromHtml("#fdebd0");
-                break;
-            case SetStatus.OnSearch:
-                this.SetStatusColor = System.Drawing.ColorTranslator.FromHtml("#fadbd8");
-                break;
-            case SetStatus.Regrading:
-                this.SetStatusColor = System.Drawing.ColorTranslator.FromHtml("#ebdef0");
-                break;
-            case SetStatus.Lost:
-                this.SetStatusColor = System.Drawing.ColorTranslator.FromHtml("#f1948a");
-                break;
-            default:
-                break;
-        }
-    }
-}
+using TableAnalizer.Objects;
 
 internal class Program
 {
@@ -261,9 +16,10 @@ internal class Program
     private const string NAME_SECOND_ROOM = "2 - Помещение длительного хранения и отгрузки";
     private const string NAME_FINAL_ROW = "Итого товаров в единицах хранения";
 
-    private const string pathRedemptionReport = "/Users/dmitrijsamarcev/Documents/Clients/Kirill/Report.xlsx";
+    private const string pathRedemptionReport = "/Users/dmitrijsamarcev/Documents/Clients/Kirill/RedemptionReport.xlsx";
     private const string storageReportPath = "/Users/dmitrijsamarcev/Documents/Clients/Kirill/StorageReport.xlsx";
-    private const string outputPath = "/Users/dmitrijsamarcev/Documents/Clients/Kirill/ClientReport.xlsx";
+    private const string consumptionPath = "/Users/dmitrijsamarcev/Documents/Clients/Kirill/Consumption.xlsx";
+    private const string outputPath = "/Users/dmitrijsamarcev/Documents/Clients/Kirill/Report.xlsx";
 
     private static readonly Dictionary<int, Article> articleDict = new();
 
@@ -277,129 +33,206 @@ internal class Program
 
         ReadStorageReportFile(storageReportPath);
 
+        ReadConsumptionReport(consumptionPath);
+
         WriteXls(outputPath);
 
         static void ReadRedemptionReportFile(string filePath)
         {
-            var existingFile = new FileInfo(filePath);
-            using ExcelPackage package = new(existingFile);
+            const int ARTICLE_COL_INDEX = 0;
+            const int DATE_FLAG_COL_INDEX = 8;
+            const int STATUS_COL_INDEX = 10;
+            const int LOG_FLAG_COL_INDEX = 11;
 
-            //get the first worksheet in workbook
-            ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-            int colCount = worksheet.Dimension.End.Column;              //get Column Count
-            int rowCount = worksheet.Dimension.End.Row;                 //get row count
-            for (int row = 1; row <= rowCount; row++)
+
+            if (CheckFileExistence(filePath) == null)
             {
-                var logisticFlagValue = worksheet.Cells[row, 11].Value.ToString();
+                Environment.Exit(0);
+            }
+            else
+            {
+                using ExcelPackage package = new(new FileInfo(filePath));
 
-                if(logisticFlagValue != null)
+                if (CheckSheets(in package) == null) Environment.Exit(0);
+            
+                ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+                (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
+
+                for (int row = 1; row <= rowCount; row++)
                 {
-                    var logisticFlag = logisticFlagValue.Replace(" ", "");
+                    var logisticFlagValue = worksheet.Cells[row, LOG_FLAG_COL_INDEX].Value.ToString();
 
-                    if (logisticFlag == LOGISTIC_FLAG)
+                    if (logisticFlagValue != null)
                     {
-                        var article = Convert.ToInt32(worksheet.Cells[row, 2].Value);
-                        var redemptionDateString = worksheet.Cells[row, 8].Value.ToString();
-                        var itemStatusValue = worksheet.Cells[row, 10].Value.ToString();
+                        var logisticFlag = logisticFlagValue.Replace(" ", "");
 
-                        if (redemptionDateString != null && itemStatusValue != null)
+                        if (logisticFlag == LOGISTIC_FLAG &&
+                            worksheet.Cells[row, ARTICLE_COL_INDEX].Value is not null &&
+                            int.TryParse(worksheet.Cells[row, ARTICLE_COL_INDEX].Value.ToString(), out int article))
                         {
-                            var item = new Item(redemptionDateString, itemStatusValue.Trim());
+                            var redemptionDateString = worksheet.Cells[row, DATE_FLAG_COL_INDEX].Value.ToString();
+                            var itemStatusValue = worksheet.Cells[row, STATUS_COL_INDEX].Value.ToString();
 
-                            if (articleDict.ContainsKey(article))
+                            if (redemptionDateString != null && itemStatusValue != null)
                             {
-                                articleDict[article].Items.Add(item);
-                            } else
+                                var item = new Item(redemptionDateString, itemStatusValue.Trim());
+
+                                if (articleDict.ContainsKey(article))
+                                {
+                                    articleDict[article].Items.Add(item);
+                                }
+                                else
+                                {
+                                    articleDict[article] = new Article(item);
+                                }
+                            }
+                            else
                             {
-                                articleDict[article] = new Article(item);
+                                Console.WriteLine("Невозможно содать Item по выкупу.");
+                                Console.ReadLine();
+                                Environment.Exit(0);
                             }
                         }
-                        else
+                    }
+
+                }
+            }
+        }
+
+        static void ReadConsumptionReport(string filePath)
+        {
+            const int ARTICLE_INDEX = 4;
+            const int COUNT_INDEX = 28;
+
+            if (CheckFileExistence(filePath) == null)
+            {
+                Environment.Exit(0);
+            }
+            else
+            {
+                using ExcelPackage package = new(new FileInfo(filePath));
+
+                if (CheckSheets(in package) == null) Environment.Exit(0);
+
+                ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+                (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
+
+                for (int row = 1; row <= rowCount; row++)
+                {
+                    var articleAddress = worksheet.Cells[row, ARTICLE_INDEX];
+                    var countAddress = worksheet.Cells[row, COUNT_INDEX];
+
+                    if (articleAddress.Value != null && int.TryParse(articleAddress.Value.ToString(), out int article))
+                    {
+                        if (countAddress.Value != null && int.TryParse(countAddress.Value.ToString(), out int count))
                         {
-                            Console.WriteLine("fail");
+                            if(articleDict.ContainsKey(article))
+                            {
+                                articleDict[article].ChangeBalance(ItemBalanceUnit.Consumption, count);
+                            }
                         }
                     }
                 }
 
-                //for (int col = 1; col <= colCount; col++)
-                //{
-                //    Console.WriteLine(" Row:" + row + " column:" + col + " Value:" + worksheet.Cells[row, col].Value.ToString().Trim());
-                //}
+                package.Dispose();
             }
         }
 
         static void ReadStorageReportFile(string filePath)
         {
-            var existingFile = new FileInfo(filePath);
-            using ExcelPackage package = new(existingFile);
-
-            //get the first worksheet in workbook
-            ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-            int colCount = 17; // worksheet.Dimension.End.Column;              //get col count
-            int rowCount = worksheet.Dimension.End.Row;                        //get row count
-
-            // get address of header cells
-            int rowFirstRoomAddress = default;
-            int rowSecondRoomAddress = default;
-            int rowFinalRoomAddress = default;
-
-            for (int row = 1; row <= rowCount; row++)
+            if(CheckFileExistence(filePath) == null)
             {
-                for (int col = 1; col <= colCount; col++)
+                Environment.Exit(0);
+            }
+            else
+            {
+                var existingFile = new FileInfo(filePath);
+                using ExcelPackage package = new(existingFile);
+
+                if(CheckSheets(in package) == null)
                 {
-                    var value = worksheet.Cells[row, col].Value;
+                    Environment.Exit(0);
+                }
+                else
+                {
+                    const int COL_STORE_COUNT_INDEX = 17;
 
-                    if (value != null)
+                    (int articleIndex, int initBalanceIndex, int comingIndex,int finBalanceIndex) columnIndexes = (1, 14, 15, 17);
+
+                    int rowFirstRoomAddress = default;
+                    int rowSecondRoomAddress = default;
+                    int rowFinalRoomAddress = default;
+
+                    ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+
+                    (_, int rowStoreCount) = FindNumberColsAndRowsIn(in worksheet);
+
+                    // Find addresses of special rows
+                    for (int row = 1; row <= rowStoreCount; row++)
                     {
-                        if (value.ToString().Trim() == NAME_FIRST_ROOM)
-                            rowFirstRoomAddress = row;
+                        for (int col = 1; col <= COL_STORE_COUNT_INDEX; col++)
+                        {
+                            var address = worksheet.Cells[row, col];
 
-                        if (value.ToString().Trim() == NAME_SECOND_ROOM)
-                            rowSecondRoomAddress = row;
+                            if (address.Value != null)
+                            {
+                                switch (address.Value.ToString().Trim())
+                                {
+                                    case NAME_FIRST_ROOM:
+                                        rowFirstRoomAddress = row;
+                                        break;
+                                    case NAME_SECOND_ROOM:
+                                        rowSecondRoomAddress = row;
+                                        break;
+                                    case NAME_FINAL_ROW:
+                                        rowFinalRoomAddress = row;
+                                        break;
+                                    default:
+                                        break;
+                                }  
+                            }
+                        }
 
-                        if (value.ToString().Trim() == NAME_FINAL_ROW)
-                            rowFinalRoomAddress = row;
+                        if (rowFirstRoomAddress != default && rowSecondRoomAddress != default && rowFinalRoomAddress != default)
+                        {
+                            break;
+                        }
+                    }
+
+                    // make row ranges 
+                    var firstRoomRowRange = Enumerable.Range(rowFirstRoomAddress + 1, rowSecondRoomAddress - 1).ToList();
+                    var secondRoomRowRange = Enumerable.Range(rowSecondRoomAddress + 1, rowFinalRoomAddress).ToList();
+
+                    // Get coming && finalBalance++
+                    for (int row = firstRoomRowRange.First(); row <= firstRoomRowRange.Count; row++)
+                    {
+                        var article = Convert.ToInt32(worksheet.Cells[row, columnIndexes.articleIndex].Value);
+
+                        if (articleDict.ContainsKey(article))
+                        {
+                            var coming = Convert.ToInt32(worksheet.Cells[row, columnIndexes.comingIndex].Value);
+                            articleDict[article].Balance.ChangeBalance(ItemBalanceUnit.Coming, coming);
+
+                            var finalBalance = Convert.ToInt32(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
+                            articleDict[article].Balance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance);
+                        }
+                    }
+
+                    // Get finalBalance++
+                    for (int row = secondRoomRowRange.First(); row < rowFinalRoomAddress - 2; row++)
+                    {
+                        var article = Convert.ToInt32(worksheet.Cells[row, columnIndexes.articleIndex].Value);
+
+                        if (articleDict.ContainsKey(article))
+                        {
+                            var finalBalance = Convert.ToInt32(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
+                            articleDict[article].Balance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance);
+                        }
                     }
                 }
+
+                package.Dispose();
             }
-
-            // make row ranges 
-            var firstRoomRowRange = Enumerable.Range(rowFirstRoomAddress + 1, rowSecondRoomAddress - 1).ToList();
-            var secondRoomRowRange = Enumerable.Range(rowSecondRoomAddress + 1, rowFinalRoomAddress).ToList();
-
-            (int articleIndex, int initBalanceIndex, int comingIndex, int consumptionIndex, int finBalanceIndex) columnIndexes = (1,14,15,16,17);
-
-            // Get coming && finalBalance++
-            for (int row = firstRoomRowRange.First(); row <= firstRoomRowRange.Count; row++)
-            {
-                var article = Convert.ToInt32(worksheet.Cells[row, columnIndexes.articleIndex].Value);
-
-                if(articleDict.ContainsKey(article))
-                {
-                    var coming = Convert.ToInt32(worksheet.Cells[row, columnIndexes.comingIndex].Value);
-                    articleDict[article].Balance.ChangeBalance(ItemBalanceUnit.Coming, coming);
-
-                    var finalBalance = Convert.ToInt32(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
-                    articleDict[article].Balance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance);
-                }
-            }
-
-            // Get consumption && finalBalance++
-            for (int row = secondRoomRowRange.First(); row < rowFinalRoomAddress - 2; row++)
-            { 
-                var article = Convert.ToInt32(worksheet.Cells[row, columnIndexes.articleIndex].Value);
-
-                if (articleDict.ContainsKey(article))
-                {
-                    var consumption = Convert.ToInt32(worksheet.Cells[row, columnIndexes.consumptionIndex].Value);
-                    articleDict[article].Balance.ChangeBalance(ItemBalanceUnit.Consumption, consumption);
-
-                    var finalBalance = Convert.ToInt32(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
-                    articleDict[article].Balance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance);
-                }
-            }
-
-            package.Dispose();
         }
 
         static void WriteXls(string ouptutFilePath, string workSheetName = "Report")
@@ -414,22 +247,36 @@ internal class Program
             workSheet.TabColor = System.Drawing.Color.YellowGreen;
             workSheet.DefaultRowHeight = DEFAULT_TABLE_ROW_HEIGHT;
 
+
+            ResultCell[] resultCells = new ResultCell[]
+            {
+                new ResultCell("Артикул", "0"),
+                new ResultCell("Name", "0"),
+                new ResultCell("Всего", "0"),
+                new ResultCell("Отмен", "0"),
+                new ResultCell("В пути", "0"),
+                new ResultCell("Доставлен на ПВЗ", "0"),
+                new ResultCell("Забран с ПВЗ", "0"),
+                new ResultCell("Дата последнего выкупа", "0"),
+                new ResultCell("Склад: Ожидание", "0"),
+                new ResultCell("Склад: Приход", "0"),
+                new ResultCell("Склад: Расход", "0"),
+                new ResultCell("Склад: Остаток", "0"),
+            };
+
+            // Fill header data 
+            for (int i = 0; i < resultCells.Length; i++)
+            {
+                workSheet.Cells[1, i + 1].Value = resultCells[i].Name;
+                workSheet.Column(i + 1).AutoFit();
+                workSheet.Column(i + 1).Style.Numberformat.Format = resultCells[i].Format;
+            }
+
             // Stilized workSheet header
             workSheet.Row(1).Height = HEADER_TABLE_ROW_HEIGHT;
             workSheet.Row(1).Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
             workSheet.Row(1).Style.Font.Bold = true;
 
-            workSheet.Cells[1, 1].Value = "Артикул";
-            workSheet.Cells[1, 2].Value = "Всего";
-            workSheet.Cells[1, 3].Value = "Отменены";
-            workSheet.Cells[1, 4].Value = "В пути";
-            workSheet.Cells[1, 5].Value = "Доставлен на ПВЗ";
-            workSheet.Cells[1, 6].Value = "Забран с ПВЗ";
-            workSheet.Cells[1, 7].Value = "Дата последнего выкупа";
-            workSheet.Cells[1, 8].Value = "Склад: Ожидание";
-            workSheet.Cells[1, 9].Value = "Склад: Приход";
-            workSheet.Cells[1, 10].Value = "Склад: Расход";
-            workSheet.Cells[1, 11].Value = "Склад: Остаток";
 
             // Populating with data
 
@@ -475,6 +322,7 @@ internal class Program
             {
                 workSheet.Column(i).AutoFit();
                 workSheet.Column(i).Style.Numberformat.Format = i != 7 ? "0" : "dd.MM.yyyy";
+                workSheet.Column(i).Style.WrapText = true;
             }
 
             if (File.Exists(outputPath)) File.Delete(outputPath);
@@ -489,5 +337,38 @@ internal class Program
             //Close Excel package
             excel.Dispose();
         }
+    }
+
+    internal static bool? CheckFileExistence(string path)
+    {
+        if (File.Exists(path))
+        {
+            return true;
+        }
+        else
+        {
+            Console.WriteLine($"Файл по пути\n{path}\nне найден");
+            Console.ReadLine();
+            return null;
+        }
+    }
+
+    internal static bool? CheckSheets(in ExcelPackage package)
+    {
+        if(package.Workbook.Worksheets.Count != 0)
+        {
+            return true;
+        }
+        else
+        {
+            Console.WriteLine($"Нет активных листов для анализа. Проверьте книгу.");
+            Console.ReadLine();
+            return null;
+        }
+    }
+
+    internal static (int col, int row) FindNumberColsAndRowsIn(in ExcelWorksheet sheet)
+    {
+        return (sheet.Dimension.End.Column, sheet.Dimension.End.Row);
     }
 }
