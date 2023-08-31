@@ -35,7 +35,7 @@ internal class Program
 
         ReadConsumptionReport(consumptionPath);
 
-        //WriteXls(outputPath);
+        WriteXls(outputPath);
 
         static void ReadRedemptionReportFile(string filePath)
         {
@@ -241,14 +241,6 @@ internal class Program
                 }
 
                 package.Dispose();
-
-                foreach (var art in articleDict)
-                {
-                    art.Value.Analize();
-                    Console.WriteLine(art);
-                }
-
-                Console.ReadLine();
             }
         }
     }
@@ -260,11 +252,20 @@ internal class Program
         const int FIRST_ROW_INDEX = 1;
 
         using var excel = new ExcelPackage(ouptutFilePath);
-        var workSheet = excel.Workbook.Worksheets.Add(workSheetName);
+
+        // Remove existing worksheet
+        var existingWorksheet = excel.Workbook.Worksheets.SingleOrDefault(x => x.Name == workSheetName);
+
+        if(existingWorksheet is not null)
+        {
+            excel.Workbook.Worksheets.Delete(existingWorksheet);
+        }
+
+        var newWorkSheet = excel.Workbook.Worksheets.Add(workSheetName);
 
         // Stilized workSheet
-        workSheet.TabColor = System.Drawing.Color.YellowGreen;
-        workSheet.DefaultRowHeight = DEFAULT_TABLE_ROW_HEIGHT;
+        newWorkSheet.TabColor = System.Drawing.Color.YellowGreen;
+        newWorkSheet.DefaultRowHeight = DEFAULT_TABLE_ROW_HEIGHT;
 
         ResultCell[] resultCells = new ResultCell[]
         {
@@ -279,10 +280,9 @@ internal class Program
                 new ResultCell("Склад: Ожидание", "0"),
                 new ResultCell("Склад: Приход", "0"),
                 new ResultCell("Склад: Расход", "0"),
-                new ResultCell("Склад: Остаток", "0")
+                new ResultCell("Склад: Остаток", "0"),
+                new ResultCell("Средняя цена", "0.00")
         };
-
-        Console.WriteLine(resultCells.Length);
 
         // Fill header data 
         for (int i = 0; i < resultCells.Length; i++)
@@ -290,56 +290,74 @@ internal class Program
             var colIndex = i + 1;
 
             // Add data
-            workSheet.Cells[1, colIndex].Value = resultCells[i].Name;
+            newWorkSheet.Cells[1, colIndex].Value = resultCells[i].Name;
 
             // Stilized
-            workSheet.Column(colIndex).AutoFit();
-            workSheet.Column(colIndex).Style.Numberformat.Format = resultCells[i].Format;
+            newWorkSheet.Column(colIndex).AutoFit();
+            newWorkSheet.Column(colIndex).Style.Numberformat.Format = resultCells[i].Format;
         }
 
         // Stilized workSheet header
-        workSheet.Row(FIRST_ROW_INDEX).Height = HEADER_TABLE_ROW_HEIGHT;
-        workSheet.Row(FIRST_ROW_INDEX).Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-        workSheet.Row(FIRST_ROW_INDEX).Style.Font.Bold = true;
+        newWorkSheet.Row(FIRST_ROW_INDEX).Height = HEADER_TABLE_ROW_HEIGHT;
+        newWorkSheet.Row(FIRST_ROW_INDEX).Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+        newWorkSheet.Row(FIRST_ROW_INDEX).Style.Font.Bold = true;
+        newWorkSheet.Row(FIRST_ROW_INDEX).Style.Font.Size = 14;
+        newWorkSheet.Row(FIRST_ROW_INDEX).Style.VerticalAlignment = ExcelVerticalAlignment.Center;
 
         // Populating with data
 
-        int recordIndex = 2;
+        int recordIndex = FIRST_ROW_INDEX + 1;
 
         foreach (var art in articleDict)
         {
             art.Value.Analize();
 
             // Fill Redemptions data
-            workSheet.Cells[recordIndex, 1].Value = art.Key;
-            workSheet.Cells[recordIndex, 2].Value = art.Value.Name;
-            workSheet.Cells[recordIndex, 3].Value = art.Value.Items.Count;
-            workSheet.Cells[recordIndex, 4].Value = art.Value.RedBalance.CanceledCount;
-            workSheet.Cells[recordIndex, 5].Value = art.Value.RedBalance.OnWayCount;
-            workSheet.Cells[recordIndex, 6].Value = art.Value.RedBalance.DeliveredCount;
-            workSheet.Cells[recordIndex, 7].Value = art.Value.RedBalance.WithDrawnCount;
-            workSheet.Cells[recordIndex, 8].Value = art.Value.MaxRedemptionDate;
+            newWorkSheet.Cells[recordIndex, 1].Value = art.Key;
+            newWorkSheet.Cells[recordIndex, 2].Value = art.Value.Name;
+            newWorkSheet.Cells[recordIndex, 3].Value = art.Value.Items.Count;
+            newWorkSheet.Cells[recordIndex, 4].Value = art.Value.RedBalance.CanceledCount;
+            newWorkSheet.Cells[recordIndex, 5].Value = art.Value.RedBalance.OnWayCount;
+            newWorkSheet.Cells[recordIndex, 6].Value = art.Value.RedBalance.DeliveredCount;
+            newWorkSheet.Cells[recordIndex, 7].Value = art.Value.RedBalance.WithDrawnCount;
+            newWorkSheet.Cells[recordIndex, 8].Value = art.Value.MaxRedemptionDate;
 
-            workSheet.Cells[recordIndex, 8].Style.Fill.PatternType = ExcelFillStyle.Solid;
-            workSheet.Cells[recordIndex, 8].Style.Fill.BackgroundColor.SetColor(art.Value.StatusColor);
+            newWorkSheet.Cells[recordIndex, 8].Style.Fill.PatternType = ExcelFillStyle.Solid;
+            newWorkSheet.Cells[recordIndex, 8].Style.Fill.BackgroundColor.SetColor(art.Value.StatusColor);
 
             // Balance data
-            workSheet.Cells[recordIndex, 9].Value = art.Value.StoreBalance.WaitBalance;
-            workSheet.Cells[recordIndex, 10].Value = art.Value.StoreBalance.Coming;
-            workSheet.Cells[recordIndex, 11].Value = art.Value.StoreBalance.Consumption;
-            workSheet.Cells[recordIndex, 12].Value = art.Value.StoreBalance.FinBalance;
+            newWorkSheet.Cells[recordIndex, 9].Value = art.Value.StoreBalance.WaitBalance;
+            newWorkSheet.Cells[recordIndex, 10].Value = art.Value.StoreBalance.Coming;
+            newWorkSheet.Cells[recordIndex, 11].Value = art.Value.StoreBalance.Consumption;
+            newWorkSheet.Cells[recordIndex, 12].Value = art.Value.StoreBalance.FinBalance;
+
+            // Price
+            newWorkSheet.Cells[recordIndex, 13].Value = art.Value.AveragePrice;
 
             recordIndex++;
         }
 
         // Stilized table - fit && data format
-        for (int i = 1; i < 12; i++)
+        for (int i = 1; i < resultCells.Length + 1; i++)
         {
-            workSheet.Column(i).AutoFit();
-            workSheet.Column(i).Style.Numberformat.Format = i != 7 ? "0" : "dd.MM.yyyy";
-            workSheet.Column(i).Style.WrapText = true;
+            newWorkSheet.Column(i).AutoFit();
+            newWorkSheet.Column(i).Style.Numberformat.Format = i != 8 ? "0" : "dd.MM.yyyy";
+            newWorkSheet.Column(i).Style.WrapText = true;
         }
 
+        // Add filter
+        int firstRow = newWorkSheet.Dimension.Start.Row;
+        int endRow = newWorkSheet.Dimension.End.Row;
+
+        int firstCol = newWorkSheet.Dimension.Start.Column;
+        int endCol = newWorkSheet.Dimension.End.Column;
+
+        string firstColLet = ExcelCellAddress.GetColumnLetter(firstCol);
+        string endColLet = ExcelCellAddress.GetColumnLetter(endCol);
+
+        newWorkSheet.Cells[$"{firstColLet}{firstRow}:{endColLet}{endRow}"].AutoFilter = true;
+
+        // Save work
         if (File.Exists(outputPath)) File.Delete(outputPath);
 
         // Create excel file on physical disk 
