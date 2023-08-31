@@ -2,17 +2,25 @@
 
 namespace TableAnalizer.Objects
 {
-    internal class Item
+    public class ArticleRowItem
     {
         private const string DATE_TIME_FORMAT = "dd.MM.yyyy HH:mm";
+        private readonly CultureInfo Culture = CultureInfo.GetCultureInfo("ru-RU");
 
-        public DateTime RedemptionDate { get; }            // 8
-        public RedemptionStatus ItemStatus { get; }         // 10
+        public DateTime RedemptionDate { get; }             
+        public RedemptionStatus ItemStatus { get; }
+        public double Price { get; }
 
-        public Item(string redemptionDate, string itemStatus)
+        public ArticleRowItem(string redemptionDate, string itemStatus, string priceString)
         {
-            this.RedemptionDate = DateTime.ParseExact(redemptionDate, DATE_TIME_FORMAT, CultureInfo.GetCultureInfo("ru-RU"));
-            this.ItemStatus = SetItemStatus(itemStatus);
+            RedemptionDate = DateTime.ParseExact(redemptionDate, DATE_TIME_FORMAT, Culture);
+            ItemStatus = SetItemStatus(itemStatus);
+
+            var priceStringValue = priceString.Split(" ")[0];
+            if(double.TryParse(priceStringValue, out double price))
+            {
+                Price = price;
+            } 
         }
 
         private static RedemptionStatus SetItemStatus(string statusText)

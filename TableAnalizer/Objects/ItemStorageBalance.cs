@@ -1,16 +1,15 @@
 ﻿namespace TableAnalizer.Objects
 {
-    internal class ItemBalance
+    internal class ItemStorageBalance
     {
         public int WaitBalance { get; private set; }    // -
-        public int InitBalance { get; private set; }    // 14
         public int Coming { get; private set; }         // 15
         public int Consumption { get; private set; }    // 16
         public int FinBalance { get; private set; }     // 17
 
-        public ItemBalance()
+        public ItemStorageBalance()
         {
-            WaitBalance = InitBalance = Coming = Consumption = FinBalance = default;
+            WaitBalance = Coming = Consumption = FinBalance = default;
         }
 
         public void ChangeBalance(ItemBalanceUnit unit, int value)
@@ -32,6 +31,11 @@
                 default:
                     break;
             }
+        }
+
+        public override string ToString()
+        {
+            return $"w {WaitBalance}, com {Coming}, con {Consumption}, fin {FinBalance}";
         }
     }
 }

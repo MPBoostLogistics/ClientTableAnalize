@@ -1,6 +1,6 @@
 ﻿namespace TableAnalizer.Objects
 {
-    internal enum RedemptionStatus
+    public enum RedemptionStatus
     {
         Delivered,  // Доставлен на ПВЗ
         WithDrawn,  // Забран с ПВЗ
