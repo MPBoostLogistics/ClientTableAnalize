@@ -3,6 +3,7 @@
 
 #nullable enable
 
+using System;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using TableAnalizer.Objects;
@@ -25,224 +26,273 @@ internal class Program
 
     #endregion
 
-    private static void Main(string[] args)
+    private static async Task Main(string[] args)
     {
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-        ReadRedemptionReportFile(pathRedemptionReport);
+        var goodByMessage = "Спасибо за использование.";
 
-        ReadStorageReportFile(storageReportPath);
+        Console.Clear();
+        Console.WriteLine("-------------------------------------------");
+        Console.WriteLine("Программа анализа работы с клиентом лостики");
+        Console.WriteLine("-------------------------------------------");
 
-        ReadConsumptionReport(consumptionPath);
+        var clDirInfo = FileManager.GetDirectoryInfo(PathKey.MPBoostClients);
 
-        WriteXls(outputPath);
-
-        static void ReadRedemptionReportFile(string filePath)
+        if (clDirInfo is null || !clDirInfo.Exists)
         {
-            const int ARTICLE_COL_INDEX = 2;
-            const int DATE_FLAG_COL_INDEX = 8;
-            const int STATUS_COL_INDEX = 10;
-            const int LOG_FLAG_COL_INDEX = 11;
-            const int PRICE_COL_INDEX = 15;
-
-            if (CheckFileExistence(filePath) == null)
+            clDirInfo = FileManager.CreateDirectoryInfo(PathKey.MPBoostClients);
+            if (clDirInfo is not null && clDirInfo!.Exists)
             {
-                Environment.Exit(0);
-            }
-            else
-            {
-                using ExcelPackage package = new(new FileInfo(filePath));
-
-                if (CheckSheets(in package) == null) Environment.Exit(0);
-            
-                ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-                (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
-
-                for (int row = 1; row <= rowCount; row++)
-                {
-                    var logisticFlagValue = worksheet.Cells[row, LOG_FLAG_COL_INDEX].Value.ToString();
-
-                    if (logisticFlagValue != null)
-                    {
-                        var logisticFlag = logisticFlagValue.Replace(" ", "");
-
-                        if (logisticFlag == LOGISTIC_FLAG &&
-                            worksheet.Cells[row, ARTICLE_COL_INDEX].Value is not null &&
-                            int.TryParse(worksheet.Cells[row, ARTICLE_COL_INDEX].Value.ToString(), out int articleIdKey))
-                        {
-                            var redemptionDateString = worksheet.Cells[row, DATE_FLAG_COL_INDEX].Value.ToString();
-                            var itemStatusValue = worksheet.Cells[row, STATUS_COL_INDEX].Value.ToString();
-                            var priceSting = worksheet.Cells[row, PRICE_COL_INDEX].Value.ToString();
-
-                            if (redemptionDateString != null && itemStatusValue != null && priceSting != null)
-                            {
-                                var item = new ArticleRowItem(redemptionDateString, itemStatusValue.Trim(), priceSting.Trim());
-
-                                if (articleDict.ContainsKey(articleIdKey))
-                                {
-                                    articleDict[articleIdKey].Items.Add(item);
-                                }
-                                else
-                                {
-                                    articleDict[articleIdKey] = new Article(item);
-                                }
-                            }
-                            else
-                            {
-                                Console.WriteLine("Невозможно создать Item по выкупу.");
-                                Console.ReadLine();
-                                Environment.Exit(0);
-                            }
-                        }
-                    }
-                }
-
-                package.Dispose();
+                Console.WriteLine("Директория '/Documents/MPBoostClients' создана.");
             }
         }
-
-        static void ReadStorageReportFile(string filePath)
+        else
         {
-            if (CheckFileExistence(filePath) == null)
+            Console.WriteLine("Директория '/Documents/MPBoostClients' существует.");
+        }
+
+        Console.WriteLine();
+
+        string? redPath = null;
+        while (string.IsNullOrEmpty(redPath))
+        {
+            Console.WriteLine("1. Укажите путь к отчету по выкупам клиента (обязательно)\n" +
+                "(или нажмите ESC для выхода из программы):");
+
+            var key = Console.ReadKey();
+
+            if (key.Key == ConsoleKey.Escape)
             {
+                Console.WriteLine(goodByMessage);
+
+                await Task.Delay(1000);
+
                 Environment.Exit(0);
             }
-            else
-            {
-                var existingFile = new FileInfo(filePath);
-                using ExcelPackage package = new(existingFile);
+            redPath = Console.ReadLine();
+        }
 
-                if (CheckSheets(in package) == null)
+        Console.WriteLine();
+
+        Console.WriteLine(redPath);
+
+        Console.ReadLine();
+
+            //ReadRedemptionReportFile(pathRedemptionReport);
+
+            //ReadStorageReportFile(storageReportPath);
+
+            //ReadConsumptionReport(consumptionPath);
+
+            //WriteXls(outputPath);
+
+            static void ReadRedemptionReportFile(string filePath)
+            {
+                const int ARTICLE_COL_INDEX = 2;
+                const int DATE_FLAG_COL_INDEX = 8;
+                const int STATUS_COL_INDEX = 10;
+                const int LOG_FLAG_COL_INDEX = 11;
+                const int PRICE_COL_INDEX = 15;
+
+                if (CheckFileExistence(filePath) == null)
                 {
                     Environment.Exit(0);
                 }
                 else
                 {
-                    const int COL_STORE_COUNT_INDEX = 17;
+                    using ExcelPackage package = new(new FileInfo(filePath));
 
-                    (int articleIndex, int nameIndex, int initBalanceIndex, int comingIndex, int finBalanceIndex) columnIndexes = (1, 6, 14, 15, 17);
-
-                    int rowFirstRoomAddress = default;
-                    int rowSecondRoomAddress = default;
-                    int rowFinalRoomAddress = default;
+                    if (CheckSheets(in package) == null) Environment.Exit(0);
 
                     ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+                    (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
 
-                    (_, int rowStoreCount) = FindNumberColsAndRowsIn(in worksheet);
-
-                    // Find addresses of special rows
-                    for (int row = 1; row <= rowStoreCount; row++)
+                    for (int row = 1; row <= rowCount; row++)
                     {
-                        for (int col = 1; col <= COL_STORE_COUNT_INDEX; col++)
+                        var logisticFlagValue = worksheet.Cells[row, LOG_FLAG_COL_INDEX].Value.ToString();
+
+                        if (logisticFlagValue != null)
                         {
+                            var logisticFlag = logisticFlagValue.Replace(" ", "");
 
-                            var addressString = worksheet.Cells[row, col].Value;
-
-                            if (addressString is not null)
+                            if (logisticFlag == LOGISTIC_FLAG &&
+                                worksheet.Cells[row, ARTICLE_COL_INDEX].Value is not null &&
+                                int.TryParse(worksheet.Cells[row, ARTICLE_COL_INDEX].Value.ToString(), out int articleIdKey))
                             {
-                                switch (addressString!.ToString().Trim())
+                                var redemptionDateString = worksheet.Cells[row, DATE_FLAG_COL_INDEX].Value.ToString();
+                                var itemStatusValue = worksheet.Cells[row, STATUS_COL_INDEX].Value.ToString();
+                                var priceSting = worksheet.Cells[row, PRICE_COL_INDEX].Value.ToString();
+
+                                if (redemptionDateString != null && itemStatusValue != null && priceSting != null)
                                 {
-                                    case NAME_FIRST_ROOM:
-                                        rowFirstRoomAddress = row;
-                                        break;
-                                    case NAME_SECOND_ROOM:
-                                        rowSecondRoomAddress = row;
-                                        break;
-                                    case NAME_FINAL_ROW:
-                                        rowFinalRoomAddress = row;
-                                        break;
-                                    default:
-                                        break;
+                                    var item = new ArticleRowItem(redemptionDateString, itemStatusValue.Trim(), priceSting.Trim());
+
+                                    if (articleDict.ContainsKey(articleIdKey))
+                                    {
+                                        articleDict[articleIdKey].Items.Add(item);
+                                    }
+                                    else
+                                    {
+                                        articleDict[articleIdKey] = new Article(item);
+                                    }
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Невозможно создать Item по выкупу.");
+                                    Console.ReadLine();
+                                    Environment.Exit(0);
                                 }
                             }
                         }
-
-                        if (rowFirstRoomAddress != default && rowSecondRoomAddress != default && rowFinalRoomAddress != default)
-                        {
-                            break;
-                        }
                     }
 
-                    // make row ranges 
-                    var firstRoomRowRange = Enumerable.Range(rowFirstRoomAddress + 1, rowSecondRoomAddress - 1).ToList();
-                    var secondRoomRowRange = Enumerable.Range(rowSecondRoomAddress + 1, rowFinalRoomAddress).ToList();
-
-                    // Get coming && finalBalance++
-                    for (int row = firstRoomRowRange.First(); row <= firstRoomRowRange.Count; row++)
-                    {
-                        var article = Convert.ToInt32(worksheet.Cells[row, columnIndexes.articleIndex].Value);
-
-                        if (articleDict.ContainsKey(article))
-                        {
-                            var name = worksheet.Cells[row, columnIndexes.nameIndex].Value.ToString().Split(",")[0].Trim();
-                            if(name is not null)
-                            {
-                                articleDict[article]!.SetName(name);
-                            }
-
-                            var coming = Convert.ToInt32(worksheet.Cells[row, columnIndexes.comingIndex].Value);
-                            articleDict[article].StoreBalance.ChangeBalance(ItemBalanceUnit.Coming, coming);
-
-                            var finalBalance = Convert.ToInt32(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
-                            articleDict[article].StoreBalance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance);
-                        }
-                    }
-
-                    // Get finalBalance++
-                    for (int row = secondRoomRowRange.First(); row < rowFinalRoomAddress - 2; row++)
-                    {
-                        var article = Convert.ToInt32(worksheet.Cells[row, columnIndexes.articleIndex].Value);
-
-                        if (articleDict.ContainsKey(article))
-                        {
-                            var finalBalance = Convert.ToInt32(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
-                            articleDict[article].StoreBalance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance);
-                        }
-                    }
+                    package.Dispose();
                 }
-
-                package.Dispose();
             }
-        }
 
-        static void ReadConsumptionReport(string filePath)
-        {
-            const int ARTICLE_INDEX = 4;
-            const int COUNT_INDEX = 28;
-
-            if (CheckFileExistence(filePath) == null)
+            static void ReadStorageReportFile(string filePath)
             {
-                Environment.Exit(0);
-            }
-            else
-            {
-                using ExcelPackage package = new(new FileInfo(filePath));
-
-                if (CheckSheets(in package) == null) Environment.Exit(0);
-
-                ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-                (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
-
-                for (int row = 1; row <= rowCount; row++)
+                if (CheckFileExistence(filePath) == null)
                 {
-                    var articleAddress = worksheet.Cells[row, ARTICLE_INDEX];
-                    var countAddress = worksheet.Cells[row, COUNT_INDEX];
+                    Environment.Exit(0);
+                }
+                else
+                {
+                    var existingFile = new FileInfo(filePath);
+                    using ExcelPackage package = new(existingFile);
 
-                    if (articleAddress.Value != null && int.TryParse(articleAddress.Value.ToString(), out int article))
+                    if (CheckSheets(in package) == null)
                     {
-                        if (countAddress.Value != null && int.TryParse(countAddress.Value.ToString(), out int count))
+                        Environment.Exit(0);
+                    }
+                    else
+                    {
+                        const int COL_STORE_COUNT_INDEX = 17;
+
+                        (int articleIndex, int nameIndex, int initBalanceIndex, int comingIndex, int finBalanceIndex) columnIndexes = (1, 6, 14, 15, 17);
+
+                        int rowFirstRoomAddress = default;
+                        int rowSecondRoomAddress = default;
+                        int rowFinalRoomAddress = default;
+
+                        ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+
+                        (_, int rowStoreCount) = FindNumberColsAndRowsIn(in worksheet);
+
+                        // Find addresses of special rows
+                        for (int row = 1; row <= rowStoreCount; row++)
                         {
-                            if(articleDict.ContainsKey(article))
+                            for (int col = 1; col <= COL_STORE_COUNT_INDEX; col++)
                             {
-                                articleDict[article].ChangeBalance(ItemBalanceUnit.Consumption, count);
+
+                                var addressString = worksheet.Cells[row, col].Value;
+
+                                if (addressString is not null)
+                                {
+                                    switch (addressString!.ToString().Trim())
+                                    {
+                                        case NAME_FIRST_ROOM:
+                                            rowFirstRoomAddress = row;
+                                            break;
+                                        case NAME_SECOND_ROOM:
+                                            rowSecondRoomAddress = row;
+                                            break;
+                                        case NAME_FINAL_ROW:
+                                            rowFinalRoomAddress = row;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                }
+                            }
+
+                            if (rowFirstRoomAddress != default && rowSecondRoomAddress != default && rowFinalRoomAddress != default)
+                            {
+                                break;
+                            }
+                        }
+
+                        // make row ranges 
+                        var firstRoomRowRange = Enumerable.Range(rowFirstRoomAddress + 1, rowSecondRoomAddress - 1).ToList();
+                        var secondRoomRowRange = Enumerable.Range(rowSecondRoomAddress + 1, rowFinalRoomAddress).ToList();
+
+                        // Get coming && finalBalance++
+                        for (int row = firstRoomRowRange.First(); row <= firstRoomRowRange.Count; row++)
+                        {
+                            var article = Convert.ToInt32(worksheet.Cells[row, columnIndexes.articleIndex].Value);
+
+                            if (articleDict.ContainsKey(article))
+                            {
+                                var name = worksheet.Cells[row, columnIndexes.nameIndex].Value.ToString().Split(",")[0].Trim();
+                                if (name is not null)
+                                {
+                                    articleDict[article]!.SetName(name);
+                                }
+
+                                var coming = Convert.ToInt32(worksheet.Cells[row, columnIndexes.comingIndex].Value);
+                                articleDict[article].StoreBalance.ChangeBalance(ItemBalanceUnit.Coming, coming);
+
+                                var finalBalance = Convert.ToInt32(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
+                                articleDict[article].StoreBalance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance);
+                            }
+                        }
+
+                        // Get finalBalance++
+                        for (int row = secondRoomRowRange.First(); row < rowFinalRoomAddress - 2; row++)
+                        {
+                            var article = Convert.ToInt32(worksheet.Cells[row, columnIndexes.articleIndex].Value);
+
+                            if (articleDict.ContainsKey(article))
+                            {
+                                var finalBalance = Convert.ToInt32(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
+                                articleDict[article].StoreBalance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance);
                             }
                         }
                     }
-                }
 
-                package.Dispose();
+                    package.Dispose();
+                }
             }
-        }
+
+            static void ReadConsumptionReport(string filePath)
+            {
+                const int ARTICLE_INDEX = 4;
+                const int COUNT_INDEX = 28;
+
+                if (CheckFileExistence(filePath) == null)
+                {
+                    Environment.Exit(0);
+                }
+                else
+                {
+                    using ExcelPackage package = new(new FileInfo(filePath));
+
+                    if (CheckSheets(in package) == null) Environment.Exit(0);
+
+                    ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+                    (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
+
+                    for (int row = 1; row <= rowCount; row++)
+                    {
+                        var articleAddress = worksheet.Cells[row, ARTICLE_INDEX];
+                        var countAddress = worksheet.Cells[row, COUNT_INDEX];
+
+                        if (articleAddress.Value != null && int.TryParse(articleAddress.Value.ToString(), out int article))
+                        {
+                            if (countAddress.Value != null && int.TryParse(countAddress.Value.ToString(), out int count))
+                            {
+                                if (articleDict.ContainsKey(article))
+                                {
+                                    articleDict[article].ChangeBalance(ItemBalanceUnit.Consumption, count);
+                                }
+                            }
+                        }
+                    }
+
+                    package.Dispose();
+                }
+            }
     }
 
     private static void WriteXls(string ouptutFilePath, string workSheetName = "Report")
@@ -281,7 +331,8 @@ internal class Program
                 new ResultCell("Склад: Приход", "0"),
                 new ResultCell("Склад: Расход", "0"),
                 new ResultCell("Склад: Остаток", "0"),
-                new ResultCell("Средняя цена", "0.00")
+                new ResultCell("Средняя цена", "0.00"),
+                new ResultCell("Примечание", "0"),
         };
 
         // Fill header data 
@@ -333,6 +384,9 @@ internal class Program
 
             // Price
             newWorkSheet.Cells[recordIndex, 13].Value = art.Value.AveragePrice;
+
+            // Comment
+            newWorkSheet.Cells[recordIndex, 14].Value = art.Value.Comment;
 
             recordIndex++;
         }

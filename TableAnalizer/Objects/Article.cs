@@ -11,9 +11,11 @@
         public ArticleRedempionBalance RedBalance { get; private set; }
         public ItemStorageBalance StoreBalance { get; private set; }
         public DateTime MaxRedemptionDate { get; private set; }
+        public int PaymentShortages { get; private set; }
         public bool IsDeadline { get; private set; } = false;
         public ArticleStatus Status { get; private set; }
         public double AveragePrice {get; private set;}
+        public string Comment { get; private set; }
 
         public System.Drawing.Color StatusColor { get; set; }
 
@@ -27,7 +29,10 @@
             Items = new List<ArticleRowItem> { item };
             RedBalance = new();
             MaxRedemptionDate = DateTime.Now;
+            PaymentShortages = 0;
+            Status = ArticleStatus.Unknown;
             StoreBalance = new ItemStorageBalance();
+            Comment = "-";
         }
 
         #endregion
@@ -86,34 +91,52 @@
 
                 this.IsDeadline = (this.MaxRedemptionDate - DateTime.Now).Duration().Days > DEADLINE_DAYS;
 
-                if (IsDeadline)
+                if (!IsDeadline)
                 {
-                    if (StoreBalance.WaitBalance == StoreBalance.Consumption && StoreBalance.FinBalance == 0)
-                    {
-                        Status = ArticleStatus.FullSet;
-                    }
-                    else
-                    {
-                        if (StoreBalance.FinBalance < 0)
-                        {
-                            Status = ArticleStatus.Regrading;
-                        }
-                        else
-                        {
-                            if (StoreBalance.Coming < StoreBalance.WaitBalance || (StoreBalance.Consumption < StoreBalance.WaitBalance && StoreBalance.FinBalance == 0))
-                            {
-                                Status = ArticleStatus.Lost;
-                            }
-                            else
-                            {
-                                Status = ArticleStatus.OnSearch;
-                            }
-                        }
-                    }
+                    Status = ArticleStatus.InWork;
+                    Comment = "В работе";
                 }
                 else
                 {
-                    Status = ArticleStatus.InWork;
+                    // Готовность склада = расход клиенту + остаток
+                    var warehouseReadiness = StoreBalance.Consumption + StoreBalance.FinBalance;
+
+                    if (StoreBalance.WaitBalance == warehouseReadiness)
+                    {
+                        // Если ожидание == готовность и остаток 0 - полный расчет
+                        if (StoreBalance.FinBalance == 0)
+                        {
+                            Status = ArticleStatus.FullSet;
+                            Comment = "Полный расчет";
+                        }
+                        // Если ожидание == готовность (расход и остаток) и остаток больше 0 - довоз
+                        else if (StoreBalance.FinBalance > 0)
+                        {
+                            Status = ArticleStatus.OnSearch;
+                            Comment = "Довоз складом до клиента";
+                        }
+                    }
+                    else if(StoreBalance.WaitBalance > warehouseReadiness)
+                    {
+                        // Если ожидание > готовность (расход и остаток) и остаток >= 0 - поиск 
+                        if (StoreBalance.FinBalance >= 0)
+                        {
+                            Status = ArticleStatus.Lost;
+                            Comment = $"На поиске ({StoreBalance.WaitBalance - warehouseReadiness})";
+                        }
+                        // Если ожидание > готовность (расход и остаток) и остаток < 0 - пересортица 
+                        else if (StoreBalance.FinBalance < 0)
+                        {
+                            Status = ArticleStatus.Regrading;
+                            Comment = "Пересортица";
+                        }
+                    }
+                    // Если ожидание < готовность (расход и остаток) 
+                    else if (StoreBalance.WaitBalance < warehouseReadiness)
+                    {
+                        Status = ArticleStatus.Regrading;
+                        Comment = "Пересортица";
+                    }
                 }
 
                 switch (Status)
@@ -132,6 +155,9 @@
                         break;
                     case ArticleStatus.Lost:
                         this.StatusColor = System.Drawing.ColorTranslator.FromHtml("#f1948a");
+                        break;
+                    case ArticleStatus.Unknown:
+                        StatusColor = System.Drawing.ColorTranslator.FromHtml("#D5D8DC");
                         break;
                     default:
                         break;
