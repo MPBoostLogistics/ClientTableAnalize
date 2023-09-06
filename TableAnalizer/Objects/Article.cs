@@ -55,12 +55,7 @@
                 // Get max redemption date
                 MaxRedemptionDate = Items.MaxBy(i => i.RedemptionDate).RedemptionDate;
 
-                var itemGroups =
-                    from item in Items
-                    group item by item.ItemStatus
-                    into itemGroup
-                    orderby itemGroup.Key
-                    select itemGroup;
+                var itemGroups = GetGroupItemsByStatus(Items);
 
                 // Get redemtion balance
                 foreach (var group in itemGroups)
@@ -163,6 +158,19 @@
                         break;
                 }
             }
+        }
+
+        
+       
+
+
+        public static IOrderedEnumerable<IGrouping<RedemptionStatus, ArticleRowItem>> GetGroupItemsByStatus(List<ArticleRowItem> items)
+        {
+           return from item in items
+                  group item by item.ItemStatus
+                  into itemGroup
+                  orderby itemGroup.Key
+                  select itemGroup;
         }
 
         public override string ToString()
