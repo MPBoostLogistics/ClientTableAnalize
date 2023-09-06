@@ -17,20 +17,18 @@ internal class Program
     private const string NAME_SECOND_ROOM = "2 - Помещение длительного хранения и отгрузки";
     private const string NAME_FINAL_ROW = "Итого товаров в единицах хранения";
 
-    private static string? login = default, redemtionFilePath = default; 
-    private const string storageReportPath = "/Users/dmitrijsamarcev/Documents/Clients/Kirill/StorageReport.xlsx";
-    private const string consumptionPath = "/Users/dmitrijsamarcev/Documents/Clients/Kirill/Consumption.xlsx";
+    private static string? login = default, redemtionFilePath = default, storageFilePath = default, consumptionPath = default; 
     private static DirectoryInfo? clientDirectoryPath;
 
     private static readonly Dictionary<int, Article> articleDict = new();
+
+    private static readonly string goodByMessage = "\nСпасибо за исользование программы. Хорошего дня!";
 
     #endregion
 
     private static async Task Main(string[] args)
     {
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-
-        var goodByMessage = "Хорошего дня!";
 
         Console.Clear();
         Console.WriteLine("---------------------------------------------");
@@ -41,13 +39,15 @@ internal class Program
 
         await ReadRedemptionReportFile(redemtionFilePath);
 
+        await GetUserStorageData(goodByMessage);
+
+        await ReadStorageReportFile(storageFilePath);
+
+        await GetUserConsumingData(goodByMessage);
+
+        await ReadConsumptionReport(consumptionPath);
+
         Console.ReadLine();
-
-        //ReadRedemptionReportFile(redemtionFilePath);
-
-        //ReadStorageReportFile(storageReportPath);
-
-        //ReadConsumptionReport(consumptionPath);
 
         //WriteXls(outputPath);
     }
@@ -81,11 +81,7 @@ internal class Program
 
             if (key.Key == ConsoleKey.Escape)
             {
-                Console.WriteLine(goodByMessage);
-
-                await Task.Delay(1000);
-
-                Environment.Exit(0);
+                await GoodbyProcedure(goodByMessage);
             }
 
             redemtionFilePath = Console.ReadLine();
@@ -137,6 +133,64 @@ internal class Program
         }
     }
 
+    private static async Task GetUserStorageData(string goodByMessage)
+    {
+        while (string.IsNullOrEmpty(storageFilePath))
+        {
+            Console.WriteLine("2. Перетащите путь к отчету по приходу и остаткам клиента (обязательно)\n" +
+                "(или нажмите ESC для выхода из программы):");
+
+            var key = Console.ReadKey();
+
+            if (key.Key == ConsoleKey.Escape)
+            {
+                await GoodbyProcedure(goodByMessage);
+            }
+
+            storageFilePath = Console.ReadLine();
+
+            if (string.IsNullOrEmpty(storageFilePath)) continue;
+
+            var charArray = storageFilePath.Trim().ToList();
+            for (int i = 0; i < charArray.Count; i++)
+            {
+                if (charArray[i] == '\u005c') charArray.RemoveAt(i);
+            }
+
+            storageFilePath = $"/{new string(charArray.ToArray())}";
+        }
+    }
+
+    private static async Task GetUserConsumingData(string goodByMessage)
+    {
+        while (string.IsNullOrEmpty(consumptionPath))
+        {
+            Console.WriteLine("3. Перетащите путь к отчету по расходу товаров клиента со склада (обязательно)\n" +
+                "(или нажмите ESC для выхода из программы):");
+
+            var key = Console.ReadKey();
+
+            if (key.Key == ConsoleKey.Escape)
+            {
+                await GoodbyProcedure(goodByMessage);
+            }
+
+            consumptionPath = Console.ReadLine();
+
+            if (string.IsNullOrEmpty(consumptionPath)) continue;
+
+            var charArray = consumptionPath.Trim().ToList();
+            for (int i = 0; i < charArray.Count; i++)
+            {
+                if (charArray[i] == '\u005c') charArray.RemoveAt(i);
+            }
+
+            consumptionPath = $"/{new string(charArray.ToArray())}";
+
+            Console.WriteLine();
+        }
+    }
+
     private static async Task ReadRedemptionReportFile(string? filePath)
     {
         const int ARTICLE_COL_INDEX = 2;
@@ -147,8 +201,7 @@ internal class Program
 
         if (filePath is null || CheckFileExistence(filePath) == null)
         {
-            await Task.Delay(1000);
-            Environment.Exit(0);
+            await GoodbyProcedure(goodByMessage);
         }
         else
         {
@@ -231,148 +284,171 @@ internal class Program
         }
     }
 
-    private static void ReadStorageReportFile(string filePath)
+    private static async Task ReadStorageReportFile(string? filePath)
+    {
+        if (filePath is null || CheckFileExistence(filePath) == null)
         {
-            if (CheckFileExistence(filePath) == null)
-            {
-                Environment.Exit(0);
-            }
-            else
-            {
-                var existingFile = new FileInfo(filePath);
-                using ExcelPackage package = new(existingFile);
-
-                if (CheckSheets(in package) == null)
-                {
-                    Environment.Exit(0);
-                }
-                else
-                {
-                    const int COL_STORE_COUNT_INDEX = 17;
-
-                    (int articleIndex, int nameIndex, int initBalanceIndex, int comingIndex, int finBalanceIndex) columnIndexes = (1, 6, 14, 15, 17);
-
-                    int rowFirstRoomAddress = default;
-                    int rowSecondRoomAddress = default;
-                    int rowFinalRoomAddress = default;
-
-                    ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-
-                    (_, int rowStoreCount) = FindNumberColsAndRowsIn(in worksheet);
-
-                    // Find addresses of special rows
-                    for (int row = 1; row <= rowStoreCount; row++)
-                    {
-                        for (int col = 1; col <= COL_STORE_COUNT_INDEX; col++)
-                        {
-
-                            var addressString = worksheet.Cells[row, col].Value;
-
-                            if (addressString is not null)
-                            {
-                                switch (addressString!.ToString().Trim())
-                                {
-                                    case NAME_FIRST_ROOM:
-                                        rowFirstRoomAddress = row;
-                                        break;
-                                    case NAME_SECOND_ROOM:
-                                        rowSecondRoomAddress = row;
-                                        break;
-                                    case NAME_FINAL_ROW:
-                                        rowFinalRoomAddress = row;
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-                        }
-
-                        if (rowFirstRoomAddress != default && rowSecondRoomAddress != default && rowFinalRoomAddress != default)
-                        {
-                            break;
-                        }
-                    }
-
-                    // make row ranges 
-                    var firstRoomRowRange = Enumerable.Range(rowFirstRoomAddress + 1, rowSecondRoomAddress - 1).ToList();
-                    var secondRoomRowRange = Enumerable.Range(rowSecondRoomAddress + 1, rowFinalRoomAddress).ToList();
-
-                    // Get coming && finalBalance++
-                    for (int row = firstRoomRowRange.First(); row <= firstRoomRowRange.Count; row++)
-                    {
-                        var article = Convert.ToInt32(worksheet.Cells[row, columnIndexes.articleIndex].Value);
-
-                        if (articleDict.ContainsKey(article))
-                        {
-                            var name = worksheet.Cells[row, columnIndexes.nameIndex].Value.ToString().Split(",")[0].Trim();
-                            if (name is not null)
-                            {
-                                articleDict[article]!.SetName(name);
-                            }
-
-                            var coming = Convert.ToInt32(worksheet.Cells[row, columnIndexes.comingIndex].Value);
-                            articleDict[article].StoreBalance.ChangeBalance(ItemBalanceUnit.Coming, coming);
-
-                            var finalBalance = Convert.ToInt32(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
-                            articleDict[article].StoreBalance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance);
-                        }
-                    }
-
-                    // Get finalBalance++
-                    for (int row = secondRoomRowRange.First(); row < rowFinalRoomAddress - 2; row++)
-                    {
-                        var article = Convert.ToInt32(worksheet.Cells[row, columnIndexes.articleIndex].Value);
-
-                        if (articleDict.ContainsKey(article))
-                        {
-                            var finalBalance = Convert.ToInt32(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
-                            articleDict[article].StoreBalance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance);
-                        }
-                    }
-                }
-
-                package.Dispose();
-            }
+            await GoodbyProcedure(goodByMessage);
         }
-
-    private static void ReadConsumptionReport(string filePath)
+        else
         {
-            const int ARTICLE_INDEX = 4;
-            const int COUNT_INDEX = 28;
+            var existingFile = new FileInfo(filePath);
+            using ExcelPackage package = new(existingFile);
 
-            if (CheckFileExistence(filePath) == null)
+            if (CheckSheets(in package) == null)
             {
-                Environment.Exit(0);
+                await GoodbyProcedure(goodByMessage);
             }
             else
             {
-                using ExcelPackage package = new(new FileInfo(filePath));
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
 
-                if (CheckSheets(in package) == null) Environment.Exit(0);
+                Console.WriteLine($"Анализирую отчет клиента {login} по приходу и остаткам...");
+
+                const int COL_STORE_COUNT_INDEX = 17;
+
+                (int articleIndex, int nameIndex, int initBalanceIndex, int comingIndex, int finBalanceIndex) columnIndexes = (1, 6, 14, 15, 17);
+
+                int rowFirstRoomAddress = default;
+                int rowSecondRoomAddress = default;
+                int rowFinalRoomAddress = default;
 
                 ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-                (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
 
-                for (int row = 1; row <= rowCount; row++)
+                (_, int rowStoreCount) = FindNumberColsAndRowsIn(in worksheet);
+
+                // Find addresses of special rows
+                for (int row = 1; row <= rowStoreCount; row++)
                 {
-                    var articleAddress = worksheet.Cells[row, ARTICLE_INDEX];
-                    var countAddress = worksheet.Cells[row, COUNT_INDEX];
-
-                    if (articleAddress.Value != null && int.TryParse(articleAddress.Value.ToString(), out int article))
+                    for (int col = 1; col <= COL_STORE_COUNT_INDEX; col++)
                     {
-                        if (countAddress.Value != null && int.TryParse(countAddress.Value.ToString(), out int count))
+
+                        var addressString = worksheet.Cells[row, col].Value;
+
+                        if (addressString is not null)
                         {
-                            if (articleDict.ContainsKey(article))
+                            switch (addressString!.ToString().Trim())
                             {
-                                articleDict[article].ChangeBalance(ItemBalanceUnit.Consumption, count);
+                                case NAME_FIRST_ROOM:
+                                    rowFirstRoomAddress = row;
+                                    break;
+                                case NAME_SECOND_ROOM:
+                                    rowSecondRoomAddress = row;
+                                    break;
+                                case NAME_FINAL_ROW:
+                                    rowFinalRoomAddress = row;
+                                    break;
+                                default:
+                                    break;
                             }
                         }
+                    }
+
+                    if (rowFirstRoomAddress != default && rowSecondRoomAddress != default && rowFinalRoomAddress != default)
+                    {
+                        break;
+                    }
+                }
+
+                // make row ranges 
+                var firstRoomRowRange = Enumerable.Range(rowFirstRoomAddress + 1, rowSecondRoomAddress - 1).ToList();
+                var secondRoomRowRange = Enumerable.Range(rowSecondRoomAddress + 1, rowFinalRoomAddress).ToList();
+
+                // Get coming && finalBalance++
+                for (int row = firstRoomRowRange.First(); row <= firstRoomRowRange.Count; row++)
+                {
+                    var article = Convert.ToInt32(worksheet.Cells[row, columnIndexes.articleIndex].Value);
+
+                    if (articleDict.ContainsKey(article))
+                    {
+                        var name = worksheet.Cells[row, columnIndexes.nameIndex].Value.ToString().Split(",")[0].Trim();
+                        if (name is not null)
+                        {
+                            articleDict[article]!.SetName(name);
+                        }
+
+                        var com = Convert.ToInt32(worksheet.Cells[row, columnIndexes.comingIndex].Value);
+                        articleDict[article].StoreBalance.ChangeBalance(ItemBalanceUnit.Coming, com);
+
+                        var finalBalance = Convert.ToInt32(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
+                        articleDict[article].StoreBalance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance);
+                    }
+                }
+
+                // Get finalBalance++
+                for (int row = secondRoomRowRange.First(); row < rowFinalRoomAddress - 2; row++)
+                {
+                    var article = Convert.ToInt32(worksheet.Cells[row, columnIndexes.articleIndex].Value);
+
+                    if (articleDict.ContainsKey(article))
+                    {
+                        var finalBalance = Convert.ToInt32(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
+                        articleDict[article].StoreBalance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance);
                     }
                 }
 
                 package.Dispose();
+                stopwatch.Stop();
+
+                var coming = articleDict.Sum(art => art.Value.StoreBalance.Coming);
+                var finBalance = articleDict.Sum(art => art.Value.StoreBalance.FinBalance);
+
+                Console.WriteLine($"Общий приход товаров: {coming}, общий остаток: {finBalance}");
+                Console.WriteLine($"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.");
+
+                Console.WriteLine();
             }
         }
+    }
+
+    private static async Task ReadConsumptionReport(string? filePath)
+    {
+        const int ARTICLE_INDEX = 4;
+        const int COUNT_INDEX = 28;
+
+        if (filePath is null && CheckFileExistence(filePath) == null)
+        {
+            await GoodbyProcedure(goodByMessage);
+        }
+        else
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            using ExcelPackage package = new(new FileInfo(filePath));
+
+            if (CheckSheets(in package) == null) Environment.Exit(0);
+
+            ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+            (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
+
+            for (int row = 1; row <= rowCount; row++)
+            {
+                var articleAddress = worksheet.Cells[row, ARTICLE_INDEX];
+                var countAddress = worksheet.Cells[row, COUNT_INDEX];
+
+                if (articleAddress.Value != null && int.TryParse(articleAddress.Value.ToString(), out int article))
+                {
+                    if (countAddress.Value != null && int.TryParse(countAddress.Value.ToString(), out int count))
+                    {
+                        if (articleDict.ContainsKey(article))
+                        {
+                            articleDict[article].ChangeBalance(ItemBalanceUnit.Consumption, count);
+                        }
+                    }
+                }
+            }
+
+            package.Dispose();
+            stopwatch.Stop();
+
+            var con = articleDict.Sum(art => art.Value.StoreBalance.Consumption);
+
+            Console.WriteLine($"Общий расход по товарам клиента: {con}.");
+            Console.WriteLine($"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.");
+        }
+    }
 
     private static void WriteXls(string ouptutFilePath, string workSheetName = "Report")
     {
@@ -504,6 +580,15 @@ internal class Program
         excel.Dispose();
     }
 
+    private static async Task GoodbyProcedure(string message)
+    {
+        Console.WriteLine(message);
+
+        await Task.Delay(1000);
+
+        Environment.Exit(0);
+    }
+
     private static bool? CheckFileExistence(string path)
     {
         if (File.Exists(path))
@@ -512,8 +597,7 @@ internal class Program
         }
         else
         {
-            Console.WriteLine($"Файл по пути\n{path}\nне найден");
-            Console.ReadLine();
+            Console.WriteLine($"Файл по пути\n{path}\nне найден. Проверьте правильность указания данных.");
             return null;
         }
     }

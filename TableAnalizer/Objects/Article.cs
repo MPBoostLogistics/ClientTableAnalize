@@ -160,11 +160,7 @@
             }
         }
 
-        
-       
-
-
-        public static IOrderedEnumerable<IGrouping<RedemptionStatus, ArticleRowItem>> GetGroupItemsByStatus(List<ArticleRowItem> items)
+        private static IOrderedEnumerable<IGrouping<RedemptionStatus, ArticleRowItem>> GetGroupItemsByStatus(List<ArticleRowItem> items)
         {
            return from item in items
                   group item by item.ItemStatus
