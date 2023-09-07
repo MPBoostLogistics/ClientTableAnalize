@@ -11,10 +11,10 @@
         public ArticleRedempionBalance RedBalance { get; private set; }
         public ItemStorageBalance StoreBalance { get; private set; }
         public DateTime MaxRedemptionDate { get; private set; }
-        public int PaymentShortages { get; private set; }
         public bool IsDeadline { get; private set; } = false;
         public ArticleStatus Status { get; private set; }
         public double AveragePrice {get; private set;}
+        public List<PayShortages> PayShortages { get; private set; }
         public string Comment { get; private set; }
 
         public System.Drawing.Color StatusColor { get; set; }
@@ -29,9 +29,9 @@
             Items = new List<ArticleRowItem> { item };
             RedBalance = new();
             MaxRedemptionDate = DateTime.Now;
-            PaymentShortages = 0;
             Status = ArticleStatus.Unknown;
             StoreBalance = new ItemStorageBalance();
+            PayShortages = new();
             Comment = "-";
         }
 
@@ -46,6 +46,11 @@
         public void ChangeBalance(ItemBalanceUnit unit, int value)
         {
             this.StoreBalance.ChangeBalance(unit, value);
+        }
+
+        public void SetPayShortages(int count, double price)
+        {
+            PayShortages.Add(new PayShortages(count, price));
         }
 
         public void Analize()
@@ -94,7 +99,7 @@
                 else
                 {
                     // Готовность склада = расход клиенту + остаток
-                    var warehouseReadiness = StoreBalance.Consumption + StoreBalance.FinBalance;
+                    var warehouseReadiness = StoreBalance.Consumption + StoreBalance.FinBalance + PayShortages.Sum(el => el.Count);
 
                     if (StoreBalance.WaitBalance == warehouseReadiness)
                     {

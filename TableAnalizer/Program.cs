@@ -8,6 +8,20 @@ using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using TableAnalizer.Objects;
 
+internal struct PayShortages
+{
+    public int Count { get; }
+    public double Price { get; }
+    public double Sum { get; }
+
+    public PayShortages(int count, double price)
+    {
+        Count = count;
+        Price = price;
+        Sum = Count * Price;
+    }
+}
+
 internal class Program
 {
     #region Variables and constants
@@ -17,12 +31,13 @@ internal class Program
     private const string NAME_SECOND_ROOM = "2 - Помещение длительного хранения и отгрузки";
     private const string NAME_FINAL_ROW = "Итого товаров в единицах хранения";
 
-    private static string? login = default, redemtionFilePath = default, storageFilePath = default, consumptionPath = default; 
+    private static string? login = default, redemtionFilePath = default, storageFilePath = default,
+        consumptionPath = default, payShortagesPath = default, outputPath = default; 
     private static DirectoryInfo? clientDirectoryPath;
 
     private static readonly Dictionary<int, Article> articleDict = new();
 
-    private static readonly string goodByMessage = "\nСпасибо за исользование программы. Хорошего дня!";
+    private static readonly string goodByMessage = "\nСпасибо за использование программы. Хорошего дня!";
 
     #endregion
 
@@ -47,9 +62,16 @@ internal class Program
 
         await ReadConsumptionReport(consumptionPath);
 
-        Console.ReadLine();
+        await GetUserPayShortagesData();
 
-        //WriteXls(outputPath);
+        if(payShortagesPath != null)
+        {
+            ReadPayShortagesReport(payShortagesPath);
+        }
+
+        await WriteXls(outputPath);
+
+        Console.ReadLine();
     }
 
     private static async Task GetUserRedemtionData(string goodByMessage)
@@ -112,7 +134,9 @@ internal class Program
 
             if (clientDirectoryPath is not null)
             {
-                Console.WriteLine($"Директория для работы с клиентом: {clientDirectoryPath.FullName}");
+                Console.WriteLine($"Директория для работы с клиентом:\n{clientDirectoryPath.FullName}");
+                var dateTime = DateTime.Now.ToShortDateString();
+                outputPath = $"{clientDirectoryPath.FullName}/ClientReport_{login}_{dateTime}.xlsx";
             }
             else
             {
@@ -123,7 +147,6 @@ internal class Program
             for (int i = 0; i < charArray.Count; i++)
             {
                 if (charArray[i] == '\u005c')charArray.RemoveAt(i);
-
             }
 
             redemtionFilePath = new string(charArray.ToArray());
@@ -189,6 +212,51 @@ internal class Program
 
             Console.WriteLine();
         }
+    }
+
+    private static async Task GetUserPayShortagesData()
+    {
+        Console.WriteLine("Есть отчет погашении недостач?\n" +
+                "(1 - Да, Любая другая клавиша - Нет):");
+
+        ConsoleKeyInfo keyInfo = Console.ReadKey();
+
+        if (keyInfo != default)
+        {
+            switch (keyInfo.Key)
+            {
+                case ConsoleKey.D1:
+                    break;
+                default:
+                    Console.WriteLine("Отчет о погашении недостач не загружен и не будет учтен.");
+                    return;
+            }
+        }
+
+        while(string.IsNullOrEmpty(payShortagesPath))
+        {
+            Console.WriteLine("\n4. Перетащите путь к отчету о погашении недостач\n" +
+             "(ESC - выход из программы):");
+
+            var key = Console.ReadKey();
+
+            if (key.Key == ConsoleKey.Escape)
+            {
+                await GoodbyProcedure(goodByMessage);
+            }
+
+            payShortagesPath = Console.ReadLine();
+        }
+
+        var charArray = payShortagesPath.Trim().ToList();
+        for (int i = 0; i < charArray.Count; i++)
+        {
+            if (charArray[i] == '\u005c') charArray.RemoveAt(i);
+        }
+
+        payShortagesPath = $"/{new string(charArray.ToArray())}";
+
+        Console.WriteLine();
     }
 
     private static async Task ReadRedemptionReportFile(string? filePath)
@@ -418,7 +486,7 @@ internal class Program
 
             using ExcelPackage package = new(new FileInfo(filePath));
 
-            if (CheckSheets(in package) == null) Environment.Exit(0);
+            if (CheckSheets(in package) == null) await GoodbyProcedure(goodByMessage);
 
             ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
             (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
@@ -447,10 +515,66 @@ internal class Program
 
             Console.WriteLine($"Общий расход по товарам клиента: {con}.");
             Console.WriteLine($"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.");
+            Console.WriteLine();
         }
     }
 
-    private static void WriteXls(string ouptutFilePath, string workSheetName = "Report")
+    private static void ReadPayShortagesReport(string? filePath)
+    {
+        const int ARTICLE_INDEX = 1;
+        const int COUNT_INDEX = 2;
+        const int PRICE_INDEX = 3;
+
+        if (filePath is null && CheckFileExistence(filePath) == null)
+        {
+            return;
+        }
+        else
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            using ExcelPackage package = new(new FileInfo(filePath));
+
+            if (CheckSheets(in package) == null) return;
+
+            ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+            (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
+
+            for (int row = 1; row <= rowCount; row++)
+            {
+                var articleAddress = worksheet.Cells[row, ARTICLE_INDEX];
+                var countAddress = worksheet.Cells[row, COUNT_INDEX];
+                var priceAddress = worksheet.Cells[row, PRICE_INDEX];
+
+                if (articleAddress.Value != null && int.TryParse(articleAddress.Value.ToString(), out int article) &&
+                    countAddress.Value != null && int.TryParse(countAddress.Value.ToString(), out int count) &&
+                    priceAddress.Value != null && int.TryParse(priceAddress.Value.ToString(), out int price))
+                {
+                    if (articleDict.ContainsKey(article))
+                    {
+                        articleDict[article].SetPayShortages(count, price);
+                    }
+                }
+            }
+
+            package.Dispose();
+            stopwatch.Stop();
+
+            var paySum =
+                from art in articleDict
+                from pay in art.Value.PayShortages
+                select pay.Sum;
+
+            var aggregatePaySum = paySum.Aggregate((acc, sum) => acc + sum);
+
+            Console.WriteLine("Сумма компенсации за недостачти товаров: {0:C}.", aggregatePaySum);
+            Console.WriteLine($"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.");
+            Console.WriteLine();
+        }
+    }
+
+    private static async Task WriteXls(string? ouptutFilePath, string workSheetName = $"Report")
     {
         const int HEADER_TABLE_ROW_HEIGHT = 24;
         const int DEFAULT_TABLE_ROW_HEIGHT = 16;
@@ -487,6 +611,7 @@ internal class Program
                 new ResultCell("Склад: Расход", "0"),
                 new ResultCell("Склад: Остаток", "0"),
                 new ResultCell("Средняя цена", "0.00"),
+                new ResultCell("Оплачено", "0.00"),
                 new ResultCell("Примечание", "0"),
         };
 
@@ -540,8 +665,11 @@ internal class Program
             // Price
             newWorkSheet.Cells[recordIndex, 13].Value = art.Value.AveragePrice;
 
+            // Payment
+            newWorkSheet.Cells[recordIndex, 14].Value = art.Value.PayShortages.Sum(el => el.Count);
+
             // Comment
-            newWorkSheet.Cells[recordIndex, 14].Value = art.Value.Comment;
+            newWorkSheet.Cells[recordIndex, 15].Value = art.Value.Comment;
 
             recordIndex++;
         }
@@ -566,25 +694,33 @@ internal class Program
 
         newWorkSheet.Cells[$"{firstColLet}{firstRow}:{endColLet}{endRow}"].AutoFilter = true;
 
-        //// Save work
-        //if (File.Exists(outputPath)) File.Delete(outputPath);
+        // Save work
+        if (File.Exists(outputPath)) File.Delete(outputPath);
 
-        //// Create excel file on physical disk 
-        //var objFileStrm = File.Create(outputPath);
-        //objFileStrm.Close();
+        // Create excel file on physical disk 
+        var objFileStrm = File.Create(outputPath);
+        objFileStrm.Close();
 
-        //// Write content to excel file 
-        //File.WriteAllBytes(outputPath, excel.GetAsByteArray());
+        // Write content to excel file 
+        File.WriteAllBytes(outputPath, excel.GetAsByteArray());
 
         //Close Excel package
         excel.Dispose();
+
+        Console.WriteLine($"Новый отчет по клиенту создан по пути: {outputPath}");
+        Console.WriteLine();
+        Console.WriteLine("Для завершения работы нажмите любую клавишу");
+
+        _ = Console.ReadKey();
+
+        await GoodbyProcedure(goodByMessage);
     }
 
     private static async Task GoodbyProcedure(string message)
     {
         Console.WriteLine(message);
 
-        await Task.Delay(1000);
+        await Task.Delay(3000);
 
         Environment.Exit(0);
     }
