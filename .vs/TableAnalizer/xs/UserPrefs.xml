@@ -1,29 +1,27 @@
 ﻿<Properties StartupConfiguration="{BC98D5C8-C18E-422D-B63F-5E7F8CDCF571}|Default">
+  <MultiItemStartupConfigurations />
+  <MonoDevelop.Ide.ItemProperties.TableAnalizer PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Release" />
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.Workbench ActiveDocument="TableAnalizer/Objects/Article.cs">
     <Files>
-      <File FileName="TableAnalizer/Objects/FileManager.cs" Line="44" Column="38" />
-      <File FileName="TableAnalizer/Program.cs" Line="666" Column="80" />
-      <File FileName="TableAnalizer/Objects/Article.cs" Line="52" Column="10" />
+      <File FileName="TableAnalizer/Objects/FileManager.cs" />
+      <File FileName="TableAnalizer/Program.cs" />
+      <File FileName="TableAnalizer/Objects/Article.cs" Line="42" Column="41" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State name="__root__">
-          <Node name="TableAnalizer" expanded="True">
-            <Node name="TableAnalizer">
-              <Node name="Objects" expanded="True">
-                <Node name="Article.cs" selected="True" />
-              </Node>
+          <Node name="TableAnalizer" expanded="True" selected="True">
+            <Node name="TableAnalizer" expanded="True">
+              <Node name="Objects" expanded="True" />
             </Node>
           </Node>
         </State>
       </Pad>
     </Pads>
   </MonoDevelop.Ide.Workbench>
-  <MonoDevelop.Ide.ItemProperties.TableAnalizer PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore />
-  </MonoDevelop.Ide.DebuggingService.Breakpoints>
-  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
-  <MultiItemStartupConfigurations />
 </Properties>

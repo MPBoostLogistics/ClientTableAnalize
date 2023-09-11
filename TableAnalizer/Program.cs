@@ -4,6 +4,7 @@
 #nullable enable
 
 using System.Diagnostics;
+using System.Drawing;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using TableAnalizer.Objects;
@@ -32,7 +33,7 @@ internal class Program
     private const string NAME_FINAL_ROW = "Итого товаров в единицах хранения";
 
     private static string? login = default, redemtionFilePath = default, storageFilePath = default,
-        consumptionPath = default, payShortagesPath = default, outputPath = default; 
+        consumptionPath = default, payShortagesPath = default, regradingPath = default, outputPath = default; 
     private static DirectoryInfo? clientDirectoryPath;
 
     private static readonly Dictionary<int, Article> articleDict = new();
@@ -66,13 +67,21 @@ internal class Program
 
         if(payShortagesPath != null)
         {
-            ReadPayShortagesReport(payShortagesPath);
+            await ReadPayShortagesReport(payShortagesPath);
+        }
+
+        await GetRegrandingData();
+
+        if (regradingPath != null)
+        {
+            await ReadRegrandingReport(regradingPath);
         }
 
         await WriteXls(outputPath);
 
         Console.ReadLine();
     }
+
 
     private static async Task GetUserRedemtionData(string goodByMessage)
     {
@@ -84,15 +93,13 @@ internal class Program
             clDirInfo = FileManager.CreateDirectoryInfo(PathKey.MPBoostClients);
             if (clDirInfo is not null && clDirInfo!.Exists)
             {
-                Console.WriteLine("Директория '/Documents/MPBoostClients' создана.");
+                await Report("Директория '/Documents/MPBoostClients' создана.");
             }
         }
         else
         {
-            Console.WriteLine("Директория '/Documents/MPBoostClients' существует.");
+            await Report("Директория '/Documents/MPBoostClients' существует.");
         }
-
-        Console.WriteLine();
 
         while (string.IsNullOrEmpty(redemtionFilePath) && string.IsNullOrEmpty(login))
         {
@@ -103,7 +110,7 @@ internal class Program
 
             if (key.Key == ConsoleKey.Escape)
             {
-                await GoodbyProcedure(goodByMessage);
+                await Report(goodByMessage, true);
             }
 
             redemtionFilePath = Console.ReadLine();
@@ -126,31 +133,23 @@ internal class Program
 
             login = new string(loginChars.ToArray());
 
-            Console.WriteLine();
-            Console.WriteLine($"Логин клиента: {login}");
+            await Report($"Логин клиента: {login}");
 
-            Console.WriteLine();
             clientDirectoryPath = FileManager.GetDirectoryInfo(PathKey.MPBoostClients, login);
 
             if (clientDirectoryPath is not null)
             {
-                Console.WriteLine($"Директория для работы с клиентом:\n{clientDirectoryPath.FullName}");
+                await Report($"Директория для работы с клиентом:\n{clientDirectoryPath.FullName}");
+
                 var dateTime = DateTime.Now.ToShortDateString();
                 outputPath = $"{clientDirectoryPath.FullName}/ClientReport_{login}_{dateTime}.xlsx";
             }
             else
             {
-                Console.WriteLine($"Невозможно найти или создать директорию для работы с клиентом.");
+                await Report($"Невозможно найти или создать директорию для работы с клиентом.");
             }
 
-            var charArray = redemtionFilePath.Trim().ToList();
-            for (int i = 0; i < charArray.Count; i++)
-            {
-                if (charArray[i] == '\u005c')charArray.RemoveAt(i);
-            }
-
-            redemtionFilePath = new string(charArray.ToArray());
-            redemtionFilePath = $"/{redemtionFilePath}";
+            redemtionFilePath = FormСorrectPath(redemtionFilePath);
 
             Console.WriteLine();
         }
@@ -160,64 +159,58 @@ internal class Program
     {
         while (string.IsNullOrEmpty(storageFilePath))
         {
-            Console.WriteLine("2. Перетащите путь к отчету по приходу и остаткам клиента (обязательно)\n" +
-                "(или нажмите ESC для выхода из программы):");
+            var message02 = "2. Перетащите путь к отчету по приходу и остаткам клиента (обязательно)\n(или нажмите ESC для выхода из программы):";
+
+            await Report(message02);
 
             var key = Console.ReadKey();
 
             if (key.Key == ConsoleKey.Escape)
             {
-                await GoodbyProcedure(goodByMessage);
+                await Report(goodByMessage, true);
             }
 
             storageFilePath = Console.ReadLine();
 
             if (string.IsNullOrEmpty(storageFilePath)) continue;
-
-            var charArray = storageFilePath.Trim().ToList();
-            for (int i = 0; i < charArray.Count; i++)
-            {
-                if (charArray[i] == '\u005c') charArray.RemoveAt(i);
-            }
-
-            storageFilePath = $"/{new string(charArray.ToArray())}";
         }
+
+        storageFilePath = FormСorrectPath(storageFilePath);
+
+        Console.WriteLine();
     }
 
     private static async Task GetUserConsumingData(string goodByMessage)
     {
         while (string.IsNullOrEmpty(consumptionPath))
         {
-            Console.WriteLine("3. Перетащите путь к отчету по расходу товаров клиента со склада (обязательно)\n" +
-                "(или нажмите ESC для выхода из программы):");
+            var message03 = "3. Перетащите путь к отчету по расходу товаров клиента со склада (обязательно)\n" +
+                "(или нажмите ESC для выхода из программы):";
+
+            await Report(message03);
 
             var key = Console.ReadKey();
 
             if (key.Key == ConsoleKey.Escape)
             {
-                await GoodbyProcedure(goodByMessage);
+                await Report(goodByMessage, true);
             }
 
             consumptionPath = Console.ReadLine();
 
             if (string.IsNullOrEmpty(consumptionPath)) continue;
-
-            var charArray = consumptionPath.Trim().ToList();
-            for (int i = 0; i < charArray.Count; i++)
-            {
-                if (charArray[i] == '\u005c') charArray.RemoveAt(i);
-            }
-
-            consumptionPath = $"/{new string(charArray.ToArray())}";
-
-            Console.WriteLine();
         }
+
+        consumptionPath = FormСorrectPath(consumptionPath);
+
+        Console.WriteLine();
     }
 
     private static async Task GetUserPayShortagesData()
     {
-        Console.WriteLine("Есть отчет погашении недостач?\n" +
-                "(1 - Да, Любая другая клавиша - Нет):");
+        var message = "Есть отчет погашении недостач?\n(1 - Да, Любая другая клавиша - Нет):";
+
+        await Report(message);
 
         ConsoleKeyInfo keyInfo = Console.ReadKey();
 
@@ -228,33 +221,69 @@ internal class Program
                 case ConsoleKey.D1:
                     break;
                 default:
-                    Console.WriteLine("Отчет о погашении недостач не загружен и не будет учтен.");
+                    await Report("Отчет о погашении недостач не загружен и не будет учтен.");
                     return;
             }
         }
 
         while(string.IsNullOrEmpty(payShortagesPath))
         {
-            Console.WriteLine("\n4. Перетащите путь к отчету о погашении недостач\n" +
-             "(ESC - выход из программы):");
+            var messageStep04 = "\n4.Перетащите путь к отчету о погашении недостач\n(ESC - выход из программы):";
+
+            await Report(messageStep04);
 
             var key = Console.ReadKey();
 
             if (key.Key == ConsoleKey.Escape)
             {
-                await GoodbyProcedure(goodByMessage);
+                await Report(goodByMessage, true);
             }
 
             payShortagesPath = Console.ReadLine();
         }
 
-        var charArray = payShortagesPath.Trim().ToList();
-        for (int i = 0; i < charArray.Count; i++)
+        payShortagesPath = FormСorrectPath(payShortagesPath);
+
+        Console.WriteLine();
+    }
+
+    private static async Task GetRegrandingData()
+    {
+        var message = "Есть отчет о пересортах товаров?\n(1 - Да, Любая другая клавиша - Нет):";
+
+        await Report(message);
+
+        ConsoleKeyInfo keyInfo = Console.ReadKey();
+
+        if (keyInfo != default)
         {
-            if (charArray[i] == '\u005c') charArray.RemoveAt(i);
+            switch (keyInfo.Key)
+            {
+                case ConsoleKey.D1:
+                    break;
+                default:
+                    await Report("Отчет о пересортах товаров не загружен и не будет учтен.");
+                    return;
+            }
         }
 
-        payShortagesPath = $"/{new string(charArray.ToArray())}";
+        while (string.IsNullOrEmpty(regradingPath))
+        {
+            message = "\n5. Перетащите путь к отчету о пересортах тоавров\n(ESC - выход из программы):";
+
+            await Report(message);
+
+            var key = Console.ReadKey();
+
+            if (key.Key == ConsoleKey.Escape)
+            {
+                await Report(goodByMessage, true);
+            }
+
+            regradingPath = Console.ReadLine();
+        }
+
+        regradingPath = FormСorrectPath(regradingPath);
 
         Console.WriteLine();
     }
@@ -269,14 +298,14 @@ internal class Program
 
         if (filePath is null || CheckFileExistence(filePath) == null)
         {
-            await GoodbyProcedure(goodByMessage);
+            await Report(goodByMessage, true);
         }
         else
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            Console.WriteLine($"Анализирую отчет клиента {login} по выкупам...");
+            await Report($"Анализирую отчет клиента {login} по выкупам...");
 
             using ExcelPackage package = new(new FileInfo(filePath));
 
@@ -316,9 +345,7 @@ internal class Program
                         }
                         else
                         {
-                            Console.WriteLine("Невозможно создать Item по выкупу.");
-                            Console.ReadLine();
-                            Environment.Exit(0);
+                            await Report("Невозможно создать Item по выкупу.", true);
                         }
                     }
                 }
@@ -327,7 +354,7 @@ internal class Program
             package.Dispose();
             stopwatch.Stop();
 
-            Console.WriteLine($"Артикулов с логистикой {articleDict.Values.Count}");
+            var redemtionReport = $"Артикулов с логистикой {articleDict.Values.Count}\n";
 
             var groups =
                 from article in articleDict
@@ -341,14 +368,14 @@ internal class Program
             foreach (var group in groups)
             {
                 var valuesCount = group.Count();
-                Console.WriteLine($"- {group.Key} {valuesCount}");
-
+                redemtionReport += $"- {group.Key} {valuesCount}\n";
                 redemptonCount += valuesCount;
             }
 
-            Console.WriteLine($"Выкупов с логистикой {redemptonCount}");
-            Console.WriteLine($"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.");
-            Console.WriteLine();
+            redemtionReport += $"\nВыкупов с логистикой {redemptonCount}\n";
+            redemtionReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
+
+            await Report(redemtionReport);
         }
     }
 
@@ -356,7 +383,7 @@ internal class Program
     {
         if (filePath is null || CheckFileExistence(filePath) == null)
         {
-            await GoodbyProcedure(goodByMessage);
+            await Report(goodByMessage, true);
         }
         else
         {
@@ -365,14 +392,14 @@ internal class Program
 
             if (CheckSheets(in package) == null)
             {
-                await GoodbyProcedure(goodByMessage);
+                await Report(goodByMessage, true);
             }
             else
             {
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
 
-                Console.WriteLine($"Анализирую отчет клиента {login} по приходу и остаткам...");
+                await Report($"Анализирую отчет клиента {login} по приходу и остаткам...");
 
                 const int COL_STORE_COUNT_INDEX = 17;
 
@@ -462,10 +489,10 @@ internal class Program
                 var coming = articleDict.Sum(art => art.Value.StoreBalance.Coming);
                 var finBalance = articleDict.Sum(art => art.Value.StoreBalance.FinBalance);
 
-                Console.WriteLine($"Общий приход товаров: {coming}, общий остаток: {finBalance}");
-                Console.WriteLine($"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.");
+                var comBalanceReport = $"Общий приход товаров: {coming}, общий остаток: {finBalance}\n";
+                comBalanceReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
-                Console.WriteLine();
+                await Report(comBalanceReport);
             }
         }
     }
@@ -477,7 +504,7 @@ internal class Program
 
         if (filePath is null && CheckFileExistence(filePath) == null)
         {
-            await GoodbyProcedure(goodByMessage);
+            await Report(goodByMessage, true);
         }
         else
         {
@@ -486,7 +513,7 @@ internal class Program
 
             using ExcelPackage package = new(new FileInfo(filePath));
 
-            if (CheckSheets(in package) == null) await GoodbyProcedure(goodByMessage);
+            if (CheckSheets(in package) == null) await Report(goodByMessage, true);
 
             ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
             (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
@@ -513,13 +540,14 @@ internal class Program
 
             var con = articleDict.Sum(art => art.Value.StoreBalance.Consumption);
 
-            Console.WriteLine($"Общий расход по товарам клиента: {con}.");
-            Console.WriteLine($"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.");
-            Console.WriteLine();
+            var conReport = $"Общий расход по товарам клиента: {con}.\n";
+            conReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
+
+            await Report(conReport);
         }
     }
 
-    private static void ReadPayShortagesReport(string? filePath)
+    private static async Task ReadPayShortagesReport(string? filePath)
     {
         const int ARTICLE_INDEX = 1;
         const int COUNT_INDEX = 2;
@@ -568,9 +596,68 @@ internal class Program
 
             var aggregatePaySum = paySum.Aggregate((acc, sum) => acc + sum);
 
-            Console.WriteLine("Сумма компенсации за недостачти товаров: {0:C}.", aggregatePaySum);
-            Console.WriteLine($"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.");
-            Console.WriteLine();
+            var payReport = string.Format("Сумма компенсации за недостачти товаров: {0:C}.\n", aggregatePaySum);
+            payReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
+
+            await Report(payReport);
+        }
+    }
+
+    private static async Task ReadRegrandingReport(string filePath)
+    {
+        const int ARTICLE_INDEX = 1;
+        const int REGRANDING_INDEX = 2;
+
+        if (filePath is null || CheckFileExistence(filePath) == null)
+        {
+            return;
+        }
+        else
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            using ExcelPackage package = new(new FileInfo(filePath));
+
+            if (CheckSheets(in package) == null) return;
+
+            ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+            (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
+
+            int regrandingCount = default;
+
+            for (int row = 1; row <= rowCount; row++)
+            {
+                var articleAddress = worksheet.Cells[row, ARTICLE_INDEX];
+                var regrandingAddress = worksheet.Cells[row, REGRANDING_INDEX];
+
+
+                if (articleAddress.Value != null &&
+                    int.TryParse(articleAddress.Value.ToString(), out int article) &&
+                    articleDict.ContainsKey(article))
+                {
+                    articleDict[article].SetRegranding(true);
+                    regrandingCount++;
+                }
+
+
+                if (regrandingAddress.Value != null &&
+                    int.TryParse(regrandingAddress.Value.ToString(), out int regranding) &&
+                    articleDict.ContainsKey(regranding))
+                {
+                    articleDict[regranding].SetRegranding(true);
+                    regrandingCount++;
+                }
+
+            }
+
+            package.Dispose();
+            stopwatch.Stop();
+
+            var regReport = $"Количество артикулов в пересорте: {regrandingCount}.\n";
+            regReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
+
+            await Report(regReport);
         }
     }
 
@@ -713,16 +800,37 @@ internal class Program
 
         _ = Console.ReadKey();
 
-        await GoodbyProcedure(goodByMessage);
+        await Report(goodByMessage, true);
     }
 
-    private static async Task GoodbyProcedure(string message)
+    private static async Task Report(string message, bool exit = false)
     {
+        Console.WriteLine();
         Console.WriteLine(message);
+        Console.WriteLine();
 
-        await Task.Delay(3000);
+        if (exit)
+        {
+            await Task.Delay(3000);
+            Environment.Exit(0);
+        }
+    }
 
-        Environment.Exit(0);
+    private static string FormСorrectPath(string path)
+    {
+        var copy = path;
+
+        // Clear "\"
+        var charArray = copy.Trim().ToList();
+        for (int i = 0; i < charArray.Count; i++)
+        {
+            if (charArray[i] == '\u005c') charArray.RemoveAt(i);
+        }
+
+        copy = new string(charArray.ToArray());
+
+        // Add "/"
+        return $"/{copy}";
     }
 
     private static bool? CheckFileExistence(string path)

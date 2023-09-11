@@ -12,6 +12,7 @@
         public ItemStorageBalance StoreBalance { get; private set; }
         public DateTime MaxRedemptionDate { get; private set; }
         public bool IsDeadline { get; private set; } = false;
+        public bool IsRegranding { get; private set; } = false;
         public ArticleStatus Status { get; private set; }
         public double AveragePrice {get; private set;}
         public List<PayShortages> PayShortages { get; private set; }
@@ -51,6 +52,11 @@
         public void SetPayShortages(int count, double price)
         {
             PayShortages.Add(new PayShortages(count, price));
+        }
+
+        public void SetRegranding(bool flag)
+        {
+            IsRegranding = flag;
         }
 
         public void Analize()
@@ -98,44 +104,52 @@
                 }
                 else
                 {
-                    // Готовность склада = расход клиенту + остаток
-                    var warehouseReadiness = StoreBalance.Consumption + StoreBalance.FinBalance + PayShortages.Sum(el => el.Count);
-
-                    if (StoreBalance.WaitBalance == warehouseReadiness)
+                    if(IsRegranding)
                     {
-                        // Если ожидание == готовность и остаток 0 - полный расчет
-                        if (StoreBalance.FinBalance == 0)
-                        {
-                            Status = ArticleStatus.FullSet;
-                            Comment = "Полный расчет";
-                        }
-                        // Если ожидание == готовность (расход и остаток) и остаток больше 0 - довоз
-                        else if (StoreBalance.FinBalance > 0)
-                        {
-                            Status = ArticleStatus.OnSearch;
-                            Comment = "Довоз складом до клиента";
-                        }
+                        Status = ArticleStatus.Regrading;
+                        Comment = "Пересортица";
                     }
-                    else if(StoreBalance.WaitBalance > warehouseReadiness)
+                    else
                     {
-                        // Если ожидание > готовность (расход и остаток) и остаток >= 0 - поиск 
-                        if (StoreBalance.FinBalance >= 0)
+                        // Готовность склада = расход клиенту + остаток
+                        var warehouseReadiness = StoreBalance.Consumption + StoreBalance.FinBalance + PayShortages.Sum(el => el.Count);
+
+                        if (StoreBalance.WaitBalance == warehouseReadiness)
                         {
-                            Status = ArticleStatus.Lost;
-                            Comment = $"На поиске ({StoreBalance.WaitBalance - warehouseReadiness})";
+                            // Если ожидание == готовность и остаток 0 - полный расчет
+                            if (StoreBalance.FinBalance == 0)
+                            {
+                                Status = ArticleStatus.FullSet;
+                                Comment = "Полный расчет";
+                            }
+                            // Если ожидание == готовность (расход и остаток) и остаток больше 0 - довоз
+                            else if (StoreBalance.FinBalance > 0)
+                            {
+                                Status = ArticleStatus.OnSearch;
+                                Comment = "Довоз складом до клиента";
+                            }
                         }
-                        // Если ожидание > готовность (расход и остаток) и остаток < 0 - пересортица 
-                        else if (StoreBalance.FinBalance < 0)
+                        else if (StoreBalance.WaitBalance > warehouseReadiness)
+                        {
+                            // Если ожидание > готовность (расход и остаток) и остаток >= 0 - поиск 
+                            if (StoreBalance.FinBalance >= 0)
+                            {
+                                Status = ArticleStatus.Lost;
+                                Comment = $"На поиске ({StoreBalance.WaitBalance - warehouseReadiness})";
+                            }
+                            // Если ожидание > готовность (расход и остаток) и остаток < 0 - пересортица 
+                            else if (StoreBalance.FinBalance < 0)
+                            {
+                                Status = ArticleStatus.Regrading;
+                                Comment = "Пересортица";
+                            }
+                        }
+                        // Если ожидание < готовность (расход и остаток)- пересортица 
+                        else if (StoreBalance.WaitBalance < warehouseReadiness)
                         {
                             Status = ArticleStatus.Regrading;
                             Comment = "Пересортица";
                         }
-                    }
-                    // Если ожидание < готовность (расход и остаток) 
-                    else if (StoreBalance.WaitBalance < warehouseReadiness)
-                    {
-                        Status = ArticleStatus.Regrading;
-                        Comment = "Пересортица";
                     }
                 }
 
