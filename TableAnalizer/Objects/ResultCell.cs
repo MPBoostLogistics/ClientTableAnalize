@@ -1,4 +1,4 @@
-﻿namespace TableAnalizer.Objects
+﻿namespace ClientTableAnalizer.Objects
 {
     internal struct ResultCell
     {

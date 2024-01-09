@@ -1,0 +1,41 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 25.0.1706.4
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ClientTableAnalizer", "ClientTableAnalizer.csproj", "{71BC7554-CFBA-4265-90F0-435B89BADA28}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{71BC7554-CFBA-4265-90F0-435B89BADA28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71BC7554-CFBA-4265-90F0-435B89BADA28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71BC7554-CFBA-4265-90F0-435B89BADA28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71BC7554-CFBA-4265-90F0-435B89BADA28}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8BFDB152-0F73-4BE3-BA0A-1FFA6F58D1FD}
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		Policies = $0
+		$0.DotNetNamingPolicy = $1
+		$1.DirectoryNamespaceAssociation = PrefixedHierarchical
+		$0.TextStylePolicy = $2
+		$2.inheritsSet = null
+		$2.scope = text/x-csharp
+		$0.CSharpFormattingPolicy = $3
+		$3.scope = text/x-csharp
+		$0.TextStylePolicy = $4
+		$4.FileWidth = 80
+		$4.TabsToSpaces = True
+		$4.scope = text/plain
+		$0.StandardHeader = $5
+		version = 0.2
+	EndGlobalSection
+EndGlobal

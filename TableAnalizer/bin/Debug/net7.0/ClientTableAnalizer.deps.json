@@ -6,12 +6,12 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v7.0": {
-      "TableAnalizer/1.0.0": {
+      "ClientTableAnalizer/1.0.0": {
         "dependencies": {
           "EPPlus": "6.2.8"
         },
         "runtime": {
-          "TableAnalizer.dll": {}
+          "ClientTableAnalizer.dll": {}
         }
       },
       "EPPlus/6.2.8": {
@@ -216,7 +216,7 @@
     }
   },
   "libraries": {
-    "TableAnalizer/1.0.0": {
+    "ClientTableAnalizer/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

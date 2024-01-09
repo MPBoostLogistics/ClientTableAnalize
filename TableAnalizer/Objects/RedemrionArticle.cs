@@ -1,7 +1,8 @@
-﻿namespace TableAnalizer.Objects
+﻿namespace ClientTableAnalizer.Objects
 {
 	public class ArticleRedempionBalance
 	{
+        public int WaitBalance { get; private set; } = default;     // Ожидается к получению (Доставлен на ПВЗ + Забран с ПВЗ)
         public int DeliveredCount { get; private set; } = default;  // Доставлен на ПВЗ
         public int WithDrawnCount { get; private set; } = default;  // Забран с ПВЗ
         public int CanceledCount { get; private set; } = default;   // Отменен 
@@ -26,6 +27,8 @@
                 default:
                     break;
             }
+
+            WaitBalance = DeliveredCount + WithDrawnCount;
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 
-namespace TableAnalizer.Objects
+namespace ClientTableAnalizer.Objects
 {
     public class ArticleRowItem
     {

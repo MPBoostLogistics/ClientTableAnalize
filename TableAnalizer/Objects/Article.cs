@@ -1,182 +1,125 @@
-﻿namespace TableAnalizer.Objects
+﻿using System.Reflection.PortableExecutable;
+
+namespace ClientTableAnalizer.Objects
 {
     internal class Article
     {
-        #region Variables and constants
-
-        private const int DEADLINE_DAYS = 14;
-
+        #region Variables && constants
+        private int DeadLineDays { get; }
         public string Name { get; private set; }
         public List<ArticleRowItem> Items { get; private set; }
-        public ArticleRedempionBalance RedBalance { get; private set; }
-        public ItemStorageBalance StoreBalance { get; private set; }
+        public ArticleRedempionBalance RedempionBalance { get; private set; }
+        public ArticleStorageBalance StoreBalance { get; private set; }
         public DateTime MaxRedemptionDate { get; private set; }
-        public bool IsDeadline { get; private set; } = false;
-        public bool IsRegranding { get; private set; } = false;
-        public ArticleStatus Status { get; private set; }
-        public double AveragePrice {get; private set;}
-        public List<PayShortages> PayShortages { get; private set; }
+        public bool IsDeadline { get; private set; }
+        public (ArticleStatus status, string statusComment, System.Drawing.Color color) StatusValue { get; private set; }
+        public double AveragePrice {get; private set; } 
         public string Comment { get; private set; }
-
-        public System.Drawing.Color StatusColor { get; set; }
-
         #endregion
 
         #region Constructors && destructors
-
-        public Article(ArticleRowItem item)
+        public Article(ArticleRowItem item, int deadLineDays)
         {
+            DeadLineDays = deadLineDays;
             Name = "No name";
             Items = new List<ArticleRowItem> { item };
-            RedBalance = new();
+            RedempionBalance = new();
+            StoreBalance = new();
             MaxRedemptionDate = DateTime.Now;
-            Status = ArticleStatus.Unknown;
-            StoreBalance = new ItemStorageBalance();
-            PayShortages = new();
-            Comment = "-";
+            IsDeadline = false;
+            StatusValue = (ArticleStatus.Unknown, "Статус не определен", System.Drawing.ColorTranslator.FromHtml("#e6fcff"));
+            AveragePrice = 0.00;
+            Comment = string.Empty;
         }
-
         #endregion
 
         #region Functionality
-        public void SetName(string name)
-        {
-            this.Name = name;
-        }
+        public void SetName(string name) => Name = name;
 
-        public void ChangeBalance(ItemBalanceUnit unit, int value)
-        {
-            this.StoreBalance.ChangeBalance(unit, value);
-        }
+        public void SetComment(string message) =>
+            Comment = string.IsNullOrEmpty(Comment) ? message : string.Concat(Comment, message);
 
-        public void SetPayShortages(int count, double price)
-        {
-            PayShortages.Add(new PayShortages(count, price));
-        }
+        public void SetStoreBalance(ItemBalanceUnit unit, int value) => StoreBalance.ChangeBalance(unit, value);
 
-        public void SetRegranding(bool flag)
+        public void SetStoreBalance(int count, double price) => StoreBalance.SetPayShortage(count, price);
+   
+        public void AnalyzeArticle()
         {
-            IsRegranding = flag;
-        }
+            // Get max redemption date
+            MaxRedemptionDate = Items.MaxBy(i => i.RedemptionDate).RedemptionDate;
 
-        public void Analize()
-        {
-            if (Items.Count > 0)
+            // Set IsDeadline
+            this.IsDeadline = (this.MaxRedemptionDate - DateTime.Now).Duration().Days > DeadLineDays;
+
+            // Analize items (set redemtion balance && average price)
+            AnalizeItems();
+
+            // Set Undeliviry
+            StoreBalance.SetUndelivery(RedempionBalance.WaitBalance);
+
+            // Set status article
+            if (!IsDeadline)
             {
-                // Get max redemption date
-                MaxRedemptionDate = Items.MaxBy(i => i.RedemptionDate).RedemptionDate;
-
-                var itemGroups = GetGroupItemsByStatus(Items);
-
-                // Get redemtion balance
-                foreach (var group in itemGroups)
+                StatusValue = (ArticleStatus.InWork, "В работе", System.Drawing.ColorTranslator.FromHtml("#ffe7cd"));
+            }
+            else
+            {
+                if (RedempionBalance.WaitBalance == StoreBalance.TotalConsumption)
                 {
-                    switch (group.Key)
-                    {
-                        case RedemptionStatus.Delivered:
-                            RedBalance.SetBalance(RedemptionStatus.Delivered, group.Count());
-                            break;
-                        case RedemptionStatus.WithDrawn:
-                            RedBalance.SetBalance(RedemptionStatus.WithDrawn, group.Count());
-                            break;
-                        case RedemptionStatus.Canceled:
-                            RedBalance.SetBalance(RedemptionStatus.Canceled, group.Count());
-                            break;
-                        case RedemptionStatus.OnWay:
-                            RedBalance.SetBalance(RedemptionStatus.OnWay, group.Count());
-                            break;
-                        default:
-                            break;
-                    }
-
-                    AveragePrice = group.Average(it => it.Price);
-                }
-
-                var waitBalance = RedBalance.DeliveredCount + RedBalance.WithDrawnCount;
-                this.StoreBalance.ChangeBalance(ItemBalanceUnit.WaitBalance, waitBalance);
-
-                this.IsDeadline = (this.MaxRedemptionDate - DateTime.Now).Duration().Days > DEADLINE_DAYS;
-
-                if (!IsDeadline)
-                {
-                    Status = ArticleStatus.InWork;
-                    Comment = "В работе";
+                    StatusValue = (ArticleStatus.FullSet, "Полный расчет", System.Drawing.ColorTranslator.FromHtml("#e1ffdb"));
                 }
                 else
                 {
-                    if(IsRegranding)
+                    if(RedempionBalance.WaitBalance > StoreBalance.TotalConsumption)
                     {
-                        Status = ArticleStatus.Regrading;
-                        Comment = "Пересортица";
+                        if(StoreBalance.FinBalance > 0 && StoreBalance.Undelivery == 0)
+                        {
+                            StatusValue = (ArticleStatus.OnSearchWarehouse, "На поиске склада", System.Drawing.ColorTranslator.FromHtml("#ffd3d3"));
+                        }
+                        else if(StoreBalance.FinBalance == 0 && StoreBalance.Undelivery != 0)
+                        {
+                            StatusValue = (ArticleStatus.OnSearchPoint, "На поиске ПВЗ", System.Drawing.ColorTranslator.FromHtml("#ffa0a0"));
+                        }
+                        else if (StoreBalance.FinBalance > 0 && StoreBalance.Undelivery > 0)
+                        {
+                            StatusValue = (ArticleStatus.OnSearch, "На поиске ПВЗ и склада", System.Drawing.ColorTranslator.FromHtml("#ff6d6d"));
+                        }
                     }
-                    else
+                    else if(RedempionBalance.WaitBalance < StoreBalance.TotalConsumption)
                     {
-                        // Готовность склада = расход клиенту + остаток
-                        var warehouseReadiness = StoreBalance.Consumption + StoreBalance.FinBalance + PayShortages.Sum(el => el.Count);
-
-                        if (StoreBalance.WaitBalance == warehouseReadiness)
-                        {
-                            // Если ожидание == готовность и остаток 0 - полный расчет
-                            if (StoreBalance.FinBalance == 0)
-                            {
-                                Status = ArticleStatus.FullSet;
-                                Comment = "Полный расчет";
-                            }
-                            // Если ожидание == готовность (расход и остаток) и остаток больше 0 - довоз
-                            else if (StoreBalance.FinBalance > 0)
-                            {
-                                Status = ArticleStatus.OnSearch;
-                                Comment = "Довоз складом до клиента";
-                            }
-                        }
-                        else if (StoreBalance.WaitBalance > warehouseReadiness)
-                        {
-                            // Если ожидание > готовность (расход и остаток) и остаток >= 0 - поиск 
-                            if (StoreBalance.FinBalance >= 0)
-                            {
-                                Status = ArticleStatus.Lost;
-                                Comment = $"На поиске ({StoreBalance.WaitBalance - warehouseReadiness})";
-                            }
-                            // Если ожидание > готовность (расход и остаток) и остаток < 0 - пересортица 
-                            else if (StoreBalance.FinBalance < 0)
-                            {
-                                Status = ArticleStatus.Regrading;
-                                Comment = "Пересортица";
-                            }
-                        }
-                        // Если ожидание < готовность (расход и остаток)- пересортица 
-                        else if (StoreBalance.WaitBalance < warehouseReadiness)
-                        {
-                            Status = ArticleStatus.Regrading;
-                            Comment = "Пересортица";
-                        }
+                        SetComment($"отдали больше, чем должны; разница - ({StoreBalance.TotalConsumption - RedempionBalance.WaitBalance})");
                     }
                 }
+            }
+        }
 
-                switch (Status)
+        private void AnalizeItems()
+        {
+            var itemGroups = GetGroupItemsByStatus(Items);
+
+            foreach (var group in itemGroups)
+            {
+                switch (group.Key)
                 {
-                    case ArticleStatus.FullSet:
-                        this.StatusColor = System.Drawing.ColorTranslator.FromHtml("#d4efdf");
+                    case RedemptionStatus.Delivered:
+                        RedempionBalance.SetBalance(RedemptionStatus.Delivered, group.Count());
                         break;
-                    case ArticleStatus.InWork:
-                        this.StatusColor = System.Drawing.ColorTranslator.FromHtml("#fdebd0");
+                    case RedemptionStatus.WithDrawn:
+                        RedempionBalance.SetBalance(RedemptionStatus.WithDrawn, group.Count());
                         break;
-                    case ArticleStatus.OnSearch:
-                        this.StatusColor = System.Drawing.ColorTranslator.FromHtml("#fadbd8");
+                    case RedemptionStatus.Canceled:
+                        RedempionBalance.SetBalance(RedemptionStatus.Canceled, group.Count());
                         break;
-                    case ArticleStatus.Regrading:
-                        this.StatusColor = System.Drawing.ColorTranslator.FromHtml("#ebdef0");
-                        break;
-                    case ArticleStatus.Lost:
-                        this.StatusColor = System.Drawing.ColorTranslator.FromHtml("#f1948a");
-                        break;
-                    case ArticleStatus.Unknown:
-                        StatusColor = System.Drawing.ColorTranslator.FromHtml("#D5D8DC");
+                    case RedemptionStatus.OnWay:
+                        RedempionBalance.SetBalance(RedemptionStatus.OnWay, group.Count());
                         break;
                     default:
                         break;
                 }
+
+                AveragePrice = group.Average(it => it.Price);
             }
+
         }
 
         private static IOrderedEnumerable<IGrouping<RedemptionStatus, ArticleRowItem>> GetGroupItemsByStatus(List<ArticleRowItem> items)
@@ -191,8 +134,8 @@
         public override string ToString()
         {
             return $"Name: {Name}\n" +
-                $"RedBalanсe: can {RedBalance.CanceledCount}, way {RedBalance.OnWayCount}, del {RedBalance.DeliveredCount}, drawn {RedBalance.WithDrawnCount}\n" +
-                $"StoreBalance: {StoreBalance}\nMaxRedDate: {MaxRedemptionDate}, IsDeadline: {IsDeadline}\nStatus{Status}\nPrice: {AveragePrice}\n\r";
+                $"RedBalanсe: can {RedempionBalance.CanceledCount}, way {RedempionBalance.OnWayCount}, del {RedempionBalance.DeliveredCount}, drawn {RedempionBalance.WithDrawnCount}\n" +
+                $"StoreBalance: {StoreBalance}\nMaxRedDate: {MaxRedemptionDate}, IsDeadline: {IsDeadline}\nStatus{StatusValue.status}\nPrice: {AveragePrice}\n\r";
         }
         #endregion
     }

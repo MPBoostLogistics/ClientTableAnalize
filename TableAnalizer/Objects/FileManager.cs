@@ -1,9 +1,4 @@
-﻿
-
-using System;
-using System.IO;
-
-namespace TableAnalizer.Objects
+﻿namespace ClientTableAnalizer.Objects
 {
 	public enum PathKey
 	{
@@ -19,7 +14,6 @@ namespace TableAnalizer.Objects
         public static DirectoryInfo? CreateDirectoryInfo(PathKey pathKey, string? login = null)
         {
             // Documents/MPBoostClients
-
 
             if (login is null)
             {
