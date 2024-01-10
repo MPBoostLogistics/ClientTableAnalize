@@ -9,6 +9,7 @@ using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using ClientTableAnalizer.Objects;
 
+internal enum Marketplace { WB, OZ }
 
 internal class Program
 {
@@ -20,8 +21,13 @@ internal class Program
     private const string NAME_SECOND_ROOM = "2 - Помещение длительного хранения и отгрузки";
     private const string NAME_FINAL_ROW = "Итого товаров в единицах хранения";
 
-    private static string? login = default, redemtionFilePath = default, storageFilePath = default,
-        consumptionPath = default, payShortagesPath = default, regradingPath = default, outputPath = default; 
+    private static string? login = default;
+    private static string? redemtionFilePathWB = default;
+    private static string? redemtionFilePathOZ = default;
+    private static string? storageFilePathWB = default;
+    private static string? storageFilePathOZ = default;
+
+    private static string? consumptionPath = default, payShortagesPath = default, regradingPath = default, outputPath = default; 
     private static DirectoryInfo? clientDirectoryPath;
 
     private static readonly Dictionary<int, Article> articleDict = new();
@@ -48,15 +54,23 @@ internal class Program
 
         deadLineDays = await GetDeadLineDays();
 
-        await GetUserRedemtionDataFile(goodByMessage);
+        await GetUserRedemtionDataFile(Marketplace.WB);
 
-        await ReadRedemptionReportFile(redemtionFilePath);
+        await GetUserRedemtionDataFile(Marketplace.OZ);
 
-        await GetUserStorageData(goodByMessage);
+        await ReadRedemptionReportFile(Marketplace.WB);
 
-        await ReadStorageReportFile(storageFilePath);
+        await ReadRedemptionReportFile(Marketplace.OZ);
 
-        await GetUserConsumingData(goodByMessage);
+        await GetUserStorageData(Marketplace.WB);
+
+        await GetUserStorageData(Marketplace.OZ);
+
+        await ReadStorageReportFile(Marketplace.WB);
+
+        await ReadStorageReportFile(Marketplace.OZ);
+
+        await GetUserConsumingData();
 
         await ReadConsumptionReport(consumptionPath);
 
@@ -115,45 +129,20 @@ internal class Program
         return deadline;
     }
 
-    private static async Task GetUserRedemtionDataFile(string goodByMessage)
+    private static async Task GetUserRedemtionDataFile(Marketplace marketplace)
     {
-        // Get 'MPBoostClients' directory
         var clDirInfo = FileManager.GetDirectoryInfo(PathKey.MPBoostClients);
-
         if (clDirInfo is null || !clDirInfo.Exists)
-            clDirInfo = FileManager.CreateDirectoryInfo(PathKey.MPBoostClients);
+            FileManager.CreateDirectoryInfo(PathKey.MPBoostClients);
 
-        while (string.IsNullOrEmpty(redemtionFilePath) && string.IsNullOrEmpty(login))
+        var necessarilyMessage = marketplace == Marketplace.WB ? "обязательно" : "не обязательно";
+        var messageInstruction = marketplace == Marketplace.WB ? "ESC - выход из программы" : "Пробел - пропустить, ESC - выход из программы";
+
+        var redemtionMessage01 = $"Перетащите путь к отчету по выкупам клиента на {marketplace} ({necessarilyMessage})\n({messageInstruction}):\n";
+
+        if(marketplace == Marketplace.WB)
         {
-            Console.WriteLine("1. Перетащите путь к отчету по выкупам клиента (обязательно)\n" +
-                "(или нажмите ESC для выхода из программы):");
-
-            var key = Console.ReadKey();
-
-            if (key.Key == ConsoleKey.Escape)
-            {
-                await Report(goodByMessage, true);
-            }
-
-            redemtionFilePath = Console.ReadLine();
-
-            if (string.IsNullOrEmpty(redemtionFilePath)) continue;
-
-            var substrings01 = redemtionFilePath.Split("/");
-
-            if (substrings01.Length <= 1) continue;
-
-            var loginChars = substrings01.Last().Split(" ")[3].Trim().ToList();
-
-            if (loginChars is null || loginChars.Count == 0) continue;
-
-            // Clear non-digits in login
-            for (int i = 0; i < loginChars.Count; i++)
-            {
-                if (!int.TryParse(loginChars[i].ToString(), out _)) loginChars.RemoveAt(i);
-            }
-
-            login = new string(loginChars.ToArray());
+            redemtionFilePathWB = await GiveMePath(redemtionMessage01, true, true);
 
             await Report($"Логин клиента: {login}");
 
@@ -161,8 +150,8 @@ internal class Program
 
             if (clientDirectoryPath is not null)
             {
-                await Report($"Директория для работы с клиентом:\n{clientDirectoryPath.FullName}");
-         
+                //await Report($"Директория для работы с клиентом:\n{clientDirectoryPath.FullName}");
+
                 var dateTime = DateTime.Now.ToString("dd-MM-yyyy");
                 outputPath = $"{clientDirectoryPath.FullName}/ClientReport_{login}_{dateTime}.xlsx";
             }
@@ -170,161 +159,83 @@ internal class Program
             {
                 await Report($"Невозможно найти или создать директорию для работы с клиентом.");
             }
-
-            redemtionFilePath = FormСorrectPath(redemtionFilePath);
-
-            Console.WriteLine();
         }
-    }
-
-    private static async Task GetUserStorageData(string goodByMessage)
-    {
-        while (string.IsNullOrEmpty(storageFilePath))
+        else if(marketplace == Marketplace.OZ)
         {
-            var message02 = "2. Перетащите путь к отчету по приходу и остаткам клиента (обязательно)\n(или нажмите ESC для выхода из программы):";
-
-            await Report(message02);
-
-            var key = Console.ReadKey();
-
-            if (key.Key == ConsoleKey.Escape)
-            {
-                await Report(goodByMessage, true);
-            }
-
-            storageFilePath = Console.ReadLine();
-
-            if (string.IsNullOrEmpty(storageFilePath)) continue;
+            redemtionFilePathOZ = await GiveMePath(redemtionMessage01, false, false);
         }
-
-        storageFilePath = FormСorrectPath(storageFilePath);
 
         Console.WriteLine();
     }
 
-    private static async Task GetUserConsumingData(string goodByMessage)
+    private static async Task GetUserStorageData(Marketplace marketplace)
     {
-        while (string.IsNullOrEmpty(consumptionPath))
+        var necessarilyMessage = marketplace == Marketplace.WB ? "обязательно" : "не обязательно";
+        var messageInstruction = marketplace == Marketplace.WB ? "ESC - выход из программы" : "Пробел - пропустить, ESC - выход из программы";
+        var storagePathMessage = $"Перетащите путь к отчету по приходу и остаткам товаров {marketplace} ({necessarilyMessage})\n(и{messageInstruction}):";
+
+        switch (marketplace)
         {
-            var message03 = "3. Перетащите путь к отчету по расходу товаров клиента со склада (обязательно)\n" +
-                "(или нажмите ESC для выхода из программы):";
-
-            await Report(message03);
-
-            var key = Console.ReadKey();
-
-            if (key.Key == ConsoleKey.Escape)
-            {
-                await Report(goodByMessage, true);
-            }
-
-            consumptionPath = Console.ReadLine();
-
-            if (string.IsNullOrEmpty(consumptionPath)) continue;
+            case Marketplace.WB:
+                storageFilePathWB = await GiveMePath(storagePathMessage, marketplace == Marketplace.WB, false);
+                break;
+            case Marketplace.OZ:
+                storageFilePathOZ = await GiveMePath(storagePathMessage, marketplace == Marketplace.WB, false);
+                break;
         }
 
-        consumptionPath = FormСorrectPath(consumptionPath);
+        Console.WriteLine();
+    }
 
+    private static async Task GetUserConsumingData()
+    {
+        var consumingDataMessage = "Перетащите путь к отчету по расходу товаров клиента со склада (обязательно)\n" +
+                "(или нажмите ESC для выхода из программы):";
+        consumptionPath = await GiveMePath(consumingDataMessage, true, false);
         Console.WriteLine();
     }
 
     private static async Task GetUserPayShortagesData()
     {
-        var message = "Есть отчет погашении недостач?\n(1 - Да, Любая другая клавиша - Нет):";
-
-        await Report(message);
-
-        ConsoleKeyInfo keyInfo = Console.ReadKey();
-
-        if (keyInfo != default)
-        {
-            switch (keyInfo.Key)
-            {
-                case ConsoleKey.D1:
-                    break;
-                default:
-                    await Report("Отчет о погашении недостач не загружен и не будет учтен.");
-                    return;
-            }
-        }
-
-        while(string.IsNullOrEmpty(payShortagesPath))
-        {
-            var messageStep04 = "\n4.Перетащите путь к отчету о погашении недостач\n(ESC - выход из программы):";
-
-            await Report(messageStep04);
-
-            var key = Console.ReadKey();
-
-            if (key.Key == ConsoleKey.Escape)
-            {
-                await Report(goodByMessage, true);
-            }
-
-            payShortagesPath = Console.ReadLine();
-        }
-
-        payShortagesPath = FormСorrectPath(payShortagesPath);
-
+        var payShortagesDataMessage = "Перетащите путь к отчету по недостачам (не обязательно)\n" +
+           "(Пробел - пропустить, ESC - выход из программы):";
+        payShortagesPath = await GiveMePath(payShortagesDataMessage, false, false);
         Console.WriteLine();
     }
 
     private static async Task GetRegrandingData()
     {
-        var message = "Есть отчет о пересортах товаров?\n(1 - Да, Любая другая клавиша - Нет):";
-
-        await Report(message);
-
-        ConsoleKeyInfo keyInfo = Console.ReadKey();
-
-        if (keyInfo != default)
-        {
-            switch (keyInfo.Key)
-            {
-                case ConsoleKey.D1:
-                    break;
-                default:
-                    await Report("Отчет о пересортах товаров не загружен и не будет учтен.");
-                    return;
-            }
-        }
-
-        while (string.IsNullOrEmpty(regradingPath))
-        {
-            message = "\n5. Перетащите путь к отчету о пересортах тоавров\n(ESC - выход из программы):";
-
-            await Report(message);
-
-            var key = Console.ReadKey();
-
-            if (key.Key == ConsoleKey.Escape)
-            {
-                await Report(goodByMessage, true);
-            }
-
-            regradingPath = Console.ReadLine();
-        }
-
-        regradingPath = FormСorrectPath(regradingPath);
-
+        var regrandingDataMessage = "Перетащите путь к отчету по пересортам (не обязательно)\n" +
+          "(Пробел - пропустить, ESC - выход из программы):";
+        regradingPath = await GiveMePath(regrandingDataMessage, false, false);
         Console.WriteLine();
     }
 
-    private static async Task ReadRedemptionReportFile(string? filePath)
+    private static async Task ReadRedemptionReportFile(Marketplace marketplace)
     {
+
         const int ARTICLE_COL_INDEX = 2;
         const int DATE_FLAG_COL_INDEX = 7;
         const int STATUS_COL_INDEX = 9;
         const int LOG_FLAG_COL_INDEX = 10;
         const int PRICE_COL_INDEX = 14;
 
-        if (filePath is null || CheckFileExistence(filePath) == null)
-            await Report(goodByMessage, true);
+        switch (marketplace)
+        {
+            case Marketplace.WB:
+                if (redemtionFilePathWB is null || CheckFileExistence(redemtionFilePathWB) == null) await Report(goodByMessage, true);
+                break;
+            case Marketplace.OZ:
+                if (redemtionFilePathOZ is null || CheckFileExistence(redemtionFilePathOZ) == null) await Report(goodByMessage, true);
+                break;
+        }
 
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
-        await Report($"Анализирую отчет клиента {login} по выкупам...");
+        await Report($"Анализирую отчет клиента {login} по выкупам {marketplace}...");
+
+        var filePath = marketplace == Marketplace.WB ? redemtionFilePathWB : redemtionFilePathOZ;
 
         using ExcelPackage package = new(new FileInfo(filePath!));
 
@@ -363,7 +274,7 @@ internal class Program
                             }
                             else
                             {
-                                articleDict[article.Value] = new Article(item, deadLineDays);
+                                articleDict[article.Value] = new Article(marketplace, item, deadLineDays);
                             }
                         }
                         else
@@ -401,8 +312,10 @@ internal class Program
         await Report(redemtionReport);
     }
 
-    private static async Task ReadStorageReportFile(string? filePath)
+    private static async Task ReadStorageReportFile(Marketplace marketplace)
     {
+        string? filePath = marketplace == Marketplace.WB ? storageFilePathWB : storageFilePathOZ;
+
         if (filePath is null || CheckFileExistence(filePath) == null) await Report(goodByMessage, true);
 
         var existingFile = new FileInfo(filePath!);
@@ -414,7 +327,7 @@ internal class Program
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
-        await Report($"Анализирую отчет клиента {login} по приходу и остаткам...");
+        await Report($"Анализирую отчет клиента {login} по приходу и остаткам {marketplace}...");
 
         const int FIRST_INDEX = 1;
         const int COL_STORE_COUNT_INDEX = 17;
@@ -512,8 +425,6 @@ internal class Program
         comBalanceReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
         await Report(comBalanceReport);
-            
-        
     }
 
     private static async Task ReadConsumptionReport(string? filePath)
@@ -632,7 +543,6 @@ internal class Program
 
     private static async Task ReadRegrandingReport(string filePath)
     {
-
         const int ARTICLE_INDEX = 1;
         const int REGRANDING_INDEX = 2;
         const int COUNT_INDEX = 3;
@@ -726,27 +636,28 @@ internal class Program
 
         ResultCell[] resultCells = new ResultCell[]
         {
-            new ResultCell("Артикул", "0"),                         // 1
-            new ResultCell("Название", "0"),                        // 2
-            new ResultCell("Средняя цена, руб.", "0.00"),           // 3
-            new ResultCell("Дата последнего выкупа", "dd.MM.yyyy"), // 4
-            new ResultCell("Статус", "0"),                          // 5
+            new ResultCell("МП", "0"),                              // 1
+            new ResultCell("Артикул", "0"),                         // 2
+            new ResultCell("Название", "0"),                        // 3
+            new ResultCell("Средняя цена, руб.", "0.00"),           // 4
+            new ResultCell("Дата последнего выкупа", "dd.MM.yyyy"), // 5
+            new ResultCell("Статус", "0"),                          // 6
 
-            new ResultCell("Всего", "0"),                           // 6
-            new ResultCell("Отменено", "0"),                        // 7
-            new ResultCell("В пути", "0"),                          // 8
-            new ResultCell("Доставлен на ПВЗ", "0"),                // 9                
-            new ResultCell("Забран с ПВЗ", "0"),                    // 10
+            new ResultCell("Всего", "0"),                           // 7
+            new ResultCell("Отменено", "0"),                        // 8
+            new ResultCell("В пути", "0"),                          // 9
+            new ResultCell("Доставлен на ПВЗ", "0"),                // 10                
+            new ResultCell("Забран с ПВЗ", "0"),                    // 11
 
-            new ResultCell("Склад: Ожидание", "0"),                 // 11
-            new ResultCell("Склад: Приход", "0"),                   // 12
-            new ResultCell("Склад: Недовоз от ПВЗ", "0"),           // 13
+            new ResultCell("Склад: Ожидание", "0"),                 // 12
+            new ResultCell("Склад: Приход", "0"),                   // 13
+            new ResultCell("Склад: Недовоз от ПВЗ", "0"),           // 14
 
-            new ResultCell("Склад: Расход всего", "0"),             // 14
-            new ResultCell("Склад: Расход товаром", "0"),           // 15
-            new ResultCell("Склад: Расход пересортом", "0"),        // 16
-            new ResultCell("Склад: Расход компенсацией", "0"),      // 17
-            new ResultCell("Склад: Остаток", "0"),                  // 18
+            new ResultCell("Склад: Расход всего", "0"),             // 15
+            new ResultCell("Склад: Расход товаром", "0"),           // 16
+            new ResultCell("Склад: Расход пересортом", "0"),        // 17
+            new ResultCell("Склад: Расход компенсацией", "0"),      // 18
+            new ResultCell("Склад: Остаток", "0"),                  // 19
 
             new ResultCell("Комментарий", "0"),                     // 19
         };
@@ -772,8 +683,10 @@ internal class Program
         newWorkSheet.Row(FIRST_ROW_INDEX).Style.Font.Size = 14;
         newWorkSheet.Row(FIRST_ROW_INDEX).Style.VerticalAlignment = ExcelVerticalAlignment.Center;
 
-        newWorkSheet.Column(1).Width = 12;
-        newWorkSheet.Column(2).Width = 60;
+        newWorkSheet.Column(1).Width = 8;   // МП
+        newWorkSheet.Column(2).Width = 12;  // Артикул 
+        newWorkSheet.Column(3).Width = 60;  // Название 
+        newWorkSheet.Column(20).Width = 60; // Комментарий
 
         // Populating with data
 
@@ -784,47 +697,48 @@ internal class Program
             art.Value.AnalyzeArticle();
 
             // Fill Redemptions data
-            newWorkSheet.Cells[recordIndex, 1].Value = art.Key;
-            newWorkSheet.Cells[recordIndex, 2].Value = art.Value.Name;
-            newWorkSheet.Cells[recordIndex, 3].Value = art.Value.AveragePrice;
+            newWorkSheet.Cells[recordIndex, 1].Value = art.Value.Marketplace;
+            newWorkSheet.Cells[recordIndex, 2].Value = art.Key;
+            newWorkSheet.Cells[recordIndex, 3].Value = art.Value.Name;
+            newWorkSheet.Cells[recordIndex, 4].Value = art.Value.AveragePrice;
 
             // RedemptionDate
-            newWorkSheet.Cells[recordIndex, 4].Value = art.Value.MaxRedemptionDate;
-            newWorkSheet.Cells[recordIndex, 4].Style.Fill.PatternType = ExcelFillStyle.Solid;
-            newWorkSheet.Cells[recordIndex, 4].Style.Fill.BackgroundColor.SetColor(art.Value.StatusValue.color);
+            newWorkSheet.Cells[recordIndex, 5].Value = art.Value.MaxRedemptionDate;
+            newWorkSheet.Cells[recordIndex, 5].Style.Fill.PatternType = ExcelFillStyle.Solid;
+            newWorkSheet.Cells[recordIndex, 5].Style.Fill.BackgroundColor.SetColor(art.Value.StatusValue.color);
 
-            newWorkSheet.Cells[recordIndex, 5].Value = art.Value.StatusValue.statusComment;
+            newWorkSheet.Cells[recordIndex, 6].Value = art.Value.StatusValue.statusComment;
 
-            newWorkSheet.Cells[recordIndex, 6].Value = art.Value.Items.Count;
-            newWorkSheet.Cells[recordIndex, 7].Value = art.Value.RedempionBalance.CanceledCount;
-            newWorkSheet.Cells[recordIndex, 8].Value = art.Value.RedempionBalance.OnWayCount;
-            newWorkSheet.Cells[recordIndex, 9].Value = art.Value.RedempionBalance.DeliveredCount;
-            newWorkSheet.Cells[recordIndex, 10].Value = art.Value.RedempionBalance.WithDrawnCount;
+            newWorkSheet.Cells[recordIndex, 7].Value = art.Value.Items.Count;
+            newWorkSheet.Cells[recordIndex, 8].Value = art.Value.RedempionBalance.CanceledCount;
+            newWorkSheet.Cells[recordIndex, 9].Value = art.Value.RedempionBalance.OnWayCount;
+            newWorkSheet.Cells[recordIndex, 10].Value = art.Value.RedempionBalance.DeliveredCount;
+            newWorkSheet.Cells[recordIndex, 11].Value = art.Value.RedempionBalance.WithDrawnCount;
 
             // Balance data
             // - WaitBalance
-            newWorkSheet.Cells[recordIndex, 11].Value = art.Value.RedempionBalance.WaitBalance;
-            newWorkSheet.Cells[recordIndex, 11].Style.Font.Bold = true;
+            newWorkSheet.Cells[recordIndex, 12].Value = art.Value.RedempionBalance.WaitBalance;
+            newWorkSheet.Cells[recordIndex, 12].Style.Font.Bold = true;
 
-            newWorkSheet.Cells[recordIndex, 12].Value = art.Value.StoreBalance.ReceivedQuantity;
+            newWorkSheet.Cells[recordIndex, 13].Value = art.Value.StoreBalance.ReceivedQuantity;
 
             // - Undelivery
-            newWorkSheet.Cells[recordIndex, 13].Value = art.Value.StoreBalance.Undelivery;
+            newWorkSheet.Cells[recordIndex, 14].Value = art.Value.StoreBalance.Undelivery;
             if(art.Value.StoreBalance.Undelivery > 0 && art.Value.StatusValue.status != ArticleStatus.InWork)
             {
-                newWorkSheet.Cells[recordIndex, 13].Style.Font.Color.SetColor(System.Drawing.Color.DarkRed); 
+                newWorkSheet.Cells[recordIndex, 14].Style.Font.Color.SetColor(System.Drawing.Color.DarkRed); 
             }
 
             // Consumption
-            newWorkSheet.Cells[recordIndex, 14].Value = art.Value.StoreBalance.TotalConsumption;
-            newWorkSheet.Cells[recordIndex, 15].Value = art.Value.StoreBalance.ShippedQuantity;
-            newWorkSheet.Cells[recordIndex, 16].Value = art.Value.StoreBalance.Regradings.Sum(re => re.Value);
-            newWorkSheet.Cells[recordIndex, 17].Value = art.Value.StoreBalance.PayShortagesCount;
+            newWorkSheet.Cells[recordIndex, 15].Value = art.Value.StoreBalance.TotalConsumption;
+            newWorkSheet.Cells[recordIndex, 16].Value = art.Value.StoreBalance.ShippedQuantity;
+            newWorkSheet.Cells[recordIndex, 17].Value = art.Value.StoreBalance.Regradings.Sum(re => re.Value);
+            newWorkSheet.Cells[recordIndex, 18].Value = art.Value.StoreBalance.PayShortagesCount;
 
-            newWorkSheet.Cells[recordIndex, 18].Value = art.Value.StoreBalance.FinBalance;
+            newWorkSheet.Cells[recordIndex, 19].Value = art.Value.StoreBalance.FinBalance;
 
             // Comment
-            newWorkSheet.Cells[recordIndex, 19].Value = art.Value.Comment;
+            newWorkSheet.Cells[recordIndex, 20].Value = art.Value.Comment;
 
             recordIndex++;
         }
@@ -833,7 +747,7 @@ internal class Program
         for (int i = 1; i < resultCells.Length + 1; i++)
         {
             //newWorkSheet.Column(i).AutoFit();
-            newWorkSheet.Column(i).Style.Numberformat.Format = i != 4 ? "0" : "dd.MM.yyyy";
+            newWorkSheet.Column(i).Style.Numberformat.Format = i != 5 ? "0" : "dd.MM.yyyy";
             newWorkSheet.Column(i).Style.WrapText = true;
         }
 
@@ -850,7 +764,20 @@ internal class Program
         newWorkSheet.Cells[$"{firstColLet}{firstRow}:{endColLet}{endRow}"].AutoFilter = true;
 
         //Freeze row && columns
-        newWorkSheet.View.FreezePanes(2, 3);
+        newWorkSheet.View.FreezePanes(3, 4);
+
+        // Group column
+        for (var i = 8; i <= 11; i++)
+        {
+            newWorkSheet.Column(i).OutlineLevel = 1;
+            newWorkSheet.Column(i).Collapsed = true;
+        }
+
+        for (var i = 16; i <= 18; i++)
+        {
+            newWorkSheet.Column(i).OutlineLevel = 1;
+            newWorkSheet.Column(i).Collapsed = true;
+        }
 
         // Save work
         if (File.Exists(outputPath)) File.Delete(outputPath);
@@ -929,6 +856,47 @@ internal class Program
             Console.ReadLine();
             return null;
         }
+    }
+
+    private static async Task<string> GiveMePath(string message, bool necessarily, bool giveMeLogin)
+    {
+        string? path = default;
+
+        while(string.IsNullOrEmpty(path))
+        {
+            Console.Clear();
+            Console.WriteLine(message);
+
+            var key = Console.ReadKey();
+            path = Console.ReadLine();
+
+            if (key.Key == ConsoleKey.Spacebar && !necessarily) break;
+            if (key.Key == ConsoleKey.Escape) await Report(goodByMessage, true);
+        }
+
+        if (giveMeLogin)
+            login = GiveMeLogin(path!);
+
+        return FormСorrectPath(path!);
+    }
+
+    private static string? GiveMeLogin(string path)
+    {
+        var substrings01 = path.Split("/");
+
+        if (substrings01.Length <= 1) return null;
+
+        var loginChars = substrings01.Last().Split(" ")[3].Trim().ToList();
+
+        if (loginChars is null || loginChars.Count == 0) return null;
+
+        // Clear non-digits in login
+        for (int i = 0; i < loginChars.Count; i++)
+        {
+            if (!int.TryParse(loginChars[i].ToString(), out _)) loginChars.RemoveAt(i);
+        }
+
+        return new string(loginChars.ToArray());
     }
 
     private static (int col, int row) FindNumberColsAndRowsIn(in ExcelWorksheet sheet)

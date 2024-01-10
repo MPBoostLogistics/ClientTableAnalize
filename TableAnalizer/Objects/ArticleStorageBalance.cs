@@ -41,7 +41,11 @@
         /// Set undelivery by article.
         /// </summary>
         /// <param name="expectedQuantity ">Expected quantity of products.</param>
-        public void SetUndelivery(int expectedQuantity) => Undelivery = expectedQuantity - ReceivedQuantity;
+        public void SetUndelivery(int expectedQuantity)
+        {
+            var undelivery = expectedQuantity - ReceivedQuantity;
+            Undelivery = undelivery > 0 ? undelivery : 0;
+        }
         
         /// <summary>
         /// Adding re-grading by article.

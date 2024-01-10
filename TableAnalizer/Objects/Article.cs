@@ -6,6 +6,7 @@ namespace ClientTableAnalizer.Objects
     {
         #region Variables && constants
         private int DeadLineDays { get; }
+        public Marketplace Marketplace { get; private set; }
         public string Name { get; private set; }
         public List<ArticleRowItem> Items { get; private set; }
         public ArticleRedempionBalance RedempionBalance { get; private set; }
@@ -18,9 +19,10 @@ namespace ClientTableAnalizer.Objects
         #endregion
 
         #region Constructors && destructors
-        public Article(ArticleRowItem item, int deadLineDays)
+        public Article(Marketplace marketplace, ArticleRowItem item, int deadLineDays)
         {
             DeadLineDays = deadLineDays;
+            Marketplace = marketplace;
             Name = "No name";
             Items = new List<ArticleRowItem> { item };
             RedempionBalance = new();
@@ -64,9 +66,15 @@ namespace ClientTableAnalizer.Objects
             }
             else
             {
-                if (RedempionBalance.WaitBalance == StoreBalance.TotalConsumption)
+                // Полный расчет (+ отдали больше)
+                if (StoreBalance.TotalConsumption >= RedempionBalance.WaitBalance)
                 {
                     StatusValue = (ArticleStatus.FullSet, "Полный расчет", System.Drawing.ColorTranslator.FromHtml("#e1ffdb"));
+
+                    if(StoreBalance.TotalConsumption > RedempionBalance.WaitBalance)
+                    {
+                        SetComment($"рассчитались больше, чем должны; разница - ({StoreBalance.TotalConsumption - RedempionBalance.WaitBalance})");
+                    }
                 }
                 else
                 {
@@ -76,7 +84,7 @@ namespace ClientTableAnalizer.Objects
                         {
                             StatusValue = (ArticleStatus.OnSearchWarehouse, "На поиске склада", System.Drawing.ColorTranslator.FromHtml("#ffd3d3"));
                         }
-                        else if(StoreBalance.FinBalance == 0 && StoreBalance.Undelivery != 0)
+                        else if(StoreBalance.FinBalance <= 0 && StoreBalance.Undelivery > 0)
                         {
                             StatusValue = (ArticleStatus.OnSearchPoint, "На поиске ПВЗ", System.Drawing.ColorTranslator.FromHtml("#ffa0a0"));
                         }
@@ -85,9 +93,12 @@ namespace ClientTableAnalizer.Objects
                             StatusValue = (ArticleStatus.OnSearch, "На поиске ПВЗ и склада", System.Drawing.ColorTranslator.FromHtml("#ff6d6d"));
                         }
                     }
-                    else if(RedempionBalance.WaitBalance < StoreBalance.TotalConsumption)
+    
+
+                    if (StoreBalance.TotalConsumption < StoreBalance.ReceivedQuantity && StoreBalance.FinBalance <= 0)
                     {
-                        SetComment($"отдали больше, чем должны; разница - ({StoreBalance.TotalConsumption - RedempionBalance.WaitBalance})");
+                        StatusValue = (ArticleStatus.OnSearchWarehouse, "На поиске склада", System.Drawing.ColorTranslator.FromHtml("#ffd3d3"));
+                        SetComment("Аномалия - расход меньше прихода и остаток 0");
                     }
                 }
             }
