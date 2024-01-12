@@ -6,6 +6,7 @@
         public int ShippedQuantity { get; private set; } = default;                         // расход, 16
         public int FinBalance { get; private set; } = default;                              // остаток, 17
         public int Undelivery { get; private set; } = default;                              // недовоз, -
+        public int WriteoffShortages { get; private set; } = default;                       // списано по недостачам
         public int PayShortagesCount { get; private set; } = default;                       // недостачи - количество 
         public int PayShortagesSum { get; private set; } = default;                         // недостачи - сумма
         public Dictionary<int, int> Regradings { get; private set; } = new();               // пересорты (на какой артикул, в каком количестве)
@@ -16,6 +17,12 @@
         private void CalculatTotalConsumption()
         {
             TotalConsumption = ShippedQuantity + Regradings.Sum(re => re.Value) + PayShortagesCount;
+        }
+
+        public void CalculateTotalReceivedQuantity()
+        {
+            if(WriteoffShortages > 0)
+                ReceivedQuantity -= WriteoffShortages;
         }
 
         public void ChangeBalance(ItemBalanceUnit unit, int value)
@@ -31,6 +38,9 @@
                     break;
                 case ItemBalanceUnit.FinBalance:
                     FinBalance += value;
+                    break;
+                case ItemBalanceUnit.WriteoffShortages:
+                    WriteoffShortages += value;
                     break;
                 default:
                     break;

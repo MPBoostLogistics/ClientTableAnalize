@@ -59,6 +59,9 @@ namespace ClientTableAnalizer.Objects
             // Set Undeliviry
             StoreBalance.SetUndelivery(RedempionBalance.WaitBalance);
 
+            // Calculate total received quantity
+            StoreBalance.CalculateTotalReceivedQuantity();
+
             // Set status article
             if (!IsDeadline)
             {
