@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Yq8Fa0za0t57RxmwoKxPKtbWAJNVo5JkqFAhW0Ldu6m8ef1t4fPbkmKlzHUhTRNtSjzzD67+V8fIzZBZ5Jm5sA==",
+  "dgSpecHash": "fIqr24x3I/TGDnwDuN07bEqbClmQjZHVl7my7Uypxc+xuHpnDjqTOeydlwJUEkjpWK8HXdCStdj2umN2ZyDiVA==",
   "success": true,
-  "projectFilePath": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizer/ClientTableAnalizer.csproj",
+  "projectFilePath": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/ClientTableAnalize/TableAnalizer/ClientTableAnalizer.csproj",
   "expectedPackageFiles": [
     "/Users/dmitrijsamarcev/.nuget/packages/epplus/6.2.8/epplus.6.2.8.nupkg.sha512",
     "/Users/dmitrijsamarcev/.nuget/packages/epplus.interfaces/6.1.1/epplus.interfaces.6.1.1.nupkg.sha512",

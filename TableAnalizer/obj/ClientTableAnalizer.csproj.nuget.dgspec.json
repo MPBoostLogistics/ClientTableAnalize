@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizer/ClientTableAnalizer.csproj": {}
+    "/Users/dmitrijsamarcev/Documents/Programming/CSharp/ClientTableAnalize/TableAnalizer/ClientTableAnalizer.csproj": {}
   },
   "projects": {
-    "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizer/ClientTableAnalizer.csproj": {
+    "/Users/dmitrijsamarcev/Documents/Programming/CSharp/ClientTableAnalize/TableAnalizer/ClientTableAnalizer.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizer/ClientTableAnalizer.csproj",
+        "projectUniqueName": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/ClientTableAnalize/TableAnalizer/ClientTableAnalizer.csproj",
         "projectName": "ClientTableAnalizer",
-        "projectPath": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizer/ClientTableAnalizer.csproj",
+        "projectPath": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/ClientTableAnalize/TableAnalizer/ClientTableAnalizer.csproj",
         "packagesPath": "/Users/dmitrijsamarcev/.nuget/packages/",
-        "outputPath": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizer/obj/",
+        "outputPath": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/ClientTableAnalize/TableAnalizer/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/dmitrijsamarcev/.nuget/NuGet/NuGet.Config"
@@ -59,7 +59,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/7.0.311/RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/7.0.312/RuntimeIdentifierGraph.json"
         }
       }
     }
