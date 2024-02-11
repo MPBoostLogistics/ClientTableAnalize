@@ -35,6 +35,12 @@ internal class Program
 
     private static readonly Dictionary<int, Article> articleDict = new();
 
+    private static List<ArticleShortage> ArticleShortages { get; set; } = new();
+
+    private static readonly List<(int article, string name, int count, double cost, double sum)> ShortagesInWarehouse = new();
+
+    private static readonly List<(int article, string name, int count, double cost, double sum)> ShortagesInPickupPoints = new();
+
     private static readonly string goodByMessage = "\nСпасибо за использование программы. Хорошего дня!";
 
     #endregion
@@ -632,21 +638,10 @@ internal class Program
 
         using var excel = new ExcelPackage(ouptutFilePath);
 
-        // Remove existing worksheet
-        var existingWorksheet = excel.Workbook.Worksheets.SingleOrDefault(x => x.Name == workSheetName);
+        // Create new worksheet
+        CreateWorkSheet(excel, workSheetName, out ExcelWorksheet newWorkSheet, System.Drawing.Color.GreenYellow, FIRST_ROW_INDEX, HEADER_TABLE_ROW_HEIGHT, DEFAULT_TABLE_ROW_HEIGHT, TABLE_COL_WIDTH);
 
-        if(existingWorksheet is not null)
-        {
-            excel.Workbook.Worksheets.Delete(existingWorksheet);
-        }
-
-        var newWorkSheet = excel.Workbook.Worksheets.Add(workSheetName);
-
-        // Stilized workSheet
-        newWorkSheet.TabColor = System.Drawing.Color.YellowGreen;
-        newWorkSheet.DefaultRowHeight = DEFAULT_TABLE_ROW_HEIGHT;
-        newWorkSheet.DefaultColWidth = TABLE_COL_WIDTH;
-
+        // Create cells 
         ResultCell[] resultCells = new ResultCell[]
         {
             new ResultCell("МП", "0"),                              // 1
@@ -676,25 +671,7 @@ internal class Program
         };
 
         // Fill header data 
-        for (int i = 0; i < resultCells.Length; i++)
-        {
-            var colIndex = i + 1;
-
-            // Add data
-            newWorkSheet.Cells[1, colIndex].Value = resultCells[i].Name;
-            newWorkSheet.Cells[1, colIndex].AutoFitColumns();
-
-            // Stilized
-            newWorkSheet.Column(colIndex).AutoFit();
-            newWorkSheet.Column(colIndex).Style.Numberformat.Format = resultCells[i].Format;
-        }
-
-        // Stilized workSheet header
-        newWorkSheet.Row(FIRST_ROW_INDEX).Height = HEADER_TABLE_ROW_HEIGHT;
-        newWorkSheet.Row(FIRST_ROW_INDEX).Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-        newWorkSheet.Row(FIRST_ROW_INDEX).Style.Font.Bold = true;
-        newWorkSheet.Row(FIRST_ROW_INDEX).Style.Font.Size = 14;
-        newWorkSheet.Row(FIRST_ROW_INDEX).Style.VerticalAlignment = ExcelVerticalAlignment.Center;
+        FillTableHeaderData(resultCells, ref newWorkSheet);
 
         newWorkSheet.Column(1).Width = 8;   // МП
         newWorkSheet.Column(2).Width = 12;  // Артикул 
@@ -702,12 +679,17 @@ internal class Program
         newWorkSheet.Column(20).Width = 60; // Комментарий
 
         // Populating with data
-
         int recordIndex = FIRST_ROW_INDEX + 1;
 
         foreach (var art in articleDict)
         {
-            art.Value.AnalyzeArticle();
+            var articleShortage = art.Value.AnalyzeArticle();
+
+            if (articleShortage.HasValue)
+            {
+                articleShortage.Value.SetArticleNumber(art.Key);
+                ArticleShortages.Add(articleShortage.Value);
+            }
 
             // Fill Redemptions data
             newWorkSheet.Cells[recordIndex, 1].Value = art.Value.Marketplace;
@@ -765,16 +747,7 @@ internal class Program
         }
 
         // Add filter
-        int firstRow = newWorkSheet.Dimension.Start.Row;
-        int endRow = newWorkSheet.Dimension.End.Row;
-
-        int firstCol = newWorkSheet.Dimension.Start.Column;
-        int endCol = newWorkSheet.Dimension.End.Column;
-
-        string firstColLet = ExcelCellAddress.GetColumnLetter(firstCol);
-        string endColLet = ExcelCellAddress.GetColumnLetter(endCol);
-
-        newWorkSheet.Cells[$"{firstColLet}{firstRow}:{endColLet}{endRow}"].AutoFilter = true;
+        AddFilterInWorkSheet(ref newWorkSheet);
 
         //Freeze row && columns
         newWorkSheet.View.FreezePanes(3, 4);
@@ -790,6 +763,99 @@ internal class Program
         {
             newWorkSheet.Column(i).OutlineLevel = 1;
             newWorkSheet.Column(i).Collapsed = true;
+        }
+
+        // Analize ArticleShortages
+        if (ArticleShortages.Count > 0)
+        {
+            foreach (var articleShortage in ArticleShortages)
+            {
+                var articleShortagesInWarehouse = articleShortage.GetShortagesCountByPlace(ShortagesPlace.Warehouse);
+                if (articleShortagesInWarehouse > 0)
+                {
+                    ShortagesInWarehouse.Add((articleShortage.ArticleNumber, articleShortage.ArtileName, articleShortagesInWarehouse, articleShortage.AveragePrice, articleShortage.AveragePrice * articleShortagesInWarehouse));
+                }
+
+                var articleShortagesInPickupPoint = articleShortage.GetShortagesCountByPlace(ShortagesPlace.PickupPoint);
+                if (articleShortagesInPickupPoint > 0)
+                {
+                    ShortagesInPickupPoints.Add((articleShortage.ArticleNumber, articleShortage.ArtileName, articleShortagesInPickupPoint, articleShortage.AveragePrice, articleShortage.AveragePrice * articleShortagesInPickupPoint));
+                }
+            }
+
+            // Shortages in warehouse report
+            if (ShortagesInWarehouse.Count > 0)
+            {
+                // Create new worksheet
+                CreateWorkSheet(in excel, "Недовозы (склад)", out ExcelWorksheet worksheet02, System.Drawing.Color.Orange, FIRST_ROW_INDEX, HEADER_TABLE_ROW_HEIGHT, DEFAULT_TABLE_ROW_HEIGHT, TABLE_COL_WIDTH);
+
+                // Create info for cells 
+                ResultCell[] resultCellsNewWorksheet02 = new ResultCell[]
+                {
+                    new ResultCell("Артикул", "0"),                         // 1
+                    new ResultCell("Название товара", "0"),                 // 2
+                    new ResultCell("Количество, шт.", "0"),                 // 3
+                    new ResultCell("Средняя цена", "0.00"),                 // 4
+                    new ResultCell("Сумма", "0.00"),                        // 5
+                };
+
+                // Fill header data 
+                FillTableHeaderData(resultCellsNewWorksheet02, ref worksheet02);
+
+                // Fill data 
+                int itemRecordIndex01 = FIRST_ROW_INDEX + 1;
+
+                foreach (var (article, name, count, cost, sum) in ShortagesInWarehouse)
+                {
+                    worksheet02.Cells[itemRecordIndex01, 1].Value = article;
+                    worksheet02.Cells[itemRecordIndex01, 2].Value = name;
+                    worksheet02.Cells[itemRecordIndex01, 3].Value = count;
+                    worksheet02.Cells[itemRecordIndex01, 4].Value = cost;
+                    worksheet02.Cells[itemRecordIndex01, 5].Value = sum;
+
+                    itemRecordIndex01++;
+                }
+
+                // Fill total sum
+                worksheet02.Cells[itemRecordIndex01, 5].Value = ShortagesInWarehouse.Aggregate(0.00, (acc, i) => acc + i.sum);
+            }
+
+            // Shortages in pickup report
+            if (ShortagesInPickupPoints.Count > 0)
+            {
+                // Create new worksheet
+                CreateWorkSheet(in excel, "Недовозы (ПВЗ)", out ExcelWorksheet worksheet03, System.Drawing.Color.Orange, FIRST_ROW_INDEX, HEADER_TABLE_ROW_HEIGHT, DEFAULT_TABLE_ROW_HEIGHT, TABLE_COL_WIDTH);
+
+                // Create info for cells 
+                ResultCell[] resultCellsNewWorksheet03 = new ResultCell[]
+                {
+                    new ResultCell("Артикул", "0"),                         // 1
+                    new ResultCell("Название товара", "0"),                 // 2
+                    new ResultCell("Количество, шт.", "0"),                 // 3
+                    new ResultCell("Средняя цена", "0.00"),                 // 4
+                    new ResultCell("Сумма", "0.00"),                        // 5
+                };
+
+                // Fill header data 
+                FillTableHeaderData(resultCellsNewWorksheet03, ref worksheet03);
+
+                // Fill data 
+                int itemRecordIndex02 = FIRST_ROW_INDEX + 1;
+
+                foreach (var (article, name, count, cost, sum) in ShortagesInPickupPoints)
+                {
+                    worksheet03.Cells[itemRecordIndex02, 1].Value = article;
+                    worksheet03.Cells[itemRecordIndex02, 2].Value = name;
+                    worksheet03.Cells[itemRecordIndex02, 3].Value = count;
+                    worksheet03.Cells[itemRecordIndex02, 4].Value = cost;
+                    worksheet03.Cells[itemRecordIndex02, 5].Value = sum;
+
+                    itemRecordIndex02++;
+                }
+
+                // Fill total sum
+                worksheet03.Cells[itemRecordIndex02, 5].Value = ShortagesInPickupPoints.Aggregate(0.00, (acc, i) => acc + i.sum);
+            }
         }
 
         // Save work
@@ -946,5 +1012,58 @@ internal class Program
     private static (int col, int row) FindNumberColsAndRowsIn(in ExcelWorksheet sheet)
     {
         return (sheet.Dimension.End.Column, sheet.Dimension.End.Row);
+    }
+
+    public static void CreateWorkSheet(in ExcelPackage excelPackage, string workSheetName, out ExcelWorksheet worksheet, System.Drawing.Color tabColor, int firstRowIndex, double headerRowHeight, double rowHeight, double rowWidth)
+    {
+        // Remove existing worksheet
+        var existingWorksheet = excelPackage.Workbook.Worksheets.SingleOrDefault(x => x.Name == workSheetName);
+        if (existingWorksheet is not null)
+            excelPackage.Workbook.Worksheets.Delete(existingWorksheet);
+
+        // Create net worksheet
+        worksheet = excelPackage.Workbook.Worksheets.Add(workSheetName);
+
+        // Stilized workSheet
+        worksheet.TabColor = tabColor;
+        worksheet.DefaultRowHeight = rowHeight;
+        worksheet.DefaultColWidth = rowWidth;
+
+        // Stilized workSheet header
+        worksheet.Row(firstRowIndex).Height = headerRowHeight;
+        worksheet.Row(firstRowIndex).Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+        worksheet.Row(firstRowIndex).Style.Font.Bold = true;
+        worksheet.Row(firstRowIndex).Style.Font.Size = 14;
+        worksheet.Row(firstRowIndex).Style.VerticalAlignment = ExcelVerticalAlignment.Center;
+    }
+
+    private static void FillTableHeaderData(ResultCell[] resultCells, ref ExcelWorksheet worksheet)
+    {
+        for (int i = 0; i < resultCells.Length; i++)
+        {
+            var colIndex = i + 1;
+
+            // Add data
+            worksheet.Cells[1, colIndex].Value = resultCells[i].Name;
+            worksheet.Cells[1, colIndex].AutoFitColumns();
+
+            // Stilized
+            worksheet.Column(colIndex).AutoFit();
+            worksheet.Column(colIndex).Style.Numberformat.Format = resultCells[i].Format;
+        }
+    }
+
+    private static void AddFilterInWorkSheet(ref ExcelWorksheet excelWorksheet)
+    {
+        int firstRow = excelWorksheet.Dimension.Start.Row;
+        int endRow = excelWorksheet.Dimension.End.Row;
+
+        int firstCol = excelWorksheet.Dimension.Start.Column;
+        int endCol = excelWorksheet.Dimension.End.Column;
+
+        string firstColLet = ExcelCellAddress.GetColumnLetter(firstCol);
+        string endColLet = ExcelCellAddress.GetColumnLetter(endCol);
+
+        excelWorksheet.Cells[$"{firstColLet}{firstRow}:{endColLet}{endRow}"].AutoFilter = true;
     }
 }

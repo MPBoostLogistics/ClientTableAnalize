@@ -5,7 +5,7 @@
         public int ReceivedQuantity { get; private set; } = default;                        // приход, 15
         public int ShippedQuantity { get; private set; } = default;                         // расход, 16
         public int FinBalance { get; private set; } = default;                              // остаток, 17
-        public int Undelivery { get; private set; } = default;                              // недовоз, -
+        public int Undelivery { get; private set; } = default;                              // недовоз от ПВЗ, -
         public int WriteoffShortages { get; private set; } = default;                       // списано по недостачам
         public int PayShortagesCount { get; private set; } = default;                       // недостачи - количество 
         public int PayShortagesSum { get; private set; } = default;                         // недостачи - сумма

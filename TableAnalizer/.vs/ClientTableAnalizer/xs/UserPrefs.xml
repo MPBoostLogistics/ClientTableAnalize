@@ -1,21 +1,22 @@
 ﻿<Properties StartupConfiguration="{71BC7554-CFBA-4265-90F0-435B89BADA28}|Default">
+  <MonoDevelop.Ide.ItemProperties.ClientTableAnalizer PreferredExecutionTarget="MonoDevelop.Default" />
   <MultiItemStartupConfigurations />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Release" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Release" />
   <MonoDevelop.Ide.Workbench ActiveDocument="Program.cs">
     <Files>
-      <File FileName="Program.cs" Line="120" Column="1" />
-      <File FileName="Objects/Article.cs" />
-      <File FileName="Objects/ArticleStorageBalance.cs" />
+      <File FileName="Program.cs" Line="38" Column="40" />
+      <File FileName="Objects/Article.cs" Line="20" Column="11" />
+      <File FileName="Objects/ArticleStorageBalance.cs" Line="2" Column="2" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State name="__root__">
           <Node name="ClientTableAnalizer">
-            <Node name="ClientTableAnalizer">
-              <Node name="Program.cs" selected="True" />
+            <Node name="ClientTableAnalizer" expanded="True">
+              <Node name="Objects" expanded="True" />
             </Node>
           </Node>
         </State>
@@ -23,6 +24,5 @@
     </Pads>
   </MonoDevelop.Ide.Workbench>
   <Debugger.DebugSourceFolders />
-  <MonoDevelop.Ide.ItemProperties.ClientTableAnalizer PreferredExecutionTarget="MonoDevelop.Default" />
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
 </Properties>

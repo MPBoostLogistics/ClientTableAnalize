@@ -2,6 +2,51 @@
 
 namespace ClientTableAnalizer.Objects
 {
+    internal enum ShortagesPlace
+    {
+        Warehouse, PickupPoint 
+    }
+
+    internal struct ArticleShortage
+    {
+        public int ArticleNumber { get; private set; }
+        public string ArtileName { get; set; }
+        public double AveragePrice { get; set; }
+        public Dictionary<ShortagesPlace, int> Shortages { get; set; } = new();
+
+        public ArticleShortage(string artileName, double averagePrice)
+        {
+            ArtileName = artileName; AveragePrice = averagePrice;
+        } 
+
+        public void SetArticleNumber(int articleNumber) => ArticleNumber = articleNumber;
+
+        public readonly void SetArticleShortage(ShortagesPlace shortagesPlace, int shortagesCount)
+        {
+            if(Shortages.ContainsKey(shortagesPlace))
+            {
+                Shortages[shortagesPlace] += shortagesCount;
+            }
+            else
+            {
+                Shortages[shortagesPlace] = shortagesCount;
+            }
+        }
+
+        /// <summary>
+        /// Returns amount of goods underdelivered at place.
+        /// </summary>
+        /// <param name="shortagesPlace">Place of under-delivery formation.</param>
+        /// <returns></returns>
+        public readonly int GetShortagesCountByPlace(ShortagesPlace shortagesPlace)
+        {
+            return Shortages
+                .Where(el => el.Key == shortagesPlace)
+                .Aggregate(0, (acc, el) => acc + el.Value);
+        }
+    }
+
+
     internal class Article
     {
         #region Variables && constants
@@ -45,7 +90,7 @@ namespace ClientTableAnalizer.Objects
 
         public void SetStoreBalance(int count, double price) => StoreBalance.SetPayShortage(count, price);
    
-        public void AnalyzeArticle()
+        public ArticleShortage? AnalyzeArticle()
         {
             // Get max redemption date
             MaxRedemptionDate = Items.MaxBy(i => i.RedemptionDate).RedemptionDate;
@@ -55,6 +100,9 @@ namespace ClientTableAnalizer.Objects
 
             // Analize items (set redemtion balance && average price)
             AnalizeItems();
+
+            // Create ArticleShortage
+            ArticleShortage articleShortage = new(Name, AveragePrice);
 
             // Set Undeliviry
             StoreBalance.SetUndelivery(RedempionBalance.WaitBalance);
@@ -76,28 +124,44 @@ namespace ClientTableAnalizer.Objects
 
                     if(StoreBalance.TotalConsumption > RedempionBalance.WaitBalance)
                     {
+                        // TODO: Забрать перерасходы
                         SetComment($"рассчитались больше, чем должны; разница - ({StoreBalance.TotalConsumption - RedempionBalance.WaitBalance})");
                     }
                 }
                 else
                 {
+                    // Если ожидание больше общего расхода
                     if(RedempionBalance.WaitBalance > StoreBalance.TotalConsumption)
                     {
-                        if(StoreBalance.FinBalance > 0 && StoreBalance.Undelivery == 0)
+                        int shortageWarehouse = 0;
+
+                        if (StoreBalance.FinBalance > 0 && StoreBalance.Undelivery == 0)
                         {
                             StatusValue = (ArticleStatus.OnSearchWarehouse, "На поиске склада", System.Drawing.ColorTranslator.FromHtml("#ffd3d3"));
                         }
                         else if(StoreBalance.FinBalance <= 0 && StoreBalance.Undelivery > 0)
                         {
                             StatusValue = (ArticleStatus.OnSearchPoint, "На поиске ПВЗ", System.Drawing.ColorTranslator.FromHtml("#ffa0a0"));
+
                         }
                         else if (StoreBalance.FinBalance > 0 && StoreBalance.Undelivery > 0)
                         {
                             StatusValue = (ArticleStatus.OnSearch, "На поиске ПВЗ и склада", System.Drawing.ColorTranslator.FromHtml("#ff6d6d"));
                         }
+
+                        // Calculate shortages
+                        shortageWarehouse = StoreBalance.Undelivery > 0 ?
+                            RedempionBalance.WaitBalance - StoreBalance.TotalConsumption - StoreBalance.Undelivery :
+                            RedempionBalance.WaitBalance - StoreBalance.TotalConsumption;
+
+                        if (shortageWarehouse > 0)
+                            articleShortage.SetArticleShortage(ShortagesPlace.Warehouse, shortageWarehouse);
+
+                        if(StoreBalance.Undelivery > 0)
+                            articleShortage.SetArticleShortage(ShortagesPlace.PickupPoint, StoreBalance.Undelivery);
+
                     }
     
-
                     if (StoreBalance.TotalConsumption < StoreBalance.ReceivedQuantity && StoreBalance.FinBalance <= 0)
                     {
                         StatusValue = (ArticleStatus.OnSearchWarehouse, "На поиске склада", System.Drawing.ColorTranslator.FromHtml("#ffd3d3"));
@@ -105,6 +169,8 @@ namespace ClientTableAnalizer.Objects
                     }
                 }
             }
+
+            return articleShortage.Shortages.Count > 0 ? articleShortage : null;
         }
 
         private void AnalizeItems()
