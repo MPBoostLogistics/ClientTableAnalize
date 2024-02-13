@@ -1,6 +1,4 @@
-﻿using System.Reflection.PortableExecutable;
-
-namespace ClientTableAnalizer.Objects
+﻿namespace ClientTableAnalizer.Objects
 {
     internal enum ShortagesPlace
     {
@@ -9,17 +7,15 @@ namespace ClientTableAnalizer.Objects
 
     internal struct ArticleShortage
     {
-        public int ArticleNumber { get; private set; }
+        public int ArticleNumber { get; }
         public string ArtileName { get; set; }
         public double AveragePrice { get; set; }
         public Dictionary<ShortagesPlace, int> Shortages { get; set; } = new();
 
-        public ArticleShortage(string artileName, double averagePrice)
+        public ArticleShortage(int articleNumber, string artileName, double averagePrice)
         {
-            ArtileName = artileName; AveragePrice = averagePrice;
+            ArticleNumber = articleNumber; ArtileName = artileName; AveragePrice = averagePrice;
         } 
-
-        public void SetArticleNumber(int articleNumber) => ArticleNumber = articleNumber;
 
         public readonly void SetArticleShortage(ShortagesPlace shortagesPlace, int shortagesCount)
         {
@@ -46,7 +42,6 @@ namespace ClientTableAnalizer.Objects
         }
     }
 
-
     internal class Article
     {
         #region Variables && constants
@@ -56,6 +51,7 @@ namespace ClientTableAnalizer.Objects
         public List<ArticleRowItem> Items { get; private set; }
         public ArticleRedempionBalance RedempionBalance { get; private set; }
         public ArticleStorageBalance StoreBalance { get; private set; }
+        public ArticleShortage? ArticleShortage { get; private set; }
         public DateTime MaxRedemptionDate { get; private set; }
         public bool IsDeadline { get; private set; }
         public (ArticleStatus status, string statusComment, System.Drawing.Color color) StatusValue { get; private set; }
@@ -89,8 +85,8 @@ namespace ClientTableAnalizer.Objects
         public void SetStoreBalance(ItemBalanceUnit unit, int value) => StoreBalance.ChangeBalance(unit, value);
 
         public void SetStoreBalance(int count, double price) => StoreBalance.SetPayShortage(count, price);
-   
-        public ArticleShortage? AnalyzeArticle()
+
+        public void AnalyzeArticle(int articleNumber)
         {
             // Get max redemption date
             MaxRedemptionDate = Items.MaxBy(i => i.RedemptionDate).RedemptionDate;
@@ -102,7 +98,7 @@ namespace ClientTableAnalizer.Objects
             AnalizeItems();
 
             // Create ArticleShortage
-            ArticleShortage articleShortage = new(Name, AveragePrice);
+            ArticleShortage articleShortage = new(articleNumber, Name, AveragePrice);
 
             // Set Undeliviry
             StoreBalance.SetUndelivery(RedempionBalance.WaitBalance);
@@ -170,7 +166,7 @@ namespace ClientTableAnalizer.Objects
                 }
             }
 
-            return articleShortage.Shortages.Count > 0 ? articleShortage : null;
+            ArticleShortage = articleShortage.Shortages.Count > 0 ? articleShortage : null;
         }
 
         private void AnalizeItems()

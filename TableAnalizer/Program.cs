@@ -8,6 +8,7 @@ using System.Reflection;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using ClientTableAnalizer.Objects;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 internal enum Marketplace { WB, OZ }
 
@@ -70,7 +71,7 @@ internal class Program
         if(string.IsNullOrEmpty(redemtionFilePathWB) && string.IsNullOrEmpty(redemtionFilePathOZ))
         {
             var goodByMessage02 = string.Concat($"Данные по выкупам не предоставлены, невозможно сформировать отчет\n", goodByMessage);
-            await Report(goodByMessage02, true);
+            await Report(goodByMessage02, 2000, true);
         }
 
         if(!string.IsNullOrEmpty(redemtionFilePathWB))
@@ -234,10 +235,10 @@ internal class Program
         switch (marketplace)
         {
             case Marketplace.WB:
-                if (redemtionFilePathWB is null || CheckFileExistence(redemtionFilePathWB) == null) await Report(goodByMessage, true);
+                if (redemtionFilePathWB is null || CheckFileExistence(redemtionFilePathWB) == null) await Report(goodByMessage, 2000, true);
                 break;
             case Marketplace.OZ:
-                if (redemtionFilePathOZ is null || CheckFileExistence(redemtionFilePathOZ) == null) await Report(goodByMessage, true);
+                if (redemtionFilePathOZ is null || CheckFileExistence(redemtionFilePathOZ) == null) await Report(goodByMessage, 2000, true);
                 break;
         }
 
@@ -290,7 +291,7 @@ internal class Program
                         }
                         else
                         {
-                            await Report("Невозможно создать Item по выкупу.", true);
+                            await Report("Невозможно создать Item по выкупу.", 2000, true);
                         }
                     }
                 }
@@ -327,13 +328,13 @@ internal class Program
     {
         string? filePath = marketplace == Marketplace.WB ? storageFilePathWB : storageFilePathOZ;
 
-        if (filePath is null || CheckFileExistence(filePath) == null) await Report(goodByMessage, true);
+        if (filePath is null || CheckFileExistence(filePath) == null) await Report(goodByMessage, 2000, true);
 
         var existingFile = new FileInfo(filePath!);
 
         using ExcelPackage package = new(existingFile);
 
-        if (CheckSheets(in package) == null) await Report(goodByMessage, true);
+        if (CheckSheets(in package) == null) await Report(goodByMessage, 2000, true);
 
         var stopwatch = new Stopwatch();
         stopwatch.Start();
@@ -441,14 +442,14 @@ internal class Program
     private static async Task ReadConsumptionReport(string? filePath, ItemBalanceUnit storeUnit, int artIndex, int countIndex)
     {
         if (filePath is null && CheckFileExistence(filePath!) == null)
-            await Report(goodByMessage, true);
+            await Report(goodByMessage, 2000, true);
         
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
         using ExcelPackage package = new(new FileInfo(filePath!));
 
-        if (CheckSheets(in package) == null) await Report(goodByMessage, true);
+        if (CheckSheets(in package) == null) await Report(goodByMessage, 2000, true);
 
         ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
 
@@ -526,7 +527,7 @@ internal class Program
 
                 if (articleAddress.Value != null && int.TryParse(articleAddress.Value.ToString(), out int article) &&
                     countAddress.Value != null && int.TryParse(countAddress.Value.ToString(), out int count) &&
-                    priceAddress.Value != null && int.TryParse(priceAddress.Value.ToString(), out int price))
+                    priceAddress.Value != null && double.TryParse(priceAddress.Value.ToString(), out double price))
                 {
                     if (articleDict.ContainsKey(article))
                     {
@@ -538,16 +539,14 @@ internal class Program
             package.Dispose();
             stopwatch.Stop();
 
-            var paySum =
-                from art in articleDict
-                select art.Value.StoreBalance.PayShortagesSum;
+            var paySum = articleDict
+                .Aggregate(0.00, (acc, el) => acc + el.Value.StoreBalance.PayShortagesSum);
 
             string payReport;
 
-            if (paySum is not null && paySum.Count() > 0)
+            if (paySum > 0.00)
             {
-                var aggregatePaySum = paySum.Aggregate((acc, sum) => acc + sum);
-                payReport = string.Format("Сумма компенсации за недостачти товаров: {0:C}.\n", aggregatePaySum);
+                payReport = string.Format("Сумма компенсации за недостачи товаров: {0:C}.\n", paySum);
             }
             else
             {
@@ -629,7 +628,7 @@ internal class Program
         await Report(regReport);
     }
 
-    private static async Task WriteXls(string? ouptutFilePath, string workSheetName = $"Report")
+    private static async Task WriteXls(string? ouptutFilePath, string workSheetName = "Отчет")
     {
         const int HEADER_TABLE_ROW_HEIGHT = 40;
         const int DEFAULT_TABLE_ROW_HEIGHT = 16;
@@ -681,59 +680,58 @@ internal class Program
         // Populating with data
         int recordIndex = FIRST_ROW_INDEX + 1;
 
-        foreach (var art in articleDict)
+        foreach (var (key, value) in articleDict)
         {
-            var articleShortage = art.Value.AnalyzeArticle();
+            articleDict[key].AnalyzeArticle(key);
 
-            if (articleShortage.HasValue)
+            if (articleDict[key].ArticleShortage.HasValue)
             {
-                articleShortage.Value.SetArticleNumber(art.Key);
-                ArticleShortages.Add(articleShortage.Value);
+                ArticleShortages.Add(articleDict[key].ArticleShortage!.Value);
             }
 
             // Fill Redemptions data
-            newWorkSheet.Cells[recordIndex, 1].Value = art.Value.Marketplace;
-            newWorkSheet.Cells[recordIndex, 2].Value = art.Key;
-            newWorkSheet.Cells[recordIndex, 3].Value = art.Value.Name;
-            newWorkSheet.Cells[recordIndex, 4].Value = art.Value.AveragePrice;
+            newWorkSheet.Cells[recordIndex, 1].Value = articleDict[key].Marketplace;
+            newWorkSheet.Cells[recordIndex, 2].Value = key;
+            newWorkSheet.Cells[recordIndex, 3].Value = articleDict[key].Name;
+            newWorkSheet.Cells[recordIndex, 4].Value = articleDict[key].AveragePrice;
 
             // RedemptionDate
-            newWorkSheet.Cells[recordIndex, 5].Value = art.Value.MaxRedemptionDate;
+            newWorkSheet.Cells[recordIndex, 5].Value = articleDict[key].MaxRedemptionDate;
             newWorkSheet.Cells[recordIndex, 5].Style.Fill.PatternType = ExcelFillStyle.Solid;
-            newWorkSheet.Cells[recordIndex, 5].Style.Fill.BackgroundColor.SetColor(art.Value.StatusValue.color);
+            newWorkSheet.Cells[recordIndex, 5].Style.Fill.BackgroundColor.SetColor(articleDict[key].StatusValue.color);
 
-            newWorkSheet.Cells[recordIndex, 6].Value = art.Value.StatusValue.statusComment;
+            newWorkSheet.Cells[recordIndex, 6].Value = articleDict[key].StatusValue.statusComment;
 
-            newWorkSheet.Cells[recordIndex, 7].Value = art.Value.Items.Count;
-            newWorkSheet.Cells[recordIndex, 8].Value = art.Value.RedempionBalance.CanceledCount;
-            newWorkSheet.Cells[recordIndex, 9].Value = art.Value.RedempionBalance.OnWayCount;
-            newWorkSheet.Cells[recordIndex, 10].Value = art.Value.RedempionBalance.DeliveredCount;
-            newWorkSheet.Cells[recordIndex, 11].Value = art.Value.RedempionBalance.WithDrawnCount;
+            newWorkSheet.Cells[recordIndex, 7].Value = articleDict[key].Items.Count;
+            newWorkSheet.Cells[recordIndex, 8].Value = articleDict[key].RedempionBalance.CanceledCount;
+            newWorkSheet.Cells[recordIndex, 9].Value = articleDict[key].RedempionBalance.OnWayCount;
+            newWorkSheet.Cells[recordIndex, 10].Value = articleDict[key].RedempionBalance.DeliveredCount;
+            newWorkSheet.Cells[recordIndex, 11].Value = articleDict[key].RedempionBalance.WithDrawnCount;
 
             // Balance data
             // - WaitBalance
-            newWorkSheet.Cells[recordIndex, 12].Value = art.Value.RedempionBalance.WaitBalance;
+            newWorkSheet.Cells[recordIndex, 12].Value = articleDict[key].RedempionBalance.WaitBalance;
             newWorkSheet.Cells[recordIndex, 12].Style.Font.Bold = true;
 
-            newWorkSheet.Cells[recordIndex, 13].Value = art.Value.StoreBalance.ReceivedQuantity;
+            newWorkSheet.Cells[recordIndex, 13].Value = articleDict[key].StoreBalance.ReceivedQuantity;
 
             // - Undelivery
-            newWorkSheet.Cells[recordIndex, 14].Value = art.Value.StoreBalance.Undelivery;
-            if(art.Value.StoreBalance.Undelivery > 0 && art.Value.StatusValue.status != ArticleStatus.InWork)
+            newWorkSheet.Cells[recordIndex, 14].Value = articleDict[key].StoreBalance.Undelivery;
+            if(articleDict[key].StoreBalance.Undelivery > 0 && articleDict[key].StatusValue.status != ArticleStatus.InWork)
             {
                 newWorkSheet.Cells[recordIndex, 14].Style.Font.Color.SetColor(System.Drawing.Color.DarkRed); 
             }
 
             // Consumption
-            newWorkSheet.Cells[recordIndex, 15].Value = art.Value.StoreBalance.TotalConsumption;
-            newWorkSheet.Cells[recordIndex, 16].Value = art.Value.StoreBalance.ShippedQuantity;
-            newWorkSheet.Cells[recordIndex, 17].Value = art.Value.StoreBalance.Regradings.Sum(re => re.Value);
-            newWorkSheet.Cells[recordIndex, 18].Value = art.Value.StoreBalance.PayShortagesCount;
+            newWorkSheet.Cells[recordIndex, 15].Value = articleDict[key].StoreBalance.TotalConsumption;
+            newWorkSheet.Cells[recordIndex, 16].Value = articleDict[key].StoreBalance.ShippedQuantity;
+            newWorkSheet.Cells[recordIndex, 17].Value = articleDict[key].StoreBalance.Regradings.Sum(re => re.Value);
+            newWorkSheet.Cells[recordIndex, 18].Value = articleDict[key].StoreBalance.PayShortagesCount;
 
-            newWorkSheet.Cells[recordIndex, 19].Value = art.Value.StoreBalance.FinBalance;
+            newWorkSheet.Cells[recordIndex, 19].Value = articleDict[key].StoreBalance.FinBalance;
 
             // Comment
-            newWorkSheet.Cells[recordIndex, 20].Value = art.Value.Comment;
+            newWorkSheet.Cells[recordIndex, 20].Value = articleDict[key].Comment;
 
             recordIndex++;
         }
@@ -750,7 +748,7 @@ internal class Program
         AddFilterInWorkSheet(ref newWorkSheet);
 
         //Freeze row && columns
-        newWorkSheet.View.FreezePanes(3, 4);
+        newWorkSheet.View.FreezePanes(2, 4);
 
         // Group column
         for (var i = 8; i <= 11; i++)
@@ -818,6 +816,13 @@ internal class Program
 
                 // Fill total sum
                 worksheet02.Cells[itemRecordIndex01, 5].Value = ShortagesInWarehouse.Aggregate(0.00, (acc, i) => acc + i.sum);
+
+                // Stilized table - fit text
+                worksheet02.Column(2).Width = 60;  
+                for (int i = 1; i < resultCellsNewWorksheet02.Length + 1; i++)
+                {
+                    worksheet02.Column(i).Style.WrapText = true;
+                }
             }
 
             // Shortages in pickup report
@@ -855,6 +860,13 @@ internal class Program
 
                 // Fill total sum
                 worksheet03.Cells[itemRecordIndex02, 5].Value = ShortagesInPickupPoints.Aggregate(0.00, (acc, i) => acc + i.sum);
+
+                // Stilized table - fit text
+                worksheet03.Column(2).Width = 60;
+                for (int i = 1; i < resultCellsNewWorksheet03.Length + 1; i++)
+                {
+                    worksheet03.Column(i).Style.WrapText = true;
+                }
             }
         }
 
@@ -877,16 +889,16 @@ internal class Program
 
         _ = Console.ReadKey();
 
-        await Report(goodByMessage, true);
+        await Report(goodByMessage, 2000, true);
     }
 
-    private static async Task Report(string message, bool exit = false)
+    private static async Task Report(string message, int delay = 0, bool exit = false)
     {
         Console.WriteLine();
         Console.WriteLine(message);
         Console.WriteLine();
 
-        await Task.Delay(2000);
+        await Task.Delay(delay);
 
         if (exit)
         {
@@ -954,7 +966,7 @@ internal class Program
             if(exitKeys.Contains(key.Key))
             {
                 if (key.Key == ConsoleKey.D1 && !necessarily) break;
-                if (key.Key == ConsoleKey.Escape) await Report(goodByMessage, true);
+                if (key.Key == ConsoleKey.Escape) await Report(goodByMessage, 2000, true);
             }
             else
             {
