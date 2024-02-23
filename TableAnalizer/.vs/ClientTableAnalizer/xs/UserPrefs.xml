@@ -1,10 +1,11 @@
 ﻿<Properties StartupConfiguration="{71BC7554-CFBA-4265-90F0-435B89BADA28}|Default">
-  <MultiItemStartupConfigurations />
+  <MonoDevelop.Ide.ItemProperties.ClientTableAnalizer PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Release" />
   <MonoDevelop.Ide.Workbench ActiveDocument="Program.cs">
     <Files>
-      <File FileName="Program.cs" Line="13" Column="37" />
-      <File FileName="Objects/ArticleStorageBalance.cs" Line="22" Column="1" />
-      <File FileName="Objects/Article.cs" Line="53" Column="24" />
+      <File FileName="Objects/Article.cs" Line="44" Column="53" />
+      <File FileName="Objects/ArticleStorageBalance.cs" Line="29" Column="39" />
+      <File FileName="Program.cs" Line="1141" Column="2" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
@@ -18,11 +19,10 @@
       </Pad>
     </Pads>
   </MonoDevelop.Ide.Workbench>
-  <MonoDevelop.Ide.ItemProperties.ClientTableAnalizer PreferredExecutionTarget="MonoDevelop.Default" />
-  <Debugger.DebugSourceFolders />
+  <MultiItemStartupConfigurations />
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Release" />
-  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <Debugger.DebugSourceFolders />
 </Properties>

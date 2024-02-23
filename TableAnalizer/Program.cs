@@ -338,7 +338,7 @@ internal class Program
         redemtionReport += $"\nВыкупов с логистикой {redemptonCount}\n";
         redemtionReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
-        await Report(redemtionReport);
+        await Report(redemtionReport, 1500);
     }
 
     private static async Task ReadStorageReportFile(Marketplace marketplace)
@@ -509,7 +509,7 @@ internal class Program
         var reportMessage = $"{targetMessage}: {result}.\n";
         reportMessage += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
-        await Report(reportMessage);
+        await Report(reportMessage, 1500);
     }
 
     private static async Task ReadPayShortagesReport(string? filePath)
@@ -570,7 +570,7 @@ internal class Program
 
             payReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
-            await Report(payReport);
+            await Report(payReport, 1500);
         }
     }
 
@@ -640,7 +640,7 @@ internal class Program
         var regReport = $"Количество товаров в пересорте: {regrandingCount}.\n";
         regReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
-        await Report(regReport);
+        await Report(regReport, 1500);
     }
 
     private static async Task ReadDummyReport(string filePath)
@@ -685,7 +685,7 @@ internal class Program
         var regReport = $"Количество товаров в пустышках: {dummyCount}.\n";
         regReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
-        await Report(regReport);
+        await Report(regReport, 1500);
     }
 
     private static async Task WriteXls(string? ouptutFilePath, string workSheetName = "Отчет")
@@ -948,7 +948,7 @@ internal class Program
 
         _ = Console.ReadKey();
 
-        await Report(goodByMessage, 2000, true);
+        await Report(goodByMessage, 1500, true);
     }
 
     private static async Task Report(string message, int delay = 0, bool exit = false)
