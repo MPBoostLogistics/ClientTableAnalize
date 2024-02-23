@@ -28,7 +28,7 @@ internal class Program
     private static string? storageFilePathWB = default;
     private static string? storageFilePathOZ = default;
 
-    private static string? consumptionPath = default, payShortagesPath = default, regradingPath = default, outputPath = default;
+    private static string? consumptionPath, payShortagesPath, regradingPath, dummyPath, outputPath = default;
 
     private static string? writeoffShortagesPath = default;
 
@@ -46,6 +46,7 @@ internal class Program
 
     #endregion
 
+    #region Functionality
     private static async Task Main(string[] args)
     {
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -93,12 +94,12 @@ internal class Program
         await GetUserConsumingData();
 
         if (!string.IsNullOrEmpty(consumptionPath))
-            await ReadConsumptionReport(consumptionPath, ItemBalanceUnit.Consumption, 4, 28);
+            await ReadConsumptionReport(consumptionPath, ItemBalanceIndex.Consumption, 4, 28);
 
         await GetWriteoffShortagesData();
 
         if (!string.IsNullOrEmpty(writeoffShortagesPath))
-            await ReadConsumptionReport(writeoffShortagesPath, ItemBalanceUnit.WriteoffShortages, 5, 39);
+            await ReadConsumptionReport(writeoffShortagesPath, ItemBalanceIndex.WriteoffShortages, 5, 39);
 
         await GetUserPayShortagesData();
 
@@ -109,6 +110,10 @@ internal class Program
 
         if (!string.IsNullOrEmpty(regradingPath))
             await ReadRegrandingReport(regradingPath);
+
+        await GetDummyData();
+        if (!string.IsNullOrEmpty(dummyPath))
+            await ReadDummyReport(dummyPath);
 
         await WriteXls(outputPath);
 
@@ -129,22 +134,24 @@ internal class Program
     {
         int deadline = default;
 
-        while(deadline == default || deadline == 0)
+        while(deadline == default)
         {
             Console.WriteLine("Введите срок дедлайна для клиента\n(положительное целое число, отличное от 0): ");
 
-            bool success = int.TryParse(Console.ReadLine(), out deadline);
+            if(int.TryParse(Console.ReadLine(), out deadline))
+            {
+                if (deadline > 0)
+                {
+                    await Report($"Срок дедлайна для клиента, дней: {deadline}");
+                    break;
+                }
+                else
+                {
+                    await Report("Введено неправильное значение, повторите попытку.");
+                    deadline = default;
+                    continue;
+                }
 
-            if(success && deadline > 0)
-            {
-                await Report($"Срок дедлайна для клиента, дней: {deadline}");
-                break;
-            }
-            else
-            {
-                await Report("Введено неправильное значение, повторите попытку.");
-                deadline = default;
-                continue;
             }
         }
 
@@ -224,6 +231,14 @@ internal class Program
         Console.WriteLine();
     }
 
+    private static async Task GetDummyData()
+    {
+        var dummyDataMessage = "Перетащите путь к отчету по пустышкам (не обязательно)\n" +
+            "(1 - пропустить, ESC - выход):";
+        dummyPath = await GiveMePath(dummyDataMessage, false, false);
+        Console.WriteLine();
+    }
+
     private static async Task ReadRedemptionReportFile(Marketplace marketplace)
     {
         const int ARTICLE_COL_INDEX = 2;
@@ -235,10 +250,12 @@ internal class Program
         switch (marketplace)
         {
             case Marketplace.WB:
-                if (redemtionFilePathWB is null || CheckFileExistence(redemtionFilePathWB) == null) await Report(goodByMessage, 2000, true);
+                if (redemtionFilePathWB is null || CheckFileExistence(redemtionFilePathWB) == null)
+                    await Report(goodByMessage, 2000, true);
                 break;
             case Marketplace.OZ:
-                if (redemtionFilePathOZ is null || CheckFileExistence(redemtionFilePathOZ) == null) await Report(goodByMessage, 2000, true);
+                if (redemtionFilePathOZ is null || CheckFileExistence(redemtionFilePathOZ) == null)
+                    await Report(goodByMessage, 2000, true);
                 break;
         }
 
@@ -344,7 +361,7 @@ internal class Program
         const int FIRST_INDEX = 1;
         const int COL_STORE_COUNT_INDEX = 17;
 
-        (int articleIndex, int nameIndex, int initBalanceIndex, int comingIndex, int finBalanceIndex) columnIndexes = (1, 6, 14, 15, 17);
+        (int articleIndex, int nameIndex, int initBalanceIndex, int comingIndex, int finBalanceIndex) = (1, 6, 14, 15, 17);
 
         int rowFirstRoomAddress = default;
         int rowSecondRoomAddress = default;
@@ -391,40 +408,38 @@ internal class Program
         for (int row = firstRoomRowRange.First(); row <= firstRoomRowRange.Count; row++)
         {
             // article
-            article = ParseValueToInt(worksheet.Cells[row, columnIndexes.articleIndex].Value);
-            if (article.HasValue && articleDict.ContainsKey(article.Value))
-            {
-                // name
-                name = ParseValueToString(worksheet.Cells[row, columnIndexes.nameIndex].Value);
-                if (name is not null)
-                   articleDict[article.Value]!.SetName(name!.Split(",")[0].Trim());
-             
-                // coming
-                coming = ParseValueToInt(worksheet.Cells[row, columnIndexes.comingIndex].Value); ;
-                if (coming.HasValue)
-                    articleDict[article.Value].StoreBalance.ChangeBalance(ItemBalanceUnit.Coming, coming.Value);
+            article = ParseValueToInt(worksheet.Cells[row, articleIndex].Value);
+            if (!article.HasValue || !articleDict.ContainsKey(article.Value)) continue;
 
-                // finalBalance
-                finalBalance = ParseValueToInt(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
-                if (finalBalance.HasValue)
-                    articleDict[article.Value].StoreBalance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance.Value);
-            }
+            // name
+            name = ParseValueToString(worksheet.Cells[row, nameIndex].Value);
+            if (!string.IsNullOrEmpty(name))
+                articleDict[article.Value]!.SetName(name!.Split(",")[0].Trim());
+             
+            // coming
+            coming = ParseValueToInt(worksheet.Cells[row, comingIndex].Value); ;
+            if (coming.HasValue)
+                articleDict[article.Value].StoreBalance.ChangesStorageBalance(ItemBalanceIndex.Coming, coming.Value);
+
+            // finalBalance
+            finalBalance = ParseValueToInt(worksheet.Cells[row, finBalanceIndex].Value);
+            if (finalBalance.HasValue)
+                articleDict[article.Value].StoreBalance.ChangesStorageBalance(ItemBalanceIndex.FinBalance, finalBalance.Value);
+          
         }
 
         // Get finalBalance++ (secondRoom)
         for (int row = secondRoomRowRange.First(); row < rowFinalRoomAddress - 2; row++)
         {
             // article
-            article = ParseValueToInt(worksheet.Cells[row, columnIndexes.articleIndex].Value);
+            article = ParseValueToInt(worksheet.Cells[row, articleIndex].Value);
+            if (!article.HasValue || !articleDict.ContainsKey(article.Value)) continue;
 
-            if (article.HasValue && articleDict.ContainsKey(article.Value))
-            {
-                // finalBalance
-                finalBalance = ParseValueToInt(worksheet.Cells[row, columnIndexes.finBalanceIndex].Value);
+            // finalBalance
+            finalBalance = ParseValueToInt(worksheet.Cells[row, finBalanceIndex].Value);
 
-                if (finalBalance.HasValue)
-                    articleDict[article.Value].StoreBalance.ChangeBalance(ItemBalanceUnit.FinBalance, finalBalance.Value);
-            }
+            if (finalBalance.HasValue)
+                articleDict[article.Value].StoreBalance.ChangesStorageBalance(ItemBalanceIndex.FinBalance, finalBalance.Value);
         }
 
         package.Dispose();
@@ -436,10 +451,10 @@ internal class Program
         var comBalanceReport = $"Общий приход товаров: {comingSum}, общий остаток: {finBalance}\n";
         comBalanceReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
-        await Report(comBalanceReport);
+        await Report(comBalanceReport, 1500);
     }
 
-    private static async Task ReadConsumptionReport(string? filePath, ItemBalanceUnit storeUnit, int artIndex, int countIndex)
+    private static async Task ReadConsumptionReport(string? filePath, ItemBalanceIndex storeUnit, int artIndex, int countIndex)
     {
         if (filePath is null && CheckFileExistence(filePath!) == null)
             await Report(goodByMessage, 2000, true);
@@ -479,18 +494,18 @@ internal class Program
 
         switch (storeUnit)
         {
-            case ItemBalanceUnit.Consumption:
+            case ItemBalanceIndex.Consumption:
                 result = articleDict.Sum(art => art.Value.StoreBalance.ShippedQuantity);
                 break;
  
-            case ItemBalanceUnit.WriteoffShortages:
+            case ItemBalanceIndex.WriteoffShortages:
                 result = articleDict.Sum(art => art.Value.StoreBalance.WriteoffShortages);
                 break;
             default:
                 break;
         }
 
-        var targetMessage = storeUnit == ItemBalanceUnit.Consumption ? "Общий расход по товарам клиента" : "Оприходовано и списано по недостачам от ПВЗ";
+        var targetMessage = storeUnit == ItemBalanceIndex.Consumption ? "Общий расход по товарам клиента" : "Оприходовано и списано по недостачам от ПВЗ";
         var reportMessage = $"{targetMessage}: {result}.\n";
         reportMessage += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
@@ -503,7 +518,7 @@ internal class Program
         const int COUNT_INDEX = 2;
         const int PRICE_INDEX = 3;
 
-        if (filePath is null && CheckFileExistence(filePath) == null)
+        if (string.IsNullOrEmpty(filePath) || CheckFileExistence(filePath!) == null)
         {
             return;
         }
@@ -628,6 +643,51 @@ internal class Program
         await Report(regReport);
     }
 
+    private static async Task ReadDummyReport(string filePath)
+    {
+        const int ARTICLE_INDEX = 1; const int COUNT_INDEX = 2;
+
+        if (filePath is null || CheckFileExistence(filePath) == null) return;
+
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+
+        using ExcelPackage package = new(new FileInfo(filePath));
+
+        if (CheckSheets(in package) == null) return;
+
+        ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+        (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
+
+        int dummyCount = default;
+
+        for (int row = 1; row <= rowCount; row++)
+        {
+            var articleAddress = worksheet.Cells[row, ARTICLE_INDEX];
+            var countAddress = worksheet.Cells[row, COUNT_INDEX];
+
+            // Set article dummy 
+            if (articleAddress.Value is not null &&
+                int.TryParse(articleAddress.Value.ToString(), out int article) &&
+                articleDict.ContainsKey(article) &&
+                countAddress.Value is not null &&
+                int.TryParse(countAddress.Value.ToString(), out int count)
+                )
+            {
+                articleDict[article].StoreBalance.SetDummy(count);
+                dummyCount += count;
+            }
+        }
+
+        package.Dispose();
+        stopwatch.Stop();
+
+        var regReport = $"Количество товаров в пустышках: {dummyCount}.\n";
+        regReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
+
+        await Report(regReport);
+    }
+
     private static async Task WriteXls(string? ouptutFilePath, string workSheetName = "Отчет")
     {
         const int HEADER_TABLE_ROW_HEIGHT = 40;
@@ -664,9 +724,10 @@ internal class Program
             new ResultCell("Склад: Расход товаром", "0"),           // 16
             new ResultCell("Склад: Расход пересортом", "0"),        // 17
             new ResultCell("Склад: Расход компенсацией", "0"),      // 18
-            new ResultCell("Склад: Остаток", "0"),                  // 19
+            new ResultCell("Склад: Учтено 'пустышками'", "0"),      // 19
+            new ResultCell("Склад: Остаток", "0"),                  // 20
 
-            new ResultCell("Комментарий", "0"),                     // 19
+            new ResultCell("Комментарий", "0"),                     // 21
         };
 
         // Fill header data 
@@ -675,7 +736,7 @@ internal class Program
         newWorkSheet.Column(1).Width = 8;   // МП
         newWorkSheet.Column(2).Width = 12;  // Артикул 
         newWorkSheet.Column(3).Width = 60;  // Название 
-        newWorkSheet.Column(20).Width = 60; // Комментарий
+        newWorkSheet.Column(21).Width = 60; // Комментарий
 
         // Populating with data
         int recordIndex = FIRST_ROW_INDEX + 1;
@@ -685,10 +746,8 @@ internal class Program
             articleDict[key].AnalyzeArticle(key);
 
             if (articleDict[key].ArticleShortage.HasValue)
-            {
                 ArticleShortages.Add(articleDict[key].ArticleShortage!.Value);
-            }
-
+ 
             // Fill Redemptions data
             newWorkSheet.Cells[recordIndex, 1].Value = articleDict[key].Marketplace;
             newWorkSheet.Cells[recordIndex, 2].Value = key;
@@ -727,11 +786,11 @@ internal class Program
             newWorkSheet.Cells[recordIndex, 16].Value = articleDict[key].StoreBalance.ShippedQuantity;
             newWorkSheet.Cells[recordIndex, 17].Value = articleDict[key].StoreBalance.Regradings.Sum(re => re.Value);
             newWorkSheet.Cells[recordIndex, 18].Value = articleDict[key].StoreBalance.PayShortagesCount;
-
-            newWorkSheet.Cells[recordIndex, 19].Value = articleDict[key].StoreBalance.FinBalance;
+            newWorkSheet.Cells[recordIndex, 19].Value = articleDict[key].StoreBalance.DummiesCount;
+            newWorkSheet.Cells[recordIndex, 20].Value = articleDict[key].StoreBalance.FinBalance;
 
             // Comment
-            newWorkSheet.Cells[recordIndex, 20].Value = articleDict[key].Comment;
+            newWorkSheet.Cells[recordIndex, 21].Value = articleDict[key].Comment;
 
             recordIndex++;
         }
@@ -1078,4 +1137,5 @@ internal class Program
 
         excelWorksheet.Cells[$"{firstColLet}{firstRow}:{endColLet}{endRow}"].AutoFilter = true;
     }
+    #endregion
 }

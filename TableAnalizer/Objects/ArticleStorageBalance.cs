@@ -2,48 +2,54 @@
 {
     internal class ArticleStorageBalance
     {
-        public int ReceivedQuantity { get; private set; } = default;                        // приход, 15
-        public int ShippedQuantity { get; private set; } = default;                         // расход, 16
-        public int FinBalance { get; private set; } = default;                              // остаток, 17
+        #region Properties
+        public int ReceivedQuantity { get; private set; } = default;                        // приход товаров, 15
+        public int ShippedQuantity { get; private set; } = default;                         // расход товаров, 16
+        public int FinBalance { get; private set; } = default;                              // остаток товаров, 17
         public int Undelivery { get; private set; } = default;                              // недовоз от ПВЗ, -
         public int WriteoffShortages { get; private set; } = default;                       // списано по недостачам
         public int PayShortagesCount { get; private set; } = default;                       // недостачи - количество 
-        public int PayShortagesSum { get; private set; } = default;                         // недостачи - сумма
+        public double PayShortagesSum { get; private set; } = default;                      // недостачи - сумма
         public Dictionary<int, int> Regradings { get; private set; } = new();               // пересорты (на какой артикул, в каком количестве)
+        public int  DummiesCount { get; private set; } = default;                           // пустышки
         public int TotalConsumption { get; private set; } = default;                        // общий расход = товарами + пересортом + компенсацией 
+        #endregion
 
+        #region Constructors
         public ArticleStorageBalance() { }
+        #endregion
 
-        private void CalculatTotalConsumption()
+        #region Functionality
+        public void CalculatTotalConsumption()
         {
-            TotalConsumption = ShippedQuantity + Regradings.Sum(re => re.Value) + PayShortagesCount;
+            // Общий расход
+            TotalConsumption = ShippedQuantity +    // + передано товаром
+                Regradings.Sum(re => re.Value) +    // + пересортам
+                DummiesCount +                      // + пустышками
+                PayShortagesCount;                  // + деньгами
         }
 
         public void CalculateTotalReceivedQuantity()
         {
+            // Не учитываем приходы и списание по недостачам
             if(WriteoffShortages > 0)
                 ReceivedQuantity -= WriteoffShortages;
         }
 
-        public void ChangeBalance(ItemBalanceUnit unit, int value)
+        /// <summary>
+        /// Changes storage balance.
+        /// </summary>
+        /// <param name="index">Storage balance indicator.</param>
+        /// <param name="value">Storage balance indicator value.</param>
+        public void ChangesStorageBalance(ItemBalanceIndex index, int value)
         {
-            switch (unit)
+            switch (index)
             {
-                case ItemBalanceUnit.Coming:
-                    ReceivedQuantity += value;
-                    break;
-                case ItemBalanceUnit.Consumption:
-                    ShippedQuantity += value;
-                    CalculatTotalConsumption();
-                    break;
-                case ItemBalanceUnit.FinBalance:
-                    FinBalance += value;
-                    break;
-                case ItemBalanceUnit.WriteoffShortages:
-                    WriteoffShortages += value;
-                    break;
-                default:
-                    break;
+                case ItemBalanceIndex.Coming: ReceivedQuantity += value; break;
+                case ItemBalanceIndex.Consumption: ShippedQuantity += value; CalculatTotalConsumption(); break;
+                case ItemBalanceIndex.FinBalance: FinBalance += value; break;
+                case ItemBalanceIndex.WriteoffShortages: WriteoffShortages += value; break;
+                default: break;
             }
         }
 
@@ -72,21 +78,24 @@
             {
                 Regradings[article] += count;
             }
-
-            CalculatTotalConsumption();
         }
 
-        public void SetPayShortage(int count, double sum)
+        /// <summary>
+        /// Adding  pay shortage by article.
+        /// </summary>
+        /// <param name="count">Quantity of paid goods.</param>
+        /// <param name="sum">Amount of paid goods</param>
+        public void SetPayShortage(int count, double amount)
         {
             PayShortagesCount += count;
-            PayShortagesSum += count;
-
-            CalculatTotalConsumption();
-        } 
-
-        public override string ToString()
-        {
-            return $"com {ReceivedQuantity}, con {ShippedQuantity}, fin {FinBalance}";
+            PayShortagesSum += amount;
         }
+
+        /// <summary>
+        /// Adding dummies by article.
+        /// </summary>
+        /// <param name="count">Quantity of goods.</param>
+        public void SetDummy(int count) => DummiesCount += count;
+        #endregion
     }
 }

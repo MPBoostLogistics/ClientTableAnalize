@@ -1,47 +1,5 @@
 ﻿namespace ClientTableAnalizer.Objects
 {
-    internal enum ShortagesPlace
-    {
-        Warehouse, PickupPoint 
-    }
-
-    internal struct ArticleShortage
-    {
-        public int ArticleNumber { get; }
-        public string ArtileName { get; set; }
-        public double AveragePrice { get; set; }
-        public Dictionary<ShortagesPlace, int> Shortages { get; set; } = new();
-
-        public ArticleShortage(int articleNumber, string artileName, double averagePrice)
-        {
-            ArticleNumber = articleNumber; ArtileName = artileName; AveragePrice = averagePrice;
-        } 
-
-        public readonly void SetArticleShortage(ShortagesPlace shortagesPlace, int shortagesCount)
-        {
-            if(Shortages.ContainsKey(shortagesPlace))
-            {
-                Shortages[shortagesPlace] += shortagesCount;
-            }
-            else
-            {
-                Shortages[shortagesPlace] = shortagesCount;
-            }
-        }
-
-        /// <summary>
-        /// Returns amount of goods underdelivered at place.
-        /// </summary>
-        /// <param name="shortagesPlace">Place of under-delivery formation.</param>
-        /// <returns></returns>
-        public readonly int GetShortagesCountByPlace(ShortagesPlace shortagesPlace)
-        {
-            return Shortages
-                .Where(el => el.Key == shortagesPlace)
-                .Aggregate(0, (acc, el) => acc + el.Value);
-        }
-    }
-
     internal class Article
     {
         #region Variables && constants
@@ -77,14 +35,17 @@
         #endregion
 
         #region Functionality
-        public void SetName(string name) => Name = name;
+        public void SetName(string name) =>
+            Name = name;
 
         public void SetComment(string message) =>
             Comment = string.IsNullOrEmpty(Comment) ? message : string.Concat(Comment, message);
 
-        public void SetStoreBalance(ItemBalanceUnit unit, int value) => StoreBalance.ChangeBalance(unit, value);
+        public void SetStoreBalance(ItemBalanceIndex unit, int value) =>
+            StoreBalance.ChangesStorageBalance(unit, value);
 
-        public void SetStoreBalance(int count, double price) => StoreBalance.SetPayShortage(count, price);
+        public void SetStoreBalance(int count, double price) =>
+            StoreBalance.SetPayShortage(count, price);
 
         public void AnalyzeArticle(int articleNumber)
         {
@@ -94,14 +55,14 @@
             // Set IsDeadline
             this.IsDeadline = (this.MaxRedemptionDate - DateTime.Now).Duration().Days > DeadLineDays;
 
-            // Analize items (set redemtion balance && average price)
-            AnalizeItems();
+            AnalizeRedempionBalanceOfItems();
 
-            // Create ArticleShortage
-            ArticleShortage articleShortage = new(articleNumber, Name, AveragePrice);
+            var articleShortage = new ArticleShortage (articleNumber, Name, AveragePrice);
 
-            // Set Undeliviry
             StoreBalance.SetUndelivery(RedempionBalance.WaitBalance);
+
+            // Calculate total consumption
+            StoreBalance.CalculatTotalConsumption();
 
             // Calculate total received quantity
             StoreBalance.CalculateTotalReceivedQuantity();
@@ -138,7 +99,6 @@
                         else if(StoreBalance.FinBalance <= 0 && StoreBalance.Undelivery > 0)
                         {
                             StatusValue = (ArticleStatus.OnSearchPoint, "На поиске ПВЗ", System.Drawing.ColorTranslator.FromHtml("#ffa0a0"));
-
                         }
                         else if (StoreBalance.FinBalance > 0 && StoreBalance.Undelivery > 0)
                         {
@@ -155,7 +115,6 @@
 
                         if(StoreBalance.Undelivery > 0)
                             articleShortage.SetArticleShortage(ShortagesPlace.PickupPoint, StoreBalance.Undelivery);
-
                     }
     
                     if (StoreBalance.TotalConsumption < StoreBalance.ReceivedQuantity && StoreBalance.FinBalance <= 0)
@@ -169,7 +128,7 @@
             ArticleShortage = articleShortage.Shortages.Count > 0 ? articleShortage : null;
         }
 
-        private void AnalizeItems()
+        private void AnalizeRedempionBalanceOfItems()
         {
             var itemGroups = GetGroupItemsByStatus(Items);
 
@@ -195,7 +154,6 @@
 
                 AveragePrice = group.Average(it => it.Price);
             }
-
         }
 
         private static IOrderedEnumerable<IGrouping<RedemptionStatus, ArticleRowItem>> GetGroupItemsByStatus(List<ArticleRowItem> items)
@@ -205,13 +163,6 @@
                   into itemGroup
                   orderby itemGroup.Key
                   select itemGroup;
-        }
-
-        public override string ToString()
-        {
-            return $"Name: {Name}\n" +
-                $"RedBalanсe: can {RedempionBalance.CanceledCount}, way {RedempionBalance.OnWayCount}, del {RedempionBalance.DeliveredCount}, drawn {RedempionBalance.WithDrawnCount}\n" +
-                $"StoreBalance: {StoreBalance}\nMaxRedDate: {MaxRedemptionDate}, IsDeadline: {IsDeadline}\nStatus{StatusValue.status}\nPrice: {AveragePrice}\n\r";
         }
         #endregion
     }

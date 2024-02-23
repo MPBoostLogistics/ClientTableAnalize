@@ -1,6 +1,6 @@
 ﻿namespace ClientTableAnalizer.Objects
 {
-    internal enum ItemBalanceUnit
+    internal enum ItemBalanceIndex
     {
         Coming,             // Приход 
         Consumption,        // Расход
