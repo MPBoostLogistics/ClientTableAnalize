@@ -1,14 +1,26 @@
 ﻿namespace ClientTableAnalizer.Objects
 {
-    internal struct ResultCell
+    internal readonly struct ResultCell
     {
-        public string Name { get; private set; }
-        public string Format { get; private set; }
+        #region Properties
+        public int ColumnNumber { get; }
+        public string Name { get; }
+        public int ColumnWidth { get; }
+        public string Format { get; }
+        public bool WrapTextInHeader { get; }
+        public int TextRotationInHeader { get; }
+        #endregion
 
-        public ResultCell(string name, string format)
+        #region Constructors
+        public ResultCell(int columnNumber, string name,int columnWidth,  string format, bool wrapTextInHeader, int textRotationInHeader)
         {
+            ColumnNumber = columnNumber;
             Name = name;
+            ColumnWidth = columnWidth;
             Format = format;
+            WrapTextInHeader = wrapTextInHeader;
+            TextRotationInHeader = textRotationInHeader;
         }
+        #endregion
     }
 }

@@ -10,6 +10,7 @@
         public ArticleRedempionBalance RedempionBalance { get; private set; }
         public ArticleStorageBalance StoreBalance { get; private set; }
         public ArticleShortage? ArticleShortage { get; private set; }
+        public ArticleItemForReport? Overrun { get; private set; }
         public DateTime MaxRedemptionDate { get; private set; }
         public bool IsDeadline { get; private set; }
         public (ArticleStatus status, string statusComment, System.Drawing.Color color) StatusValue { get; private set; }
@@ -81,8 +82,13 @@
 
                     if(StoreBalance.TotalConsumption > RedempionBalance.WaitBalance)
                     {
-                        // TODO: Забрать перерасходы
-                        SetComment($"рассчитались больше, чем должны; разница - ({StoreBalance.TotalConsumption - RedempionBalance.WaitBalance})");
+                        var overrunCount = StoreBalance.TotalConsumption - RedempionBalance.WaitBalance;
+
+                        SetComment($"рассчитались больше, чем должны; разница - ({overrunCount})");
+
+                        Overrun = StoreBalance.Regradings.Count == 0 ?
+                            new ArticleItemForReport(articleNumber, Name, overrunCount, AveragePrice, overrunCount * AveragePrice) :
+                            null;
                     }
                 }
                 else

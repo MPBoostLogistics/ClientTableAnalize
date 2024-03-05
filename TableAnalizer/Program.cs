@@ -8,9 +8,28 @@ using System.Reflection;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using ClientTableAnalizer.Objects;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 internal enum Marketplace { WB, OZ }
+
+/// <summary>
+/// “Lightweight” item of article (product).
+/// </summary>
+/// <remark>
+/// Used for reports (shortages, overruns).
+/// </remark>
+internal class ArticleItemForReport
+{
+    public int ArticleNumber { get; private set; }
+    public string Name { get; private set; }
+    public int Count { get; private set; }
+    public double Cost { get; private set; }
+    public double Sum { get; private set; }
+
+    public ArticleItemForReport(int articleNumber, string name, int count, double cost, double sum)
+    {
+        ArticleNumber = articleNumber; Name = name; Count = count; Cost = cost; Sum = sum;
+    }
+}
 
 internal class Program
 {
@@ -21,6 +40,10 @@ internal class Program
     private const string NAME_FIRST_ROOM = "1 - Помещение приемки, сортировки и упаковки";
     private const string NAME_SECOND_ROOM = "2 - Помещение длительного хранения и отгрузки";
     private const string NAME_FINAL_ROW = "Итого товаров в единицах хранения";
+    private const int FIRST_ROW_INDEX = 1;
+    private const int HEADER_TABLE_ROW_HEIGHT = 40;
+    private const int DEFAULT_TABLE_ROW_HEIGHT = 16;
+    private const int TABLE_COL_WIDTH = 17;
 
     private static string? login = default;
     private static string? redemtionFilePathWB = default;
@@ -38,9 +61,11 @@ internal class Program
 
     private static List<ArticleShortage> ArticleShortages { get; set; } = new();
 
-    private static readonly List<(int article, string name, int count, double cost, double sum)> ShortagesInWarehouse = new();
+    private static readonly List<ArticleItemForReport> ShortagesInWarehouse = new();
 
-    private static readonly List<(int article, string name, int count, double cost, double sum)> ShortagesInPickupPoints = new();
+    private static readonly List<ArticleItemForReport> ShortagesInPickupPoints = new();
+
+    private static readonly List<ArticleItemForReport> Overruns = new();
 
     private static readonly string goodByMessage = "\nСпасибо за использование программы. Хорошего дня!";
 
@@ -119,12 +144,10 @@ internal class Program
 
         Console.ReadLine();
     }
-
     private static string? ParseValueToString(object? obj) =>
         obj is not null && !string.IsNullOrEmpty(obj.ToString()) ?
         obj.ToString()!.Trim() :
         null;
-
     private static int? ParseValueToInt(object? obj) =>
         obj is not null && !string.IsNullOrEmpty(obj.ToString()) ?
         int.Parse(obj.ToString()!.Trim()) :
@@ -616,6 +639,7 @@ internal class Program
                 int.TryParse(countAddress.Value.ToString(), out int count)
                 )
             {
+                // Для текущего арта указываем артикул пересорта (regranding)
                 articleDict[article].StoreBalance.SetRegrading(regranding, count);
                
                 commentForArticle = $"пересорт на арт {regranding} ({count} шт) ";
@@ -690,53 +714,47 @@ internal class Program
 
     private static async Task WriteXls(string? ouptutFilePath, string workSheetName = "Отчет")
     {
-        const int HEADER_TABLE_ROW_HEIGHT = 40;
-        const int DEFAULT_TABLE_ROW_HEIGHT = 16;
-        const int TABLE_COL_WIDTH = 17;
-        const int FIRST_ROW_INDEX = 1;
-
         using var excel = new ExcelPackage(ouptutFilePath);
-
-        // Create new worksheet
-        CreateWorkSheet(excel, workSheetName, out ExcelWorksheet newWorkSheet, System.Drawing.Color.GreenYellow, FIRST_ROW_INDEX, HEADER_TABLE_ROW_HEIGHT, DEFAULT_TABLE_ROW_HEIGHT, TABLE_COL_WIDTH);
 
         // Create cells 
         ResultCell[] resultCells = new ResultCell[]
         {
-            new ResultCell("МП", "0"),                              // 1
-            new ResultCell("Артикул", "0"),                         // 2
-            new ResultCell("Название", "0"),                        // 3
-            new ResultCell("Средняя цена, руб.", "0.00"),           // 4
-            new ResultCell("Дата последнего выкупа", "dd.MM.yyyy"), // 5
-            new ResultCell("Статус", "0"),                          // 6
+            // Article info
+            new (1, "МП", 8, "0", false, 0),                               
+            new (2, "Артикул", 12, "0", false, 0),                        
+            new (3, "Название", 60, "0", false, 0),                      
+            new (4, "Средняя цена, руб.", 12, "0.00", true, 0),           
+            new (5, "Дата последнего выкупа", 12, "dd.MM.yyyy", true, 0), 
+            new (6, "Статус", 12, "0", false, 0),                          
 
-            new ResultCell("Всего", "0"),                           // 7
-            new ResultCell("Отменено", "0"),                        // 8
-            new ResultCell("В пути", "0"),                          // 9
-            new ResultCell("Доставлен на ПВЗ", "0"),                // 10                
-            new ResultCell("Забран с ПВЗ", "0"),                    // 11
+            // Buyout info
+            new (7, "Всего", 12, "0", false, 0),                           
+            new (8, "Отменено", 7, "0", false, -90),                        
+            new (9, "В пути", 7, "0", false, -90),                          
+            new (10, "Доставлен на ПВЗ", 7, "0", true, -90),                              
+            new (11, "Забран с ПВЗ", 7, "0", true, -90),                   
 
-            new ResultCell("Склад: Ожидание", "0"),                 // 12
-            new ResultCell("Склад: Приход", "0"),                   // 13
-            new ResultCell("Склад: Недовоз от ПВЗ", "0"),           // 14
+            // Info on arrival of goods at warehouse
+            new (12, "Склад: Ожидание", 9,"0", false, 0),                
+            new (13, "Склад: Приход", 9 ,"0",false, 0),                   
+            new (14, "Склад: Недовоз от ПВЗ", 9, "0", true, 0),          
 
-            new ResultCell("Склад: Расход всего", "0"),             // 15
-            new ResultCell("Склад: Расход товаром", "0"),           // 16
-            new ResultCell("Склад: Расход пересортом", "0"),        // 17
-            new ResultCell("Склад: Расход компенсацией", "0"),      // 18
-            new ResultCell("Склад: Учтено 'пустышками'", "0"),      // 19
-            new ResultCell("Склад: Остаток", "0"),                  // 20
+            // Info on shipment of goods from warehouse
+            new (15, "Склад: Расход всего",12, "0", true, 0),            
+            new (16, "Склад: Расход товаром",7, "0", true, -90),          
+            new (17, "Склад: Расход пересортом",7, "0", true, -90),       
+            new (18, "Склад: Расход компенсацией",7, "0", true, -90),     
+            new (19, "Склад: Учтено 'пустышками'",7, "0", true, -90),     
+            new (20, "Склад: Остаток", 9, "0", true, 0),        
 
-            new ResultCell("Комментарий", "0"),                     // 21
+            new (21, "Комментарий", 60, "0", true, 0),              
         };
 
-        // Fill header data 
-        FillTableHeaderData(resultCells, ref newWorkSheet);
+        // Create new worksheet
+        CreateWorkSheet(in excel, workSheetName, out ExcelWorksheet newWorkSheet, System.Drawing.Color.GreenYellow);
 
-        newWorkSheet.Column(1).Width = 8;   // МП
-        newWorkSheet.Column(2).Width = 12;  // Артикул 
-        newWorkSheet.Column(3).Width = 60;  // Название 
-        newWorkSheet.Column(21).Width = 60; // Комментарий
+        // Fill header data 
+        SetupTableHeader(in resultCells, ref newWorkSheet);
 
         // Populating with data
         int recordIndex = FIRST_ROW_INDEX + 1;
@@ -747,7 +765,10 @@ internal class Program
 
             if (articleDict[key].ArticleShortage.HasValue)
                 ArticleShortages.Add(articleDict[key].ArticleShortage!.Value);
- 
+
+            var regradingArt = articleDict
+                .Any(art => art.Value.StoreBalance.Regradings.ContainsKey(key));
+
             // Fill Redemptions data
             newWorkSheet.Cells[recordIndex, 1].Value = articleDict[key].Marketplace;
             newWorkSheet.Cells[recordIndex, 2].Value = key;
@@ -795,20 +816,13 @@ internal class Program
             recordIndex++;
         }
 
-        // Stilized table - fit && data format
-        for (int i = 1; i < resultCells.Length + 1; i++)
-        {
-            //newWorkSheet.Column(i).AutoFit();
-            newWorkSheet.Column(i).Style.Numberformat.Format = i != 5 ? "0" : "dd.MM.yyyy";
-            newWorkSheet.Column(i).Style.WrapText = true;
-        }
-
         // Add filter
         AddFilterInWorkSheet(ref newWorkSheet);
 
         //Freeze row && columns
         newWorkSheet.View.FreezePanes(2, 4);
 
+        // HACK: Переделать !!!
         // Group column
         for (var i = 8; i <= 11; i++)
         {
@@ -816,11 +830,20 @@ internal class Program
             newWorkSheet.Column(i).Collapsed = true;
         }
 
-        for (var i = 16; i <= 18; i++)
+        for (var i = 16; i <= 19; i++)
         {
             newWorkSheet.Column(i).OutlineLevel = 1;
             newWorkSheet.Column(i).Collapsed = true;
         }
+
+        ResultCell[] resultCellsForAddReports = new ResultCell[]
+        {
+            new (1, "Артикул", 13, "0", false, 0),                         
+            new (2, "Название товара", 60, "0", true, 0),                 
+            new (3, "Кол-во, шт.",11, "0", true, 0),                 
+            new (4, "Средняя цена, руб.",11, "0.00", true, 0),                 
+            new (5, "Сумма, руб.", 11, "0.00", true, 0),                        
+        };
 
         // Analize ArticleShortages
         if (ArticleShortages.Count > 0)
@@ -830,13 +853,15 @@ internal class Program
                 var articleShortagesInWarehouse = articleShortage.GetShortagesCountByPlace(ShortagesPlace.Warehouse);
                 if (articleShortagesInWarehouse > 0)
                 {
-                    ShortagesInWarehouse.Add((articleShortage.ArticleNumber, articleShortage.ArtileName, articleShortagesInWarehouse, articleShortage.AveragePrice, articleShortage.AveragePrice * articleShortagesInWarehouse));
+                    var shortageInWarehouse = new ArticleItemForReport(articleShortage.ArticleNumber, articleShortage.ArtileName, articleShortagesInWarehouse, articleShortage.AveragePrice, articleShortage.AveragePrice * articleShortagesInWarehouse);
+                    ShortagesInWarehouse.Add(shortageInWarehouse);
                 }
 
                 var articleShortagesInPickupPoint = articleShortage.GetShortagesCountByPlace(ShortagesPlace.PickupPoint);
                 if (articleShortagesInPickupPoint > 0)
                 {
-                    ShortagesInPickupPoints.Add((articleShortage.ArticleNumber, articleShortage.ArtileName, articleShortagesInPickupPoint, articleShortage.AveragePrice, articleShortage.AveragePrice * articleShortagesInPickupPoint));
+                    var shortageInPickupPoints = new ArticleItemForReport(articleShortage.ArticleNumber, articleShortage.ArtileName, articleShortagesInPickupPoint, articleShortage.AveragePrice, articleShortage.AveragePrice * articleShortagesInPickupPoint);
+                    ShortagesInPickupPoints.Add(shortageInPickupPoints);
                 }
             }
 
@@ -844,89 +869,50 @@ internal class Program
             if (ShortagesInWarehouse.Count > 0)
             {
                 // Create new worksheet
-                CreateWorkSheet(in excel, "Недовозы (склад)", out ExcelWorksheet worksheet02, System.Drawing.Color.Orange, FIRST_ROW_INDEX, HEADER_TABLE_ROW_HEIGHT, DEFAULT_TABLE_ROW_HEIGHT, TABLE_COL_WIDTH);
-
-                // Create info for cells 
-                ResultCell[] resultCellsNewWorksheet02 = new ResultCell[]
-                {
-                    new ResultCell("Артикул", "0"),                         // 1
-                    new ResultCell("Название товара", "0"),                 // 2
-                    new ResultCell("Количество, шт.", "0"),                 // 3
-                    new ResultCell("Средняя цена", "0.00"),                 // 4
-                    new ResultCell("Сумма", "0.00"),                        // 5
-                };
+                CreateWorkSheet(in excel, "Недовозы (склад)", out ExcelWorksheet worksheet02, System.Drawing.Color.Orange);
 
                 // Fill header data 
-                FillTableHeaderData(resultCellsNewWorksheet02, ref worksheet02);
+                SetupTableHeader(in resultCells, ref worksheet02);
 
-                // Fill data 
-                int itemRecordIndex01 = FIRST_ROW_INDEX + 1;
-
-                foreach (var (article, name, count, cost, sum) in ShortagesInWarehouse)
-                {
-                    worksheet02.Cells[itemRecordIndex01, 1].Value = article;
-                    worksheet02.Cells[itemRecordIndex01, 2].Value = name;
-                    worksheet02.Cells[itemRecordIndex01, 3].Value = count;
-                    worksheet02.Cells[itemRecordIndex01, 4].Value = cost;
-                    worksheet02.Cells[itemRecordIndex01, 5].Value = sum;
-
-                    itemRecordIndex01++;
-                }
-
-                // Fill total sum
-                worksheet02.Cells[itemRecordIndex01, 5].Value = ShortagesInWarehouse.Aggregate(0.00, (acc, i) => acc + i.sum);
-
-                // Stilized table - fit text
-                worksheet02.Column(2).Width = 60;  
-                for (int i = 1; i < resultCellsNewWorksheet02.Length + 1; i++)
-                {
-                    worksheet02.Column(i).Style.WrapText = true;
-                }
+                // Make report in sheet
+                MakeAdditionalReport(resultCellsForAddReports, ref worksheet02, ShortagesInWarehouse);
             }
 
             // Shortages in pickup report
             if (ShortagesInPickupPoints.Count > 0)
             {
                 // Create new worksheet
-                CreateWorkSheet(in excel, "Недовозы (ПВЗ)", out ExcelWorksheet worksheet03, System.Drawing.Color.Orange, FIRST_ROW_INDEX, HEADER_TABLE_ROW_HEIGHT, DEFAULT_TABLE_ROW_HEIGHT, TABLE_COL_WIDTH);
-
-                // Create info for cells 
-                ResultCell[] resultCellsNewWorksheet03 = new ResultCell[]
-                {
-                    new ResultCell("Артикул", "0"),                         // 1
-                    new ResultCell("Название товара", "0"),                 // 2
-                    new ResultCell("Количество, шт.", "0"),                 // 3
-                    new ResultCell("Средняя цена", "0.00"),                 // 4
-                    new ResultCell("Сумма", "0.00"),                        // 5
-                };
+                CreateWorkSheet(in excel, "Недовозы (ПВЗ)", out ExcelWorksheet worksheet03, System.Drawing.Color.Orange);
 
                 // Fill header data 
-                FillTableHeaderData(resultCellsNewWorksheet03, ref worksheet03);
+                SetupTableHeader(in resultCells, ref worksheet03);
 
-                // Fill data 
-                int itemRecordIndex02 = FIRST_ROW_INDEX + 1;
-
-                foreach (var (article, name, count, cost, sum) in ShortagesInPickupPoints)
-                {
-                    worksheet03.Cells[itemRecordIndex02, 1].Value = article;
-                    worksheet03.Cells[itemRecordIndex02, 2].Value = name;
-                    worksheet03.Cells[itemRecordIndex02, 3].Value = count;
-                    worksheet03.Cells[itemRecordIndex02, 4].Value = cost;
-                    worksheet03.Cells[itemRecordIndex02, 5].Value = sum;
-
-                    itemRecordIndex02++;
-                }
-
-                // Fill total sum
-                worksheet03.Cells[itemRecordIndex02, 5].Value = ShortagesInPickupPoints.Aggregate(0.00, (acc, i) => acc + i.sum);
-
-                // Stilized table - fit text
-                worksheet03.Column(2).Width = 60;
-                for (int i = 1; i < resultCellsNewWorksheet03.Length + 1; i++)
-                {
-                    worksheet03.Column(i).Style.WrapText = true;
-                }
+                // Make report in sheet
+                MakeAdditionalReport(resultCellsForAddReports, ref worksheet03, ShortagesInPickupPoints);
             }
+        }
+
+        // HACK: Плохо, переделать логику, двойной проход
+        foreach (var (key, value) in articleDict)
+        {
+            var regradingArt = articleDict
+                .Any(art => art.Value.StoreBalance.Regradings.ContainsKey(key));
+
+            if (articleDict[key].Overrun != null && !regradingArt)
+                Overruns.Add(articleDict[key].Overrun!);
+        }
+
+        // Analize ArticleShortages
+        if (Overruns.Count > 0)
+        {
+            // Create new worksheet
+            CreateWorkSheet(in excel, "Перерасходы (склад)", out ExcelWorksheet overrunsWorksheet, System.Drawing.Color.ForestGreen);
+
+            // Fill header data 
+            SetupTableHeader(in resultCells, ref overrunsWorksheet);
+
+            // Make report in sheet
+            MakeAdditionalReport(resultCellsForAddReports, ref overrunsWorksheet, Overruns);
         }
 
         // Save work
@@ -984,15 +970,10 @@ internal class Program
 
     private static bool? CheckFileExistence(string path)
     {
-        if (File.Exists(path))
-        {
-            return true;
-        }
-        else
-        {
-            Console.WriteLine($"Файл по пути\n{path}\nне найден. Проверьте правильность указания данных.");
-            return null;
-        }
+        if (File.Exists(path)) return true;
+  
+        Console.WriteLine($"Файл по пути\n{path}\nне найден. Проверьте правильность указания данных.");
+        return null;
     }
 
     private static bool? CheckSheets(in ExcelPackage package)
@@ -1085,7 +1066,7 @@ internal class Program
         return (sheet.Dimension.End.Column, sheet.Dimension.End.Row);
     }
 
-    public static void CreateWorkSheet(in ExcelPackage excelPackage, string workSheetName, out ExcelWorksheet worksheet, System.Drawing.Color tabColor, int firstRowIndex, double headerRowHeight, double rowHeight, double rowWidth)
+    public static void CreateWorkSheet(in ExcelPackage excelPackage, string workSheetName, out ExcelWorksheet worksheet, System.Drawing.Color tabColor)
     {
         // Remove existing worksheet
         var existingWorksheet = excelPackage.Workbook.Worksheets.SingleOrDefault(x => x.Name == workSheetName);
@@ -1097,31 +1078,37 @@ internal class Program
 
         // Stilized workSheet
         worksheet.TabColor = tabColor;
-        worksheet.DefaultRowHeight = rowHeight;
-        worksheet.DefaultColWidth = rowWidth;
-
-        // Stilized workSheet header
-        worksheet.Row(firstRowIndex).Height = headerRowHeight;
-        worksheet.Row(firstRowIndex).Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
-        worksheet.Row(firstRowIndex).Style.Font.Bold = true;
-        worksheet.Row(firstRowIndex).Style.Font.Size = 14;
-        worksheet.Row(firstRowIndex).Style.VerticalAlignment = ExcelVerticalAlignment.Center;
+        worksheet.DefaultRowHeight = DEFAULT_TABLE_ROW_HEIGHT;
+        worksheet.DefaultColWidth = TABLE_COL_WIDTH;
     }
 
-    private static void FillTableHeaderData(ResultCell[] resultCells, ref ExcelWorksheet worksheet)
+    private static void SetupTableHeader(in ResultCell[] resultCells, ref ExcelWorksheet worksheet)
     {
-        for (int i = 0; i < resultCells.Length; i++)
+        worksheet.Row(FIRST_ROW_INDEX).Height = HEADER_TABLE_ROW_HEIGHT;
+        worksheet.Row(FIRST_ROW_INDEX).Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
+        worksheet.Row(FIRST_ROW_INDEX).Style.VerticalAlignment = ExcelVerticalAlignment.Center;
+        worksheet.Row(FIRST_ROW_INDEX).Style.Font.Bold = true;
+        worksheet.Row(FIRST_ROW_INDEX).Style.Font.Size = 14;
+
+        foreach (var currentColumn in resultCells)
         {
-            var colIndex = i + 1;
+            int i = currentColumn.ColumnNumber;
+            ExcelColumn? columnInWorkSheet = worksheet.Column(i);
 
-            // Add data
-            worksheet.Cells[1, colIndex].Value = resultCells[i].Name;
-            worksheet.Cells[1, colIndex].AutoFitColumns();
+            if(columnInWorkSheet is null) continue;
 
-            // Stilized
-            worksheet.Column(colIndex).AutoFit();
-            worksheet.Column(colIndex).Style.Numberformat.Format = resultCells[i].Format;
-        }
+            columnInWorkSheet.Width = currentColumn.ColumnWidth;
+            columnInWorkSheet.Style.Numberformat.Format = currentColumn.Format;
+            columnInWorkSheet.Style.WrapText = currentColumn.WrapTextInHeader;
+            
+            // Add name of column
+            worksheet.Cells[FIRST_ROW_INDEX, i].Value = resultCells[i].Name;
+           
+            // Rotation text in header 
+            worksheet.Cells[FIRST_ROW_INDEX, i].Style.TextRotation = currentColumn.TextRotationInHeader;
+
+             worksheet.Cells[FIRST_ROW_INDEX, i].AutoFitColumns();
+        }      
     }
 
     private static void AddFilterInWorkSheet(ref ExcelWorksheet excelWorksheet)
@@ -1136,6 +1123,37 @@ internal class Program
         string endColLet = ExcelCellAddress.GetColumnLetter(endCol);
 
         excelWorksheet.Cells[$"{firstColLet}{firstRow}:{endColLet}{endRow}"].AutoFilter = true;
+    }
+
+    private static void MakeAdditionalReport(ResultCell[] cells, ref ExcelWorksheet worksheet, List<ArticleItemForReport> items)
+    {
+        // Fill header data 
+        SetupTableHeader(cells, ref worksheet);
+
+        // Fill table data 
+        int recordIndex = FIRST_ROW_INDEX + 1;
+        foreach (var item in items)
+        {
+            worksheet.Cells[recordIndex, 1].Value = item.ArticleNumber;
+            worksheet.Cells[recordIndex, 2].Value = item.Name;
+            worksheet.Cells[recordIndex, 3].Value = item.Count;
+            worksheet.Cells[recordIndex, 4].Value = item.Cost;
+            worksheet.Cells[recordIndex, 5].Value = item.Sum;
+
+            recordIndex++;
+        }
+
+        // Fill total sum
+        worksheet.Cells[recordIndex, 5].Value = items.Aggregate(0.00, (acc, i) => acc + i.Sum);
+
+        // Stilized table - fit text
+        worksheet.Column(2).Width = 60;
+        for (int i = 1; i < cells.Length + 1; i++)
+        {
+            worksheet.Column(i).Style.WrapText = true;
+        }
+
+        AddFilterInWorkSheet(ref worksheet);
     }
     #endregion
 }
