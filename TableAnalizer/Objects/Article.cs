@@ -123,6 +123,7 @@
                             articleShortage.SetArticleShortage(ShortagesPlace.PickupPoint, StoreBalance.Undelivery);
                     }
     
+                    // Если общий расход меньше одидания 
                     if (StoreBalance.TotalConsumption < StoreBalance.ReceivedQuantity && StoreBalance.FinBalance <= 0)
                     {
                         StatusValue = (ArticleStatus.OnSearchWarehouse, "На поиске склада", System.Drawing.ColorTranslator.FromHtml("#ffd3d3"));
