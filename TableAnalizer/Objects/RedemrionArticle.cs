@@ -1,4 +1,6 @@
-﻿namespace ClientTableAnalizer.Objects
+﻿using ClientTableAnalizer.Enums;
+
+namespace ClientTableAnalizer.Objects
 {
 	public class ArticleRedempionBalance
 	{

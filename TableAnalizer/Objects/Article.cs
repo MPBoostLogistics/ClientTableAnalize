@@ -1,12 +1,13 @@
-﻿namespace ClientTableAnalizer.Objects
+﻿using ClientTableAnalizer.Enums;
+
+namespace ClientTableAnalizer.Objects
 {
-    internal class Article
+    public class Article
     {
         #region Variables && constants
-        private int DeadLineDays { get; }
         public Marketplace Marketplace { get; private set; }
         public string Name { get; private set; }
-        public List<ArticleRowItem> Items { get; private set; }
+        public List<ArticleRowInReport> ArticleRowsInReport { get; }
         public ArticleRedempionBalance RedempionBalance { get; private set; }
         public ArticleStorageBalance StoreBalance { get; private set; }
         public ArticleShortage? ArticleShortage { get; private set; }
@@ -16,15 +17,15 @@
         public (ArticleStatus status, string statusComment, System.Drawing.Color color) StatusValue { get; private set; }
         public double AveragePrice {get; private set; } 
         public string Comment { get; private set; }
+
         #endregion
 
         #region Constructors && destructors
-        public Article(Marketplace marketplace, ArticleRowItem item, int deadLineDays)
+        public Article(Marketplace marketplace, ArticleRowInReport item)
         {
-            DeadLineDays = deadLineDays;
             Marketplace = marketplace;
             Name = "No name";
-            Items = new List<ArticleRowItem> { item };
+            ArticleRowsInReport = new List<ArticleRowInReport> { item };
             RedempionBalance = new();
             StoreBalance = new();
             MaxRedemptionDate = DateTime.Now;
@@ -33,9 +34,13 @@
             AveragePrice = 0.00;
             Comment = string.Empty;
         }
+
         #endregion
 
         #region Functionality
+
+        public void SetArticleRowInReport(ArticleRowInReport articleRowInReport) =>
+            ArticleRowsInReport.Add(articleRowInReport);
         public void SetName(string name) =>
             Name = name;
 
@@ -48,13 +53,13 @@
         public void SetStoreBalance(int count, double price) =>
             StoreBalance.SetPayShortage(count, price);
 
-        public void AnalyzeArticle(int articleNumber)
+        public void AnalyzeArticle(int articleNumber, int deadLineDays)
         {
             // Get max redemption date
-            MaxRedemptionDate = Items.MaxBy(i => i.RedemptionDate).RedemptionDate;
+            MaxRedemptionDate = ArticleRowsInReport.MaxBy(i => i.RedemptionDate).RedemptionDate;
 
             // Set IsDeadline
-            this.IsDeadline = (this.MaxRedemptionDate - DateTime.Now).Duration().Days > DeadLineDays;
+            this.IsDeadline = (this.MaxRedemptionDate - DateTime.Now).Duration().Days > deadLineDays;
 
             AnalizeRedempionBalanceOfItems();
 
@@ -137,7 +142,7 @@
 
         private void AnalizeRedempionBalanceOfItems()
         {
-            var itemGroups = GetGroupItemsByStatus(Items);
+            var itemGroups = GetGroupItemsByStatus(ArticleRowsInReport);
 
             foreach (var group in itemGroups)
             {
@@ -163,7 +168,7 @@
             }
         }
 
-        private static IOrderedEnumerable<IGrouping<RedemptionStatus, ArticleRowItem>> GetGroupItemsByStatus(List<ArticleRowItem> items)
+        private static IOrderedEnumerable<IGrouping<RedemptionStatus, ArticleRowInReport>> GetGroupItemsByStatus(List<ArticleRowInReport> items)
         {
            return from item in items
                   group item by item.ItemStatus

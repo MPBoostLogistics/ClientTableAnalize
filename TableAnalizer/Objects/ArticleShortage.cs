@@ -1,6 +1,8 @@
-﻿namespace ClientTableAnalizer.Objects
+﻿using ClientTableAnalizer.Enums;
+
+namespace ClientTableAnalizer.Objects
 {
-    internal struct ArticleShortage
+    public struct ArticleShortage
     {
         #region Properties
         public int ArticleNumber { get; }

@@ -1,28 +1,34 @@
 ﻿using System.Globalization;
+using ClientTableAnalizer.Enums;
 
 namespace ClientTableAnalizer.Objects
 {
-    public class ArticleRowItem
+    public class ArticleRowInReport
     {
+        #region Variables && constants
         private const string DATE_TIME_FORMAT = "dd.MM.yyyy HH:mm";
         private readonly CultureInfo Culture = CultureInfo.GetCultureInfo("ru-RU");
+        #endregion
 
+        #region Properties 
         public DateTime RedemptionDate { get; }             
         public RedemptionStatus ItemStatus { get; }
         public double Price { get; }
-
-        public ArticleRowItem(string redemptionDate, string itemStatus, string priceString)
+        #endregion
+        
+        #region Constructors
+        public ArticleRowInReport(string redemptionDateString, string itemStatusString, string priceString)
         {
-            RedemptionDate = DateTime.ParseExact(redemptionDate, DATE_TIME_FORMAT, Culture);
-            ItemStatus = SetItemStatus(itemStatus);
+            RedemptionDate = DateTime.ParseExact(redemptionDateString, DATE_TIME_FORMAT, Culture);
+            
+            ItemStatus = SetItemStatus(itemStatusString);
 
-            var priceStringValue = priceString.Split(" ")[0];
-            if(double.TryParse(priceStringValue, out double price))
-            {
+            if(double.TryParse(priceString.Split(" ")[0], out double price))
                 Price = price;
-            } 
         }
+        #endregion
 
+        #region Functionality
         private static RedemptionStatus SetItemStatus(string statusText)
         {
             return statusText switch
@@ -35,9 +41,6 @@ namespace ClientTableAnalizer.Objects
             };
         }
 
-        public override string ToString()
-        {
-            return $"{RedemptionDate}, {ItemStatus}";
-        }
+        #endregion
     }
 }

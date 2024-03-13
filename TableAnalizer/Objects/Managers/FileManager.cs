@@ -1,15 +1,11 @@
-﻿namespace ClientTableAnalizer.Objects
-{
-	public enum PathKey
-	{
-        Documents, MPBoostClients
-    }
+﻿using ClientTableAnalizer.Enums;
 
+namespace ClientTableAnalizer.Objects.Managers
+{
 	public static class FileManager
 	{
-        static string persDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-
-        static string [] pathKeyNames = Enum.GetNames(typeof(PathKey));
+        static readonly string persDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+        static readonly string [] pathKeyNames = Enum.GetNames(typeof(PathKey));
 
         public static DirectoryInfo? CreateDirectoryInfo(PathKey pathKey, string? login = null)
         {
@@ -33,7 +29,6 @@
             }
                 
         }
-
 
         public static DirectoryInfo? GetDirectoryInfo(PathKey pathKey, string? login = null)
 		{

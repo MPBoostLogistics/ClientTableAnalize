@@ -8,34 +8,13 @@ using System.Reflection;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using ClientTableAnalizer.Objects;
-
-internal enum Marketplace { WB, OZ }
-
-/// <summary>
-/// “Lightweight” item of article (product).
-/// </summary>
-/// <remark>
-/// Used for reports (shortages, overruns).
-/// </remark>
-internal class ArticleItemForReport
-{
-    public int ArticleNumber { get; private set; }
-    public string Name { get; private set; }
-    public int Count { get; private set; }
-    public double Cost { get; private set; }
-    public double Sum { get; private set; }
-
-    public ArticleItemForReport(int articleNumber, string name, int count, double cost, double sum)
-    {
-        ArticleNumber = articleNumber; Name = name; Count = count; Cost = cost; Sum = sum;
-    }
-}
+using ClientTableAnalizer.Enums;
+using ClientTableAnalizer.Objects.Managers;
 
 internal class Program
 {
     #region Variables and constants
-
-    private static int deadLineDays;
+    private static readonly Version? AppVersion = Assembly.GetExecutingAssembly().GetName().Version;
     private const string LOGISTIC_FLAG = "Да";
     private const string NAME_FIRST_ROOM = "1 - Помещение приемки, сортировки и упаковки";
     private const string NAME_SECOND_ROOM = "2 - Помещение длительного хранения и отгрузки";
@@ -50,25 +29,20 @@ internal class Program
     private static string? redemtionFilePathOZ = default;
     private static string? storageFilePathWB = default;
     private static string? storageFilePathOZ = default;
-
     private static string? consumptionPath, payShortagesPath, regradingPath, dummyPath, outputPath = default;
-
     private static string? writeoffShortagesPath = default;
-
     private static DirectoryInfo? clientDirectoryPath;
-
     private static readonly Dictionary<int, Article> articleDict = new();
-
     private static List<ArticleShortage> ArticleShortages { get; set; } = new();
-
     private static readonly List<ArticleItemForReport> ShortagesInWarehouse = new();
-
     private static readonly List<ArticleItemForReport> ShortagesInPickupPoints = new();
-
     private static readonly List<ArticleItemForReport> Overruns = new();
+    private static string goodByMessage = "\nСпасибо за использование программы. Хорошего дня!";
 
-    private static readonly string goodByMessage = "\nСпасибо за использование программы. Хорошего дня!";
+    #endregion
 
+    #region Properties 
+    private static ArticleManager ArticleManager { get; }= new ();
     #endregion
 
     #region Functionality
@@ -76,19 +50,19 @@ internal class Program
     {
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-        var appVersion = Assembly.GetExecutingAssembly().GetName().Version;
-
         Console.Clear();
 
         var helloString = $"" +
             $"--------------------------------------------\n" +
-            $"Программа анализа работы с клиентом логистики\n" +
-            $"Версия: {appVersion}\n" +
+            $"Программа формирования отчета по клиенту логистики\n" +
+            $"Версия: {AppVersion}\n" +
             $"---------------------------------------------";
 
         Console.WriteLine(helloString);
 
-        deadLineDays = await GetDeadLineDays();
+        // Set deadline days
+        int deadLineDays = await GetDeadLineDays();
+        ArticleManager.SetDeadlineDays(deadLineDays);
 
         await GetUserRedemtionDataFile(Marketplace.WB, false);
 
@@ -96,7 +70,7 @@ internal class Program
 
         if(string.IsNullOrEmpty(redemtionFilePathWB) && string.IsNullOrEmpty(redemtionFilePathOZ))
         {
-            var goodByMessage02 = string.Concat($"Данные по выкупам не предоставлены, невозможно сформировать отчет\n", goodByMessage);
+            var goodByMessage02 = string.Concat($"Данные по заказам клиента не предоставлены, к сожалению невозможно сформировать отчет.\n", goodByMessage);
             await Report(goodByMessage02, 2000, true);
         }
 
@@ -193,11 +167,11 @@ internal class Program
 
         if(marketplace == Marketplace.WB)
         {
-            redemtionFilePathWB = await GiveMePath(redemtionMessage01, necessarily, login is null);
+            redemtionFilePathWB = await GetDirectoryPath(redemtionMessage01, necessarily, login is null);
         }
         else if(marketplace == Marketplace.OZ)
         {
-            redemtionFilePathOZ = await GiveMePath(redemtionMessage01, necessarily, login is null);
+            redemtionFilePathOZ = await GetDirectoryPath(redemtionMessage01, necessarily, login is null);
         }
 
         await GetClientOutputPath();
@@ -212,10 +186,10 @@ internal class Program
         switch (marketplace)
         {
             case Marketplace.WB:
-                storageFilePathWB = await GiveMePath(storagePathMessage, false, false);
+                storageFilePathWB = await GetDirectoryPath(storagePathMessage, false, false);
                 break;
             case Marketplace.OZ:
-                storageFilePathOZ = await GiveMePath(storagePathMessage, false, false);
+                storageFilePathOZ = await GetDirectoryPath(storagePathMessage, false, false);
                 break;
         }
 
@@ -226,7 +200,7 @@ internal class Program
     {
         var writeoffShortagesMessage = "Перетащите путь к отчету по оприходованию и списанию недостач (обязательно)\n" +
            "(или нажмите ESC для выхода из программы):";
-        writeoffShortagesPath = await GiveMePath(writeoffShortagesMessage, true, false);
+        writeoffShortagesPath = await GetDirectoryPath(writeoffShortagesMessage, true, false);
         Console.WriteLine();
     }
 
@@ -234,7 +208,7 @@ internal class Program
     {
         var consumingDataMessage = "Перетащите путь к отчету по расходу товаров клиента со склада (обязательно)\n" +
                 "(или нажмите ESC для выхода из программы):";
-        consumptionPath = await GiveMePath(consumingDataMessage, true, false);
+        consumptionPath = await GetDirectoryPath(consumingDataMessage, true, false);
         Console.WriteLine();
     }
 
@@ -242,7 +216,7 @@ internal class Program
     {
         var payShortagesDataMessage = "Перетащите путь к отчету по недостачам (не обязательно)\n" +
            "(1 - пропустить, ESC - выход из программы):";
-        payShortagesPath = await GiveMePath(payShortagesDataMessage, false, false);
+        payShortagesPath = await GetDirectoryPath(payShortagesDataMessage, false, false);
         Console.WriteLine();
     }
 
@@ -250,7 +224,7 @@ internal class Program
     {
         var regrandingDataMessage = "Перетащите путь к отчету по пересортам (не обязательно)\n" +
           "(1 - пропустить, ESC - выход):";
-        regradingPath = await GiveMePath(regrandingDataMessage, false, false);
+        regradingPath = await GetDirectoryPath(regrandingDataMessage, false, false);
         Console.WriteLine();
     }
 
@@ -258,45 +232,44 @@ internal class Program
     {
         var dummyDataMessage = "Перетащите путь к отчету по пустышкам (не обязательно)\n" +
             "(1 - пропустить, ESC - выход):";
-        dummyPath = await GiveMePath(dummyDataMessage, false, false);
+        dummyPath = await GetDirectoryPath(dummyDataMessage, false, false);
         Console.WriteLine();
     }
 
     private static async Task ReadRedemptionReportFile(Marketplace marketplace)
     {
         const int ARTICLE_COL_INDEX = 2;
-        const int DATE_FLAG_COL_INDEX = 7;
+        const int DATE_COL_INDEX = 7;
         const int STATUS_COL_INDEX = 9;
         const int LOG_FLAG_COL_INDEX = 10;
         const int PRICE_COL_INDEX = 14;
 
-        switch (marketplace)
+        bool isFileExists = default;
+        var filePath = marketplace == Marketplace.WB ? redemtionFilePathWB : redemtionFilePathOZ;
+        
+        try
         {
-            case Marketplace.WB:
-                if (redemtionFilePathWB is null || CheckFileExistence(redemtionFilePathWB) == null)
-                    await Report(goodByMessage, 2000, true);
-                break;
-            case Marketplace.OZ:
-                if (redemtionFilePathOZ is null || CheckFileExistence(redemtionFilePathOZ) == null)
-                    await Report(goodByMessage, 2000, true);
-                break;
+            isFileExists = filePath != null && CheckFileExistence(filePath);
         }
-
+        catch (Exception ex)
+        {
+            goodByMessage = string.Concat(goodByMessage,"\n",ex.Message);   
+            await Report(goodByMessage, 2000, true);
+        }
+ 
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
         await Report($"Анализирую отчет клиента {login} по выкупам {marketplace}...");
 
-        var filePath = marketplace == Marketplace.WB ? redemtionFilePathWB : redemtionFilePathOZ;
-
         using ExcelPackage package = new(new FileInfo(filePath!));
 
         if (CheckSheets(in package) == null) Environment.Exit(0);
 
-        ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-        (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
+        var worksheet = package.Workbook.Worksheets[0];
+        var dimention = worksheet.Dimension;
 
-        for (int row = 1; row <= rowCount; row++)
+        for (int row = FIRST_ROW_INDEX; row <= dimention.End.Row; row++)
         {
             var logisticFlagValue = worksheet.Cells[row, LOG_FLAG_COL_INDEX].Value.ToString();
 
@@ -310,7 +283,7 @@ internal class Program
 
                     if (!article.HasValue) continue;
       
-                    var redemptionDateString = worksheet.Cells[row, DATE_FLAG_COL_INDEX].Value.ToString();
+                    var redemptionDateString = worksheet.Cells[row, DATE_COL_INDEX].Value.ToString();
                     var itemStatusValue = worksheet.Cells[row, STATUS_COL_INDEX].Value.ToString();
                     var priceSting = worksheet.Cells[row, PRICE_COL_INDEX].Value.ToString();
 
@@ -318,50 +291,50 @@ internal class Program
                         !string.IsNullOrEmpty(itemStatusValue) &&
                         !string.IsNullOrEmpty(priceSting))
                     {
-                        var item = new ArticleRowItem(redemptionDateString, itemStatusValue.Trim(), priceSting.Trim());
-
-                            if (articleDict.ContainsKey(article.Value))
-                            {
-                                articleDict[article.Value].Items.Add(item);
-                            }
-                            else
-                            {
-                                articleDict[article.Value] = new Article(marketplace, item, deadLineDays);
-                            }
+                        var articleRow  = new ArticleRowInReport(redemptionDateString.Trim(), itemStatusValue.Trim(), priceSting.Trim());
+                        var currentArticle = ArticleManager[article.Value];
+                        if (currentArticle is not null)
+                        {
+                            currentArticle.SetArticleRowInReport(articleRow);
                         }
                         else
                         {
-                            await Report("Невозможно создать Item по выкупу.", 2000, true);
+                            ArticleManager[article.Value] = new Article(marketplace, articleRow);
                         }
+                    }
+                    else
+                    {
+                        await Report("Невозможно создать Item по выкупу.", 2000, true);
                     }
                 }
             }
+        }
 
         package.Dispose();
         stopwatch.Stop();
 
         var redemtionReport = $"Артикулов с логистикой {articleDict.Values.Count}\n";
 
-        var groups =
-            from article in articleDict
-            from item in article.Value.Items
-            group item by item.ItemStatus into itemGroup
-            orderby itemGroup.Key
-            select itemGroup;
-
-        int redemptonCount = default;
-
-        foreach (var group in groups)
+        if(ArticleManager.GetArtriclesByRedemtionStatus(out IOrderedEnumerable<IGrouping<RedemptionStatus,ArticleRowInReport>>? artriclesByRedemtionStatus)) 
         {
-            var valuesCount = group.Count();
-            redemtionReport += $"- {group.Key} {valuesCount}\n";
-            redemptonCount += valuesCount;
-        }
+            int redemptonCount = default;
+            foreach (var group in artriclesByRedemtionStatus!)
+            {
+                var valuesCount = group.Count();
+                redemtionReport += $"- {group.Key} {valuesCount}\n";
+                redemptonCount += valuesCount;
+            }
 
-        redemtionReport += $"\nВыкупов с логистикой {redemptonCount}\n";
-        redemtionReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
+            redemtionReport += $"\nВыкупов с логистикой {redemptonCount}\n";
+            redemtionReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
-        await Report(redemtionReport, 1500);
+            await Report(redemtionReport, 1500);
+        } 
+        else 
+        {
+            goodByMessage = string.Concat(goodByMessage, "\n", "Невозможно создать группы выкупов и сфоормировать отсчет.");
+            await Report(goodByMessage, 2000, true);
+        } 
     }
 
     private static async Task ReadStorageReportFile(Marketplace marketplace)
@@ -758,7 +731,7 @@ internal class Program
 
         foreach (var (key, value) in articleDict)
         {
-            articleDict[key].AnalyzeArticle(key);
+            ArticleManager[key].AnalyzeArticle(key,ArticleManager.DeadlineDays);
 
             if (articleDict[key].ArticleShortage.HasValue)
                 ArticleShortages.Add(articleDict[key].ArticleShortage!.Value);
@@ -779,7 +752,7 @@ internal class Program
 
             mainReportWorksheet.Cells[recordIndex, 6].Value = articleDict[key].StatusValue.statusComment;
 
-            mainReportWorksheet.Cells[recordIndex, 7].Value = articleDict[key].Items.Count;
+            mainReportWorksheet.Cells[recordIndex, 7].Value = articleDict[key].ArticleRowsInReport.Count;
             mainReportWorksheet.Cells[recordIndex, 8].Value = articleDict[key].RedempionBalance.CanceledCount;
             mainReportWorksheet.Cells[recordIndex, 9].Value = articleDict[key].RedempionBalance.OnWayCount;
             mainReportWorksheet.Cells[recordIndex, 10].Value = articleDict[key].RedempionBalance.DeliveredCount;
@@ -962,12 +935,11 @@ internal class Program
         return $"/{copy}";
     }
 
-    private static bool? CheckFileExistence(string path)
+    private static bool CheckFileExistence(string path)
     {
-        if (File.Exists(path)) return true;
-  
-        Console.WriteLine($"Файл по пути\n{path}\nне найден. Проверьте правильность указания данных.");
-        return null;
+        if (File.Exists(path))return true;
+
+        throw new FileNotFoundException($"Файл по пути\n{path}\nне найден. Проверьте правильность указания данных.");
     }
 
     private static bool? CheckSheets(in ExcelPackage package)
@@ -984,7 +956,7 @@ internal class Program
         }
     }
 
-    private static async Task<string?> GiveMePath(string message, bool necessarily, bool giveMeLogin)
+    private static async Task<string?> GetDirectoryPath(string message, bool necessarily, bool giveMeLogin)
     {
         string? path = default;
 
@@ -993,7 +965,6 @@ internal class Program
             Console.Clear();
             Console.WriteLine(message);
 
-            
             var key = Console.ReadKey();
 
             List<ConsoleKey> exitKeys = new(2) { ConsoleKey.D1 , ConsoleKey.Escape };
@@ -1011,7 +982,7 @@ internal class Program
 
         if (path is null) return null;
 
-        if (path is not null && giveMeLogin)
+        if (path is not null && giveMeLogin) 
             login = GiveMeLogin(path!);
 
         return FormСorrectPath(path!);

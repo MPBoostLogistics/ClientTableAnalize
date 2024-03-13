@@ -1,6 +1,8 @@
-﻿namespace ClientTableAnalizer.Objects
+﻿using ClientTableAnalizer.Enums;
+
+namespace ClientTableAnalizer.Objects
 {
-    internal class ArticleStorageBalance
+    public class ArticleStorageBalance
     {
         #region Properties
         public int ReceivedQuantity { get; private set; } = default;                        // приход товаров, 15
