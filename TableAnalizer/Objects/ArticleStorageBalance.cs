@@ -2,12 +2,30 @@
 
 namespace ClientTableAnalizer.Objects
 {
+        public struct ArticleStorageBalanceUnit 
+        {
+            public ArticeStorageIndex StorageIndex {get; set;}
+            public string Describtion {get; set;}
+            public int Count {get; set;}
+
+            public ArticleStorageBalanceUnit(ArticeStorageIndex index, string describtion, int count)
+            {
+                StorageIndex = index; Describtion = describtion; Count = count;
+            }
+        }
+
     public class ArticleStorageBalance
     {
+
         #region Properties
-        public int ReceivedQuantity { get; private set; } = default;                        // приход товаров, 15
-        public int ShippedQuantity { get; private set; } = default;                         // расход товаров, 16
-        public int FinBalance { get; private set; } = default;                              // остаток товаров, 17
+
+        public readonly List<ArticleStorageBalanceUnit> StorageBalances = new() 
+        {
+           new(ArticeStorageIndex.GoodsReceived, "Склад: принято товаров, шт.", 0),
+           new(ArticeStorageIndex.GoodsShipped, "Склад: расход товаром, шт.", 0),
+           new(ArticeStorageIndex.GoodsRemaining, "Склад: остаток товаров, шт.", 0),  
+        };
+ 
         public int Undelivery { get; private set; } = default;                              // недовоз от ПВЗ, -
         public int WriteoffShortages { get; private set; } = default;                       // списано по недостачам
         public int PayShortagesCount { get; private set; } = default;                       // недостачи - количество 
@@ -22,10 +40,25 @@ namespace ClientTableAnalizer.Objects
         #endregion
 
         #region Functionality
+        public void SetStorageBalance(ArticeStorageIndex index, int value)
+        {
+            var balance = StorageBalances.FirstOrDefault(b => Equals(b.StorageIndex, index));
+            balance.Count += value;
+        }
+
+        public int GetSumBalanceByStorageIndex(ArticeStorageIndex index) => StorageBalances.FirstOrDefault(b => Equals(b.StorageIndex,index)).Count;
+
+        public bool IsItemOnWarehouseSearch() => GetSumBalanceByStorageIndex(ArticeStorageIndex.GoodsRemaining) > 0 && Undelivery == 0;
+        
+        public bool IsItemArticleOnPointSearch() => GetSumBalanceByStorageIndex(ArticeStorageIndex.GoodsRemaining) <= 0 && Undelivery > 0;
+ 
+        public bool IsItemArticleOnPointAndWarehouseSearch() => GetSumBalanceByStorageIndex(ArticeStorageIndex.GoodsRemaining) > 0 && Undelivery > 0;
+
         public void CalculatTotalConsumption()
         {
+            var goodsShippedCount = StorageBalances.FirstOrDefault(i => i.StorageIndex == ArticeStorageIndex.GoodsShipped).Count;
             // Общий расход
-            TotalConsumption = ShippedQuantity +    // + передано товаром
+            TotalConsumption = goodsShippedCount +  // + передано товаром
                 Regradings.Sum(re => re.Value) +    // + пересортам
                 DummiesCount +                      // + пустышками
                 PayShortagesCount;                  // + деньгами
@@ -34,25 +67,9 @@ namespace ClientTableAnalizer.Objects
         public void CalculateTotalReceivedQuantity()
         {
             // Не учитываем приходы и списание по недостачам
+            var goodsShippedBalance = StorageBalances.FirstOrDefault(i => i.StorageIndex == ArticeStorageIndex.GoodsShipped);
             if(WriteoffShortages > 0)
-                ReceivedQuantity -= WriteoffShortages;
-        }
-
-        /// <summary>
-        /// Changes storage balance.
-        /// </summary>
-        /// <param name="index">Storage balance indicator.</param>
-        /// <param name="value">Storage balance indicator value.</param>
-        public void ChangesStorageBalance(ItemBalanceIndex index, int value)
-        {
-            switch (index)
-            {
-                case ItemBalanceIndex.Coming: ReceivedQuantity += value; break;
-                case ItemBalanceIndex.Consumption: ShippedQuantity += value; CalculatTotalConsumption(); break;
-                case ItemBalanceIndex.FinBalance: FinBalance += value; break;
-                case ItemBalanceIndex.WriteoffShortages: WriteoffShortages += value; break;
-                default: break;
-            }
+                goodsShippedBalance.Count -= WriteoffShortages;
         }
 
         /// <summary>
@@ -61,7 +78,8 @@ namespace ClientTableAnalizer.Objects
         /// <param name="expectedQuantity ">Expected quantity of products.</param>
         public void SetUndelivery(int expectedQuantity)
         {
-            var undelivery = expectedQuantity - ReceivedQuantity;
+            var goodsShippedBalance = StorageBalances.FirstOrDefault(i => i.StorageIndex == ArticeStorageIndex.GoodsShipped);
+            var undelivery = expectedQuantity - goodsShippedBalance.Count;
             Undelivery = undelivery > 0 ? undelivery : 0;
         }
         

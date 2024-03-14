@@ -10,6 +10,7 @@ using OfficeOpenXml.Style;
 using ClientTableAnalizer.Objects;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Managers;
+using System.Linq;
 
 internal class Program
 {
@@ -32,7 +33,6 @@ internal class Program
     private static string? consumptionPath, payShortagesPath, regradingPath, dummyPath, outputPath = default;
     private static string? writeoffShortagesPath = default;
     private static DirectoryInfo? clientDirectoryPath;
-    private static readonly Dictionary<int, Article> articleDict = new();
     private static List<ArticleShortage> ArticleShortages { get; set; } = new();
     private static readonly List<ArticleItemForReport> ShortagesInWarehouse = new();
     private static readonly List<ArticleItemForReport> ShortagesInPickupPoints = new();
@@ -80,39 +80,39 @@ internal class Program
         if (!string.IsNullOrEmpty(redemtionFilePathOZ))
             await ReadRedemptionReportFile(Marketplace.OZ);
 
-        await GetUserStorageData(Marketplace.WB);
+        //await GetUserStorageData(Marketplace.WB);
 
-        await GetUserStorageData(Marketplace.OZ);
+        //await GetUserStorageData(Marketplace.OZ);
 
-        if (!string.IsNullOrEmpty(storageFilePathWB))
-            await ReadStorageReportFile(Marketplace.WB);
+        // if (!string.IsNullOrEmpty(storageFilePathWB))
+        //     await ReadStorageReportFile(Marketplace.WB);
 
-        if (!string.IsNullOrEmpty(storageFilePathOZ))
-            await ReadStorageReportFile(Marketplace.OZ);
+        // if (!string.IsNullOrEmpty(storageFilePathOZ))
+        //     await ReadStorageReportFile(Marketplace.OZ);
 
-        await GetUserConsumingData();
+       // await GetUserConsumingData();
 
-        if (!string.IsNullOrEmpty(consumptionPath))
-            await ReadConsumptionReport(consumptionPath, ItemBalanceIndex.Consumption, 4, 28);
+        // if (!string.IsNullOrEmpty(consumptionPath))
+        //     await ReadConsumptionReport(consumptionPath, ArticeStorageIndex.GoodsShipped, 4, 28);
 
-        await GetWriteoffShortagesData();
+        // await GetWriteoffShortagesData();
 
-        if (!string.IsNullOrEmpty(writeoffShortagesPath))
-            await ReadConsumptionReport(writeoffShortagesPath, ItemBalanceIndex.WriteoffShortages, 5, 39);
+        // if (!string.IsNullOrEmpty(writeoffShortagesPath))
+        //     await ReadConsumptionReport(writeoffShortagesPath, ArticeStorageIndex.WriteoffShortages, 5, 39);
 
-        await GetUserPayShortagesData();
+        // await GetUserPayShortagesData();
 
-        if (!string.IsNullOrEmpty(consumptionPath))
-            await ReadPayShortagesReport(payShortagesPath);
+        // if (!string.IsNullOrEmpty(consumptionPath))
+        //     await ReadPayShortagesReport(payShortagesPath);
 
-        await GetRegrandingData();
+        // await GetRegrandingData();
 
-        if (!string.IsNullOrEmpty(regradingPath))
-            await ReadRegrandingReport(regradingPath);
+        // if (!string.IsNullOrEmpty(regradingPath))
+        //     await ReadRegrandingReport(regradingPath);
 
-        await GetDummyData();
-        if (!string.IsNullOrEmpty(dummyPath))
-            await ReadDummyReport(dummyPath);
+        // await GetDummyData();
+        // if (!string.IsNullOrEmpty(dummyPath))
+        //     await ReadDummyReport(dummyPath);
 
         await WriteXls(outputPath);
 
@@ -148,7 +148,6 @@ internal class Program
                     deadline = default;
                     continue;
                 }
-
             }
         }
 
@@ -238,12 +237,6 @@ internal class Program
 
     private static async Task ReadRedemptionReportFile(Marketplace marketplace)
     {
-        const int ARTICLE_COL_INDEX = 2;
-        const int DATE_COL_INDEX = 7;
-        const int STATUS_COL_INDEX = 9;
-        const int LOG_FLAG_COL_INDEX = 10;
-        const int PRICE_COL_INDEX = 14;
-
         bool isFileExists = default;
         var filePath = marketplace == Marketplace.WB ? redemtionFilePathWB : redemtionFilePathOZ;
         
@@ -271,7 +264,7 @@ internal class Program
 
         for (int row = FIRST_ROW_INDEX; row <= dimention.End.Row; row++)
         {
-            var logisticFlagValue = worksheet.Cells[row, LOG_FLAG_COL_INDEX].Value.ToString();
+            var logisticFlagValue = worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.logisticFlagIndex].Value.ToString();
 
             if (!string.IsNullOrEmpty(logisticFlagValue))
             {
@@ -279,13 +272,13 @@ internal class Program
 
                 if (logisticFlag == LOGISTIC_FLAG)
                 {
-                    var article = ParseValueToInt(worksheet.Cells[row, ARTICLE_COL_INDEX].Value);
+                    var article = ParseValueToInt(worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.articleIndex].Value);
 
                     if (!article.HasValue) continue;
       
-                    var redemptionDateString = worksheet.Cells[row, DATE_COL_INDEX].Value.ToString();
-                    var itemStatusValue = worksheet.Cells[row, STATUS_COL_INDEX].Value.ToString();
-                    var priceSting = worksheet.Cells[row, PRICE_COL_INDEX].Value.ToString();
+                    var redemptionDateString = worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.dateIndex].Value.ToString();
+                    var itemStatusValue = worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.statusIndex].Value.ToString();
+                    var priceSting = worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.priceIndex].Value.ToString();
 
                     if (!string.IsNullOrEmpty(redemptionDateString) &&
                         !string.IsNullOrEmpty(itemStatusValue) &&
@@ -312,10 +305,10 @@ internal class Program
 
         package.Dispose();
         stopwatch.Stop();
+        
+        var redemtionReport = $"Артикулов с логистикой {ArticleManager.ArticlesCount}\n";
 
-        var redemtionReport = $"Артикулов с логистикой {articleDict.Values.Count}\n";
-
-        if(ArticleManager.GetArtriclesByRedemtionStatus(out IOrderedEnumerable<IGrouping<RedemptionStatus,ArticleRowInReport>>? artriclesByRedemtionStatus)) 
+        if(ArticleManager.GetArticlesByRedemtionStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus,ArticleRowInReport>>? artriclesByRedemtionStatus)) 
         {
             int redemptonCount = default;
             foreach (var group in artriclesByRedemtionStatus!)
@@ -341,7 +334,7 @@ internal class Program
     {
         string? filePath = marketplace == Marketplace.WB ? storageFilePathWB : storageFilePathOZ;
 
-        if (filePath is null || CheckFileExistence(filePath) == null) await Report(goodByMessage, 2000, true);
+        if (filePath is null || !CheckFileExistence(filePath)) await Report(goodByMessage, 2000, true);
 
         var existingFile = new FileInfo(filePath!);
 
@@ -354,23 +347,16 @@ internal class Program
 
         await Report($"Анализирую отчет клиента {login} по приходу и остаткам {marketplace}...");
 
-        const int FIRST_INDEX = 1;
-        const int COL_STORE_COUNT_INDEX = 17;
-
-        (int articleIndex, int nameIndex, int initBalanceIndex, int comingIndex, int finBalanceIndex) = (1, 6, 14, 15, 17);
-
         int rowFirstRoomAddress = default;
         int rowSecondRoomAddress = default;
         int rowFinalRoomAddress = default;
   
         ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
 
-        (_, int rowStoreCount) = FindNumberColsAndRowsIn(in worksheet);
-
         // Find addresses of special rows
-        for (int row = FIRST_INDEX; row <= rowStoreCount; row++)
+        for (int row = FIRST_ROW_INDEX; row <=  worksheet.Dimension.End.Row; row++)
         {
-            for (int col = FIRST_INDEX; col <= COL_STORE_COUNT_INDEX; col++)
+            for (int col = FIRST_ROW_INDEX; col <=  worksheet.Dimension.End.Column; col++)
             {
                 var cellValue = worksheet.Cells[row, col].Value;
 
@@ -395,7 +381,6 @@ internal class Program
         var firstRoomRowRange = Enumerable.Range(rowFirstRoomAddress + 1, rowSecondRoomAddress - 1).ToList();
         var secondRoomRowRange = Enumerable.Range(rowSecondRoomAddress + 1, rowFinalRoomAddress).ToList();
 
-        int? article;
         string? name;
         int? coming;
         int? finalBalance;
@@ -404,53 +389,66 @@ internal class Program
         for (int row = firstRoomRowRange.First(); row <= firstRoomRowRange.Count; row++)
         {
             // article
-            article = ParseValueToInt(worksheet.Cells[row, articleIndex].Value);
-            if (!article.HasValue || !articleDict.ContainsKey(article.Value)) continue;
+            if(ArticleManager.GetArticleByObjectValue(worksheet.Cells[row, ArticleManager.StorageTableIndexes.articleIndex].Value, out Article? existingArticle) && 
+                existingArticle is not null) 
+            {
+                // name
+                name = ParseValueToString(worksheet.Cells[row, ArticleManager.StorageTableIndexes.nameIndex].Value);
+                if (!string.IsNullOrEmpty(name)) 
+                    existingArticle.SetName(name!.Split(",")[0].Trim());
+                
+                // coming
+                coming = ParseValueToInt(worksheet.Cells[row, ArticleManager.StorageTableIndexes.comingIndex].Value); ;
+                if (coming.HasValue)
+                    existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsReceived, coming.Value);
 
-            // name
-            name = ParseValueToString(worksheet.Cells[row, nameIndex].Value);
-            if (!string.IsNullOrEmpty(name))
-                articleDict[article.Value]!.SetName(name!.Split(",")[0].Trim());
-             
-            // coming
-            coming = ParseValueToInt(worksheet.Cells[row, comingIndex].Value); ;
-            if (coming.HasValue)
-                articleDict[article.Value].StoreBalance.ChangesStorageBalance(ItemBalanceIndex.Coming, coming.Value);
-
-            // finalBalance
-            finalBalance = ParseValueToInt(worksheet.Cells[row, finBalanceIndex].Value);
-            if (finalBalance.HasValue)
-                articleDict[article.Value].StoreBalance.ChangesStorageBalance(ItemBalanceIndex.FinBalance, finalBalance.Value);
-          
+                // finalBalance
+                finalBalance = ParseValueToInt(worksheet.Cells[row, ArticleManager.StorageTableIndexes.finBalanceIndex].Value);
+                if (finalBalance.HasValue)
+                    existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsRemaining, finalBalance.Value);
+            }
         }
 
         // Get finalBalance++ (secondRoom)
         for (int row = secondRoomRowRange.First(); row < rowFinalRoomAddress - 2; row++)
         {
             // article
-            article = ParseValueToInt(worksheet.Cells[row, articleIndex].Value);
-            if (!article.HasValue || !articleDict.ContainsKey(article.Value)) continue;
+            if(ArticleManager.GetArticleByObjectValue(worksheet.Cells[row, ArticleManager.StorageTableIndexes.articleIndex].Value, out Article? existingArticle) && 
+                existingArticle is not null) 
+            {
+                // finalBalance
+                finalBalance = ParseValueToInt(worksheet.Cells[row, ArticleManager.StorageTableIndexes.finBalanceIndex].Value);
 
-            // finalBalance
-            finalBalance = ParseValueToInt(worksheet.Cells[row, finBalanceIndex].Value);
-
-            if (finalBalance.HasValue)
-                articleDict[article.Value].StoreBalance.ChangesStorageBalance(ItemBalanceIndex.FinBalance, finalBalance.Value);
+                if (finalBalance.HasValue)
+                    existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsRemaining, finalBalance.Value);
+            }
         }
 
         package.Dispose();
         stopwatch.Stop();
 
-        var comingSum = articleDict.Sum(art => art.Value.StoreBalance.ReceivedQuantity);
-        var finBalance = articleDict.Sum(art => art.Value.StoreBalance.FinBalance);
+        // Analize goods shipped && goods remaining
+        if(ArticleManager.GetArticleGroupsStorageIndex(out IOrderedEnumerable<IGrouping<ArticeStorageIndex, ArticleStorageBalanceUnit>>? storageBalanceGroups) && 
+            storageBalanceGroups is not null) 
+        {
+            var goodsShippedSum = storageBalanceGroups!
+                .First(g => g.Key == ArticeStorageIndex.GoodsShipped)
+                .Select(g => g.Count)
+                .Sum();
+  
+            var goodsRemainingSum = storageBalanceGroups!
+                .First(g => g.Key == ArticeStorageIndex.GoodsRemaining)
+                .Select(g => g.Count)
+                .Sum();
 
-        var comBalanceReport = $"Общий приход товаров: {comingSum}, общий остаток: {finBalance}\n";
-        comBalanceReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
+            var balanceReport = $"Общий приход товаров: {goodsShippedSum}, общий остаток: {goodsRemainingSum}\n";
+            balanceReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
-        await Report(comBalanceReport, 1500);
+            await Report(balanceReport, 1500);
+        }
     }
 
-    private static async Task ReadConsumptionReport(string? filePath, ItemBalanceIndex storeUnit, int artIndex, int countIndex)
+    private static async Task ReadConsumptionReport(string? filePath, ArticeStorageIndex storeUnit, int artIndex, int countIndex)
     {
         if (filePath is null && CheckFileExistence(filePath!) == null)
             await Report(goodByMessage, 2000, true);
@@ -475,10 +473,10 @@ internal class Program
             {
                 if (countAddress.Value != null && int.TryParse(countAddress.Value.ToString(), out int count))
                 {
-                    if (articleDict.ContainsKey(article))
-                    {
-                        articleDict[article].SetStoreBalance(storeUnit, count);
-                    }
+                    // if (articleDict.ContainsKey(article))
+                    // {
+                    //     articleDict[article].SetStoreBalance(storeUnit, count);
+                    // }
                 }
             }
         }
@@ -488,20 +486,20 @@ internal class Program
 
         int result = 0;
 
-        switch (storeUnit)
-        {
-            case ItemBalanceIndex.Consumption:
-                result = articleDict.Sum(art => art.Value.StoreBalance.ShippedQuantity);
-                break;
+        // switch (storeUnit)
+        // {
+        //     case ArticeStorageIndex.GoodsShipped:
+        //         result = articleDict.Sum(art => art.Value.StoreBalance.ShippedQuantity);
+        //         break;
  
-            case ItemBalanceIndex.WriteoffShortages:
-                result = articleDict.Sum(art => art.Value.StoreBalance.WriteoffShortages);
-                break;
-            default:
-                break;
-        }
+        //     case ArticeStorageIndex.WriteoffShortages:
+        //         result = articleDict.Sum(art => art.Value.StoreBalance.WriteoffShortages);
+        //         break;
+        //     default:
+        //         break;
+        // }
 
-        var targetMessage = storeUnit == ItemBalanceIndex.Consumption ? "Общий расход по товарам клиента" : "Оприходовано и списано по недостачам от ПВЗ";
+        var targetMessage = storeUnit == ArticeStorageIndex.GoodsShipped ? "Общий расход по товарам клиента" : "Оприходовано и списано по недостачам от ПВЗ";
         var reportMessage = $"{targetMessage}: {result}.\n";
         reportMessage += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
@@ -540,33 +538,33 @@ internal class Program
                     countAddress.Value != null && int.TryParse(countAddress.Value.ToString(), out int count) &&
                     priceAddress.Value != null && double.TryParse(priceAddress.Value.ToString(), out double price))
                 {
-                    if (articleDict.ContainsKey(article))
-                    {
-                        articleDict[article].SetStoreBalance(count, price);
-                    }
+                    // if (articleDict.ContainsKey(article))
+                    // {
+                    //     articleDict[article].SetStoreBalance(count, price);
+                    // }
                 }
             }
 
             package.Dispose();
             stopwatch.Stop();
 
-            var paySum = articleDict
-                .Aggregate(0.00, (acc, el) => acc + el.Value.StoreBalance.PayShortagesSum);
+            // var paySum = articleDict
+            //     .Aggregate(0.00, (acc, el) => acc + el.Value.StoreBalance.PayShortagesSum);
 
             string payReport;
 
-            if (paySum > 0.00)
-            {
-                payReport = string.Format("Сумма компенсации за недостачи товаров: {0:C}.\n", paySum);
-            }
-            else
-            {
-                payReport = "Нет погашений недостач по указанным артикулам";
-            }
+            // if (paySum > 0.00)
+            // {
+            //     payReport = string.Format("Сумма компенсации за недостачи товаров: {0:C}.\n", paySum);
+            // }
+            // else
+            // {
+            //     payReport = "Нет погашений недостач по указанным артикулам";
+            // }
 
-            payReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
+            //payReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
-            await Report(payReport, 1500);
+            //await Report(payReport, 1500);
         }
     }
 
@@ -602,33 +600,33 @@ internal class Program
             string? commentForRegranding = default;
 
             // Set article regranding 
-            if (articleAddress.Value is not null &&
-                int.TryParse(articleAddress.Value.ToString(), out int article) &&
-                articleDict.ContainsKey(article) &&
-                regrandingAddress.Value is not null &&
-                int.TryParse(regrandingAddress.Value.ToString(), out int regranding) &&
-                articleDict.ContainsKey(regranding) &&
-                countAddress.Value is not null &&
-                int.TryParse(countAddress.Value.ToString(), out int count)
-                )
-            {
-                // Для текущего арта указываем артикул пересорта (regranding)
-                articleDict[article].StoreBalance.SetRegrading(regranding, count);
+            // if (articleAddress.Value is not null &&
+            //     int.TryParse(articleAddress.Value.ToString(), out int article) &&
+            //     articleDict.ContainsKey(article) &&
+            //     regrandingAddress.Value is not null &&
+            //     int.TryParse(regrandingAddress.Value.ToString(), out int regranding) &&
+            //     articleDict.ContainsKey(regranding) &&
+            //     countAddress.Value is not null &&
+            //     int.TryParse(countAddress.Value.ToString(), out int count)
+            //     )
+            // {
+            //     // Для текущего арта указываем артикул пересорта (regranding)
+            //     articleDict[article].StoreBalance.SetRegrading(regranding, count);
                
-                commentForArticle = $"пересорт на арт {regranding} ({count} шт) ";
-                commentForRegranding = $"пересорт от арт {article} ({count} шт) ";
+            //     commentForArticle = $"пересорт на арт {regranding} ({count} шт) ";
+            //     commentForRegranding = $"пересорт от арт {article} ({count} шт) ";
 
-                if (commentAddress.Value is not null &&
-                    !string.IsNullOrEmpty(commentAddress.Value.ToString()))
-                {
-                    commentForArticle = string.Concat(commentForArticle, commentAddress.Value!.ToString()!.Trim());
-                }
+            //     if (commentAddress.Value is not null &&
+            //         !string.IsNullOrEmpty(commentAddress.Value.ToString()))
+            //     {
+            //         commentForArticle = string.Concat(commentForArticle, commentAddress.Value!.ToString()!.Trim());
+            //     }
 
-                articleDict[article].SetComment(commentForArticle);
-                articleDict[regranding].SetComment(commentForRegranding);
+            //     articleDict[article].SetComment(commentForArticle);
+            //     articleDict[regranding].SetComment(commentForRegranding);
 
-                regrandingCount += count;
-            }
+            //     regrandingCount += count;
+            // }
         }
 
         package.Dispose();
@@ -664,16 +662,16 @@ internal class Program
             var countAddress = worksheet.Cells[row, COUNT_INDEX];
 
             // Set article dummy 
-            if (articleAddress.Value is not null &&
-                int.TryParse(articleAddress.Value.ToString(), out int article) &&
-                articleDict.ContainsKey(article) &&
-                countAddress.Value is not null &&
-                int.TryParse(countAddress.Value.ToString(), out int count)
-                )
-            {
-                articleDict[article].StoreBalance.SetDummy(count);
-                dummyCount += count;
-            }
+            // if (articleAddress.Value is not null &&
+            //     int.TryParse(articleAddress.Value.ToString(), out int article) &&
+            //     articleDict.ContainsKey(article) &&
+            //     countAddress.Value is not null &&
+            //     int.TryParse(countAddress.Value.ToString(), out int count)
+            //     )
+            // {
+            //     articleDict[article].StoreBalance.SetDummy(count);
+            //     dummyCount += count;
+            // }
         }
 
         package.Dispose();
@@ -729,62 +727,62 @@ internal class Program
         // Populating with data
         int recordIndex = FIRST_ROW_INDEX + 1;
 
-        foreach (var (key, value) in articleDict)
-        {
-            ArticleManager[key].AnalyzeArticle(key,ArticleManager.DeadlineDays);
+        //foreach (var (key, value) in articleDict)
+        // {
+        //     ArticleManager[key].AnalyzeArticle(key,ArticleManager.DeadlineDays);
 
-            if (articleDict[key].ArticleShortage.HasValue)
-                ArticleShortages.Add(articleDict[key].ArticleShortage!.Value);
+        //     if (articleDict[key].ArticleShortage.HasValue)
+        //         ArticleShortages.Add(articleDict[key].ArticleShortage!.Value);
 
-            var regradingArt = articleDict
-                .Any(art => art.Value.StoreBalance.Regradings.ContainsKey(key));
+        //     var regradingArt = articleDict
+        //         .Any(art => art.Value.StoreBalance.Regradings.ContainsKey(key));
 
-            // Fill Redemptions data
-            mainReportWorksheet.Cells[recordIndex, 1].Value = articleDict[key].Marketplace;
-            mainReportWorksheet.Cells[recordIndex, 2].Value = key;
-            mainReportWorksheet.Cells[recordIndex, 3].Value = articleDict[key].Name;
-            mainReportWorksheet.Cells[recordIndex, 4].Value = articleDict[key].AveragePrice;
+        //     // Fill Redemptions data
+        //     mainReportWorksheet.Cells[recordIndex, 1].Value = articleDict[key].Marketplace;
+        //     mainReportWorksheet.Cells[recordIndex, 2].Value = key;
+        //     mainReportWorksheet.Cells[recordIndex, 3].Value = articleDict[key].Name;
+        //     mainReportWorksheet.Cells[recordIndex, 4].Value = articleDict[key].AveragePrice;
 
-            // RedemptionDate
-            mainReportWorksheet.Cells[recordIndex, 5].Value = articleDict[key].MaxRedemptionDate;
-            mainReportWorksheet.Cells[recordIndex, 5].Style.Fill.PatternType = ExcelFillStyle.Solid;
-            mainReportWorksheet.Cells[recordIndex, 5].Style.Fill.BackgroundColor.SetColor(articleDict[key].StatusValue.color);
+        //     // RedemptionDate
+        //     mainReportWorksheet.Cells[recordIndex, 5].Value = articleDict[key].MaxRedemptionDate;
+        //     mainReportWorksheet.Cells[recordIndex, 5].Style.Fill.PatternType = ExcelFillStyle.Solid;
+        //     mainReportWorksheet.Cells[recordIndex, 5].Style.Fill.BackgroundColor.SetColor(articleDict[key].StatusValue.color);
 
-            mainReportWorksheet.Cells[recordIndex, 6].Value = articleDict[key].StatusValue.statusComment;
+        //     mainReportWorksheet.Cells[recordIndex, 6].Value = articleDict[key].StatusValue.statusComment;
 
-            mainReportWorksheet.Cells[recordIndex, 7].Value = articleDict[key].ArticleRowsInReport.Count;
-            mainReportWorksheet.Cells[recordIndex, 8].Value = articleDict[key].RedempionBalance.CanceledCount;
-            mainReportWorksheet.Cells[recordIndex, 9].Value = articleDict[key].RedempionBalance.OnWayCount;
-            mainReportWorksheet.Cells[recordIndex, 10].Value = articleDict[key].RedempionBalance.DeliveredCount;
-            mainReportWorksheet.Cells[recordIndex, 11].Value = articleDict[key].RedempionBalance.WithDrawnCount;
+        //     mainReportWorksheet.Cells[recordIndex, 7].Value = articleDict[key].ArticleRowsInReport.Count;
+        //     mainReportWorksheet.Cells[recordIndex, 8].Value = articleDict[key].RedempionBalance.CanceledCount;
+        //     mainReportWorksheet.Cells[recordIndex, 9].Value = articleDict[key].RedempionBalance.OnWayCount;
+        //     mainReportWorksheet.Cells[recordIndex, 10].Value = articleDict[key].RedempionBalance.DeliveredCount;
+        //     mainReportWorksheet.Cells[recordIndex, 11].Value = articleDict[key].RedempionBalance.WithDrawnCount;
 
-            // Balance data
-            // - WaitBalance
-            mainReportWorksheet.Cells[recordIndex, 12].Value = articleDict[key].RedempionBalance.WaitBalance;
-            mainReportWorksheet.Cells[recordIndex, 12].Style.Font.Bold = true;
+        //     // Balance data
+        //     // - WaitBalance
+        //     mainReportWorksheet.Cells[recordIndex, 12].Value = articleDict[key].RedempionBalance.WaitBalance;
+        //     mainReportWorksheet.Cells[recordIndex, 12].Style.Font.Bold = true;
 
-            mainReportWorksheet.Cells[recordIndex, 13].Value = articleDict[key].StoreBalance.ReceivedQuantity;
+        //     mainReportWorksheet.Cells[recordIndex, 13].Value = articleDict[key].StoreBalance.ReceivedQuantity;
 
-            // - Undelivery
-            mainReportWorksheet.Cells[recordIndex, 14].Value = articleDict[key].StoreBalance.Undelivery;
-            if(articleDict[key].StoreBalance.Undelivery > 0 && articleDict[key].StatusValue.status != ArticleStatus.InWork)
-            {
-                mainReportWorksheet.Cells[recordIndex, 14].Style.Font.Color.SetColor(System.Drawing.Color.DarkRed); 
-            }
+        //     // - Undelivery
+        //     mainReportWorksheet.Cells[recordIndex, 14].Value = articleDict[key].StoreBalance.Undelivery;
+        //     if(articleDict[key].StoreBalance.Undelivery > 0 && articleDict[key].StatusValue.status != ArticleStatus.InWork)
+        //     {
+        //         mainReportWorksheet.Cells[recordIndex, 14].Style.Font.Color.SetColor(System.Drawing.Color.DarkRed); 
+        //     }
 
-            // Consumption
-            mainReportWorksheet.Cells[recordIndex, 15].Value = articleDict[key].StoreBalance.TotalConsumption;
-            mainReportWorksheet.Cells[recordIndex, 16].Value = articleDict[key].StoreBalance.ShippedQuantity;
-            mainReportWorksheet.Cells[recordIndex, 17].Value = articleDict[key].StoreBalance.Regradings.Sum(re => re.Value);
-            mainReportWorksheet.Cells[recordIndex, 18].Value = articleDict[key].StoreBalance.PayShortagesCount;
-            mainReportWorksheet.Cells[recordIndex, 19].Value = articleDict[key].StoreBalance.DummiesCount;
-            mainReportWorksheet.Cells[recordIndex, 20].Value = articleDict[key].StoreBalance.FinBalance;
+        //     // Consumption
+        //     mainReportWorksheet.Cells[recordIndex, 15].Value = articleDict[key].StoreBalance.TotalConsumption;
+        //     mainReportWorksheet.Cells[recordIndex, 16].Value = articleDict[key].StoreBalance.ShippedQuantity;
+        //     mainReportWorksheet.Cells[recordIndex, 17].Value = articleDict[key].StoreBalance.Regradings.Sum(re => re.Value);
+        //     mainReportWorksheet.Cells[recordIndex, 18].Value = articleDict[key].StoreBalance.PayShortagesCount;
+        //     mainReportWorksheet.Cells[recordIndex, 19].Value = articleDict[key].StoreBalance.DummiesCount;
+        //     mainReportWorksheet.Cells[recordIndex, 20].Value = articleDict[key].StoreBalance.FinBalance;
 
-            // Comment
-            mainReportWorksheet.Cells[recordIndex, 21].Value = articleDict[key].Comment;
+        //     // Comment
+        //     mainReportWorksheet.Cells[recordIndex, 21].Value = articleDict[key].Comment;
 
-            recordIndex++;
-        }
+        //     recordIndex++;
+        // }
 
         // Fill header data 
         SetupTableHeader(in resultCells, ref mainReportWorksheet);
@@ -860,14 +858,14 @@ internal class Program
         }
 
         // HACK: Плохо, переделать логику, двойной проход
-        foreach (var (key, value) in articleDict)
-        {
-            var regradingArt = articleDict
-                .Any(art => art.Value.StoreBalance.Regradings.ContainsKey(key));
+        // foreach (var (key, value) in articleDict)
+        // {
+        //     var regradingArt = articleDict
+        //         .Any(art => art.Value.StoreBalance.Regradings.ContainsKey(key));
 
-            if (articleDict[key].Overrun != null && !regradingArt)
-                Overruns.Add(articleDict[key].Overrun!);
-        }
+        //     if (articleDict[key].Overrun != null && !regradingArt)
+        //         Overruns.Add(articleDict[key].Overrun!);
+        // }
 
         // Analize ArticleShortages
         if (Overruns.Count > 0)

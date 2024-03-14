@@ -12,7 +12,7 @@ namespace ClientTableAnalizer.Objects
 
         #region Properties 
         public DateTime RedemptionDate { get; }             
-        public RedemptionStatus ItemStatus { get; }
+        public ArticleRedemptionStatus ItemStatus { get; }
         public double Price { get; }
         #endregion
         
@@ -29,15 +29,15 @@ namespace ClientTableAnalizer.Objects
         #endregion
 
         #region Functionality
-        private static RedemptionStatus SetItemStatus(string statusText)
+        private static ArticleRedemptionStatus SetItemStatus(string statusText)
         {
             return statusText switch
             {
-                "Доставлен на ПВЗ" => RedemptionStatus.Delivered,
-                "Забран с ПВЗ" => RedemptionStatus.WithDrawn,
-                "Отменен" => RedemptionStatus.Canceled,
-                "В пути" => RedemptionStatus.OnWay,
-                _ => RedemptionStatus.Unknown
+                "Доставлен на ПВЗ" => ArticleRedemptionStatus.Delivered,
+                "Забран с ПВЗ" => ArticleRedemptionStatus.WithDrawn,
+                "Отменен" => ArticleRedemptionStatus.Canceled,
+                "В пути" => ArticleRedemptionStatus.OnWay,
+                _ => ArticleRedemptionStatus.Unknown
             };
         }
 

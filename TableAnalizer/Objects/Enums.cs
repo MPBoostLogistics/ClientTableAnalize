@@ -16,16 +16,16 @@ namespace ClientTableAnalizer.Enums
         Unknown             // Неопределенный
     }
 
-    public enum ItemBalanceIndex
+    public enum ArticeStorageIndex
     {
-        Coming,             // Приход 
-        Consumption,        // Расход
-        FinBalance,         // Конечный остаток
+        GoodsReceived,      // Принято товаров
+        GoodsShipped,       // Отгружено товароы
+        GoodsRemaining,     // Остаток товаров на складе
         WriteoffShortages   // Принято на склад и списано по недостачам
     }
 
 
-    public enum RedemptionStatus
+    public enum ArticleRedemptionStatus
     {
         Delivered,  // Доставлен на ПВЗ
         WithDrawn,  // Забран с ПВЗ
