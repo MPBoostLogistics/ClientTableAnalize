@@ -6,7 +6,6 @@
 using System.Diagnostics;
 using System.Reflection;
 using OfficeOpenXml;
-using OfficeOpenXml.Style;
 using ClientTableAnalizer.Objects;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Managers;
@@ -19,11 +18,6 @@ internal class Program
     private const string NAME_FIRST_ROOM = "1 - Помещение приемки, сортировки и упаковки";
     private const string NAME_SECOND_ROOM = "2 - Помещение длительного хранения и отгрузки";
     private const string NAME_FINAL_ROW = "Итого товаров в единицах хранения";
-
-
-
-    private readonly ExcelReportManager excelReportManager = new();
-
     private static string? login = default;
     private static string? redemtionFilePathWB = default;
     private static string? redemtionFilePathOZ = default;
@@ -42,10 +36,11 @@ internal class Program
 
     #region Properties 
     private static ArticleManager ArticleManager { get; }= new ();
+    private static ExcelReportManager ExcelReportManager { get; } = new ();
     #endregion
 
     #region Functionality
-    private async Task Main(string[] args)
+    private static async Task Main(string[] args)
     {
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
@@ -153,7 +148,7 @@ internal class Program
         return deadline;
     }
 
-    private async Task GetUserRedemtionDataFile(Marketplace marketplace, bool necessarily)
+    private static async Task GetUserRedemtionDataFile(Marketplace marketplace, bool necessarily)
     {
         var clDirInfo = FileManager.GetDirectoryInfo(PathKey.MPBoostClients);
         if (clDirInfo is null || !clDirInfo.Exists)
@@ -261,6 +256,8 @@ internal class Program
         var worksheet = package.Workbook.Worksheets[0];
         var dimention = worksheet.Dimension;
 
+        var endRowIndex = worksheet.Dimension.End.Row;
+
         for (int row = 1; row <= dimention.End.Row; row++)
         {
             var logisticFlagValue = worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.logisticFlagIndex].Value.ToString();
@@ -284,6 +281,7 @@ internal class Program
                         !string.IsNullOrEmpty(priceSting))
                     {
                         var articleRow  = new ArticleRowInReport(redemptionDateString.Trim(), itemStatusValue.Trim(), priceSting.Trim());
+
                         var currentArticle = ArticleManager[article.Value];
                         if (currentArticle is not null)
                         {
@@ -682,13 +680,13 @@ internal class Program
         await Report(regReport, 1500);
     }
 
-    private async Task WriteXls()
+    private static async Task WriteXls()
     {
         //using var excelPackage = new ExcelPackage(ouptutFilePath);
      
-        excelReportManager.CreateMainReportSheet("Отчет", ArticleManager.Articles, ArticleManager.DeadlineDays);
+        ExcelReportManager.CreateMainReportSheet("Отчет", ArticleManager.Articles, ArticleManager.DeadlineDays);
 
-        excelReportManager.SaveReportFile();
+        ExcelReportManager.SaveReportFile();
 
         // ResultCell[] resultCellsForAddReports = new ResultCell[]
         // {
@@ -875,7 +873,7 @@ internal class Program
         return new string(loginChars.ToArray());
     }
 
-    private async Task GetClientOutputPath()
+    private static async Task GetClientOutputPath()
     {
         if (login is null)
             throw new Exception("Логин клинта не определен");
@@ -890,7 +888,7 @@ internal class Program
             outputPath = $"{clientDirectoryPath.FullName}/ClientReport_{login}_{dateTime}.xlsx";
             
             // Make ExcelPackage in ExcelReportManager
-            excelReportManager.CreateExcelPackage(outputPath);
+            ExcelReportManager.CreateExcelPackage(outputPath);
         }
         else
         {

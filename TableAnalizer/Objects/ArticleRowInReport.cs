@@ -41,6 +41,11 @@ namespace ClientTableAnalizer.Objects
             };
         }
 
+        public override string ToString()
+        {
+            return $"{RedemptionDate.ToShortDateString()}, {ItemStatus}";
+        }
+
         #endregion
     }
 }

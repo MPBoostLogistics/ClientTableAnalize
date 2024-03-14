@@ -10,10 +10,16 @@ namespace ClientTableAnalizer.Objects.Managers
         public readonly (int articleIndex, int nameIndex, int initBalanceIndex, int comingIndex, int finBalanceIndex) StorageTableIndexes = (1, 6, 14, 15, 17);
         public Dictionary<int, Article> Articles { get; } = new();
 
-        public Article this[int key] 
+        public Article? this[int key] 
         {   
-            get => Articles[key];  
-            set => Articles[key] = value;  
+            get 
+            {
+                return Articles.ContainsKey(key) ? Articles[key] : null;  
+            } 
+            set 
+            {
+                if(value is not null) Articles[key] = value;  
+            } 
         } 
 
         public int ArticlesCount 

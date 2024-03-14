@@ -51,7 +51,6 @@ namespace ClientTableAnalizer.Objects
         #endregion
    }
 
-
     public class Article
     {
         #region Variables && constants

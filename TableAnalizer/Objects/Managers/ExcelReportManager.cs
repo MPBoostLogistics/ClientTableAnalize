@@ -1,3 +1,4 @@
+using ClientTableAnalizer.Enums;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 
@@ -11,7 +12,7 @@ namespace ClientTableAnalizer.Objects.Managers
         private const int RECORD_INDEX = 1;
         private const int HEADER_TABLE_ROW_HEIGHT = 120;
 
-        private ExcelPackage excelPackage;
+        private static ExcelPackage excelPackage;
         #endregion
 
         #region Constructors
@@ -26,7 +27,7 @@ namespace ClientTableAnalizer.Objects.Managers
 
         #region Properties 
 
-        ResultCell[] MainReportCells { get; } = new ResultCell[]
+        private static ResultCell[] MainReportCells { get; } = new ResultCell[]
         {
             // Article info
             new (1, "МП", 8, "0", false, 0),                               
@@ -37,11 +38,11 @@ namespace ClientTableAnalizer.Objects.Managers
             new (6, "Статус", 12, "0", false, 0),                          
 
             // Buyout info
-            new (7, "Всего", 12, "0", false, 0),                           
-            new (8, "Отменено", 7, "0", false, 90),                        
-            new (9, "В пути", 7, "0", false, 90),                          
-            new (10, "Доставлен на ПВЗ", 7, "0", true, 90),                              
-            new (11, "Забран с ПВЗ", 7, "0", true, 90),                   
+            new (7, "Всего, шт.", 12, "0", false, 0),                           
+            new (8, "Отменено, шт.", 7, "0", false, 90),                        
+            new (9, "В пути, шт.", 7, "0", false, 90),                          
+            new (10, "Доставлено на ПВЗ. шт.", 7, "0", true, 90),                              
+            new (11, "Забрано с ПВЗ, шт.", 7, "0", true, 90),                   
 
             // Info on arrival of goods at warehouse
             new (12, "Склад: Ожидание", 11.5,"0", true, 0),                
@@ -59,20 +60,19 @@ namespace ClientTableAnalizer.Objects.Managers
             new (21, "Комментарий", 60, "0", true, 0)    
         };
 
-        public string OuptutFilePath { get; private set;}
+        public static string OuptutFilePath { get; private set;}
 
         #endregion
 
         #region Functionality
 
-        public void CreateExcelPackage (string ouptutFilePath) 
+        public static void CreateExcelPackage (string ouptutFilePath) 
         {
              excelPackage = new ExcelPackage(ouptutFilePath);
              OuptutFilePath = ouptutFilePath;
         } 
   
-
-        public void CreateMainReportSheet(string workSheetName, in Dictionary<int, Article> articles, int deadline) 
+        public static void CreateMainReportSheet(string workSheetName, in Dictionary<int, Article> articles, int deadline) 
         {
             // Create ExcelWorksheet  
             CreateWorkSheet(workSheetName, out ExcelWorksheet mainReportWorksheet, System.Drawing.Color.GreenYellow);
@@ -99,17 +99,34 @@ namespace ClientTableAnalizer.Objects.Managers
                 var articleRedempionBalance = value.ArticleRedempionBalance;
                 var articleStoreBalance = value.ArticleStorageBalance;
 
-                // Redemtion balance Ddta 
-                mainReportWorksheet.Cells[recordIndex, 7].Value = articleRedempionBalance.GetBalanceCount();
-                mainReportWorksheet.Cells[recordIndex, 8].Value = articleRedempionBalance.GetBalanceByRedemptionStatus(Enums.ArticleRedemptionStatus.Canceled);
-                mainReportWorksheet.Cells[recordIndex, 9].Value = articleRedempionBalance.GetBalanceByRedemptionStatus(Enums.ArticleRedemptionStatus.OnWay);
-                mainReportWorksheet.Cells[recordIndex, 10].Value = articleRedempionBalance.GetBalanceByRedemptionStatus(Enums.ArticleRedemptionStatus.Delivered);
-                mainReportWorksheet.Cells[recordIndex, 11].Value = articleRedempionBalance.GetBalanceByRedemptionStatus(Enums.ArticleRedemptionStatus.WithDrawn);
+                if(articleRedempionBalance.GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus, ArticleRowInReport>>? groups) && groups is not null) 
+                {
+                    int canceled = 0, onWay = 0, delivered = 0, withDrawn = 0, sum = 0, expected = 0;
 
-                // Storage balance data
-                // - expected goods
-                mainReportWorksheet.Cells[recordIndex, 12].Value = articleStoreBalance.GetBalanceCountByStorageIndex(Enums.ArticeStorageIndex.ExpectedGoods);
-                mainReportWorksheet.Cells[recordIndex, 12].Style.Font.Bold = true;
+                    foreach (var group in groups)
+                    {
+                        if(group.Key == ArticleRedemptionStatus.Canceled) canceled = group.Count();
+                        if(group.Key == ArticleRedemptionStatus.OnWay) onWay = group.Count();
+                        if(group.Key == ArticleRedemptionStatus.Delivered) delivered = group.Count();
+                        if(group.Key == ArticleRedemptionStatus.WithDrawn) withDrawn = group.Count();
+                    }
+
+                    sum = canceled + onWay  + delivered  + withDrawn;
+                    expected = delivered + withDrawn;
+
+                    // Redemtion balance Ddta 
+                    mainReportWorksheet.Cells[recordIndex, 7].Value = sum;
+                    mainReportWorksheet.Cells[recordIndex, 8].Value = canceled;
+                    mainReportWorksheet.Cells[recordIndex, 9].Value = onWay;
+                    mainReportWorksheet.Cells[recordIndex, 10].Value = delivered;
+                    mainReportWorksheet.Cells[recordIndex, 11].Value = withDrawn;
+
+                    // Storage balance data
+                    // - expected goods
+                    mainReportWorksheet.Cells[recordIndex, 12].Value = expected;
+                    mainReportWorksheet.Cells[recordIndex, 12].Style.Font.Bold = true;
+
+                }
 
         //     mainReportWorksheet.Cells[recordIndex, 13].Value = articleDict[key].StoreBalance.ReceivedQuantity;
 
@@ -156,7 +173,7 @@ namespace ClientTableAnalizer.Objects.Managers
             }
         }
 
-        public void SaveReportFile () 
+        public static void SaveReportFile() 
         {
             // Save work
             if (File.Exists(OuptutFilePath)) File.Delete(OuptutFilePath);
@@ -172,8 +189,7 @@ namespace ClientTableAnalizer.Objects.Managers
             excelPackage.Dispose();
         }
 
-
-        private void CreateWorkSheet(string workSheetName, out ExcelWorksheet worksheet, System.Drawing.Color tabColor)
+        private static void CreateWorkSheet(string workSheetName, out ExcelWorksheet worksheet, System.Drawing.Color tabColor)
         {
             // Remove existing worksheet
             var existingWorksheet = excelPackage.Workbook.Worksheets.SingleOrDefault(x => x.Name == workSheetName);
