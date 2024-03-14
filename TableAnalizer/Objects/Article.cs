@@ -2,6 +2,56 @@
 
 namespace ClientTableAnalizer.Objects
 {
+    public class SellmentStatus 
+    {
+        #region Properties
+        public ArticleSellmentStatus Status { get; }
+        public string StatusLabel { get; }
+        public System.Drawing.Color StatusColor { get; }
+        #endregion
+
+        #region Constructors
+        public SellmentStatus(ArticleSellmentStatus status)
+        {
+            Status = status;
+
+            switch (Status)
+            {
+                case ArticleSellmentStatus.FullSet:
+                    StatusLabel = "Полный расчет";
+                    StatusColor = System.Drawing.ColorTranslator.FromHtml("#e1ffdb");
+                    break;
+                case ArticleSellmentStatus.InWork:
+                    StatusLabel = "В работе";
+                    StatusColor = System.Drawing.ColorTranslator.FromHtml("#ffe7cd");
+                    break;
+                case ArticleSellmentStatus.OnSearchWarehouseAndPoints:
+                    StatusLabel = "На поиске склада и ПВЗ и склада";
+                    StatusColor =  System.Drawing.ColorTranslator.FromHtml("#ff6d6d");
+                    break;
+                case ArticleSellmentStatus.OnSearchWarehouse:
+                    StatusLabel = "На поиске склада"; 
+                    StatusColor = System.Drawing.ColorTranslator.FromHtml("#ffd3d3");
+                    break;
+                case ArticleSellmentStatus.OnSearchPoint:
+                    StatusLabel = "На поиске ПВЗ";
+                    StatusColor =  System.Drawing.ColorTranslator.FromHtml("#ffa0a0");
+                    break;
+                case ArticleSellmentStatus.Unknown:
+                    StatusLabel = "Не определен"; 
+                    StatusColor = System.Drawing.ColorTranslator.FromHtml("#e6fcff");
+                    break;
+                default:
+                    StatusLabel = "Не определен"; 
+                    StatusColor = System.Drawing.ColorTranslator.FromHtml("#e6fcff");
+                    break;
+
+            }
+        }
+        #endregion
+   }
+
+
     public class Article
     {
         #region Variables && constants
@@ -13,7 +63,7 @@ namespace ClientTableAnalizer.Objects
         public ArticleItemForReport? Overrun { get; private set; }
         public DateTime MaxRedemptionDate { get; private set; }
         public bool IsDeadline { get; private set; }
-        public (ArticleStatus status, string statusComment, System.Drawing.Color color) StatusValue { get; private set; }
+        public SellmentStatus SellmentStatus { get; private set; }
         public double AveragePrice {get; private set; } 
         public string Comment { get; private set; }
 
@@ -28,7 +78,7 @@ namespace ClientTableAnalizer.Objects
             ArticleStorageBalance = new();
             MaxRedemptionDate = DateTime.Now;
             IsDeadline = false;
-            StatusValue = (ArticleStatus.Unknown, "Статус не определен", System.Drawing.ColorTranslator.FromHtml("#e6fcff"));
+            SellmentStatus = new(ArticleSellmentStatus.Unknown);
             AveragePrice = 0.00;
             Comment = string.Empty;
         }
@@ -40,29 +90,27 @@ namespace ClientTableAnalizer.Objects
         public void SetArticleRowInReport(ArticleRowInReport articleRowInReport) =>
             ArticleRedempionBalance.ArticleRowsInRedemptionReport.Add(articleRowInReport);
 
-        public void SetName(string name) =>
-            Name = name;
+        public void SetName(string name) => Name = name;
 
         public void SetComment(string message) =>
-            Comment = string.IsNullOrEmpty(Comment) ? message : string.Concat(Comment, message);
+            Comment = string.IsNullOrEmpty(Comment) ? message : string.Concat(Comment, " ", message);
 
         public void SetStoreBalance(ArticeStorageIndex unit, int value) =>
             ArticleStorageBalance.SetStorageBalance(unit, value);
 
-        public void SetStoreBalance(int count, double price) =>
-            ArticleStorageBalance.SetPayShortage(count, price);
+        // public void SetStoreBalance(int count, double price) =>
+        //     ArticleStorageBalance.SetPayShortage(count, price);
 
         public void AnalyzeArticle(int articleNumber, int deadLineDays)
         {
-
             // Analize artilce redempion balance and set average price, max redemption date && deadline
             (MaxRedemptionDate, AveragePrice, IsDeadline) = ArticleRedempionBalance.AnalizeBalance(deadLineDays);
 
+            // Set expected balance of goods
+            ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.ExpectedGoods, ArticleRedempionBalance.GetWaitBalance());
 
             //var articleShortage = new ArticleShortage (articleNumber, Name, AveragePrice);
 
-            // var waitBalance = ArticleRedempionBalance.GetWaitBalance();
-            // ArticleStorageBalance.SetUndelivery(waitBalance);
 
             // Calculate total consumption
             // ArticleStorageBalance.CalculatTotalConsumption();
@@ -73,7 +121,7 @@ namespace ClientTableAnalizer.Objects
             // Set status article
             if (!IsDeadline)
             {
-                StatusValue = (ArticleStatus.InWork, "В работе", System.Drawing.ColorTranslator.FromHtml("#ffe7cd"));
+                SellmentStatus = new (ArticleSellmentStatus.InWork);
             }
             else
             {

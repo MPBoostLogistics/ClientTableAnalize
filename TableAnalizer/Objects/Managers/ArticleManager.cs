@@ -8,7 +8,7 @@ namespace ClientTableAnalizer.Objects.Managers
         public int DeadlineDays {get; private set;}
         public readonly (int articleIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) RedemptionTableIndexes= (2, 7, 9, 10, 14);
         public readonly (int articleIndex, int nameIndex, int initBalanceIndex, int comingIndex, int finBalanceIndex) StorageTableIndexes = (1, 6, 14, 15, 17);
-        private Dictionary<int, Article> Articles {get; } = new();
+        public Dictionary<int, Article> Articles { get; } = new();
 
         public Article this[int key] 
         {   
@@ -62,11 +62,7 @@ namespace ClientTableAnalizer.Objects.Managers
         public void AnalyzeArticles() 
         {
             foreach (var (key, value) in Articles)
-            {
-                // Проаказлитировать артиукл
                 value.AnalyzeArticle(key, DeadlineDays);
-            }
-
         }
 
         private static int? ParseValueToInt(object? obj) =>

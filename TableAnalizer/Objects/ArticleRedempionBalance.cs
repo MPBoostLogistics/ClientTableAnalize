@@ -31,12 +31,7 @@ namespace ClientTableAnalizer.Objects
             ArticleRowsInRedemptionReport = new(){articleRowInReport};
         }
 
-
-
-
-
         public void Set(ArticleRowInReport articleRow) => ArticleRowsInRedemptionReport.Add(articleRow);
-
 
         public int GetWaitBalance() 
         {
@@ -45,6 +40,8 @@ namespace ClientTableAnalizer.Objects
             return deliveredBalance.Count + withDrawnBalance.Count;
         }
 
+        public int GetBalanceByRedemptionStatus(ArticleRedemptionStatus status) => Balances.FirstOrDefault(b => Equals(b.Status, status)).Count;
+        public int GetBalanceCount() => Balances.Aggregate(0, (acc, i) => acc + i.Count);
         private bool GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus, ArticleRowInReport>> groups)
         {
            groups = from row in ArticleRowsInRedemptionReport

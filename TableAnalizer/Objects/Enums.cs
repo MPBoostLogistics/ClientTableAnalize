@@ -6,18 +6,19 @@ namespace ClientTableAnalizer.Enums
 
     public enum ShortagesPlace { Warehouse, PickupPoint }
 
-    public enum ArticleStatus
+    public enum ArticleSellmentStatus
     {
-        FullSet,            // Полный расчет
-        InWork,             // В работе
-        OnSearch,           // На поиске
-        OnSearchWarehouse,  // На поиске склада 
-        OnSearchPoint,      // На поиске ПВЗ
-        Unknown             // Неопределенный
+        FullSet,                    // Полный расчет
+        InWork,                     // В работе
+        OnSearchWarehouseAndPoints, // На поиске склада и ПВЗ
+        OnSearchWarehouse,          // На поиске склада 
+        OnSearchPoint,              // На поиске ПВЗ
+        Unknown                     // Неопределенный
     }
 
     public enum ArticeStorageIndex
     {
+        ExpectedGoods,      // Ожидаемое количество товаров на складе
         GoodsReceived,      // Принято товаров
         GoodsShipped,       // Отгружено товароы
         GoodsRemaining,     // Остаток товаров на складе
