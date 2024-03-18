@@ -18,7 +18,7 @@ namespace ClientTableAnalizer.Enums
 
     public enum ArticeStorageIndex
     {
-        ExpectedGoods,      // Ожидаемое количество товаров на складе
+        GoodsExpected,      // Ожидаемое количество товаров на складе
         GoodsReceived,      // Принято товаров
         GoodsShipped,       // Отгружено товароы
         GoodsRemaining,     // Остаток товаров на складе

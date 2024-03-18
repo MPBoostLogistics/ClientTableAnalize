@@ -434,7 +434,7 @@ internal class Program
         package.Dispose();
         stopwatch.Stop();
 
-        // Analize goods shipped && goods remaining
+        // Analize goods shipped && goods remaining, report
         if(ArticleManager.GetArticleGroupsStorageIndex(out IOrderedEnumerable<IGrouping<ArticeStorageIndex, ArticleStorageBalanceUnit>>? storageBalanceGroups) && 
             storageBalanceGroups is not null) 
         {

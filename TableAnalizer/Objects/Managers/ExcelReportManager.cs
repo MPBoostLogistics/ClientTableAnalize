@@ -12,7 +12,9 @@ namespace ClientTableAnalizer.Objects.Managers
         private const int RECORD_INDEX = 1;
         private const int HEADER_TABLE_ROW_HEIGHT = 120;
 
-        private static ExcelPackage excelPackage;
+        private static System.Drawing.Color DangerColor { get; } = System.Drawing.Color.DarkRed;
+
+        private static ExcelPackage? excelPackage;
         #endregion
 
         #region Constructors
@@ -20,7 +22,7 @@ namespace ClientTableAnalizer.Objects.Managers
 
         ~ ExcelReportManager()
         {
-            excelPackage.Dispose();
+            excelPackage?.Dispose();
         }
         #endregion
 
@@ -60,7 +62,7 @@ namespace ClientTableAnalizer.Objects.Managers
             new (21, "Комментарий", 60, "0", true, 0)    
         };
 
-        public static string OuptutFilePath { get; private set;}
+        public static string? OuptutFilePath { get; private set;}
 
         #endregion
 
@@ -96,54 +98,55 @@ namespace ClientTableAnalizer.Objects.Managers
 
                 mainReportWorksheet.Cells[recordIndex, 6].Value = value.SellmentStatus.StatusLabel;
 
-                var articleRedempionBalance = value.ArticleRedempionBalance;
-                var articleStoreBalance = value.ArticleStorageBalance;
-
-                if(articleRedempionBalance.GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus, ArticleRowInReport>>? groups) && groups is not null) 
+                var arb = value.ArticleRedempionBalance.AnalizeBalance();
+                if(arb.HasValue)
                 {
-                    int canceled = 0, onWay = 0, delivered = 0, withDrawn = 0, sum = 0, expected = 0;
-
-                    foreach (var group in groups)
-                    {
-                        if(group.Key == ArticleRedemptionStatus.Canceled) canceled = group.Count();
-                        if(group.Key == ArticleRedemptionStatus.OnWay) onWay = group.Count();
-                        if(group.Key == ArticleRedemptionStatus.Delivered) delivered = group.Count();
-                        if(group.Key == ArticleRedemptionStatus.WithDrawn) withDrawn = group.Count();
-                    }
-
-                    sum = canceled + onWay  + delivered  + withDrawn;
-                    expected = delivered + withDrawn;
-
                     // Redemtion balance Ddta 
-                    mainReportWorksheet.Cells[recordIndex, 7].Value = sum;
-                    mainReportWorksheet.Cells[recordIndex, 8].Value = canceled;
-                    mainReportWorksheet.Cells[recordIndex, 9].Value = onWay;
-                    mainReportWorksheet.Cells[recordIndex, 10].Value = delivered;
-                    mainReportWorksheet.Cells[recordIndex, 11].Value = withDrawn;
-
-                    // Storage balance data
-                    // - expected goods
-                    mainReportWorksheet.Cells[recordIndex, 12].Value = expected;
-                    mainReportWorksheet.Cells[recordIndex, 12].Style.Font.Bold = true;
-
+                    mainReportWorksheet.Cells[recordIndex, 7].Value = arb.Value.sum;
+                    mainReportWorksheet.Cells[recordIndex, 8].Value = arb.Value.canceled;
+                    mainReportWorksheet.Cells[recordIndex, 9].Value = arb.Value.onWay;
+                    mainReportWorksheet.Cells[recordIndex, 10].Value = arb.Value.delivered;;
+                    mainReportWorksheet.Cells[recordIndex, 11].Value = arb.Value.withDrawn;
                 }
 
-        //     mainReportWorksheet.Cells[recordIndex, 13].Value = articleDict[key].StoreBalance.ReceivedQuantity;
+                // Storage balance data
+                var articleStoreBalance = value.ArticleStorageBalance;
+                var values = articleStoreBalance.AnalizeBalance();
+            
+                if (values.HasValue)
+                {
+                    mainReportWorksheet.Cells[recordIndex, 12].Value = values.Value.expected;;
+                    mainReportWorksheet.Cells[recordIndex, 12].Style.Font.Bold = true;
+
+                    mainReportWorksheet.Cells[recordIndex, 13].Value = values.Value.received;
+
+                    mainReportWorksheet.Cells[recordIndex, 14].Value = values.Value.undelivery;
+                    if(values.Value.undelivery > 0) 
+                        mainReportWorksheet.Cells[recordIndex, 14].Style.Font.Color.SetColor(DangerColor); 
+
+                    mainReportWorksheet.Cells[recordIndex, 16].Value = values.Value.shipped;
+                    mainReportWorksheet.Cells[recordIndex, 20].Value = values.Value.remaining;
+                }
+
+
+
+         
+
+                
 
         //     // - Undelivery
         //     mainReportWorksheet.Cells[recordIndex, 14].Value = articleDict[key].StoreBalance.Undelivery;
         //     if(articleDict[key].StoreBalance.Undelivery > 0 && articleDict[key].StatusValue.status != ArticleStatus.InWork)
         //     {
-        //         mainReportWorksheet.Cells[recordIndex, 14].Style.Font.Color.SetColor(System.Drawing.Color.DarkRed); 
+        //        
         //     }
 
         //     // Consumption
         //     mainReportWorksheet.Cells[recordIndex, 15].Value = articleDict[key].StoreBalance.TotalConsumption;
-        //     mainReportWorksheet.Cells[recordIndex, 16].Value = articleDict[key].StoreBalance.ShippedQuantity;
+
         //     mainReportWorksheet.Cells[recordIndex, 17].Value = articleDict[key].StoreBalance.Regradings.Sum(re => re.Value);
         //     mainReportWorksheet.Cells[recordIndex, 18].Value = articleDict[key].StoreBalance.PayShortagesCount;
         //     mainReportWorksheet.Cells[recordIndex, 19].Value = articleDict[key].StoreBalance.DummiesCount;
-        //     mainReportWorksheet.Cells[recordIndex, 20].Value = articleDict[key].StoreBalance.FinBalance;
 
         //     // Comment
         //     mainReportWorksheet.Cells[recordIndex, 21].Value = articleDict[key].Comment;

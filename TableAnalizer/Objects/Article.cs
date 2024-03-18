@@ -103,10 +103,10 @@ namespace ClientTableAnalizer.Objects
         public void AnalyzeArticle(int articleNumber, int deadLineDays)
         {
             // Analize artilce redempion balance and set average price, max redemption date && deadline
-            (MaxRedemptionDate, AveragePrice, IsDeadline) = ArticleRedempionBalance.AnalizeBalance(deadLineDays);
+            (MaxRedemptionDate, AveragePrice, IsDeadline) = ArticleRedempionBalance.AnalizeArticleRows(deadLineDays);
 
             // Set expected balance of goods
-            ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.ExpectedGoods, ArticleRedempionBalance.GetExpectedBalance());
+            ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsExpected, ArticleRedempionBalance.GetExpectedBalance());
 
 
             //var articleShortage = new ArticleShortage (articleNumber, Name, AveragePrice);

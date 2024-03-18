@@ -17,7 +17,8 @@ namespace ClientTableAnalizer.Objects
 	public class ArticleRedempionBalance
 	{
         #region  Properties
-        public List<ArticleRedempionBalanceUnit> Balances {get; private set;}= new () {
+        public List<ArticleRedempionBalanceUnit> Balances { get; }= new () 
+        {
              new(ArticleRedemptionStatus.Delivered, "Доставлено на ПВЗ, шт.", 0),
              new(ArticleRedemptionStatus.WithDrawn, "Забрано с ПВЗ, шт.", 0),
              new(ArticleRedemptionStatus.Canceled, "Отменено, шт.", 0),
@@ -33,14 +34,28 @@ namespace ClientTableAnalizer.Objects
 
         public void Set(ArticleRowInReport articleRow) => ArticleRowsInRedemptionReport.Add(articleRow);
 
+        private int GetBalanceCountByStatus(ArticleRedemptionStatus ars) =>  
+            Balances.FirstOrDefault(b => Equals(b.Status, ars)).Count;
+
         public int GetExpectedBalance() 
         {
-            var deliveredBalance = Balances.FirstOrDefault(b => Equals(b.Status, ArticleRedemptionStatus.Delivered));
-            var withDrawnBalance = Balances.FirstOrDefault(b => Equals(b.Status, ArticleRedemptionStatus.WithDrawn));
-            return deliveredBalance.Count + withDrawnBalance.Count;
+            var deliveredBalance = GetBalanceCountByStatus(ArticleRedemptionStatus.Delivered);
+            var withDrawnBalance = GetBalanceCountByStatus(ArticleRedemptionStatus.WithDrawn);
+            return deliveredBalance + withDrawnBalance;
         }
 
-        public bool GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus, ArticleRowInReport>> groups)
+        public (int sum, int canceled, int onWay, int delivered, int withDrawn)? AnalizeBalance() 
+        {
+            int canceled = GetBalanceCountByStatus(ArticleRedemptionStatus.Canceled);
+            int onWay = GetBalanceCountByStatus(ArticleRedemptionStatus.OnWay);
+            int delivered = GetBalanceCountByStatus(ArticleRedemptionStatus.Delivered);
+            int withDrawn = GetBalanceCountByStatus(ArticleRedemptionStatus.WithDrawn);
+            int sum = canceled + onWay + delivered + withDrawn;
+
+            return (sum, canceled, onWay, delivered, withDrawn);
+        }
+
+        private bool GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus, ArticleRowInReport>> groups)
         {
            groups = from row in ArticleRowsInRedemptionReport
                     group row by row.ItemStatus
@@ -51,7 +66,7 @@ namespace ClientTableAnalizer.Objects
             return groups.Any();
         }
 
-        public (DateTime,double, bool) AnalizeBalance(int deadLineDays) 
+        public (DateTime,double, bool) AnalizeArticleRows(int deadLineDays) 
         {
             DateTime maxRedemptionDate = default;
             double averagePrice = default;
@@ -66,12 +81,14 @@ namespace ClientTableAnalizer.Objects
             // Set is deadline
             isDeadLine = (maxRedemptionDate - DateTime.Now).Duration().Days > deadLineDays;
 
-            // Calculate balances && set average price
+            // Calculate rows, set balances && set average price
             if(GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus, ArticleRowInReport>> groups))
             {
                 foreach (var group in groups) 
                 {
-                    var balance = this.Balances.FirstOrDefault(b => Equals(b.Status, group.Key));
+                    var balance = this.Balances
+                        .FirstOrDefault(b => Equals(b.Status, group.Key));
+                        
                     balance.Count += group.Count();
 
                     // Set average price
