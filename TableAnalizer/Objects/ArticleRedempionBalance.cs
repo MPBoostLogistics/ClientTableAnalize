@@ -33,7 +33,7 @@ namespace ClientTableAnalizer.Objects
 
         public void Set(ArticleRowInReport articleRow) => ArticleRowsInRedemptionReport.Add(articleRow);
 
-        public int GetWaitBalance() 
+        public int GetExpectedBalance() 
         {
             var deliveredBalance = Balances.FirstOrDefault(b => Equals(b.Status, ArticleRedemptionStatus.Delivered));
             var withDrawnBalance = Balances.FirstOrDefault(b => Equals(b.Status, ArticleRedemptionStatus.WithDrawn));

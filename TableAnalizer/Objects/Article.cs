@@ -106,7 +106,8 @@ namespace ClientTableAnalizer.Objects
             (MaxRedemptionDate, AveragePrice, IsDeadline) = ArticleRedempionBalance.AnalizeBalance(deadLineDays);
 
             // Set expected balance of goods
-            ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.ExpectedGoods, ArticleRedempionBalance.GetWaitBalance());
+            ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.ExpectedGoods, ArticleRedempionBalance.GetExpectedBalance());
+
 
             //var articleShortage = new ArticleShortage (articleNumber, Name, AveragePrice);
 
