@@ -955,11 +955,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/ClientTableAnalize/TableAnalizer/ClientTableAnalizer.csproj",
-      "projectName": "ClientTableAnalizer",
-      "projectPath": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/ClientTableAnalize/TableAnalizer/ClientTableAnalizer.csproj",
+      "projectUniqueName": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizer/TableAnalizer.csproj",
+      "projectName": "TableAnalizer",
+      "projectPath": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizer/TableAnalizer.csproj",
       "packagesPath": "/Users/dmitrijsamarcev/.nuget/packages/",
-      "outputPath": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/ClientTableAnalize/TableAnalizer/obj/",
+      "outputPath": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizer/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/Users/dmitrijsamarcev/.nuget/NuGet/NuGet.Config"
