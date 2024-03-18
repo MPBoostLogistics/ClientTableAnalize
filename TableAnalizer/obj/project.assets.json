@@ -950,19 +950,19 @@
     ]
   },
   "packageFolders": {
-    "/Users/dmitrijsamarcev/.nuget/packages/": {}
+    "/Users/dmitry/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/ClientTableAnalize/TableAnalizer/ClientTableAnalizer.csproj",
+      "projectUniqueName": "/Users/dmitry/Library/Mobile Documents/com~apple~CloudDocs/Dev/CSharp/ClientTableAnalize/TableAnalizer/ClientTableAnalizer.csproj",
       "projectName": "ClientTableAnalizer",
-      "projectPath": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/ClientTableAnalize/TableAnalizer/ClientTableAnalizer.csproj",
-      "packagesPath": "/Users/dmitrijsamarcev/.nuget/packages/",
-      "outputPath": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/ClientTableAnalize/TableAnalizer/obj/",
+      "projectPath": "/Users/dmitry/Library/Mobile Documents/com~apple~CloudDocs/Dev/CSharp/ClientTableAnalize/TableAnalizer/ClientTableAnalizer.csproj",
+      "packagesPath": "/Users/dmitry/.nuget/packages/",
+      "outputPath": "/Users/dmitry/Library/Mobile Documents/com~apple~CloudDocs/Dev/CSharp/ClientTableAnalize/TableAnalizer/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "/Users/dmitrijsamarcev/.nuget/NuGet/NuGet.Config"
+        "/Users/dmitry/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net7.0"
@@ -980,6 +980,11 @@
         "warnAsError": [
           "NU1605"
         ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
       }
     },
     "frameworks": {
@@ -1002,12 +1007,26 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[7.0.16, 7.0.16]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Host.osx-x64",
+            "version": "[7.0.16, 7.0.16]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[7.0.16, 7.0.16]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/7.0.313/RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.201/RuntimeIdentifierGraph.json"
       }
     }
   }
