@@ -74,15 +74,15 @@ internal class Program
         if (!string.IsNullOrEmpty(redemtionFilePathOZ))
             await ReadRedemptionReportFile(Marketplace.OZ);
 
-        //await GetUserStorageData(Marketplace.WB);
+        await GetUserStorageData(Marketplace.WB);
 
-        //await GetUserStorageData(Marketplace.OZ);
+        await GetUserStorageData(Marketplace.OZ);
 
-        // if (!string.IsNullOrEmpty(storageFilePathWB))
-        //     await ReadStorageReportFile(Marketplace.WB);
+        if (!string.IsNullOrEmpty(storageFilePathWB))
+            await ReadStorageReportFile(Marketplace.WB);
 
-        // if (!string.IsNullOrEmpty(storageFilePathOZ))
-        //     await ReadStorageReportFile(Marketplace.OZ);
+        if (!string.IsNullOrEmpty(storageFilePathOZ))
+            await ReadStorageReportFile(Marketplace.OZ);
 
        // await GetUserConsumingData();
 
@@ -172,8 +172,14 @@ internal class Program
 
     private static async Task GetUserStorageData(Marketplace marketplace)
     {
-        var necessarilyMessage = marketplace == Marketplace.WB ? "обязательно" : "не обязательно";
-        var messageInstruction = marketplace == Marketplace.WB ? "ESC - выход" : "1 - пропустить, ESC - выход";
+        var necessarilyMessage = marketplace == Marketplace.WB ? 
+            "обязательно" : 
+            "не обязательно";
+
+        var messageInstruction = marketplace == Marketplace.WB ? 
+            "ESC - выход" : 
+            "1 - пропустить, ESC - выход";
+            
         var storagePathMessage = $"Перетащите путь к отчету по приходу и остаткам товаров {marketplace} ({necessarilyMessage})\n({messageInstruction}):";
 
         switch (marketplace)
@@ -329,7 +335,9 @@ internal class Program
 
     private static async Task ReadStorageReportFile(Marketplace marketplace)
     {
-        string? filePath = marketplace == Marketplace.WB ? storageFilePathWB : storageFilePathOZ;
+        string? filePath = marketplace == Marketplace.WB ? 
+            storageFilePathWB : 
+            storageFilePathOZ;
 
         if (filePath is null || !CheckFileExistence(filePath)) await Report(goodByMessage, 2000, true);
 
@@ -350,37 +358,39 @@ internal class Program
   
         ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
 
+        int firstRowIndex = 1, firstColIndex = 1;
+
         // Find addresses of special rows
-        // for (int row = FIRST_ROW_INDEX; row <=  worksheet.Dimension.End.Row; row++)
-        // {
-        //     for (int col = FIRST_ROW_INDEX; col <=  worksheet.Dimension.End.Column; col++)
-        //     {
-        //         var cellValue = worksheet.Cells[row, col].Value;
+        for (int row = firstRowIndex; row <=  worksheet.Dimension.End.Row; row++)
+        {
+            for (int col = firstColIndex; col <=  worksheet.Dimension.End.Column; col++)
+            {
+                var cellValue = worksheet.Cells[row, col].Value;
 
-        //         if (cellValue is not null && !string.IsNullOrEmpty(cellValue.ToString()))
-        //         {
-        //             switch (cellValue!.ToString()!.Trim())
-        //             {
-        //                 case NAME_FIRST_ROOM: rowFirstRoomAddress = row; break;
-        //                 case NAME_SECOND_ROOM: rowSecondRoomAddress = row; break;
-        //                 case NAME_FINAL_ROW: rowFinalRoomAddress = row; break;
-        //                 default: break;
-        //             }
-        //         }
-        //     }
+                if (cellValue is not null && !string.IsNullOrEmpty(cellValue.ToString()))
+                {
+                    switch (cellValue!.ToString()!.Trim())
+                    {
+                        case NAME_FIRST_ROOM: rowFirstRoomAddress = row; break;
+                        case NAME_SECOND_ROOM: rowSecondRoomAddress = row; break;
+                        case NAME_FINAL_ROW: rowFinalRoomAddress = row; break;
+                        default: break;
+                    }
+                }
+            }
 
-        //     if (rowFirstRoomAddress != default &&
-        //         rowSecondRoomAddress != default &&
-        //         rowFinalRoomAddress != default) { break; }
-        // }
+            if (rowFirstRoomAddress != default &&
+                rowSecondRoomAddress != default &&
+                rowFinalRoomAddress != default) { break; }
+        }
 
         // make row ranges
         var firstRoomRowRange = Enumerable.Range(rowFirstRoomAddress + 1, rowSecondRoomAddress - 1).ToList();
         var secondRoomRowRange = Enumerable.Range(rowSecondRoomAddress + 1, rowFinalRoomAddress).ToList();
 
-        string? name;
-        int? coming;
-        int? finalBalance;
+        string? name;               // название товара
+        int? goodsReceivedCount;    // приход на склад
+        int? goodsRemainingCount;   // остаток на складе 
 
         // Get coming && finalBalance++ (firstRoom)
         for (int row = firstRoomRowRange.First(); row <= firstRoomRowRange.Count; row++)
@@ -394,15 +404,15 @@ internal class Program
                 if (!string.IsNullOrEmpty(name)) 
                     existingArticle.SetName(name!.Split(",")[0].Trim());
                 
-                // coming
-                coming = ParseValueToInt(worksheet.Cells[row, ArticleManager.StorageTableIndexes.comingIndex].Value); ;
-                if (coming.HasValue)
-                    existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsReceived, coming.Value);
+                // goods received
+                goodsReceivedCount = ParseValueToInt(worksheet.Cells[row, ArticleManager.StorageTableIndexes.goodsReceivedIndex].Value); ;
+                if (goodsReceivedCount.HasValue)
+                    existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsReceived, goodsReceivedCount.Value);
 
-                // finalBalance
-                finalBalance = ParseValueToInt(worksheet.Cells[row, ArticleManager.StorageTableIndexes.finBalanceIndex].Value);
-                if (finalBalance.HasValue)
-                    existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsRemaining, finalBalance.Value);
+                // goods remaining
+                goodsRemainingCount = ParseValueToInt(worksheet.Cells[row, ArticleManager.StorageTableIndexes.finBalanceIndex].Value);
+                if (goodsRemainingCount.HasValue)
+                    existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsRemaining, goodsRemainingCount.Value);
             }
         }
 
@@ -414,10 +424,10 @@ internal class Program
                 existingArticle is not null) 
             {
                 // finalBalance
-                finalBalance = ParseValueToInt(worksheet.Cells[row, ArticleManager.StorageTableIndexes.finBalanceIndex].Value);
+                goodsRemainingCount = ParseValueToInt(worksheet.Cells[row, ArticleManager.StorageTableIndexes.finBalanceIndex].Value);
 
-                if (finalBalance.HasValue)
-                    existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsRemaining, finalBalance.Value);
+                if (goodsRemainingCount.HasValue)
+                    existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsRemaining, goodsRemainingCount.Value);
             }
         }
 

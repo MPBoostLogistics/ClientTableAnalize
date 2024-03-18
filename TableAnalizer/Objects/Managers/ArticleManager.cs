@@ -7,7 +7,7 @@ namespace ClientTableAnalizer.Objects.Managers
         #region Properties 
         public int DeadlineDays {get; private set;}
         public readonly (int articleIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) RedemptionTableIndexes= (2, 7, 9, 10, 14);
-        public readonly (int articleIndex, int nameIndex, int initBalanceIndex, int comingIndex, int finBalanceIndex) StorageTableIndexes = (1, 6, 14, 15, 17);
+        public readonly (int articleIndex, int nameIndex, int initBalanceIndex, int goodsReceivedIndex, int finBalanceIndex) StorageTableIndexes = (1, 6, 14, 15, 17);
         public Dictionary<int, Article> Articles { get; } = new();
 
         public Article? this[int key] 
