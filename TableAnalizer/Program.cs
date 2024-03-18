@@ -249,6 +249,8 @@ internal class Program
             goodByMessage = string.Concat(goodByMessage,"\n",ex.Message);   
             await Report(goodByMessage, 2000, true);
         }
+
+        if(!isFileExists) return;
  
         var stopwatch = new Stopwatch();
         stopwatch.Start();
@@ -279,19 +281,18 @@ internal class Program
                     if (!article.HasValue) continue;
       
                     var redemptionDateString = worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.dateIndex].Value.ToString();
-                    var itemStatusValue = worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.statusIndex].Value.ToString();
+                    var goodStatusString = worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.statusIndex].Value.ToString();
                     var priceSting = worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.priceIndex].Value.ToString();
 
                     if (!string.IsNullOrEmpty(redemptionDateString) &&
-                        !string.IsNullOrEmpty(itemStatusValue) &&
+                        !string.IsNullOrEmpty(goodStatusString) &&
                         !string.IsNullOrEmpty(priceSting))
                     {
-                        var articleRow  = new ArticleRowInReport(redemptionDateString.Trim(), itemStatusValue.Trim(), priceSting.Trim());
+                        var articleRow  = new ArticleRowInReport(redemptionDateString.Trim(), goodStatusString.Trim(), priceSting.Trim());
 
-                        var currentArticle = ArticleManager[article.Value];
-                        if (currentArticle is not null)
+                        if (ArticleManager[article.Value] is not null)
                         {
-                            currentArticle.SetArticleRowInReport(articleRow);
+                            ArticleManager[article.Value]!.SetArticleRowInReport(articleRow);
                         }
                         else
                         {

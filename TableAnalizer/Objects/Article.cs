@@ -185,6 +185,11 @@ namespace ClientTableAnalizer.Objects
             //ArticleShortage = articleShortage.Shortages.Count > 0 ? articleShortage : null;
         }
 
+        public override string ToString()
+        {
+            return $"{Marketplace}";
+        }
+
         #endregion
     }
 }

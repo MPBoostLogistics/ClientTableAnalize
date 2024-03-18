@@ -94,6 +94,11 @@ namespace ClientTableAnalizer.Objects
                     // Set average price
                     averagePrice = group.Average(it => it.Price);
                 }
+
+                 foreach (var group in groups) 
+                 {
+                    Console.Write($"{group.Key} {group.Count()}\n");
+                 }
             }
 
             return (maxRedemptionDate, averagePrice, isDeadLine);
