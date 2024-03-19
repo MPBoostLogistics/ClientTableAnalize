@@ -12,11 +12,11 @@ using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("TableAnalizer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
-[assembly: System.Reflection.AssemblyFileVersionAttribute("2.0.1")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+de918ec0bec49220438efc67692ac0c3d2a81301")]
+[assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4ecc7cb53aa3ac0c1f3e5beffaad85e67e178a38")]
 [assembly: System.Reflection.AssemblyProductAttribute("TableAnalizer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TableAnalizer")]
-[assembly: System.Reflection.AssemblyVersionAttribute("2.0.1")]
+[assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
 
 // Создано классом WriteCodeFragment MSBuild.
 

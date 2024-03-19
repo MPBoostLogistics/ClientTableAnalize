@@ -35,7 +35,7 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         public void Set(ArticleRowInReport articleRow) => ArticleRowsInRedemptionReport.Add(articleRow);
 
         private int GetBalanceCountByStatus(ArticleRedemptionStatus ars) =>  
-            Balances.FirstOrDefault(b => Equals(b.Status, ars)).Count;
+            Balances.FirstOrDefault(b => b.Status == ars).Count;
 
         public int GetExpectedBalance() 
         {

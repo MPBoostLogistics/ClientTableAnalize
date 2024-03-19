@@ -11,16 +11,17 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         #endregion
 
         #region Properties 
+        public int ArticleNumber { get; }
         public DateTime RedemptionDate { get; }             
         public ArticleRedemptionStatus ItemStatus { get; }
         public double Price { get; }
         #endregion
         
         #region Constructors
-        public ArticleRowInReport(string redemptionDateString, string itemStatusString, string priceString)
+        public ArticleRowInReport(int articleNumber,  string redemptionDateString, string itemStatusString, string priceString)
         {
+            ArticleNumber = articleNumber;
             RedemptionDate = DateTime.ParseExact(redemptionDateString, DATE_TIME_FORMAT, Culture);
-            
             ItemStatus = SetItemStatus(itemStatusString);
 
             if(double.TryParse(priceString.Split(" ")[0], out double price))
@@ -43,7 +44,7 @@ namespace ClientTableAnalizer.Objects.ArticleItems
 
         public override string ToString()
         {
-            return $"{RedemptionDate.ToShortDateString()}, {ItemStatus}";
+            return $"{ArticleNumber}: {RedemptionDate.ToShortDateString()}, {ItemStatus}, {Price}";
         }
 
         #endregion

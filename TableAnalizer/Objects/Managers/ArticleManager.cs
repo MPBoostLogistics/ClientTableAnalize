@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.ArticleItems;
 
@@ -41,16 +42,28 @@ namespace ClientTableAnalizer.Objects.Managers
             return groups.Any();
         }
 
-        public bool GetArticleGroupsStorageIndex(out IOrderedEnumerable<IGrouping<ArticeStorageIndex, ArticleStorageBalanceUnit>>? balances) 
+        public int? GetArticleStorgeBalanceCountByIndex(int articleNumber, ArticeStorageIndex index) 
         {
-            balances =  from article in Articles
-                        from balance in article.Value.ArticleStorageBalance.StorageBalances
-                        group balance by balance.StorageIndex into itemGroup
-                        orderby itemGroup.Key
-                        select itemGroup;
-
-            return balances.Any();;
+            if(GetArticleByNumber(articleNumber, out Article? article) && article is not null) 
+            {
+                return article.ArticleStorageBalance.GetBalanceCountByStorageIndex(index);
+            }
+            return null;
         }
+
+        // public int GetArticlesStorgeBalanceByIndex(ArticeStorageIndex index) 
+        // {
+        //     var aa = from article in Articles.Values
+        //              from balanceUnit in article.ArticleStorageBalance.StorageBalances
+        //              select balanceUnit.Value
+        //              group balanceUnit by balanceUnit.Key into balanceGroup
+                    
+        //              orderby balanceGroup.Key
+        //              select balanceGroup;
+
+            
+
+        // }
 
         public bool GetArticleByObjectValue (object value, out Article? article) 
         {
@@ -64,16 +77,32 @@ namespace ClientTableAnalizer.Objects.Managers
             article = this[articleKey.Value];
             return article is not null;
         }
+
+        public bool GetArticleByNumber (int articleNumber, out Article? article) 
+        {
+            article = this[articleNumber];
+            return article is not null;
+        }
         
         public async Task<bool> AnalyzeArticles() 
         {
             if(Equals(Articles.Count, 0)) 
-                throw new Exception("An attempt to parse a dict with a number of elements - 0");
+            {
+                await Task.Delay(100);
+                throw new Exception("An attempt to parse a dict with a number of elements - 0"); 
+            }  
+
+            List<Task> tasks = new();
 
             foreach (var (key, value) in Articles) 
-            {
-                await Task.Run( () => value.AnalyzeArticle(key, DeadlineDays));
-            }
+                tasks.Add(new Task(async () => await value.AnalyzeArticle(key, DeadlineDays)));
+       
+            var taskArray = tasks.ToArray();
+
+            foreach (var task in taskArray)
+                task.Start();
+
+            Task.WaitAll(taskArray);
             
             return true;
         }

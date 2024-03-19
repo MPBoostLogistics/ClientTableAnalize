@@ -15,7 +15,6 @@ internal class Program
 {
     #region Variables and constants
     private static readonly Version? AppVersion = Assembly.GetExecutingAssembly().GetName().Version;
-    private const string LOGISTIC_FLAG = "Да";
     private const string NAME_FIRST_ROOM = "1 - Помещение приемки, сортировки и упаковки";
     private const string NAME_SECOND_ROOM = "2 - Помещение длительного хранения и отгрузки";
     private const string NAME_FINAL_ROW = "Итого товаров в единицах хранения";
@@ -75,15 +74,15 @@ internal class Program
         if (!string.IsNullOrEmpty(redemtionFilePathOZ))
             await ReadRedemptionReportFile(Marketplace.OZ);
 
-        await GetUserStorageData(Marketplace.WB);
+        //await GetUserStorageData(Marketplace.WB);
 
-        await GetUserStorageData(Marketplace.OZ);
+        //await GetUserStorageData(Marketplace.OZ);
 
         if (!string.IsNullOrEmpty(storageFilePathWB))
             await ReadStorageReportFile(Marketplace.WB);
 
-        if (!string.IsNullOrEmpty(storageFilePathOZ))
-            await ReadStorageReportFile(Marketplace.OZ);
+       // if (!string.IsNullOrEmpty(storageFilePathOZ))
+         //   await ReadStorageReportFile(Marketplace.OZ);
 
        // await GetUserConsumingData();
 
@@ -238,80 +237,29 @@ internal class Program
 
     private static async Task ReadRedemptionReportFile(Marketplace marketplace)
     {
-        bool isFileExists = default;
+        await Report($"Анализирую отчет клиента {login} по выкупам {marketplace}...");
+
         var filePath = marketplace == Marketplace.WB ? 
             redemtionFilePathWB : 
             redemtionFilePathOZ;
+
+        if(filePath is null) await Report(goodByMessage, 2000, true);
+
+        (double time, List<ArticleRowInReport> rowInReports) = ExcelReportManager.AnalyzeRedemptionReport(filePath!, "Выкупы", ArticleManager.RedemptionTableIndexes);
         
-        try
+        foreach (var articleRow in rowInReports)
         {
-            isFileExists = filePath != null && CheckFileExistence(filePath);
-        }
-        catch (Exception ex)
-        {
-            goodByMessage = string.Concat(goodByMessage,"\n",ex.Message);   
-            await Report(goodByMessage, 2000, true);
-        }
+            var key = articleRow.ArticleNumber;
 
-        if(!isFileExists) return;
- 
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        await Report($"Анализирую отчет клиента {login} по выкупам {marketplace}...");
-
-        using ExcelPackage package = new(new FileInfo(filePath!));
-
-        if (CheckSheets(in package) == null) Environment.Exit(0);
-
-        var worksheet = package.Workbook.Worksheets[0];
-        var dimention = worksheet.Dimension;
-
-        var endRowIndex = worksheet.Dimension.End.Row;
-
-        for (int row = 1; row <= dimention.End.Row; row++)
-        {
-            var logisticFlagValue = worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.logisticFlagIndex].Value.ToString();
-
-            if (!string.IsNullOrEmpty(logisticFlagValue))
+            if (ArticleManager[key] is not null)
             {
-                var logisticFlag = logisticFlagValue.Replace(" ", "");
-
-                if (logisticFlag == LOGISTIC_FLAG)
-                {
-                    var article = ParseValueToInt(worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.articleIndex].Value);
-
-                    if (!article.HasValue) continue;
-      
-                    var redemptionDateString = worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.dateIndex].Value.ToString();
-                    var goodStatusString = worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.statusIndex].Value.ToString();
-                    var priceSting = worksheet.Cells[row, ArticleManager.RedemptionTableIndexes.priceIndex].Value.ToString();
-
-                    if (!string.IsNullOrEmpty(redemptionDateString) &&
-                        !string.IsNullOrEmpty(goodStatusString) &&
-                        !string.IsNullOrEmpty(priceSting))
-                    {
-                        var articleRow  = new ArticleRowInReport(redemptionDateString.Trim(), goodStatusString.Trim(), priceSting.Trim());
-
-                        if (ArticleManager[article.Value] is not null)
-                        {
-                            ArticleManager[article.Value]!.SetArticleRowInReport(articleRow);
-                        }
-                        else
-                        {
-                            ArticleManager[article.Value] = new Article(marketplace, articleRow);
-                        }
-                    }
-                    else
-                    {
-                        await Report("Невозможно создать Item по выкупу.", 2000, true);
-                    }
-                }
+                ArticleManager[key]!.SetArticleRowInReport(articleRow);
+            }
+            else
+            {
+                ArticleManager[key] = new Article(marketplace, articleRow);
             }
         }
-
-        package.Dispose();
-        stopwatch.Stop();
         
         var redemtionReport = $"Артикулов с логистикой {ArticleManager.ArticlesCount}\n";
 
@@ -326,14 +274,14 @@ internal class Program
             }
 
             redemtionReport += $"\nВыкупов с логистикой {redemptonCount}\n";
-            redemtionReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
+            redemtionReport += $"Анализ отчета занял {time} секунд.";
 
             await Report(redemtionReport, 1500);
         } 
         else 
         {
-            goodByMessage = string.Concat(goodByMessage, "\n", "Невозможно создать группы выкупов и сфоормировать отсчет.");
-            await Report(goodByMessage, 2000, true);
+            goodByMessage = string.Concat(goodByMessage, "\n", "Невозможно создать группы выкупов и сфоормировать отчет.");
+            await Report(goodByMessage, 1500, true);
         } 
     }
 
@@ -345,15 +293,15 @@ internal class Program
             storageFilePathWB : 
             storageFilePathOZ;
 
-        try
-        {
-            isFileExists = filePath != null && CheckFileExistence(filePath);
-        }
-        catch (Exception ex)
-        {
-            goodByMessage = string.Concat(goodByMessage,"\n",ex.Message);   
-            await Report(goodByMessage, 2000, true);
-        }
+        // try
+        // {
+        //     isFileExists = filePath != null && CheckFileExistence(filePath);
+        // }
+        // catch (Exception ex)
+        // {
+        //     goodByMessage = string.Concat(goodByMessage,"\n",ex.Message);   
+        //     await Report(goodByMessage, 2000, true);
+        // }
 
         if(!isFileExists) return;
 
@@ -361,7 +309,7 @@ internal class Program
 
         using ExcelPackage package = new(existingFile);
 
-        if (CheckSheets(in package) == null) await Report(goodByMessage, 2000, true);
+        // if (CheckSheets(in package) == null) await Report(goodByMessage, 2000, true);
 
         var stopwatch = new Stopwatch();
         stopwatch.Start();
@@ -450,37 +398,34 @@ internal class Program
         stopwatch.Stop();
 
         // Analize goods shipped && goods remaining, report
-        if(ArticleManager.GetArticleGroupsStorageIndex(out IOrderedEnumerable<IGrouping<ArticeStorageIndex, ArticleStorageBalanceUnit>>? storageBalanceGroups) && 
-            storageBalanceGroups is not null) 
-        {
-            var goodsShippedSum = storageBalanceGroups!
-                .First(g => g.Key == ArticeStorageIndex.GoodsShipped)
-                .Select(g => g.Count)
-                .Sum();
+        // if(ArticleManager.GetArticleGroupsStorageIndex(out IOrderedEnumerable<IGrouping<ArticeStorageIndex, ArticleStorageBalanceUnit>>? storageBalanceGroups) && 
+        //     storageBalanceGroups is not null) 
+        // {
+        //     var goodsRemainingCount = ArticleManager.GetArticleStorgeBalanceCountByIndex(ArticeStorageIndex.GoodsRemaining);
   
-            var goodsRemainingSum = storageBalanceGroups!
-                .First(g => g.Key == ArticeStorageIndex.GoodsRemaining)
-                .Select(g => g.Count)
-                .Sum();
+        //     var goodsRemainingSum = storageBalanceGroups!
+        //         .First(g => g.Key == ArticeStorageIndex.GoodsRemaining)
+        //         .Select(g => g.Count)
+        //         .Sum();
 
-            var balanceReport = $"Общий приход товаров: {goodsShippedSum}, общий остаток: {goodsRemainingSum}\n";
-            balanceReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
+        //     var balanceReport = $"Общий приход товаров: {goodsShippedSum}, общий остаток: {goodsRemainingSum}\n";
+        //     balanceReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
-            await Report(balanceReport, 1500);
-        }
+        //     await Report(balanceReport, 1500);
+        // }
     }
 
     private static async Task ReadConsumptionReport(string? filePath, ArticeStorageIndex storeUnit, int artIndex, int countIndex)
     {
-        if (filePath is null && CheckFileExistence(filePath!) == null)
-            await Report(goodByMessage, 2000, true);
+        // if (filePath is null && CheckFileExistence(filePath!) == null)
+        //     await Report(goodByMessage, 2000, true);
         
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
         using ExcelPackage package = new(new FileInfo(filePath!));
 
-        if (CheckSheets(in package) == null) await Report(goodByMessage, 2000, true);
+        // if (CheckSheets(in package) == null) await Report(goodByMessage, 2000, true);
 
         ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
 
@@ -534,18 +479,13 @@ internal class Program
         const int COUNT_INDEX = 2;
         const int PRICE_INDEX = 3;
 
-        if (string.IsNullOrEmpty(filePath) || CheckFileExistence(filePath!) == null)
-        {
-            return;
-        }
-        else
-        {
+  
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
             using ExcelPackage package = new(new FileInfo(filePath));
 
-            if (CheckSheets(in package) == null) return;
+            // if (CheckSheets(in package) == null) return;
 
             ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
             (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
@@ -587,7 +527,7 @@ internal class Program
             //payReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
             //await Report(payReport, 1500);
-        }
+        
     }
 
     private static async Task ReadRegrandingReport(string filePath)
@@ -597,14 +537,14 @@ internal class Program
         const int COUNT_INDEX = 3;
         const int COMMENT_INDEX = 4;
 
-        if (filePath is null || CheckFileExistence(filePath) == null) return;
+        // if (filePath is null || CheckFileExistence(filePath) == null) return;
         
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
         using ExcelPackage package = new(new FileInfo(filePath));
 
-        if (CheckSheets(in package) == null) return;
+        // if (CheckSheets(in package) == null) return;
 
         ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
         (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
@@ -664,14 +604,14 @@ internal class Program
     {
         const int ARTICLE_INDEX = 1; const int COUNT_INDEX = 2;
 
-        if (filePath is null || CheckFileExistence(filePath) == null) return;
+        // if (filePath is null || CheckFileExistence(filePath) == null) return;
 
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
         using ExcelPackage package = new(new FileInfo(filePath));
 
-        if (CheckSheets(in package) == null) return;
+        // if (CheckSheets(in package) == null) return;
 
         ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
         (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
@@ -709,8 +649,8 @@ internal class Program
     {
         static void SaveWork() 
         {
-            ExcelReportManager.CreateMainReportSheet("Отчет", ArticleManager.Articles);
-            ExcelReportManager.SaveReportFile();
+            ExcelReportManager.CreateMainReportSheet(outputPath, "Отчет", ArticleManager.Articles);
+            ExcelReportManager.SaveReportFiles(outputPath);
 
             Console.WriteLine($"Новый отчет по клиенту создан по пути: {outputPath}");
             Console.WriteLine();
@@ -844,26 +784,12 @@ internal class Program
         return $"/{copy}";
     }
 
-    private static bool CheckFileExistence(string path)
-    {
-        if (File.Exists(path))return true;
+    // private static bool CheckFileExistence(string path)
+    // {
+    //     if (File.Exists(path))return true;
 
-        throw new FileNotFoundException($"Файл по пути\n{path}\nне найден. Проверьте правильность указания данных.");
-    }
-
-    private static bool? CheckSheets(in ExcelPackage package)
-    {
-        if(package.Workbook.Worksheets.Count != 0)
-        {
-            return true;
-        }
-        else
-        {
-            Console.WriteLine($"Нет активных листов для анализа. Проверьте книгу.");
-            Console.ReadLine();
-            return null;
-        }
-    }
+    //     throw new FileNotFoundException($"Файл по пути\n{path}\nне найден. Проверьте правильность указания данных.");
+    // }
 
     private static async Task<string?> GetDirectoryPath(string message, bool necessarily, bool giveMeLogin)
     {
@@ -929,9 +855,6 @@ internal class Program
 
             var dateTime = DateTime.Now.ToString("dd-MM-yyyy");
             outputPath = $"{clientDirectoryPath.FullName}/ClientReport_{login}_{dateTime}.xlsx";
-            
-            // Make ExcelPackage in ExcelReportManager
-            ExcelReportManager.CreateExcelPackage(outputPath);
         }
         else
         {

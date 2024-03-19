@@ -94,9 +94,6 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         public void SetComment(string message) =>
             Comment = string.IsNullOrEmpty(Comment) ? message : string.Concat(Comment, " ", message);
 
-        public void SetStoreBalance(ArticeStorageIndex unit, int value) =>
-            ArticleStorageBalance.SetStorageBalance(unit, value);
-
         // public void SetStoreBalance(int count, double price) =>
         //     ArticleStorageBalance.SetPayShortage(count, price);
 
@@ -109,8 +106,8 @@ namespace ClientTableAnalizer.Objects.ArticleItems
             await Task.Run(() => ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsExpected, ArticleRedempionBalance.GetExpectedBalance()));
 
             // Analize balances
-            // ArticleRedempionBalance.AnalizeBalance();
-            // ArticleStorageBalance.AnalizeBalance();
+            ArticleRedempionBalance.AnalizeBalance();
+            ArticleStorageBalance.AnalizeBalance();
 
             //var articleShortage = new ArticleShortage (articleNumber, Name, AveragePrice);
 

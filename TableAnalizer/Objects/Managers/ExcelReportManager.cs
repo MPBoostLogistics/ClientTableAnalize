@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ClientTableAnalizer.Objects.ArticleItems;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
@@ -11,7 +12,7 @@ namespace ClientTableAnalizer.Objects.Managers
         private const int DEFAULT_TABLE_COL_WIDTH = 18;
         private const int RECORD_INDEX = 1;
         private const int HEADER_TABLE_ROW_HEIGHT = 120;
-        private static ExcelPackage? excelPackage;
+        private const string LOGISTIC_FLAG = "Да";
         #endregion
 
         #region Properties
@@ -48,142 +49,185 @@ namespace ClientTableAnalizer.Objects.Managers
 
             new (21, "Комментарий", 60, "0", true, 0)    
         };
-        public static string? OuptutFilePath { get; private set;}
         #endregion
 
         #region Constructors && destructors
         public ExcelReportManager(){}
-
-        ~ ExcelReportManager()
-        {
-            excelPackage?.Dispose();
-        }
         #endregion
 
         #region Functionality
 
-        public static void CreateExcelPackage (string ouptutFilePath) 
+        public static (double time, List<ArticleRowInReport> articleRows) AnalyzeRedemptionReport(string path, string sheetName, 
+            (int articleIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) indices) 
         {
-             excelPackage = new ExcelPackage(ouptutFilePath);
-             OuptutFilePath = ouptutFilePath;
-        } 
-  
-        public static bool CreateMainReportSheet(string workSheetName, in Dictionary<int, Article> articles) 
-        {
-            // Create ExcelWorksheet  
-            CreateWorkSheet(workSheetName, out ExcelWorksheet mainReportWorksheet, System.Drawing.Color.GreenYellow);
+            List<ArticleRowInReport> articleRows = new();
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
 
-            // Filling table with data
-            int recordIndex = 1;
-            
-            foreach (var (key, value) in articles)
+            if(IsDataPathExists(path, out FileInfo fileInfo)) 
             {
-                // Fill Redemptions data
-                mainReportWorksheet.Cells[recordIndex, 1].Value = value.Marketplace;
-                mainReportWorksheet.Cells[recordIndex, 2].Value = key;
-                mainReportWorksheet.Cells[recordIndex, 3].Value = value.Name;
-                mainReportWorksheet.Cells[recordIndex, 4].Value = value.AveragePrice;
+                using ExcelPackage package = new(fileInfo);
 
-                // RedemptionDate
-                mainReportWorksheet.Cells[recordIndex, 5].Value = value.MaxRedemptionDate;
-                mainReportWorksheet.Cells[recordIndex, 5].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                mainReportWorksheet.Cells[recordIndex, 5].Style.Fill.BackgroundColor.SetColor(value.SellmentStatus.StatusColor);
+                var worksheet = package.Workbook.Worksheets.FirstOrDefault(sh => sh.Name == sheetName) ?? 
+                    throw new Exception($"In found workbook there is no sheet with name '{sheetName}'.");
+                var dimention = worksheet.Dimension;
+                var endRowIndex = dimention.End.Row;
 
-                mainReportWorksheet.Cells[recordIndex, 6].Value = value.SellmentStatus.StatusLabel;
-
-                var arb = value.ArticleRedempionBalance.AnalizeBalance();
-                if(arb.HasValue)
+                for (int row = 1; row <= dimention.End.Row; row++)
                 {
-                    // Redemtion balance Ddta 
+                    var logisticFlagValue = worksheet.Cells[row, indices.logisticFlagIndex].Value.ToString();
+                    
+                    if (!string.IsNullOrEmpty(logisticFlagValue))
+                    {
+                        var logisticFlag = logisticFlagValue.Replace(" ", "");
 
-                    Console.WriteLine($"arb: {arb.Value.sum} {arb.Value.canceled} {arb.Value.onWay} {arb.Value.delivered} {arb.Value.withDrawn}");
+                        if (logisticFlag == LOGISTIC_FLAG)
+                        {
+                            var articleNumber = ParseValueToInt(worksheet.Cells[row, indices.articleIndex].Value);
 
-                    mainReportWorksheet.Cells[recordIndex, 7].Value = arb.Value.sum;
-                    mainReportWorksheet.Cells[recordIndex, 8].Value = arb.Value.canceled;
-                    mainReportWorksheet.Cells[recordIndex, 9].Value = arb.Value.onWay;
-                    mainReportWorksheet.Cells[recordIndex, 10].Value = arb.Value.delivered;;
-                    mainReportWorksheet.Cells[recordIndex, 11].Value = arb.Value.withDrawn;
-                } 
-
-                // Storage balance data
-                var articleStoreBalance = value.ArticleStorageBalance;
-                var asb = articleStoreBalance.AnalizeBalance();
+                            if (!articleNumber.HasValue) continue;
             
-                if (asb.HasValue)
+                            var redemptionDateString = worksheet.Cells[row, indices.dateIndex].Value.ToString();
+                            var goodStatusString = worksheet.Cells[row, indices.statusIndex].Value.ToString();
+                            var priceSting = worksheet.Cells[row, indices.priceIndex].Value.ToString();
+
+                            if (!string.IsNullOrEmpty(redemptionDateString) &&
+                                !string.IsNullOrEmpty(goodStatusString) &&
+                                !string.IsNullOrEmpty(priceSting))
+                            {
+                                var articleRow  = new ArticleRowInReport(articleNumber.Value, redemptionDateString.Trim(), goodStatusString.Trim(), priceSting.Trim());
+                                articleRows.Add(articleRow);
+                            }
+                        }
+                    }
+                }
+            }
+
+            stopwatch.Stop();
+            return (stopwatch.ElapsedMilliseconds / 1000, articleRows);
+        }
+
+        public static bool CreateMainReportSheet(string path, string workSheetName, in Dictionary<int, Article> articles) 
+        {
+            if(IsDataPathExists(path, out FileInfo fileInfo)) 
+            {
+                using ExcelPackage excelPackage = new(fileInfo);
+
+                // Create ExcelWorksheet  
+                CreateWorkSheet(workSheetName, in excelPackage, out ExcelWorksheet mainReportWorksheet, System.Drawing.Color.GreenYellow);
+
+                // Filling table with data
+                int recordIndex = 1;
+                
+                foreach (var (key, value) in articles)
                 {
-                    Console.WriteLine($"asb: {asb.Value.expected} {asb.Value.received} {asb.Value.undelivery} {asb.Value.shipped} {asb.Value.remaining}");
+                    // Fill Redemptions data
+                    mainReportWorksheet.Cells[recordIndex, 1].Value = value.Marketplace;
+                    mainReportWorksheet.Cells[recordIndex, 2].Value = key;
+                    mainReportWorksheet.Cells[recordIndex, 3].Value = value.Name;
+                    mainReportWorksheet.Cells[recordIndex, 4].Value = value.AveragePrice;
 
-                    mainReportWorksheet.Cells[recordIndex, 12].Value = asb.Value.expected;
-                    mainReportWorksheet.Cells[recordIndex, 12].Style.Font.Bold = true;
+                    // RedemptionDate
+                    mainReportWorksheet.Cells[recordIndex, 5].Value = value.MaxRedemptionDate;
+                    mainReportWorksheet.Cells[recordIndex, 5].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    mainReportWorksheet.Cells[recordIndex, 5].Style.Fill.BackgroundColor.SetColor(value.SellmentStatus.StatusColor);
 
-                    mainReportWorksheet.Cells[recordIndex, 13].Value = asb.Value.received;
+                    mainReportWorksheet.Cells[recordIndex, 6].Value = value.SellmentStatus.StatusLabel;
 
-                    var undelivery = asb.Value.undelivery;
-                    mainReportWorksheet.Cells[recordIndex, 14].Value = undelivery;
-                    if(undelivery > 0) 
-                        mainReportWorksheet.Cells[recordIndex, 14].Style.Font.Color.SetColor(DangerColor); 
+                    var arb = value.ArticleRedempionBalance.AnalizeBalance();
+                    if(arb.HasValue)
+                    {
+                        // Redemtion balance Ddta 
 
-                    mainReportWorksheet.Cells[recordIndex, 16].Value = asb.Value.shipped;
-                    mainReportWorksheet.Cells[recordIndex, 20].Value = asb.Value.remaining;
+                        Console.WriteLine($"arb: {arb.Value.sum} {arb.Value.canceled} {arb.Value.onWay} {arb.Value.delivered} {arb.Value.withDrawn}");
+
+                        mainReportWorksheet.Cells[recordIndex, 7].Value = arb.Value.sum;
+                        mainReportWorksheet.Cells[recordIndex, 8].Value = arb.Value.canceled;
+                        mainReportWorksheet.Cells[recordIndex, 9].Value = arb.Value.onWay;
+                        mainReportWorksheet.Cells[recordIndex, 10].Value = arb.Value.delivered;;
+                        mainReportWorksheet.Cells[recordIndex, 11].Value = arb.Value.withDrawn;
+                    } 
+
+                    // Storage balance data
+                    var articleStoreBalance = value.ArticleStorageBalance;
+                    var asb = articleStoreBalance.AnalizeBalance();
+                
+                    if (asb.HasValue)
+                    {
+                        Console.WriteLine($"asb: {asb.Value.expected} {asb.Value.received} {asb.Value.undelivery} {asb.Value.shipped} {asb.Value.remaining}");
+
+                        mainReportWorksheet.Cells[recordIndex, 12].Value = asb.Value.expected;
+                        mainReportWorksheet.Cells[recordIndex, 12].Style.Font.Bold = true;
+
+                        mainReportWorksheet.Cells[recordIndex, 13].Value = asb.Value.received;
+
+                        var undelivery = asb.Value.undelivery;
+                        mainReportWorksheet.Cells[recordIndex, 14].Value = undelivery;
+                        if(undelivery > 0) 
+                            mainReportWorksheet.Cells[recordIndex, 14].Style.Font.Color.SetColor(DangerColor); 
+
+                        mainReportWorksheet.Cells[recordIndex, 16].Value = asb.Value.shipped;
+                        mainReportWorksheet.Cells[recordIndex, 20].Value = asb.Value.remaining;
+                    }
+
+            //     // Consumption
+            //     mainReportWorksheet.Cells[recordIndex, 15].Value = articleDict[key].StoreBalance.TotalConsumption;
+
+            //     mainReportWorksheet.Cells[recordIndex, 17].Value = articleDict[key].StoreBalance.Regradings.Sum(re => re.Value);
+            //     mainReportWorksheet.Cells[recordIndex, 18].Value = articleDict[key].StoreBalance.PayShortagesCount;
+            //     mainReportWorksheet.Cells[recordIndex, 19].Value = articleDict[key].StoreBalance.DummiesCount;
+
+            //     // Comment
+            //     mainReportWorksheet.Cells[recordIndex, 21].Value = articleDict[key].Comment;
+
+                recordIndex++;
+                }
+            
+                // Setup header 
+                SetupTableHeader(MainReportCells, ref mainReportWorksheet);
+                AddFilterInWorkSheet(ref mainReportWorksheet);
+
+                //Freeze row && columns
+                mainReportWorksheet.View.FreezePanes(2, 4);
+
+                // HACK: Переделать !!!
+                // Group column
+                for (var i = 8; i <= 11; i++)
+                {
+                    mainReportWorksheet.Column(i).OutlineLevel = 1;
+                    mainReportWorksheet.Column(i).Collapsed = true;
                 }
 
-        //     // Consumption
-        //     mainReportWorksheet.Cells[recordIndex, 15].Value = articleDict[key].StoreBalance.TotalConsumption;
+                for (var i = 16; i <= 19; i++)
+                {
+                    mainReportWorksheet.Column(i).OutlineLevel = 1;
+                    mainReportWorksheet.Column(i).Collapsed = true;
+                }
 
-        //     mainReportWorksheet.Cells[recordIndex, 17].Value = articleDict[key].StoreBalance.Regradings.Sum(re => re.Value);
-        //     mainReportWorksheet.Cells[recordIndex, 18].Value = articleDict[key].StoreBalance.PayShortagesCount;
-        //     mainReportWorksheet.Cells[recordIndex, 19].Value = articleDict[key].StoreBalance.DummiesCount;
-
-        //     // Comment
-        //     mainReportWorksheet.Cells[recordIndex, 21].Value = articleDict[key].Comment;
-
-               recordIndex++;
-            }
-        
-            // Setup header 
-            SetupTableHeader(MainReportCells, ref mainReportWorksheet);
-            AddFilterInWorkSheet(ref mainReportWorksheet);
-
-            //Freeze row && columns
-            mainReportWorksheet.View.FreezePanes(2, 4);
-
-            // HACK: Переделать !!!
-            // Group column
-            for (var i = 8; i <= 11; i++)
-            {
-                mainReportWorksheet.Column(i).OutlineLevel = 1;
-                mainReportWorksheet.Column(i).Collapsed = true;
-            }
-
-            for (var i = 16; i <= 19; i++)
-            {
-                mainReportWorksheet.Column(i).OutlineLevel = 1;
-                mainReportWorksheet.Column(i).Collapsed = true;
             }
 
             return true;
         }
 
-        public static void SaveReportFile() 
+        public static void SaveReportFiles(string filePath) 
         {
-            if(string.IsNullOrEmpty(OuptutFilePath))
-                throw new FileNotFoundException("Path to save report is not specified.");
+            if(IsDataPathExists(filePath, out FileInfo fileInfo)) 
+            {
+                var stopwatch = new Stopwatch();
+                using ExcelPackage excelPackage = new(fileInfo);
 
-            // Save work
-            if (File.Exists(OuptutFilePath)) File.Delete(OuptutFilePath);
+                if (File.Exists(filePath)) File.Delete(filePath);
 
-            // Create excel file on physical disk 
-            var objFileStrm = File.Create(OuptutFilePath);
-            objFileStrm.Close();
+                FileStream? objFileStrm = File.Create(filePath);
+                objFileStrm.Close();
 
-            // Write content to excel file 
-            File.WriteAllBytes(OuptutFilePath, excelPackage.GetAsByteArray());
+                File.WriteAllBytes(filePath, excelPackage.GetAsByteArray());
 
-            // Close Excel package
-            excelPackage.Dispose();
+                stopwatch.Stop();
+            }
         }
 
-        private static void CreateWorkSheet(string workSheetName, out ExcelWorksheet worksheet, System.Drawing.Color tabColor)
+        private static void CreateWorkSheet(string workSheetName, in ExcelPackage excelPackage, out ExcelWorksheet worksheet, System.Drawing.Color tabColor)
         {
             // Remove existing worksheet
             var existingWorksheet = excelPackage.Workbook.Worksheets.SingleOrDefault(x => x.Name == workSheetName);
