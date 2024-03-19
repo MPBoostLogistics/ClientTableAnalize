@@ -80,11 +80,9 @@ namespace ClientTableAnalizer.Objects.Managers
             CreateWorkSheet(workSheetName, out ExcelWorksheet mainReportWorksheet, System.Drawing.Color.GreenYellow);
 
             // Filling table with data
-            int recordIndex = RECORD_INDEX;
+            int recordIndex = 1;
             foreach (var (key, value) in articles)
             {
-                value.AnalyzeArticle(key, deadline);
-
                 // Fill Redemptions data
                 mainReportWorksheet.Cells[recordIndex, 1].Value = value.Marketplace;
                 mainReportWorksheet.Cells[recordIndex, 2].Value = key;
@@ -102,44 +100,37 @@ namespace ClientTableAnalizer.Objects.Managers
                 if(arb.HasValue)
                 {
                     // Redemtion balance Ddta 
+
+                    Console.WriteLine($"arb: {arb.Value.sum} {arb.Value.canceled} {arb.Value.onWay} {arb.Value.delivered} {arb.Value.withDrawn}");
+
                     mainReportWorksheet.Cells[recordIndex, 7].Value = arb.Value.sum;
                     mainReportWorksheet.Cells[recordIndex, 8].Value = arb.Value.canceled;
                     mainReportWorksheet.Cells[recordIndex, 9].Value = arb.Value.onWay;
                     mainReportWorksheet.Cells[recordIndex, 10].Value = arb.Value.delivered;;
                     mainReportWorksheet.Cells[recordIndex, 11].Value = arb.Value.withDrawn;
-                }
+                } 
 
                 // Storage balance data
                 var articleStoreBalance = value.ArticleStorageBalance;
-                var values = articleStoreBalance.AnalizeBalance();
+                var asb = articleStoreBalance.AnalizeBalance();
             
-                if (values.HasValue)
+                if (asb.HasValue)
                 {
-                    mainReportWorksheet.Cells[recordIndex, 12].Value = values.Value.expected;;
+                    Console.WriteLine($"asb: {asb.Value.expected} {asb.Value.received} {asb.Value.undelivery} {asb.Value.shipped} {asb.Value.remaining}");
+
+                    mainReportWorksheet.Cells[recordIndex, 12].Value = asb.Value.expected;
                     mainReportWorksheet.Cells[recordIndex, 12].Style.Font.Bold = true;
 
-                    mainReportWorksheet.Cells[recordIndex, 13].Value = values.Value.received;
+                    mainReportWorksheet.Cells[recordIndex, 13].Value = asb.Value.received;
 
-                    mainReportWorksheet.Cells[recordIndex, 14].Value = values.Value.undelivery;
-                    if(values.Value.undelivery > 0) 
+                    var undelivery = asb.Value.undelivery;
+                    mainReportWorksheet.Cells[recordIndex, 14].Value = undelivery;
+                    if(undelivery > 0) 
                         mainReportWorksheet.Cells[recordIndex, 14].Style.Font.Color.SetColor(DangerColor); 
 
-                    mainReportWorksheet.Cells[recordIndex, 16].Value = values.Value.shipped;
-                    mainReportWorksheet.Cells[recordIndex, 20].Value = values.Value.remaining;
+                    mainReportWorksheet.Cells[recordIndex, 16].Value = asb.Value.shipped;
+                    mainReportWorksheet.Cells[recordIndex, 20].Value = asb.Value.remaining;
                 }
-
-
-
-         
-
-                
-
-        //     // - Undelivery
-        //     mainReportWorksheet.Cells[recordIndex, 14].Value = articleDict[key].StoreBalance.Undelivery;
-        //     if(articleDict[key].StoreBalance.Undelivery > 0 && articleDict[key].StatusValue.status != ArticleStatus.InWork)
-        //     {
-        //        
-        //     }
 
         //     // Consumption
         //     mainReportWorksheet.Cells[recordIndex, 15].Value = articleDict[key].StoreBalance.TotalConsumption;
@@ -178,6 +169,9 @@ namespace ClientTableAnalizer.Objects.Managers
 
         public static void SaveReportFile() 
         {
+            if(string.IsNullOrEmpty(OuptutFilePath))
+                throw new FileNotFoundException("Path to save report is not specified.");
+
             // Save work
             if (File.Exists(OuptutFilePath)) File.Delete(OuptutFilePath);
 
@@ -254,9 +248,6 @@ namespace ClientTableAnalizer.Objects.Managers
 
             excelWorksheet.Cells[$"{firstColLet}{firstRow}:{endColLet}{endRow}"].AutoFilter = true;
         }
-
-
         #endregion
-        
     }
 }

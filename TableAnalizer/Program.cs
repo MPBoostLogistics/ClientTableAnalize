@@ -238,7 +238,9 @@ internal class Program
     private static async Task ReadRedemptionReportFile(Marketplace marketplace)
     {
         bool isFileExists = default;
-        var filePath = marketplace == Marketplace.WB ? redemtionFilePathWB : redemtionFilePathOZ;
+        var filePath = marketplace == Marketplace.WB ? 
+            redemtionFilePathWB : 
+            redemtionFilePathOZ;
         
         try
         {
@@ -336,11 +338,23 @@ internal class Program
 
     private static async Task ReadStorageReportFile(Marketplace marketplace)
     {
+        bool isFileExists = default;
+
         string? filePath = marketplace == Marketplace.WB ? 
             storageFilePathWB : 
             storageFilePathOZ;
 
-        if (filePath is null || !CheckFileExistence(filePath)) await Report(goodByMessage, 2000, true);
+        try
+        {
+            isFileExists = filePath != null && CheckFileExistence(filePath);
+        }
+        catch (Exception ex)
+        {
+            goodByMessage = string.Concat(goodByMessage,"\n",ex.Message);   
+            await Report(goodByMessage, 2000, true);
+        }
+
+        if(!isFileExists) return;
 
         var existingFile = new FileInfo(filePath!);
 
@@ -367,7 +381,6 @@ internal class Program
             for (int col = firstColIndex; col <=  worksheet.Dimension.End.Column; col++)
             {
                 var cellValue = worksheet.Cells[row, col].Value;
-
                 if (cellValue is not null && !string.IsNullOrEmpty(cellValue.ToString()))
                 {
                     switch (cellValue!.ToString()!.Trim())
@@ -389,7 +402,7 @@ internal class Program
         var firstRoomRowRange = Enumerable.Range(rowFirstRoomAddress + 1, rowSecondRoomAddress - 1).ToList();
         var secondRoomRowRange = Enumerable.Range(rowSecondRoomAddress + 1, rowFinalRoomAddress).ToList();
 
-        string? name;               // название товара
+        string? goodstName;         // название товара
         int? goodsReceivedCount;    // приход на склад
         int? goodsRemainingCount;   // остаток на складе 
 
@@ -401,9 +414,9 @@ internal class Program
                 existingArticle is not null) 
             {
                 // name
-                name = ParseValueToString(worksheet.Cells[row, ArticleManager.StorageTableIndexes.nameIndex].Value);
-                if (!string.IsNullOrEmpty(name)) 
-                    existingArticle.SetName(name!.Split(",")[0].Trim());
+                goodstName = ParseValueToString(worksheet.Cells[row, ArticleManager.StorageTableIndexes.nameIndex].Value);
+                if (!string.IsNullOrEmpty(goodstName)) 
+                    existingArticle.SetName(goodstName!.Split(",")[0].Trim());
                 
                 // goods received
                 goodsReceivedCount = ParseValueToInt(worksheet.Cells[row, ArticleManager.StorageTableIndexes.goodsReceivedIndex].Value); ;
@@ -693,7 +706,7 @@ internal class Program
 
     private static async Task WriteXls()
     {
-        //using var excelPackage = new ExcelPackage(ouptutFilePath);
+        ArticleManager.AnalyzeArticles();
      
         ExcelReportManager.CreateMainReportSheet("Отчет", ArticleManager.Articles, ArticleManager.DeadlineDays);
 

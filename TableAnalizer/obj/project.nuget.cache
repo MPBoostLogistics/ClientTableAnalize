@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "KehVFQoHIiExh0b1mhxwzW+axFiBpvD3cPiI8jt2q/kHTNwcakNrT3U/bivDmAgIKMyOhEZXdXFSCJM2DkMdDg==",
+  "dgSpecHash": "Ne7cEHFb2rZwWD7vK0MdEoqDlmo4OFYl89YYKYAVk+VpR+0IgAWgZIlzCFoLkBZHp5I2n6ILRBgjW2qyaB3kIw==",
   "success": true,
   "projectFilePath": "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizer/TableAnalizer.csproj",
   "expectedPackageFiles": [
@@ -22,7 +22,10 @@
     "/Users/dmitrijsamarcev/.nuget/packages/system.security.cryptography.pkcs/7.0.2/system.security.cryptography.pkcs.7.0.2.nupkg.sha512",
     "/Users/dmitrijsamarcev/.nuget/packages/system.text.encoding.codepages/7.0.0/system.text.encoding.codepages.7.0.0.nupkg.sha512",
     "/Users/dmitrijsamarcev/.nuget/packages/system.text.encodings.web/7.0.0/system.text.encodings.web.7.0.0.nupkg.sha512",
-    "/Users/dmitrijsamarcev/.nuget/packages/system.text.json/7.0.0/system.text.json.7.0.0.nupkg.sha512"
+    "/Users/dmitrijsamarcev/.nuget/packages/system.text.json/7.0.0/system.text.json.7.0.0.nupkg.sha512",
+    "/Users/dmitrijsamarcev/.nuget/packages/microsoft.netcore.app.ref/7.0.16/microsoft.netcore.app.ref.7.0.16.nupkg.sha512",
+    "/Users/dmitrijsamarcev/.nuget/packages/microsoft.aspnetcore.app.ref/7.0.16/microsoft.aspnetcore.app.ref.7.0.16.nupkg.sha512",
+    "/Users/dmitrijsamarcev/.nuget/packages/microsoft.netcore.app.host.osx-arm64/7.0.16/microsoft.netcore.app.host.osx-arm64.7.0.16.nupkg.sha512"
   ],
   "logs": []
 }

@@ -12,20 +12,18 @@ namespace ClientTableAnalizer.Objects.Managers
 
         public Article? this[int key] 
         {   
-            get 
-            {
-                return Articles.ContainsKey(key) ? Articles[key] : null;  
-            } 
+            get =>  Articles.TryGetValue(key, out Article? value) ?
+                value : 
+                null;  
+            
             set 
             {
                 if(value is not null) Articles[key] = value;  
             } 
         } 
 
-        public int ArticlesCount 
-        {
-            get => Articles.Count;
-        }
+        public int ArticlesCount => Articles.Count;
+
         #endregion
 
         #region Functionality
@@ -38,6 +36,7 @@ namespace ClientTableAnalizer.Objects.Managers
                       group item by item.ItemStatus into itemGroup
                       orderby itemGroup.Key
                       select itemGroup;
+                      
             return groups.Any();
         }
 
