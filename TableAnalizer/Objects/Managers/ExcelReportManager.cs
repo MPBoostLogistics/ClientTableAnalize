@@ -1,34 +1,21 @@
-using ClientTableAnalizer.Enums;
+using ClientTableAnalizer.Objects.ArticleItems;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 
 namespace ClientTableAnalizer.Objects.Managers
 {
-    public class ExcelReportManager
+    public class ExcelReportManager : BaseManager
     {
-        #region 
+        #region Constants && variables
         private const int DEFAULT_TABLE_ROW_HEIGHT = 18;
         private const int DEFAULT_TABLE_COL_WIDTH = 18;
         private const int RECORD_INDEX = 1;
         private const int HEADER_TABLE_ROW_HEIGHT = 120;
-
-        private static System.Drawing.Color DangerColor { get; } = System.Drawing.Color.DarkRed;
-
         private static ExcelPackage? excelPackage;
         #endregion
 
-        #region Constructors
-        public ExcelReportManager(){}
-
-        ~ ExcelReportManager()
-        {
-            excelPackage?.Dispose();
-        }
-        #endregion
-
-
-        #region Properties 
-
+        #region Properties
+        private static System.Drawing.Color DangerColor { get; } = System.Drawing.Color.DarkRed;
         private static ResultCell[] MainReportCells { get; } = new ResultCell[]
         {
             // Article info
@@ -61,9 +48,16 @@ namespace ClientTableAnalizer.Objects.Managers
 
             new (21, "Комментарий", 60, "0", true, 0)    
         };
-
         public static string? OuptutFilePath { get; private set;}
+        #endregion
 
+        #region Constructors && destructors
+        public ExcelReportManager(){}
+
+        ~ ExcelReportManager()
+        {
+            excelPackage?.Dispose();
+        }
         #endregion
 
         #region Functionality
@@ -74,13 +68,14 @@ namespace ClientTableAnalizer.Objects.Managers
              OuptutFilePath = ouptutFilePath;
         } 
   
-        public static void CreateMainReportSheet(string workSheetName, in Dictionary<int, Article> articles, int deadline) 
+        public static bool CreateMainReportSheet(string workSheetName, in Dictionary<int, Article> articles) 
         {
             // Create ExcelWorksheet  
             CreateWorkSheet(workSheetName, out ExcelWorksheet mainReportWorksheet, System.Drawing.Color.GreenYellow);
 
             // Filling table with data
             int recordIndex = 1;
+            
             foreach (var (key, value) in articles)
             {
                 // Fill Redemptions data
@@ -165,6 +160,8 @@ namespace ClientTableAnalizer.Objects.Managers
                 mainReportWorksheet.Column(i).OutlineLevel = 1;
                 mainReportWorksheet.Column(i).Collapsed = true;
             }
+
+            return true;
         }
 
         public static void SaveReportFile() 

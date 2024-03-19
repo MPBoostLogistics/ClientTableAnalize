@@ -1,6 +1,6 @@
 ﻿using ClientTableAnalizer.Enums;
 
-namespace ClientTableAnalizer.Objects
+namespace ClientTableAnalizer.Objects.ArticleItems
 {
     public class SellmentStatus 
     {
@@ -100,14 +100,17 @@ namespace ClientTableAnalizer.Objects
         // public void SetStoreBalance(int count, double price) =>
         //     ArticleStorageBalance.SetPayShortage(count, price);
 
-        public void AnalyzeArticle(int articleNumber, int deadLineDays)
+        public async Task<bool> AnalyzeArticle(int articleNumber, int deadLineDays)
         {
-            // Analize artilce redempion balance and set average price, max redemption date && deadline
+            // Analize artilce rows  and set average price, max redemption date && deadline
             (MaxRedemptionDate, AveragePrice, IsDeadline) = ArticleRedempionBalance.AnalizeArticleRows(deadLineDays);
 
             // Set expected balance of goods
-            ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsExpected, ArticleRedempionBalance.GetExpectedBalance());
+            await Task.Run(() => ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsExpected, ArticleRedempionBalance.GetExpectedBalance()));
 
+            // Analize balances
+            // ArticleRedempionBalance.AnalizeBalance();
+            // ArticleStorageBalance.AnalizeBalance();
 
             //var articleShortage = new ArticleShortage (articleNumber, Name, AveragePrice);
 
@@ -183,6 +186,8 @@ namespace ClientTableAnalizer.Objects
             }
 
             //ArticleShortage = articleShortage.Shortages.Count > 0 ? articleShortage : null;
+
+            return true;
         }
 
         public override string ToString()

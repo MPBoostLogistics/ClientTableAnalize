@@ -1,6 +1,6 @@
 ﻿using ClientTableAnalizer.Enums;
 
-namespace ClientTableAnalizer.Objects
+namespace ClientTableAnalizer.Objects.ArticleItems
 {
     public struct ArticleRedempionBalanceUnit 
     {

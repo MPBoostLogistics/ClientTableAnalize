@@ -9,6 +9,7 @@ using OfficeOpenXml;
 using ClientTableAnalizer.Objects;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Managers;
+using ClientTableAnalizer.Objects.ArticleItems;
 
 internal class Program
 {
@@ -108,7 +109,7 @@ internal class Program
         // if (!string.IsNullOrEmpty(dummyPath))
         //     await ReadDummyReport(dummyPath);
 
-        await WriteXls();
+        await AnalyzeDataAndSaveReport();
 
         Console.ReadLine();
     }
@@ -704,14 +705,40 @@ internal class Program
         await Report(regReport, 1500);
     }
 
-    private static async Task WriteXls()
+    private static async Task AnalyzeDataAndSaveReport()
     {
-        ArticleManager.AnalyzeArticles();
+        static void SaveWork() 
+        {
+            ExcelReportManager.CreateMainReportSheet("Отчет", ArticleManager.Articles);
+            ExcelReportManager.SaveReportFile();
+
+            Console.WriteLine($"Новый отчет по клиенту создан по пути: {outputPath}");
+            Console.WriteLine();
+            Console.WriteLine("Для завершения работы нажмите любую клавишу");
+
+            _ = Console.ReadKey();
+        }
+
+        var analizeTask = ArticleManager.AnalyzeArticles();
+        var saveWorkTask = analizeTask.ContinueWith(_ => SaveWork());
+        var reportTask =  saveWorkTask.ContinueWith(_ => Report(goodByMessage, 1500, true));
+      
+        try
+        {
+            analizeTask.Start();
+        }
+        catch (Exception ex)
+        {
+            goodByMessage = string.Concat(ex.Message, "\n", goodByMessage);
+            await Report(goodByMessage, 2000, true);
+        }
+        
+        Task.WaitAll(saveWorkTask, reportTask);
+ 
+
+      
+      
      
-        ExcelReportManager.CreateMainReportSheet("Отчет", ArticleManager.Articles, ArticleManager.DeadlineDays);
-
-        ExcelReportManager.SaveReportFile();
-
         // ResultCell[] resultCellsForAddReports = new ResultCell[]
         // {
         //     new (1, "Артикул", 13, "0", false, 0),                         
@@ -784,14 +811,6 @@ internal class Program
         //     // Make report in sheet
         //     MakeAdditionalReport(resultCellsForAddReports, ref overrunsWorksheet, Overruns);
         // }
-
-        Console.WriteLine($"Новый отчет по клиенту создан по пути: {outputPath}");
-        Console.WriteLine();
-        Console.WriteLine("Для завершения работы нажмите любую клавишу");
-
-        _ = Console.ReadKey();
-
-        await Report(goodByMessage, 1500, true);
     }
 
     private static async Task Report(string message, int delay = 0, bool exit = false)

@@ -1,8 +1,9 @@
 using ClientTableAnalizer.Enums;
+using ClientTableAnalizer.Objects.ArticleItems;
 
 namespace ClientTableAnalizer.Objects.Managers
 {
-    public class ArticleManager
+    public class ArticleManager : BaseManager
     {
         #region Properties 
         public int DeadlineDays {get; private set;}
@@ -64,16 +65,18 @@ namespace ClientTableAnalizer.Objects.Managers
             return article is not null;
         }
         
-        public void AnalyzeArticles() 
+        public async Task<bool> AnalyzeArticles() 
         {
-            foreach (var (key, value) in Articles)
-                value.AnalyzeArticle(key, DeadlineDays);
-        }
+            if(Equals(Articles.Count, 0)) 
+                throw new Exception("An attempt to parse a dict with a number of elements - 0");
 
-        private static int? ParseValueToInt(object? obj) =>
-            obj is not null && !string.IsNullOrEmpty(obj.ToString()) ?
-            int.Parse(obj.ToString()!.Trim()) :
-            null;
+            foreach (var (key, value) in Articles) 
+            {
+                await Task.Run( () => value.AnalyzeArticle(key, DeadlineDays));
+            }
+            
+            return true;
+        }
 
         #endregion
     }

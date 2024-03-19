@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using ClientTableAnalizer.Enums;
 
-namespace ClientTableAnalizer.Objects
+namespace ClientTableAnalizer.Objects.ArticleItems
 {
     public class ArticleRowInReport
     {
