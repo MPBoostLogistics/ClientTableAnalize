@@ -68,6 +68,8 @@ internal class Program
             await Report(goodByMessage02, 2000, true);
         }
 
+        //TODO: пул задач
+
         if(!string.IsNullOrEmpty(redemtionFilePathWB))
             await ReadRedemptionReportFile(Marketplace.WB);
 
@@ -78,8 +80,8 @@ internal class Program
 
         //await GetUserStorageData(Marketplace.OZ);
 
-        if (!string.IsNullOrEmpty(storageFilePathWB))
-            await ReadStorageReportFile(Marketplace.WB);
+       // if (!string.IsNullOrEmpty(storageFilePathWB))
+         //   await ReadStorageReportFile(Marketplace.WB);
 
        // if (!string.IsNullOrEmpty(storageFilePathOZ))
          //   await ReadStorageReportFile(Marketplace.OZ);

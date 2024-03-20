@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TableAnalizer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4ecc7cb53aa3ac0c1f3e5beffaad85e67e178a38")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+942abefd31e959d3af2b242ad4b590920265f915")]
 [assembly: System.Reflection.AssemblyProductAttribute("TableAnalizer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TableAnalizer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
