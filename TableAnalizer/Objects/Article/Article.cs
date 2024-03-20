@@ -97,17 +97,17 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         // public void SetStoreBalance(int count, double price) =>
         //     ArticleStorageBalance.SetPayShortage(count, price);
 
-        public async Task<bool> AnalyzeArticle(int articleNumber, int deadLineDays)
+        public void AnalyzeArticle(int articleNumber, int deadLineDays)
         {
             // Analize artilce rows  and set average price, max redemption date && deadline
             (MaxRedemptionDate, AveragePrice, IsDeadline) = ArticleRedempionBalance.AnalizeArticleRows(deadLineDays);
 
             // Set expected balance of goods
-            await Task.Run(() => ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsExpected, ArticleRedempionBalance.GetExpectedBalance()));
+            //ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsExpected, ArticleRedempionBalance.GetExpectedBalance());
 
             // Analize balances
             ArticleRedempionBalance.AnalizeBalance();
-            ArticleStorageBalance.AnalizeBalance();
+            //ArticleStorageBalance.AnalizeBalance();
 
             //var articleShortage = new ArticleShortage (articleNumber, Name, AveragePrice);
 
@@ -183,8 +183,6 @@ namespace ClientTableAnalizer.Objects.ArticleItems
             }
 
             //ArticleShortage = articleShortage.Shortages.Count > 0 ? articleShortage : null;
-
-            return true;
         }
 
         public override string ToString()

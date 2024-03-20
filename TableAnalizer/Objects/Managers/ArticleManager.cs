@@ -84,29 +84,14 @@ namespace ClientTableAnalizer.Objects.Managers
             return article is not null;
         }
         
-        public async Task<bool> AnalyzeArticles() 
+        public void AnalyzeArticles() 
         {
             if(Equals(Articles.Count, 0)) 
-            {
-                await Task.Delay(100);
                 throw new Exception("An attempt to parse a dict with a number of elements - 0"); 
-            }  
-
-            List<Task> tasks = new();
-
-            foreach (var (key, value) in Articles) 
-                tasks.Add(new Task(async () => await value.AnalyzeArticle(key, DeadlineDays)));
-       
-            var taskArray = tasks.ToArray();
-
-            foreach (var task in taskArray)
-                task.Start();
-
-            Task.WaitAll(taskArray);
             
-            return true;
+            foreach (var (key, value) in Articles)
+                value.AnalyzeArticle(key, DeadlineDays);
         }
-
         #endregion
     }
 }

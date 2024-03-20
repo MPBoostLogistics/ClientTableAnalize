@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.ArticleItems;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
@@ -17,6 +18,9 @@ namespace ClientTableAnalizer.Objects.Managers
 
         #region Properties
         private static System.Drawing.Color DangerColor { get; } = System.Drawing.Color.DarkRed;
+        public static DirectoryInfo? ClientDirectoryInfo {get; private set; }
+        public static string ClientLogin {get; private set; } = string.Empty;
+        public static string OutputReportFilePath {get; private set; } = string.Empty;
         private static ResultCell[] MainReportCells { get; } = new ResultCell[]
         {
             // Article info
@@ -57,6 +61,25 @@ namespace ClientTableAnalizer.Objects.Managers
 
         #region Functionality
 
+        public static void DeterminingСlientLogin(string path)
+        {
+            var loginException = new Exception($"Логин клиента не может быть определен");
+
+            var substrings01 = path.Split("/");
+
+            if (substrings01.Length <= 1) throw loginException;
+
+            var loginChars = substrings01.Last().Split(" ")[3].Trim().ToList();
+
+            if (loginChars is null || loginChars.Count == 0) throw loginException;
+
+            // Clear non-digits in login
+            for (int i = 0; i < loginChars.Count; i++)
+                if (!int.TryParse(loginChars[i].ToString(), out _)) loginChars.RemoveAt(i);
+            
+            ClientLogin = new string(loginChars.ToArray());
+        }
+
         public static (double time, List<ArticleRowInReport> articleRows) AnalyzeRedemptionReport(string path, string sheetName, 
             (int articleIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) indices) 
         {
@@ -70,6 +93,7 @@ namespace ClientTableAnalizer.Objects.Managers
 
                 var worksheet = package.Workbook.Worksheets.FirstOrDefault(sh => sh.Name == sheetName) ?? 
                     throw new Exception($"In found workbook there is no sheet with name '{sheetName}'.");
+                
                 var dimention = worksheet.Dimension;
                 var endRowIndex = dimention.End.Row;
 
@@ -107,11 +131,11 @@ namespace ClientTableAnalizer.Objects.Managers
             return (stopwatch.ElapsedMilliseconds / 1000, articleRows);
         }
 
-        public static bool CreateMainReportSheet(string path, string workSheetName, in Dictionary<int, Article> articles) 
+        public static string CreateMainReportSheet(string workSheetName, in Dictionary<int, Article> articles) 
         {
-            if(IsDataPathExists(path, out FileInfo fileInfo)) 
-            {
-                using ExcelPackage excelPackage = new(fileInfo);
+            //if(IsDataPathExists(OutputReportFilePath, out FileInfo fileInfo)) 
+            //{
+                using ExcelPackage excelPackage = new(new FileInfo(OutputReportFilePath));
 
                 // Create ExcelWorksheet  
                 CreateWorkSheet(workSheetName, in excelPackage, out ExcelWorksheet mainReportWorksheet, System.Drawing.Color.GreenYellow);
@@ -204,35 +228,37 @@ namespace ClientTableAnalizer.Objects.Managers
                     mainReportWorksheet.Column(i).Collapsed = true;
                 }
 
-            }
+            //}
 
-            return true;
+            // Save work (temp)
+            if (File.Exists(OutputReportFilePath)) File.Delete(OutputReportFilePath);
+
+            FileStream? objFileStrm = File.Create(OutputReportFilePath);
+            objFileStrm.Close();
+
+            File.WriteAllBytes(OutputReportFilePath, excelPackage.GetAsByteArray());
+
+            return OutputReportFilePath;
         }
 
-        public static void SaveReportFiles(string filePath) 
-        {
-            if(IsDataPathExists(filePath, out FileInfo fileInfo)) 
-            {
-                var stopwatch = new Stopwatch();
-                using ExcelPackage excelPackage = new(fileInfo);
+        // public static void SaveReportFiles() 
+        // {
+        //     //if(IsDataPathExists(filePath, out FileInfo fileInfo)) 
+        //     //{
+        //         var stopwatch = new Stopwatch();
+        //         using ExcelPackage excelPackage = new(new FileInfo(OutputReportFilePath));
 
-                if (File.Exists(filePath)) File.Delete(filePath);
+              
 
-                FileStream? objFileStrm = File.Create(filePath);
-                objFileStrm.Close();
-
-                File.WriteAllBytes(filePath, excelPackage.GetAsByteArray());
-
-                stopwatch.Stop();
-            }
-        }
+        //         stopwatch.Stop();
+        //     //}
+        // }
 
         private static void CreateWorkSheet(string workSheetName, in ExcelPackage excelPackage, out ExcelWorksheet worksheet, System.Drawing.Color tabColor)
         {
             // Remove existing worksheet
             var existingWorksheet = excelPackage.Workbook.Worksheets.SingleOrDefault(x => x.Name == workSheetName);
-            if (existingWorksheet is not null)
-                excelPackage.Workbook.Worksheets.Delete(existingWorksheet);
+            if (existingWorksheet is not null) excelPackage.Workbook.Worksheets.Delete(existingWorksheet);
 
             // Create net worksheet
             worksheet = excelPackage.Workbook.Worksheets.Add(workSheetName);
@@ -289,6 +315,29 @@ namespace ClientTableAnalizer.Objects.Managers
 
             excelWorksheet.Cells[$"{firstColLet}{firstRow}:{endColLet}{endRow}"].AutoFilter = true;
         }
+        
+        public static async Task<string?> GetClientOutputPath()
+        {
+            if (ClientLogin is null)
+                throw new Exception("Логин клинта не определен, поэтому невозможно создать директорию.");
+
+            ClientDirectoryInfo = FileManager.GetDirectoryInfo(PathKey.MPBoostClients, ClientLogin);
+
+            if (ClientLogin != null &&  ClientDirectoryInfo != null) 
+            {
+                var dateTime = DateTime.Now.ToString("dd-MM-yyyy");
+                OutputReportFilePath = $"{ClientDirectoryInfo.FullName}/ClientReport_{ClientLogin}_{dateTime}.xlsx";
+
+                return ClientDirectoryInfo.FullName;
+            } 
+            else 
+            {
+                await Task.Delay(100);
+                throw new Exception("Логин клинта не определен, невозможно создать директорию для работы с ним.");
+            }
+        
+        }
+        
         #endregion
     }
 }

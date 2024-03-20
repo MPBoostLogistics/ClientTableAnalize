@@ -23,7 +23,7 @@ internal class Program
     private static string? redemtionFilePathOZ = default;
     private static string? storageFilePathWB = default;
     private static string? storageFilePathOZ = default;
-    private static string? consumptionPath, payShortagesPath, regradingPath, dummyPath, outputPath = default;
+    private static string? consumptionPath, payShortagesPath, regradingPath, dummyPath = default;
     private static string? writeoffShortagesPath = default;
     private static DirectoryInfo? clientDirectoryPath;
     private static List<ArticleShortage> ArticleShortages { get; set; } = new();
@@ -40,6 +40,7 @@ internal class Program
     #endregion
 
     #region Functionality
+    
     private static async Task Main(string[] args)
     {
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -68,13 +69,29 @@ internal class Program
             await Report(goodByMessage02, 2000, true);
         }
 
-        //TODO: пул задач
+        Task[] readRedemptionTasksArray = new Task[2];
 
         if(!string.IsNullOrEmpty(redemtionFilePathWB))
-            await ReadRedemptionReportFile(Marketplace.WB);
+            readRedemptionTasksArray[0] = ReadRedemptionReportFile(Marketplace.WB);
 
         if (!string.IsNullOrEmpty(redemtionFilePathOZ))
-            await ReadRedemptionReportFile(Marketplace.OZ);
+            readRedemptionTasksArray[1] = ReadRedemptionReportFile(Marketplace.OZ);
+
+        if(readRedemptionTasksArray.Length > 0) 
+        {
+            foreach (var task in readRedemptionTasksArray)
+            {
+                _ = Task.Run (async () => await task) ;
+            }
+        } 
+        else 
+        {
+            // TODO: Ругаемся и выходим
+        }
+
+        Task.WaitAll(readRedemptionTasksArray);
+        
+    
 
         //await GetUserStorageData(Marketplace.WB);
 
@@ -110,19 +127,27 @@ internal class Program
         // if (!string.IsNullOrEmpty(dummyPath))
         //     await ReadDummyReport(dummyPath);
 
-        await AnalyzeDataAndSaveReport();
+        Task analizeAndReportTask = readRedemptionTasksArray.Last().ContinueWith(_ => 
+              AnalyzeDataAndSaveReport()
+        );
 
-        Console.ReadLine();
+       // Task analizeAndReportTask = new(async () => await AnalyzeDataAndSaveReport());
+        
+        analizeAndReportTask.Wait();
+
+       
     }
+    
     private static string? ParseValueToString(object? obj) =>
         obj is not null && !string.IsNullOrEmpty(obj.ToString()) ?
         obj.ToString()!.Trim() :
         null;
+    
     private static int? ParseValueToInt(object? obj) =>
         obj is not null && !string.IsNullOrEmpty(obj.ToString()) ?
         int.Parse(obj.ToString()!.Trim()) :
         null;
-
+    
     private static async Task<int> GetDeadLineDays()
     {
         int deadline = default;
@@ -149,7 +174,7 @@ internal class Program
 
         return deadline;
     }
-
+    
     private static async Task GetUserRedemtionDataFile(Marketplace marketplace, bool necessarily)
     {
         var clDirInfo = FileManager.GetDirectoryInfo(PathKey.MPBoostClients);
@@ -169,7 +194,23 @@ internal class Program
             redemtionFilePathOZ = await GetDirectoryPath(redemtionMessage01, necessarily, login is null);
         }
 
-        await GetClientOutputPath();
+        try
+        {
+            var clientDirectoryPath = await ExcelReportManager.GetClientOutputPath();
+            if(!string.IsNullOrEmpty(clientDirectoryPath)) 
+            {
+                var reportMessage = $"Директория для работы с клтентом: {clientDirectoryPath}";
+                await Report(reportMessage, 1000, false);
+            }
+        }
+        catch (System.Exception ex) 
+        { 
+            Console.WriteLine(ex.Message);    
+            throw;
+        }
+
+
+        
     }
 
     private static async Task GetUserStorageData(Marketplace marketplace)
@@ -267,15 +308,15 @@ internal class Program
 
         if(ArticleManager.GetArticlesByRedemtionStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus,ArticleRowInReport>>? artriclesByRedemtionStatus)) 
         {
-            int redemptonCount = default;
-            foreach (var group in artriclesByRedemtionStatus!)
-            {
-                var valuesCount = group.Count();
-                redemtionReport += $"- {group.Key} {valuesCount}\n";
-                redemptonCount += valuesCount;
-            }
+            //int redemptonCount = default;
+            //foreach (var group in artriclesByRedemtionStatus!)
+            // {
+            //     var valuesCount = group.Count();
+            //     redemtionReport += $"- {group.Key} {valuesCount}\n";
+            //     redemptonCount += valuesCount;
+            // }
 
-            redemtionReport += $"\nВыкупов с логистикой {redemptonCount}\n";
+            //redemtionReport += $"\nВыкупов с логистикой {redemptonCount}\n";
             redemtionReport += $"Анализ отчета занял {time} секунд.";
 
             await Report(redemtionReport, 1500);
@@ -649,25 +690,20 @@ internal class Program
 
     private static async Task AnalyzeDataAndSaveReport()
     {
-        static void SaveWork() 
+        try
         {
-            ExcelReportManager.CreateMainReportSheet(outputPath, "Отчет", ArticleManager.Articles);
-            ExcelReportManager.SaveReportFiles(outputPath);
+            ArticleManager.AnalyzeArticles();
+
+            var outputPath = ExcelReportManager.CreateMainReportSheet("Отчет", ArticleManager.Articles);
+            //ExcelReportManager.SaveReportFiles();
 
             Console.WriteLine($"Новый отчет по клиенту создан по пути: {outputPath}");
             Console.WriteLine();
             Console.WriteLine("Для завершения работы нажмите любую клавишу");
 
-            _ = Console.ReadKey();
-        }
+            await Report(goodByMessage, 1500, true);
 
-        var analizeTask = ArticleManager.AnalyzeArticles();
-        var saveWorkTask = analizeTask.ContinueWith(_ => SaveWork());
-        var reportTask =  saveWorkTask.ContinueWith(_ => Report(goodByMessage, 1500, true));
-      
-        try
-        {
-            analizeTask.Start();
+            _ = Console.ReadKey();
         }
         catch (Exception ex)
         {
@@ -675,7 +711,7 @@ internal class Program
             await Report(goodByMessage, 2000, true);
         }
         
-        Task.WaitAll(saveWorkTask, reportTask);
+       
  
 
       
@@ -752,7 +788,7 @@ internal class Program
 
         //     // Make report in sheet
         //     MakeAdditionalReport(resultCellsForAddReports, ref overrunsWorksheet, Overruns);
-        // }
+        //}
     }
 
     private static async Task Report(string message, int delay = 0, bool exit = false)
@@ -820,48 +856,9 @@ internal class Program
         if (path is null) return null;
 
         if (path is not null && giveMeLogin) 
-            login = GiveMeLogin(path!);
+            ExcelReportManager.DeterminingСlientLogin(path);
 
         return FormСorrectPath(path!);
-    }
-
-    private static string? GiveMeLogin(string path)
-    {
-        var substrings01 = path.Split("/");
-
-        if (substrings01.Length <= 1) return null;
-
-        var loginChars = substrings01.Last().Split(" ")[3].Trim().ToList();
-
-        if (loginChars is null || loginChars.Count == 0) return null;
-
-        // Clear non-digits in login
-        for (int i = 0; i < loginChars.Count; i++)
-        {
-            if (!int.TryParse(loginChars[i].ToString(), out _)) loginChars.RemoveAt(i);
-        }
-
-        return new string(loginChars.ToArray());
-    }
-
-    private static async Task GetClientOutputPath()
-    {
-        if (login is null)
-            throw new Exception("Логин клинта не определен");
-
-        clientDirectoryPath = FileManager.GetDirectoryInfo(PathKey.MPBoostClients, login);
-
-        if (clientDirectoryPath is not null)
-        {
-            await Report($"Директория для работы с клиентом:\n{clientDirectoryPath.FullName}");
-
-            var dateTime = DateTime.Now.ToString("dd-MM-yyyy");
-            outputPath = $"{clientDirectoryPath.FullName}/ClientReport_{login}_{dateTime}.xlsx";
-        }
-        else
-        {
-            await Report($"Невозможно найти или создать директорию для работы с клиентом.");
-        }
     }
 
     private static (int col, int row) FindNumberColsAndRowsIn(in ExcelWorksheet sheet)
