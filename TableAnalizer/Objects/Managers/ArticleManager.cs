@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+using System.Diagnostics;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.ArticleItems;
 
@@ -12,20 +12,27 @@ namespace ClientTableAnalizer.Objects.Managers
         public readonly (int articleIndex, int nameIndex, int initBalanceIndex, int goodsReceivedIndex, int finBalanceIndex) StorageTableIndexes = (1, 6, 14, 15, 17);
         public Dictionary<int, Article> Articles { get; } = new();
 
-        public Article? this[int key] 
-        {   
-            get =>  Articles.TryGetValue(key, out Article? value) ?
-                value : 
-                null;  
+        // public Article? this[int key] 
+        // {   
+        //     get =>  Articles.TryGetValue(key, out Article? value) ?
+        //         value : 
+        //         null;  
             
-            set 
-            {
-                if(value is not null) Articles[key] = value;  
-            } 
-        } 
+        //     set 
+        //     {
+        //         if(value is not null) Articles[key] = value;  
+        //     } 
+        // } 
 
         public int ArticlesCount => Articles.Count;
 
+        #endregion
+
+        #region Constructors and destructors
+        public ArticleManager()
+        {
+            
+        }
         #endregion
 
         #region Functionality
@@ -74,16 +81,49 @@ namespace ClientTableAnalizer.Objects.Managers
                 return false;
             }
 
-            article = this[articleKey.Value];
-            return article is not null;
+            if(GetArticleByNumber(articleKey.Value, out Article? art)) 
+            {
+                article = art;
+                return true;
+            } 
+            else 
+            { 
+                article = null;
+                return false;
+            }
         }
 
         public bool GetArticleByNumber (int articleNumber, out Article? article) 
         {
-            article = this[articleNumber];
-            return article is not null;
+            article = Articles.TryGetValue(articleNumber, out Article? value) ? value : null;
+            return article != null;
         }
         
+        public double SaveArticleRowsInReport(List<ArticleRowInReport> articleRowsInReport, Marketplace marketplace) 
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            foreach (var articleRow in articleRowsInReport)
+            {
+                var articleNumber = articleRow.ArticleNumber;
+
+                if(GetArticleByNumber(articleNumber, out Article? article) && article != null) 
+                {
+                    article.SetArticleRowInReport(articleRow);
+                } 
+                else 
+                {
+                    Articles.Add(articleNumber, new Article(marketplace, articleRow));
+                }
+            }  
+
+            stopwatch.Stop();
+
+            
+
+            return stopwatch.ElapsedMilliseconds / 1000;
+        } 
         public void AnalyzeArticles() 
         {
             if(Equals(Articles.Count, 0)) 

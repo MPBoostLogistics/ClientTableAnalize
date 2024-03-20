@@ -21,7 +21,16 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         public ArticleRowInReport(int articleNumber,  string redemptionDateString, string itemStatusString, string priceString)
         {
             ArticleNumber = articleNumber;
-            RedemptionDate = DateTime.ParseExact(redemptionDateString, DATE_TIME_FORMAT, Culture);
+
+            if (DateTime.TryParseExact(redemptionDateString, DATE_TIME_FORMAT, Culture, DateTimeStyles.None, out DateTime dtv)) 
+            {
+            RedemptionDate = dtv;
+            } 
+            else 
+            {
+                throw new Exception("Невозможно преобразовать строку в дату для ");
+            }
+
             ItemStatus = SetItemStatus(itemStatusString);
 
             if(double.TryParse(priceString.Split(" ")[0], out double price))

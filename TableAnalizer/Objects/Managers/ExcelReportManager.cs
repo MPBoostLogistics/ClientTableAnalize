@@ -163,7 +163,7 @@ namespace ClientTableAnalizer.Objects.Managers
                     {
                         // Redemtion balance Ddta 
 
-                        Console.WriteLine($"arb: {arb.Value.sum} {arb.Value.canceled} {arb.Value.onWay} {arb.Value.delivered} {arb.Value.withDrawn}");
+                        //Console.WriteLine($"arb: {arb.Value.sum} {arb.Value.canceled} {arb.Value.onWay} {arb.Value.delivered} {arb.Value.withDrawn}");
 
                         mainReportWorksheet.Cells[recordIndex, 7].Value = arb.Value.sum;
                         mainReportWorksheet.Cells[recordIndex, 8].Value = arb.Value.canceled;
@@ -178,7 +178,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 
                     if (asb.HasValue)
                     {
-                        Console.WriteLine($"asb: {asb.Value.expected} {asb.Value.received} {asb.Value.undelivery} {asb.Value.shipped} {asb.Value.remaining}");
+                        //Console.WriteLine($"asb: {asb.Value.expected} {asb.Value.received} {asb.Value.undelivery} {asb.Value.shipped} {asb.Value.remaining}");
 
                         mainReportWorksheet.Cells[recordIndex, 12].Value = asb.Value.expected;
                         mainReportWorksheet.Cells[recordIndex, 12].Style.Font.Bold = true;
@@ -240,19 +240,6 @@ namespace ClientTableAnalizer.Objects.Managers
 
             return OutputReportFilePath;
         }
-
-        // public static void SaveReportFiles() 
-        // {
-        //     //if(IsDataPathExists(filePath, out FileInfo fileInfo)) 
-        //     //{
-        //         var stopwatch = new Stopwatch();
-        //         using ExcelPackage excelPackage = new(new FileInfo(OutputReportFilePath));
-
-              
-
-        //         stopwatch.Stop();
-        //     //}
-        // }
 
         private static void CreateWorkSheet(string workSheetName, in ExcelPackage excelPackage, out ExcelWorksheet worksheet, System.Drawing.Color tabColor)
         {

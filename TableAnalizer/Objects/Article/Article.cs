@@ -87,8 +87,8 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         #region Functionality
 
         public void SetArticleRowInReport(ArticleRowInReport articleRowInReport) =>
-            ArticleRedempionBalance.ArticleRowsInRedemptionReport.Add(articleRowInReport);
-
+            ArticleRedempionBalance.Set(articleRowInReport);
+            
         public void SetName(string name) => Name = name;
 
         public void SetComment(string message) =>

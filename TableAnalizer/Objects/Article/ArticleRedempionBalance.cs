@@ -17,7 +17,7 @@ namespace ClientTableAnalizer.Objects.ArticleItems
 	public class ArticleRedempionBalance
 	{
         #region  Properties
-        public List<ArticleRedempionBalanceUnit> Balances { get; }= new () 
+        public List<ArticleRedempionBalanceUnit> Balances { get; } = new () 
         {
              new(ArticleRedemptionStatus.Delivered, "Доставлено на ПВЗ, шт.", 0),
              new(ArticleRedemptionStatus.WithDrawn, "Забрано с ПВЗ, шт.", 0),
@@ -37,12 +37,12 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         private int GetBalanceCountByStatus(ArticleRedemptionStatus ars) =>  
             Balances.FirstOrDefault(b => b.Status == ars).Count;
 
-        public int GetExpectedBalance() 
-        {
-            var deliveredBalance = GetBalanceCountByStatus(ArticleRedemptionStatus.Delivered);
-            var withDrawnBalance = GetBalanceCountByStatus(ArticleRedemptionStatus.WithDrawn);
-            return deliveredBalance + withDrawnBalance;
-        }
+        // public int GetExpectedBalance() 
+        // {
+        //     var deliveredBalance = GetBalanceCountByStatus(ArticleRedemptionStatus.Delivered);
+        //     var withDrawnBalance = GetBalanceCountByStatus(ArticleRedemptionStatus.WithDrawn);
+        //     return deliveredBalance + withDrawnBalance;
+        // }
 
         public (int sum, int canceled, int onWay, int delivered, int withDrawn)? AnalizeBalance() 
         {
@@ -94,6 +94,11 @@ namespace ClientTableAnalizer.Objects.ArticleItems
                     // Set average price
                     averagePrice = group.Average(it => it.Price);
                 }
+            }
+
+            foreach (var balance in Balances)
+            {
+                Console.WriteLine($"{balance.Status}, {balance.Count}");
             }
 
             return (maxRedemptionDate, averagePrice, isDeadLine);
