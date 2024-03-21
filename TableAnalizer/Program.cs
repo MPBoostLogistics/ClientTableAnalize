@@ -43,7 +43,6 @@ internal class Program
     
     private static async Task Main(string[] args)
     {
-        articleManager = new ArticleManager();
 
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
