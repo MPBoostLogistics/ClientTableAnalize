@@ -149,6 +149,12 @@ namespace ClientTableAnalizer.Objects.Managers
 
             return stopwatch.ElapsedMilliseconds / 1000;
         } 
+        
+        /// <summary>
+        /// Performs analysis of elements in article collection.
+        /// </summary>
+        /// <exception cref="Exception">An exception occurred when trying to parse an empty collection.</exception>
+        /// <remarks><i>New version, tested</i></remarks>
         public void AnalyzeArticles() 
         {
             if(Equals(_articles.Count, 0)) 

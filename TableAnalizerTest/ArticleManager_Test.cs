@@ -6,12 +6,23 @@ namespace TableAnalizerTest
 {
     public class ArticleManager_Test
     {
+        #region Variables 
+        private readonly int _firstArticleNumberIndex = 0;
+        private readonly int _secondArticleNumberIndex = 1;
+        private readonly int _thirdArticleNumberIndex = 2;
+
+        private readonly string onWayStatusString = "В пути";
+        private readonly string canceledStatusString = "Отменен";
+        private readonly string deliveredStatusString = "Доставлен на ПВЗ";
+        private readonly string withDrawnStatusString = "Забран с ПВЗ";
+
         private ArticleManager _articleManager;
         private List<ArticleRowInReport> _testArticleRowInReports; 
         private Marketplace _marketplace;
 
         int[] _testCorrectArticleNumbers;
         int[] _testIncorrectArticleNumbers;
+        #endregion
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
@@ -22,28 +33,28 @@ namespace TableAnalizerTest
 
             _testArticleRowInReports =
             [
-                new(_testCorrectArticleNumbers[0], "18.03.2024 12:30", "Доставлен на ПВЗ", "319 руб."),
-                new(_testCorrectArticleNumbers[0], "11.03.2024 11:45", "Забран с ПВЗ", "318 руб."),
-                new(_testCorrectArticleNumbers[0], "21.03.2024 00:44", "В пути", "324 руб."),
-                new(_testCorrectArticleNumbers[0], "14.03.2024 17:21", "Отменен", "311 руб."),
+                new(_testCorrectArticleNumbers[_firstArticleNumberIndex], "18.03.2024 12:30", deliveredStatusString, "319 руб."),
+                new(_testCorrectArticleNumbers[_firstArticleNumberIndex], "11.03.2024 11:45", withDrawnStatusString, "318 руб."),
+                new(_testCorrectArticleNumbers[_firstArticleNumberIndex], "21.03.2024 00:44", onWayStatusString, "324 руб."),
+                new(_testCorrectArticleNumbers[_firstArticleNumberIndex], "14.03.2024 17:21", canceledStatusString, "311 руб."),
                 
-                new(_testCorrectArticleNumbers[1], "17.03.2024 12:30", "Доставлен на ПВЗ", "319 руб."),
-                new(_testCorrectArticleNumbers[1], "15.03.2024 09:15", "Доставлен на ПВЗ", "311 руб."),
-                new(_testCorrectArticleNumbers[1], "20.03.2024 12:30", "В пути", "333 руб."),
-                new(_testCorrectArticleNumbers[1], "14.03.2024 12:30", "Отменен", "311 руб."),
+                new(_testCorrectArticleNumbers[_secondArticleNumberIndex], "17.03.2024 12:30", deliveredStatusString, "319 руб."),
+                new(_testCorrectArticleNumbers[_secondArticleNumberIndex], "15.03.2024 09:15", deliveredStatusString, "311 руб."),
+                new(_testCorrectArticleNumbers[_secondArticleNumberIndex], "20.03.2024 12:30", onWayStatusString, "333 руб."),
+                new(_testCorrectArticleNumbers[_secondArticleNumberIndex], "14.03.2024 12:30", canceledStatusString, "311 руб."),
                 
-                new(_testCorrectArticleNumbers[2], "19.03.2024 03:15", "В пути", "325 руб."),
-                new(_testCorrectArticleNumbers[2], "20.03.2024 04:09", "В пути", "324 руб.")
+                new(_testCorrectArticleNumbers[_thirdArticleNumberIndex], "19.03.2024 03:15", onWayStatusString, "325 руб."),
+                new(_testCorrectArticleNumbers[_thirdArticleNumberIndex], "20.03.2024 04:09", onWayStatusString, "324 руб.")
             ];
         }
 
         [SetUp]
         public void SetUp() 
         {
-            _articleManager.SaveArticleRowsInReport(_testArticleRowInReports, _marketplace);
+           // _articleManager.SaveArticleRowsInReport(_testArticleRowInReports, _marketplace);
         }
 
-        [Test]
+        [Test,  Order(1)]
         public void SetDeadlineDays_Test()
         {
             // arrange
@@ -56,7 +67,7 @@ namespace TableAnalizerTest
             Assert.That(deadLineDays, Is.EqualTo(_articleManager.DeadlineDays));
         }
 
-        [Test]
+        [Test,  Order(2)]
         public void SaveArticleRowsInReport_Test() 
         {
             // arrange
@@ -66,17 +77,17 @@ namespace TableAnalizerTest
                 select rowGroup;
 
             // act
-            // ... 
+            _articleManager.SaveArticleRowsInReport(_testArticleRowInReports, _marketplace);
 
             // assert
             Assert.That(_articleManager.ArticlesCount, Is.EqualTo(rowGroups.Count()));
         }
 
-        [Test]
+        [Test,  Order(3)]
         public void GetArticleByNumber_Test() 
         {
             // arrange 
-            // ... 
+            // ...  
 
             // act && assert
             foreach (var articleNumber in _testCorrectArticleNumbers)
@@ -92,34 +103,49 @@ namespace TableAnalizerTest
             }
         }
 
-        [Test]
+        [Test,  Order(4)]
         public void AnalyzeArticles_Test() 
         {
             // arrange
-            int first_delivered = 1;
-            int first_withDrawn = 1;
-            int first_onWay = 1;
-            int first_canceled = 1;
+            int first_delivered = _testArticleRowInReports
+                .Count(arir => arir.ArticleNumber == _testCorrectArticleNumbers[_firstArticleNumberIndex] && 
+                    string.Equals(arir.ItemStatus, deliveredStatusString));
+            int first_withDrawn = _testArticleRowInReports
+                .Count(arir => arir.ArticleNumber == _testCorrectArticleNumbers[_firstArticleNumberIndex] && 
+                    string.Equals(arir.ItemStatus, withDrawnStatusString));
+            int first_onWay = _testArticleRowInReports
+                .Count(arir => arir.ArticleNumber == _testCorrectArticleNumbers[_firstArticleNumberIndex] && 
+                    string.Equals(arir.ItemStatus, onWayStatusString));
+            int first_canceled = _testArticleRowInReports
+                .Count(arir => arir.ArticleNumber == _testCorrectArticleNumbers[_firstArticleNumberIndex] && 
+                    string.Equals(arir.ItemStatus, canceledStatusString));
             int first_sum = first_delivered + first_withDrawn + first_onWay + first_canceled;
 
-            int second_delivered = 2;
-            int second_onWay = 1;
-            int second_canceled = 1;
+            int second_delivered = _testArticleRowInReports
+                .Count(arir => arir.ArticleNumber == _testCorrectArticleNumbers[_secondArticleNumberIndex] && 
+                    string.Equals(arir.ItemStatus, deliveredStatusString));
+            int second_onWay = _testArticleRowInReports
+                .Count(arir => arir.ArticleNumber == _testCorrectArticleNumbers[_secondArticleNumberIndex] && 
+                    string.Equals(arir.ItemStatus, onWayStatusString));
+            int second_canceled = _testArticleRowInReports
+                .Count(arir => arir.ArticleNumber == _testCorrectArticleNumbers[_secondArticleNumberIndex] && 
+                    string.Equals(arir.ItemStatus, canceledStatusString));
             int second_sum = second_delivered + second_onWay + second_canceled;
 
-            int third_onWay = 2;
+            int third_onWay = _testArticleRowInReports
+                .Count(arir => arir.ArticleNumber == _testCorrectArticleNumbers[_thirdArticleNumberIndex] && 
+                    string.Equals(arir.ItemStatus, onWayStatusString));
             int third_sum = third_onWay;
 
             // act 1
             _articleManager.AnalyzeArticles();
-            _articleManager.GetArticleByNumber(_testCorrectArticleNumbers[0], out Article? firstArticle); 
-            _articleManager.GetArticleByNumber(_testCorrectArticleNumbers[1], out Article? secondArticle); 
-            _articleManager.GetArticleByNumber(_testCorrectArticleNumbers[2], out Article? thirdrticle);
+            _articleManager.GetArticleByNumber(_testCorrectArticleNumbers[_firstArticleNumberIndex], out Article? firstArticle); 
+            _articleManager.GetArticleByNumber(_testCorrectArticleNumbers[_secondArticleNumberIndex], out Article? secondArticle); 
+            _articleManager.GetArticleByNumber(_testCorrectArticleNumbers[_thirdArticleNumberIndex], out Article? thirdrticle);
 
             // assert 1
             Assert.Multiple(() =>
             {
-                
                 Assert.That(firstArticle, Is.Not.EqualTo(null));
                 Assert.That(secondArticle, Is.Not.EqualTo(null));
                 Assert.That(thirdrticle, Is.Not.EqualTo(null));
@@ -127,39 +153,41 @@ namespace TableAnalizerTest
 
             // act 2
             var first_balance = firstArticle.AnalizeArticleRedemtionBalance();
-            var second_balance = firstArticle.AnalizeArticleRedemtionBalance();
-            var third_balance = firstArticle.AnalizeArticleRedemtionBalance();
+            var second_balance = secondArticle.AnalizeArticleRedemtionBalance();
+            var third_balance = thirdrticle.AnalizeArticleRedemtionBalance();
 
-             // assert 2
-            Assert.That(first_balance!.Value.sum, Is.EqualTo(first_sum));
-            Assert.That(first_balance!.Value.delivered, Is.EqualTo(first_delivered));
-            Assert.That(first_balance!.Value.onWay, Is.EqualTo(first_onWay));
-            Assert.That(first_balance!.Value.canceled, Is.EqualTo(first_canceled));
-            Assert.That(second_balance!.Value.sum, Is.EqualTo(second_sum));
-            Assert.That(second_balance!.Value.delivered, Is.EqualTo(second_delivered));
-            Assert.That(second_balance!.Value.onWay, Is.EqualTo(second_onWay));
-            Assert.That(second_balance!.Value.canceled, Is.EqualTo(second_canceled));
-            Assert.That(third_balance!.Value.sum, Is.EqualTo(third_sum));
+            // assert 2
+            Assert.Multiple(() =>
+            {
+                Assert.That(first_balance!.Value.sum, Is.EqualTo(first_sum));
+                Assert.That(first_balance!.Value.delivered, Is.EqualTo(first_delivered));
+                Assert.That(first_balance!.Value.onWay, Is.EqualTo(first_onWay));
+                Assert.That(first_balance!.Value.canceled, Is.EqualTo(first_canceled));
+                Assert.That(second_balance!.Value.sum, Is.EqualTo(second_sum));
+                Assert.That(second_balance!.Value.delivered, Is.EqualTo(second_delivered));
+                Assert.That(second_balance!.Value.onWay, Is.EqualTo(second_onWay));
+                Assert.That(second_balance!.Value.canceled, Is.EqualTo(second_canceled));
+                Assert.That(third_balance!.Value.sum, Is.EqualTo(third_sum));
+                Assert.That(third_balance!.Value.onWay, Is.EqualTo(third_onWay));
+            });
+
             Assert.That(second_balance!.Value.onWay, Is.EqualTo(second_canceled));
 
             // act 2
-            //_articleManager.ClearCollection();
-            //ß_articleManager.AnalyzeArticles();
-            // проверить исключение
+            _articleManager.ClearCollection();
+            Assert.Throws<Exception>(_articleManager.AnalyzeArticles);
         }
-
-
 
         [OneTimeTearDown]
         public void OneTimeTearDown()
         {
-            
+            _testArticleRowInReports.Clear();
         }
 
         [TearDown]
         public void TearDown() 
         {
-            _testArticleRowInReports.Clear();
+           // _testArticleRowInReports.Clear();
         
         }
 
@@ -169,5 +197,3 @@ namespace TableAnalizerTest
     }
 
 }
-
-// articleManager.AnalyzeArticles();
