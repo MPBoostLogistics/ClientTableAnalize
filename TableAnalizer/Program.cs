@@ -661,12 +661,12 @@ internal class Program
         {
             articleManager.AnalyzeArticles();
 
-            var outputPath = ExcelReportManager.CreateMainReportSheet("Отчет", articleManager.Articles);
+            //var outputPath = ExcelReportManager.CreateMainReportSheet("Отчет", articleManager._articles);
             //ExcelReportManager.SaveReportFiles();
 
-            Console.WriteLine($"Новый отчет по клиенту создан по пути: {outputPath}");
-            Console.WriteLine();
-            Console.WriteLine("Для завершения работы нажмите любую клавишу");
+            // Console.WriteLine($"Новый отчет по клиенту создан по пути: {outputPath}");
+            // Console.WriteLine();
+            // Console.WriteLine("Для завершения работы нажмите любую клавишу");
 
             await Report(goodByMessage, 1500, true);
 

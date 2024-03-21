@@ -55,6 +55,7 @@ namespace ClientTableAnalizer.Objects.ArticleItems
     {
         #region Variables && constants
         public Marketplace Marketplace { get; private set; }
+        public int Number { get; private set; }
         public string Name { get; private set; }
         public ArticleRedempionBalance ArticleRedempionBalance { get; private set; }
         public ArticleStorageBalance ArticleStorageBalance { get; private set; }
@@ -69,9 +70,10 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         #endregion
 
         #region Constructors && destructors
-        public Article(Marketplace marketplace, ArticleRowInReport articleRowInReport)
+        public Article(Marketplace marketplace, int number, ArticleRowInReport articleRowInReport)
         {
             Marketplace = marketplace;
+            Number = number;
             Name = "No name";
             ArticleRedempionBalance = new(articleRowInReport);
             ArticleStorageBalance = new();
@@ -106,7 +108,7 @@ namespace ClientTableAnalizer.Objects.ArticleItems
             //ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsExpected, ArticleRedempionBalance.GetExpectedBalance());
 
             // Analize balances
-            ArticleRedempionBalance.AnalizeBalance();
+            AnalizeArticleRedemtionBalance();
             //ArticleStorageBalance.AnalizeBalance();
 
             //var articleShortage = new ArticleShortage (articleNumber, Name, AveragePrice);
@@ -183,6 +185,11 @@ namespace ClientTableAnalizer.Objects.ArticleItems
             }
 
             //ArticleShortage = articleShortage.Shortages.Count > 0 ? articleShortage : null;
+        }
+
+        public (int sum, int canceled, int onWay, int delivered, int withDrawn)? AnalizeArticleRedemtionBalance() 
+        {
+             return ArticleRedempionBalance.AnalizeBalance();
         }
 
         public override string ToString()

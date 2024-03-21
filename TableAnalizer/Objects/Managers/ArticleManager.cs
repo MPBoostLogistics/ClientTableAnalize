@@ -10,7 +10,7 @@ namespace ClientTableAnalizer.Objects.Managers
         public int DeadlineDays {get; private set;}
         public readonly (int articleIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) RedemptionTableIndexes= (2, 7, 9, 10, 14);
         public readonly (int articleIndex, int nameIndex, int initBalanceIndex, int goodsReceivedIndex, int finBalanceIndex) StorageTableIndexes = (1, 6, 14, 15, 17);
-        public Dictionary<int, Article> Articles { get; } = new();
+        private readonly Dictionary<int, Article> _articles  = new();
 
         // public Article? this[int key] 
         // {   
@@ -24,39 +24,52 @@ namespace ClientTableAnalizer.Objects.Managers
         //     } 
         // } 
 
-        public int ArticlesCount => Articles.Count;
+        public int ArticlesCount => _articles.Count;
 
         #endregion
 
         #region Constructors and destructors
-        public ArticleManager()
-        {
-            
-        }
+        public ArticleManager(){}
         #endregion
 
         #region Functionality
+        /// <summary>
+        /// Clears collection of articles.
+        /// </summary>
+         /// <returns>Logical flag for performing an operation.</returns>
+        /// <remarks><i>New version, tested</i><b> Use for testing only!</b></remarks>
+        public bool ClearCollection() 
+        {
+             _articles.Clear();
+             return ArticlesCount == 0;
+        }
+
+        /// <summary>
+        /// Sets period before deadline when paying a client (in days).
+        /// </summary>
+        /// <param name="days">Period until deadline, days</param>
+        /// <remarks><i>New version, tested</i></remarks>
         public void SetDeadlineDays (int days) => DeadlineDays = days;
 
-        public bool GetArticlesByRedemtionStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus,ArticleRowInReport>>? groups) 
-        {
-             groups = from article in Articles
-                      from item in article.Value.ArticleRedempionBalance.ArticleRowsInRedemptionReport
-                      group item by item.ItemStatus into itemGroup
-                      orderby itemGroup.Key
-                      select itemGroup;
+        // public bool GetArticlesByRedemtionStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus,ArticleRowInReport>>? groups) 
+        // {
+        //      groups = from article in Articles
+        //               from item in article.Value.ArticleRedempionBalance.ArticleRowsInRedemptionReport
+        //               group item by item.ItemStatus into itemGroup
+        //               orderby itemGroup.Key
+        //               select itemGroup;
                       
-            return groups.Any();
-        }
+        //     return groups.Any();
+        // }
 
-        public int? GetArticleStorgeBalanceCountByIndex(int articleNumber, ArticeStorageIndex index) 
-        {
-            if(GetArticleByNumber(articleNumber, out Article? article) && article is not null) 
-            {
-                return article.ArticleStorageBalance.GetBalanceCountByStorageIndex(index);
-            }
-            return null;
-        }
+        // public int? GetArticleStorgeBalanceCountByIndex(int articleNumber, ArticeStorageIndex index) 
+        // {
+        //     if(GetArticleByNumber(articleNumber, out Article? article) && article is not null) 
+        //     {
+        //         return article.ArticleStorageBalance.GetBalanceCountByStorageIndex(index);
+        //     }
+        //     return null;
+        // }
 
         // public int GetArticlesStorgeBalanceByIndex(ArticeStorageIndex index) 
         // {
@@ -93,12 +106,26 @@ namespace ClientTableAnalizer.Objects.Managers
             }
         }
 
+        /// <summary>
+        /// Returns saved article by its number or null.
+        /// </summary>
+        /// <param name="articleNumber">Article number to look up in  dict.</param>
+        /// <param name="article">Link to a copy of article.</param>
+        /// <returns>Logical flag for performing an operation.</returns>
+        /// <remarks><i>New version, tested</i></remarks>
         public bool GetArticleByNumber (int articleNumber, out Article? article) 
         {
-            article = Articles.TryGetValue(articleNumber, out Article? value) ? value : null;
+            article = _articles.TryGetValue(articleNumber, out Article? value) ? value : null;
             return article != null;
         }
         
+        /// <summary>
+        /// Saves ArticleRowInReport in corresponding article. 
+        /// </summary>
+        /// <param name="articleRowsInReport">Link to ArticleRowInReport.</param>
+        /// <param name="marketplace">Marketplace products.</param>
+        /// <returns>Time it takes to complete operation in seconds.</returns>
+        /// <remarks><i>New version, tested</i></remarks>
         public double SaveArticleRowsInReport(List<ArticleRowInReport> articleRowsInReport, Marketplace marketplace) 
         {
             var stopwatch = new Stopwatch();
@@ -114,22 +141,20 @@ namespace ClientTableAnalizer.Objects.Managers
                 } 
                 else 
                 {
-                    Articles.Add(articleNumber, new Article(marketplace, articleRow));
+                    _articles.Add(articleNumber, new Article(marketplace, articleNumber, articleRow));
                 }
             }  
 
             stopwatch.Stop();
 
-            
-
             return stopwatch.ElapsedMilliseconds / 1000;
         } 
         public void AnalyzeArticles() 
         {
-            if(Equals(Articles.Count, 0)) 
+            if(Equals(_articles.Count, 0)) 
                 throw new Exception("An attempt to parse a dict with a number of elements - 0"); 
             
-            foreach (var (key, value) in Articles)
+            foreach (var (key, value) in _articles)
                 value.AnalyzeArticle(key, DeadlineDays);
         }
         #endregion
