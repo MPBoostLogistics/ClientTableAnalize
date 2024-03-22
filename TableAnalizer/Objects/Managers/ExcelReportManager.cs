@@ -61,9 +61,18 @@ namespace ClientTableAnalizer.Objects.Managers
 
         #region Functionality
 
-        public static void DeterminingСlientLogin(string path)
+        public static void GetFilesFromDir(string pathString) 
         {
-            var loginException = new Exception($"Логин клиента не может быть определен");
+            // проверить есть ли такая директория
+            // получить пути файлов из директории 
+            // сохранить FileInfo для каждого в словаре по ключам 
+        }
+
+
+
+        public static void SaveСlientLogin(string path)
+        {
+            var loginException = new Exception($"Client login cannot be determined and saved");
 
             var substrings01 = path.Split("/");
 

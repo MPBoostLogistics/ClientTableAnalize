@@ -11,7 +11,6 @@ namespace ClientTableAnalizer.Objects.Managers
         public readonly (int skuIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) RedemptionTableIndexes= (2, 7, 9, 10, 14);
         public readonly (int skuIndex, int nameIndex, int initBalanceIndex, int goodsReceivedIndex, int finBalanceIndex) StorageTableIndexes = (1, 6, 14, 15, 17);
         private readonly Dictionary<int, SKU> _skus  = new();
-
         public int SKUsCount => _skus.Count;
 
         #endregion

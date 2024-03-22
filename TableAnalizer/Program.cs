@@ -822,7 +822,7 @@ internal class Program
         if (path is null) return null;
 
         if (path is not null && giveMeLogin) 
-            ExcelReportManager.DeterminingСlientLogin(path);
+            ExcelReportManager.SaveСlientLogin(path);
 
         return FormСorrectPath(path!);
     }

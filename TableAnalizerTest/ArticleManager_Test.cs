@@ -1,9 +1,8 @@
-using System.Linq;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.ArticleItems;
 using ClientTableAnalizer.Objects.Managers;
 
-namespace TableAnalizerTest
+namespace TableAnalizerTest.Managers
 {
     public class SKUManager_Test
     {
