@@ -34,7 +34,7 @@ internal class Program
     #endregion
 
     #region Properties 
-    private static ArticleManager articleManager = new ();
+    private static SKUManager skuManager = new ();
     private static ExcelReportManager ExcelReportManager { get; } = new ();
     #endregion
 
@@ -57,7 +57,7 @@ internal class Program
 
         // Set deadline days
         int deadLineDays = await GetDeadLineDays();
-        articleManager.SetDeadlineDays(deadLineDays);
+        skuManager.SetDeadlineDays(deadLineDays);
 
         await GetUserRedemtionDataFile(Marketplace.WB, false);
 
@@ -286,9 +286,9 @@ internal class Program
 
         if(filePath is null) await Report(goodByMessage, 2000, true);
 
-        (double time, List<ArticleRowInReport> rowInReports) = ExcelReportManager.AnalyzeRedemptionReport(filePath!, "Выкупы", articleManager.RedemptionTableIndexes);
-        var saveTime = articleManager.SaveArticleRowsInReport(rowInReports, marketplace);
-        var redemtionReport = $"Артикулов {marketplace} с логистикой, шт.: {articleManager.ArticlesCount}\n";
+        (double time, List<SKURowInReport> rowInReports) = ExcelReportManager.AnalyzeRedemptionReport(filePath!, "Выкупы", skuManager.RedemptionTableIndexes);
+        var saveTime = skuManager.SaveSKURowsInReport(rowInReports, marketplace);
+        var redemtionReport = $"Артикулов {marketplace} с логистикой, шт.: {skuManager.SKUsCount}\n";
         redemtionReport += $"Анализ отчета занял {time + saveTime} секунд.";
 
         await Report(redemtionReport, 1500);
@@ -368,21 +368,21 @@ internal class Program
         for (int row = firstRoomRowRange.First(); row <= firstRoomRowRange.Count; row++)
         {
             // article
-            if(articleManager.GetArticleByObjectValue(worksheet.Cells[row, articleManager.StorageTableIndexes.articleIndex].Value, out Article? existingArticle) && 
+            if(skuManager.GetSKUByObjectValue(worksheet.Cells[row, skuManager.StorageTableIndexes.skuIndex].Value, out SKU? existingArticle) && 
                 existingArticle is not null) 
             {
                 // name
-                goodstName = ParseValueToString(worksheet.Cells[row, articleManager.StorageTableIndexes.nameIndex].Value);
+                goodstName = ParseValueToString(worksheet.Cells[row, skuManager.StorageTableIndexes.nameIndex].Value);
                 if (!string.IsNullOrEmpty(goodstName)) 
                     existingArticle.SetName(goodstName!.Split(",")[0].Trim());
                 
                 // goods received
-                goodsReceivedCount = ParseValueToInt(worksheet.Cells[row, articleManager.StorageTableIndexes.goodsReceivedIndex].Value); ;
+                goodsReceivedCount = ParseValueToInt(worksheet.Cells[row, skuManager.StorageTableIndexes.goodsReceivedIndex].Value); ;
                 if (goodsReceivedCount.HasValue)
                     existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsReceived, goodsReceivedCount.Value);
 
                 // goods remaining
-                goodsRemainingCount = ParseValueToInt(worksheet.Cells[row, articleManager.StorageTableIndexes.finBalanceIndex].Value);
+                goodsRemainingCount = ParseValueToInt(worksheet.Cells[row, skuManager.StorageTableIndexes.finBalanceIndex].Value);
                 if (goodsRemainingCount.HasValue)
                     existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsRemaining, goodsRemainingCount.Value);
             }
@@ -392,11 +392,11 @@ internal class Program
         for (int row = secondRoomRowRange.First(); row < rowFinalRoomAddress - 2; row++)
         {
             // article
-            if(articleManager.GetArticleByObjectValue(worksheet.Cells[row, articleManager.StorageTableIndexes.articleIndex].Value, out Article? existingArticle) && 
+            if(skuManager.GetSKUByObjectValue(worksheet.Cells[row, skuManager.StorageTableIndexes.skuIndex].Value, out SKU? existingArticle) && 
                 existingArticle is not null) 
             {
                 // finalBalance
-                goodsRemainingCount = ParseValueToInt(worksheet.Cells[row, articleManager.StorageTableIndexes.finBalanceIndex].Value);
+                goodsRemainingCount = ParseValueToInt(worksheet.Cells[row, skuManager.StorageTableIndexes.finBalanceIndex].Value);
 
                 if (goodsRemainingCount.HasValue)
                     existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsRemaining, goodsRemainingCount.Value);
@@ -658,9 +658,9 @@ internal class Program
     {
         try
         {
-            articleManager.AnalyzeArticles();
+            skuManager.AnalyzeSKUs();
 
-            var outputPath = ExcelReportManager.CreateMainReportSheet("Отчет", articleManager._articles);
+            var outputPath = ExcelReportManager.CreateMainReportSheet("Отчет", skuManager.GetSKUs());
             //ExcelReportManager.SaveReportFiles();
 
             // Console.WriteLine($"Новый отчет по клиенту создан по пути: {outputPath}");

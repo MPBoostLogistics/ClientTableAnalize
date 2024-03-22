@@ -4,32 +4,20 @@ using ClientTableAnalizer.Objects.ArticleItems;
 
 namespace ClientTableAnalizer.Objects.Managers
 {
-    public class ArticleManager : BaseManager
+    public class SKUManager : BaseManager
     {
         #region Properties 
         public int DeadlineDays {get; private set;}
-        public readonly (int articleIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) RedemptionTableIndexes= (2, 7, 9, 10, 14);
-        public readonly (int articleIndex, int nameIndex, int initBalanceIndex, int goodsReceivedIndex, int finBalanceIndex) StorageTableIndexes = (1, 6, 14, 15, 17);
-        private readonly Dictionary<int, Article> _articles  = new();
+        public readonly (int skuIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) RedemptionTableIndexes= (2, 7, 9, 10, 14);
+        public readonly (int skuIndex, int nameIndex, int initBalanceIndex, int goodsReceivedIndex, int finBalanceIndex) StorageTableIndexes = (1, 6, 14, 15, 17);
+        private readonly Dictionary<int, SKU> _skus  = new();
 
-        // public Article? this[int key] 
-        // {   
-        //     get =>  Articles.TryGetValue(key, out Article? value) ?
-        //         value : 
-        //         null;  
-            
-        //     set 
-        //     {
-        //         if(value is not null) Articles[key] = value;  
-        //     } 
-        // } 
-
-        public int ArticlesCount => _articles.Count;
+        public int SKUsCount => _skus.Count;
 
         #endregion
 
         #region Constructors and destructors
-        public ArticleManager(){}
+        public SKUManager(){}
         #endregion
 
         #region Functionality
@@ -40,8 +28,8 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i><b> Use for testing only!</b></remarks>
         public bool ClearCollection() 
         {
-             _articles.Clear();
-             return ArticlesCount == 0;
+             _skus.Clear();
+             return SKUsCount == 0;
         }
 
         /// <summary>
@@ -85,26 +73,25 @@ namespace ClientTableAnalizer.Objects.Managers
 
         // }
 
-        public bool GetArticleByObjectValue (object value, out Article? article) 
+        public bool GetSKUByObjectValue (object value, out SKU? sku) 
         {
-            int? articleKey = ParseValueToInt(value);
-            if (!articleKey.HasValue) 
+            sku = null;
+            int? skuNumber = ParseValueToInt(value);
+
+            if (!skuNumber.HasValue) 
             {
-                article = null;
+                sku = null;
                 return false;
             }
 
-            if(GetArticleByNumber(articleKey.Value, out Article? art)) 
-            {
-                article = art;
-                return true;
-            } 
-            else 
-            { 
-                article = null;
-                return false;
-            }
+            return GetSKUByNumber(skuNumber.Value, out sku);
         }
+
+        /// <summary>
+        /// Returns a collection of SKUs.
+        /// </summary>
+        /// <returns>Collection of SKUs.</returns>
+        public Dictionary<int, SKU> GetSKUs() => _skus;
 
         /// <summary>
         /// Returns saved article by its number or null.
@@ -113,35 +100,35 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="article">Link to a copy of article.</param>
         /// <returns>Logical flag for performing an operation.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public bool GetArticleByNumber (int articleNumber, out Article? article) 
+        public bool GetSKUByNumber (int articleNumber, out SKU? article) 
         {
-            article = _articles.TryGetValue(articleNumber, out Article? value) ? value : null;
+            article = _skus.TryGetValue(articleNumber, out SKU? value) ? value : null;
             return article != null;
         }
         
         /// <summary>
         /// Saves ArticleRowInReport in corresponding article. 
         /// </summary>
-        /// <param name="articleRowsInReport">Link to ArticleRowInReport.</param>
+        /// <param name="skuRowsInReport">Link to ArticleRowInReport.</param>
         /// <param name="marketplace">Marketplace products.</param>
         /// <returns>Time it takes to complete operation in seconds.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public double SaveArticleRowsInReport(List<ArticleRowInReport> articleRowsInReport, Marketplace marketplace) 
+        public double SaveSKURowsInReport(List<SKURowInReport> skuRowsInReport, Marketplace marketplace) 
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            foreach (var articleRow in articleRowsInReport)
+            foreach (var skuRowInReport in skuRowsInReport)
             {
-                var articleNumber = articleRow.ArticleNumber;
+                var skuNumber = skuRowInReport.SKUNumber;
 
-                if(GetArticleByNumber(articleNumber, out Article? article) && article != null) 
+                if(GetSKUByNumber(skuNumber, out SKU? sku) && sku != null) 
                 {
-                    article.SetArticleRowInReport(articleRow);
+                    sku.SetArticleRowInReport(skuRowInReport);
                 } 
                 else 
                 {
-                    _articles.Add(articleNumber, new Article(marketplace, articleNumber, articleRow));
+                    _skus.Add(skuNumber, new SKU(marketplace, skuNumber, skuRowInReport));
                 }
             }  
 
@@ -155,14 +142,15 @@ namespace ClientTableAnalizer.Objects.Managers
         /// </summary>
         /// <exception cref="Exception">An exception occurred when trying to parse an empty collection.</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public void AnalyzeArticles() 
+        public void AnalyzeSKUs() 
         {
-            if(Equals(_articles.Count, 0)) 
+            if(Equals(_skus.Count, 0)) 
                 throw new Exception("An attempt to parse a dict with a number of elements - 0"); 
             
-            foreach (var (key, value) in _articles) 
-                value.AnalyzeArticle(key, DeadlineDays);
+            foreach (var (key, value) in _skus) 
+                value.AnalyzeSKU(DeadlineDays);
         }
+
         #endregion
     }
 }

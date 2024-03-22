@@ -80,10 +80,10 @@ namespace ClientTableAnalizer.Objects.Managers
             ClientLogin = new string(loginChars.ToArray());
         }
 
-        public static (double time, List<ArticleRowInReport> articleRows) AnalyzeRedemptionReport(string path, string sheetName, 
+        public static (double time, List<SKURowInReport> articleRows) AnalyzeRedemptionReport(string path, string sheetName, 
             (int articleIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) indices) 
         {
-            List<ArticleRowInReport> articleRows = new();
+            List<SKURowInReport> articleRows = new();
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
@@ -119,7 +119,7 @@ namespace ClientTableAnalizer.Objects.Managers
                                 !string.IsNullOrEmpty(goodStatusString) &&
                                 !string.IsNullOrEmpty(priceSting))
                             {
-                                var articleRow  = new ArticleRowInReport(articleNumber.Value, redemptionDateString.Trim(), goodStatusString.Trim(), priceSting.Trim());
+                                var articleRow  = new SKURowInReport(articleNumber.Value, redemptionDateString.Trim(), goodStatusString.Trim(), priceSting.Trim());
                                 articleRows.Add(articleRow);
                             }
                         }
@@ -131,7 +131,7 @@ namespace ClientTableAnalizer.Objects.Managers
             return (stopwatch.ElapsedMilliseconds / 1000, articleRows);
         }
 
-        public static string CreateMainReportSheet(string workSheetName, in Dictionary<int, Article> articles) 
+        public static string CreateMainReportSheet(string workSheetName, in Dictionary<int, SKU> articles) 
         {
             //if(IsDataPathExists(OutputReportFilePath, out FileInfo fileInfo)) 
             //{

@@ -3,7 +3,7 @@ using ClientTableAnalizer.Enums;
 
 namespace ClientTableAnalizer.Objects.ArticleItems
 {
-    public class ArticleRowInReport
+    public class SKURowInReport
     {
         #region Variables && constants
         private const string DATE_TIME_FORMAT = "dd.MM.yyyy HH:mm";
@@ -11,16 +11,16 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         #endregion
 
         #region Properties 
-        public int ArticleNumber { get; }
+        public int SKUNumber { get; }
         public DateTime RedemptionDate { get; }             
         public ArticleRedemptionStatus ItemStatus { get; }
         public double Price { get; }
         #endregion
         
         #region Constructors
-        public ArticleRowInReport(int articleNumber,  string redemptionDateString, string itemStatusString, string priceString)
+        public SKURowInReport(int articleNumber,  string redemptionDateString, string itemStatusString, string priceString)
         {
-            ArticleNumber = articleNumber;
+            SKUNumber = articleNumber;
 
             if (DateTime.TryParseExact(redemptionDateString, DATE_TIME_FORMAT, Culture, DateTimeStyles.None, out DateTime dtv)) 
             {
@@ -53,7 +53,7 @@ namespace ClientTableAnalizer.Objects.ArticleItems
 
         public override string ToString()
         {
-            return $"{ArticleNumber}: {RedemptionDate.ToShortDateString()}, {ItemStatus}, {Price}";
+            return $"{SKUNumber}: {RedemptionDate.ToShortDateString()}, {ItemStatus}, {Price}";
         }
 
         #endregion

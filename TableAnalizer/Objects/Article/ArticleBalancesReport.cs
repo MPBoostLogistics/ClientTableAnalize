@@ -1,6 +1,6 @@
 namespace ClientTableAnalizer.Objects.ArticleItems 
 {
-   public class ArticleBalancesReport
+   public class SKUBalancesReport
     {
         #region Properties
         public int RedemtionSum { get; private set; }

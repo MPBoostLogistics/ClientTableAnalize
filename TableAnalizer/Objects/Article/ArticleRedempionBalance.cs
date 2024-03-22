@@ -14,7 +14,7 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         }
     }
 
-	public class ArticleRedempionBalance
+	public class SKURedempionBalance
 	{
         #region  Properties
         public List<ArticleRedempionBalanceUnit> Balances { get; } = new () 
@@ -24,15 +24,20 @@ namespace ClientTableAnalizer.Objects.ArticleItems
              new(ArticleRedemptionStatus.Canceled, "Отменено, шт.", 0),
              new(ArticleRedemptionStatus.Unknown, "Неизвестный, шт.", 0)
         };
-        public List<ArticleRowInReport> ArticleRowsInRedemptionReport { get; private set; }
+        public List<SKURowInReport> SKURowsInRedemptionReport { get; private set; }
         #endregion
 
-        public ArticleRedempionBalance(ArticleRowInReport articleRowInReport)
+        public SKURedempionBalance(SKURowInReport skuRowInReport)
         {
-            ArticleRowsInRedemptionReport = new(){articleRowInReport};
+            SKURowsInRedemptionReport = new(){skuRowInReport};
         }
 
-        public void Set(ArticleRowInReport articleRow) => ArticleRowsInRedemptionReport.Add(articleRow);
+        public SKURedempionBalance(List<SKURowInReport> skuRowsInReport)
+        {
+            SKURowsInRedemptionReport = new(skuRowsInReport);
+        }
+
+        public void Set(SKURowInReport articleRow) => SKURowsInRedemptionReport.Add(articleRow);
 
         private int GetBalanceCountByStatus(ArticleRedemptionStatus ars) =>  
             Balances.FirstOrDefault(b => b.Status == ars).Count;
@@ -44,7 +49,7 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         //     return deliveredBalance + withDrawnBalance;
         // }
 
-        public void AnalizeBalance(ref ArticleBalancesReport articleBalancesReport) 
+        public void AnalizeBalance(ref SKUBalancesReport articleBalancesReport) 
         {
             int canceled = GetBalanceCountByStatus(ArticleRedemptionStatus.Canceled);
             int onWay = GetBalanceCountByStatus(ArticleRedemptionStatus.OnWay);
@@ -55,9 +60,9 @@ namespace ClientTableAnalizer.Objects.ArticleItems
             articleBalancesReport.SetRedemtionsCount(sum, canceled, onWay, delivered, withDrawn);
         }
 
-        private bool GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus, ArticleRowInReport>> groups)
+        private bool GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus, SKURowInReport>> groups)
         {
-           groups = from row in ArticleRowsInRedemptionReport
+           groups = from row in SKURowsInRedemptionReport
                     group row by row.ItemStatus
                     into itemGroup
                     orderby itemGroup.Key
@@ -73,8 +78,8 @@ namespace ClientTableAnalizer.Objects.ArticleItems
             bool isDeadLine = default;
 
             // Get max redemption date
-            if(ArticleRowsInRedemptionReport.Count > 0) 
-                maxRedemptionDate = ArticleRowsInRedemptionReport
+            if(SKURowsInRedemptionReport.Count > 0) 
+                maxRedemptionDate = SKURowsInRedemptionReport
                     .Select(r => r.RedemptionDate)
                     .Max();
 
@@ -82,7 +87,7 @@ namespace ClientTableAnalizer.Objects.ArticleItems
             isDeadLine = (maxRedemptionDate - DateTime.Now).Duration().Days > deadLineDays;
 
             // Calculate rows, set balances && set average price
-            if(GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus, ArticleRowInReport>> groups))
+            if(GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus, SKURowInReport>> groups))
             {
                 foreach (var group in groups) 
                 {

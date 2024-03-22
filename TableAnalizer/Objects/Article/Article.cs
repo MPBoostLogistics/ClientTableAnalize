@@ -51,15 +51,15 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         #endregion
    }
 
-    public class Article
+    public class SKU
     {
         #region Variables && constants
         public Marketplace Marketplace { get; private set; }
         public int Number { get; private set; }
         public string Name { get; private set; }
-        public ArticleRedempionBalance ArticleRedempionBalance { get; private set; }
+        public SKURedempionBalance SKURedempionBalance { get; private set; }
         public ArticleStorageBalance ArticleStorageBalance { get; private set; }
-        private ArticleBalancesReport? _articleBalancesReport;
+        private SKUBalancesReport? _articleBalancesReport;
         public ArticleShortage? ArticleShortage { get; private set; }
         public ArticleItemForReport? Overrun { get; private set; }
         public DateTime MaxRedemptionDate { get; private set; }
@@ -71,12 +71,26 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         #endregion
 
         #region Constructors && destructors
-        public Article(Marketplace marketplace, int number, ArticleRowInReport articleRowInReport)
+        public SKU(Marketplace marketplace, int skuNumber, SKURowInReport articleRowInReport)
         {
             Marketplace = marketplace;
-            Number = number;
+            Number = skuNumber;
             Name = "No name";
-            ArticleRedempionBalance = new(articleRowInReport);
+            SKURedempionBalance = new(articleRowInReport);
+            ArticleStorageBalance = new();
+            MaxRedemptionDate = DateTime.Now;
+            IsDeadline = false;
+            SellmentStatus = new(ArticleSellmentStatus.Unknown);
+            AveragePrice = 0.00;
+            Comment = string.Empty;
+        }
+
+        public SKU(Marketplace marketplace, int skuNumber, List<SKURowInReport> skuRowsInReport) 
+        {
+            Marketplace = marketplace;
+            Number = skuNumber;
+            Name = "No name";
+            SKURedempionBalance = new(skuRowsInReport);
             ArticleStorageBalance = new();
             MaxRedemptionDate = DateTime.Now;
             IsDeadline = false;
@@ -88,9 +102,8 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         #endregion
 
         #region Functionality
-
-        public void SetArticleRowInReport(ArticleRowInReport articleRowInReport) =>
-            ArticleRedempionBalance.Set(articleRowInReport);
+        public void SetArticleRowInReport(SKURowInReport articleRowInReport) =>
+            SKURedempionBalance.Set(articleRowInReport);
             
         public void SetName(string name) => Name = name;
 
@@ -100,10 +113,10 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         // public void SetStoreBalance(int count, double price) =>
         //     ArticleStorageBalance.SetPayShortage(count, price);
 
-        public void AnalyzeArticle(int articleNumber, int deadLineDays)
+        public void AnalyzeSKU(int deadLineDays)
         {
             // Analize artilce rows  and set average price, max redemption date && deadline
-            (MaxRedemptionDate, AveragePrice, IsDeadline) = ArticleRedempionBalance.AnalizeArticleRows(deadLineDays);
+            (MaxRedemptionDate, AveragePrice, IsDeadline) = SKURedempionBalance.AnalizeArticleRows(deadLineDays);
 
             // Set expected balance of goods
             //ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsExpected, ArticleRedempionBalance.GetExpectedBalance());
@@ -191,12 +204,12 @@ namespace ClientTableAnalizer.Objects.ArticleItems
             //ArticleShortage = articleShortage.Shortages.Count > 0 ? articleShortage : null;
         }
 
-        public void AnalizeArticleRedemtionBalance(ref ArticleBalancesReport abr) 
+        public void AnalizeArticleRedemtionBalance(ref SKUBalancesReport abr) 
         {
-             ArticleRedempionBalance.AnalizeBalance(ref abr);
+             SKURedempionBalance.AnalizeBalance(ref abr);
         }
 
-        public ArticleBalancesReport? GetArticleBalancesReport() => _articleBalancesReport;
+        public SKUBalancesReport? GetArticleBalancesReport() => _articleBalancesReport;
 
 
         public override string ToString()
