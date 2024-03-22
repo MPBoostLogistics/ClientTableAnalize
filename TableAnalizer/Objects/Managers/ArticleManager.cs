@@ -160,7 +160,7 @@ namespace ClientTableAnalizer.Objects.Managers
             if(Equals(_articles.Count, 0)) 
                 throw new Exception("An attempt to parse a dict with a number of elements - 0"); 
             
-            foreach (var (key, value) in _articles)
+            foreach (var (key, value) in _articles) 
                 value.AnalyzeArticle(key, DeadlineDays);
         }
         #endregion

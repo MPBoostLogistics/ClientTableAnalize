@@ -152,26 +152,30 @@ namespace TableAnalizerTest
             });
 
             // act 2
-            var first_balance = firstArticle.AnalizeArticleRedemtionBalance();
-            var second_balance = secondArticle.AnalizeArticleRedemtionBalance();
-            var third_balance = thirdrticle.AnalizeArticleRedemtionBalance();
+            ArticleBalancesReport? first_balance = firstArticle.GetArticleBalancesReport();
+            ArticleBalancesReport? second_balance = secondArticle.GetArticleBalancesReport();
+            ArticleBalancesReport? third_balance = thirdrticle.GetArticleBalancesReport();
 
             // assert 2
             Assert.Multiple(() =>
             {
-                Assert.That(first_balance!.Value.sum, Is.EqualTo(first_sum));
-                Assert.That(first_balance!.Value.delivered, Is.EqualTo(first_delivered));
-                Assert.That(first_balance!.Value.onWay, Is.EqualTo(first_onWay));
-                Assert.That(first_balance!.Value.canceled, Is.EqualTo(first_canceled));
-                Assert.That(second_balance!.Value.sum, Is.EqualTo(second_sum));
-                Assert.That(second_balance!.Value.delivered, Is.EqualTo(second_delivered));
-                Assert.That(second_balance!.Value.onWay, Is.EqualTo(second_onWay));
-                Assert.That(second_balance!.Value.canceled, Is.EqualTo(second_canceled));
-                Assert.That(third_balance!.Value.sum, Is.EqualTo(third_sum));
-                Assert.That(third_balance!.Value.onWay, Is.EqualTo(third_onWay));
-            });
+                Assert.That(first_balance, Is.Not.EqualTo(null));
+                Assert.That(second_balance, Is.Not.EqualTo(null));
+                Assert.That(third_balance, Is.Not.EqualTo(null));
 
-            Assert.That(second_balance!.Value.onWay, Is.EqualTo(second_canceled));
+
+
+                Assert.That(first_balance!.RedemtionSum, Is.EqualTo(first_sum));
+                Assert.That(first_balance!.RedemtionDelivered, Is.EqualTo(first_delivered));
+                Assert.That(first_balance!.RedemtionOnWay, Is.EqualTo(first_onWay));
+                Assert.That(first_balance!.RedemtionCanceled, Is.EqualTo(first_canceled));
+                Assert.That(second_balance!.RedemtionSum, Is.EqualTo(second_sum));
+                Assert.That(second_balance!.RedemtionDelivered, Is.EqualTo(second_delivered));
+                Assert.That(second_balance!.RedemtionOnWay, Is.EqualTo(second_onWay));
+                Assert.That(second_balance!.RedemtionCanceled, Is.EqualTo(second_canceled));
+                Assert.That(third_balance!.RedemtionSum, Is.EqualTo(third_sum));
+                Assert.That(third_balance!.RedemtionOnWay, Is.EqualTo(third_onWay));
+            });
 
             // act 2
             _articleManager.ClearCollection();

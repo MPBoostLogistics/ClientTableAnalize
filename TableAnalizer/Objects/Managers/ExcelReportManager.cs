@@ -158,41 +158,38 @@ namespace ClientTableAnalizer.Objects.Managers
 
                     mainReportWorksheet.Cells[recordIndex, 6].Value = value.SellmentStatus.StatusLabel;
 
-                    var arb = value.ArticleRedempionBalance.AnalizeBalance();
-                    if(arb.HasValue)
+                    // Redemtion balance data 
+                    var arb = value.GetArticleBalancesReport();
+                    if(arb != null)
                     {
-                        // Redemtion balance Ddta 
-
-                        //Console.WriteLine($"arb: {arb.Value.sum} {arb.Value.canceled} {arb.Value.onWay} {arb.Value.delivered} {arb.Value.withDrawn}");
-
-                        mainReportWorksheet.Cells[recordIndex, 7].Value = arb.Value.sum;
-                        mainReportWorksheet.Cells[recordIndex, 8].Value = arb.Value.canceled;
-                        mainReportWorksheet.Cells[recordIndex, 9].Value = arb.Value.onWay;
-                        mainReportWorksheet.Cells[recordIndex, 10].Value = arb.Value.delivered;;
-                        mainReportWorksheet.Cells[recordIndex, 11].Value = arb.Value.withDrawn;
+                        mainReportWorksheet.Cells[recordIndex, 7].Value = arb.RedemtionSum;
+                        mainReportWorksheet.Cells[recordIndex, 8].Value = arb.RedemtionCanceled;
+                        mainReportWorksheet.Cells[recordIndex, 9].Value = arb.RedemtionOnWay;
+                        mainReportWorksheet.Cells[recordIndex, 10].Value = arb.RedemtionDelivered;
+                        mainReportWorksheet.Cells[recordIndex, 11].Value = arb.RedemtionWithDrawn;
                     } 
 
-                    // Storage balance data
-                    var articleStoreBalance = value.ArticleStorageBalance;
-                    var asb = articleStoreBalance.AnalizeBalance();
+                    // // Storage balance data
+                    // var articleStoreBalance = value.ArticleStorageBalance;
+                    // var asb = articleStoreBalance.AnalizeBalance();
                 
-                    if (asb.HasValue)
-                    {
-                        //Console.WriteLine($"asb: {asb.Value.expected} {asb.Value.received} {asb.Value.undelivery} {asb.Value.shipped} {asb.Value.remaining}");
+                    // if (asb.HasValue)
+                    // {
+                    //     //Console.WriteLine($"asb: {asb.Value.expected} {asb.Value.received} {asb.Value.undelivery} {asb.Value.shipped} {asb.Value.remaining}");
 
-                        mainReportWorksheet.Cells[recordIndex, 12].Value = asb.Value.expected;
-                        mainReportWorksheet.Cells[recordIndex, 12].Style.Font.Bold = true;
+                    //     mainReportWorksheet.Cells[recordIndex, 12].Value = asb.Value.expected;
+                    //     mainReportWorksheet.Cells[recordIndex, 12].Style.Font.Bold = true;
 
-                        mainReportWorksheet.Cells[recordIndex, 13].Value = asb.Value.received;
+                    //     mainReportWorksheet.Cells[recordIndex, 13].Value = asb.Value.received;
 
-                        var undelivery = asb.Value.undelivery;
-                        mainReportWorksheet.Cells[recordIndex, 14].Value = undelivery;
-                        if(undelivery > 0) 
-                            mainReportWorksheet.Cells[recordIndex, 14].Style.Font.Color.SetColor(DangerColor); 
+                    //     var undelivery = asb.Value.undelivery;
+                    //     mainReportWorksheet.Cells[recordIndex, 14].Value = undelivery;
+                    //     if(undelivery > 0) 
+                    //         mainReportWorksheet.Cells[recordIndex, 14].Style.Font.Color.SetColor(DangerColor); 
 
-                        mainReportWorksheet.Cells[recordIndex, 16].Value = asb.Value.shipped;
-                        mainReportWorksheet.Cells[recordIndex, 20].Value = asb.Value.remaining;
-                    }
+                    //     mainReportWorksheet.Cells[recordIndex, 16].Value = asb.Value.shipped;
+                    //     mainReportWorksheet.Cells[recordIndex, 20].Value = asb.Value.remaining;
+                    // }
 
             //     // Consumption
             //     mainReportWorksheet.Cells[recordIndex, 15].Value = articleDict[key].StoreBalance.TotalConsumption;
@@ -240,7 +237,7 @@ namespace ClientTableAnalizer.Objects.Managers
 
             return OutputReportFilePath;
         }
-
+        
         private static void CreateWorkSheet(string workSheetName, in ExcelPackage excelPackage, out ExcelWorksheet worksheet, System.Drawing.Color tabColor)
         {
             // Remove existing worksheet

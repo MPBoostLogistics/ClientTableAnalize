@@ -59,6 +59,7 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         public string Name { get; private set; }
         public ArticleRedempionBalance ArticleRedempionBalance { get; private set; }
         public ArticleStorageBalance ArticleStorageBalance { get; private set; }
+        private ArticleBalancesReport? _articleBalancesReport;
         public ArticleShortage? ArticleShortage { get; private set; }
         public ArticleItemForReport? Overrun { get; private set; }
         public DateTime MaxRedemptionDate { get; private set; }
@@ -108,7 +109,10 @@ namespace ClientTableAnalizer.Objects.ArticleItems
             //ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsExpected, ArticleRedempionBalance.GetExpectedBalance());
 
             // Analize balances
-            AnalizeArticleRedemtionBalance();
+            // TODO: Очередь задач
+            _articleBalancesReport = new();
+            AnalizeArticleRedemtionBalance(ref _articleBalancesReport);
+
             //ArticleStorageBalance.AnalizeBalance();
 
             //var articleShortage = new ArticleShortage (articleNumber, Name, AveragePrice);
@@ -187,10 +191,13 @@ namespace ClientTableAnalizer.Objects.ArticleItems
             //ArticleShortage = articleShortage.Shortages.Count > 0 ? articleShortage : null;
         }
 
-        public (int sum, int canceled, int onWay, int delivered, int withDrawn)? AnalizeArticleRedemtionBalance() 
+        public void AnalizeArticleRedemtionBalance(ref ArticleBalancesReport abr) 
         {
-             return ArticleRedempionBalance.AnalizeBalance();
+             ArticleRedempionBalance.AnalizeBalance(ref abr);
         }
+
+        public ArticleBalancesReport? GetArticleBalancesReport() => _articleBalancesReport;
+
 
         public override string ToString()
         {

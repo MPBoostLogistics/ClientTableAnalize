@@ -44,7 +44,7 @@ namespace ClientTableAnalizer.Objects.ArticleItems
         //     return deliveredBalance + withDrawnBalance;
         // }
 
-        public (int sum, int canceled, int onWay, int delivered, int withDrawn)? AnalizeBalance() 
+        public void AnalizeBalance(ref ArticleBalancesReport articleBalancesReport) 
         {
             int canceled = GetBalanceCountByStatus(ArticleRedemptionStatus.Canceled);
             int onWay = GetBalanceCountByStatus(ArticleRedemptionStatus.OnWay);
@@ -52,7 +52,7 @@ namespace ClientTableAnalizer.Objects.ArticleItems
             int withDrawn = GetBalanceCountByStatus(ArticleRedemptionStatus.WithDrawn);
             int sum = canceled + onWay + delivered + withDrawn;
 
-            return (sum, canceled, onWay, delivered, withDrawn);
+            articleBalancesReport.SetRedemtionsCount(sum, canceled, onWay, delivered, withDrawn);
         }
 
         private bool GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus, ArticleRowInReport>> groups)

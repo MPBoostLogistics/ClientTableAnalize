@@ -25,7 +25,6 @@ internal class Program
     private static string? storageFilePathOZ = default;
     private static string? consumptionPath, payShortagesPath, regradingPath, dummyPath = default;
     private static string? writeoffShortagesPath = default;
-    private static DirectoryInfo? clientDirectoryPath;
     private static List<ArticleShortage> ArticleShortages { get; set; } = new();
     private static readonly List<ArticleItemForReport> ShortagesInWarehouse = new();
     private static readonly List<ArticleItemForReport> ShortagesInPickupPoints = new();
@@ -661,7 +660,7 @@ internal class Program
         {
             articleManager.AnalyzeArticles();
 
-            //var outputPath = ExcelReportManager.CreateMainReportSheet("Отчет", articleManager._articles);
+            var outputPath = ExcelReportManager.CreateMainReportSheet("Отчет", articleManager._articles);
             //ExcelReportManager.SaveReportFiles();
 
             // Console.WriteLine($"Новый отчет по клиенту создан по пути: {outputPath}");
