@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Objects.ArticleItems;
+using ClientTableAnalizer.Objects.SKUItems;
 
 namespace ClientTableAnalizer.Objects.Managers
 {

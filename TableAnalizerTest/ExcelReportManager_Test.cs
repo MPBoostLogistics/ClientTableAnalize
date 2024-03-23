@@ -1,57 +1,105 @@
 using ClientTableAnalizer.Objects.Managers;
+using ClientTableAnalizer.Objects.SKUItems;
 
 namespace TableAnalizerTest.Managers
 {
-    public class ExcelReportManager_Test
+    public class ExcelReportManager_Test : BaseTests
     {
         #region Variables
         private ExcelReportManager _excelManager;
-
-        private readonly string _testFilesPath = "TableAnalizerTest/files";
-
-        private readonly string _correctFileName = "Отчет по клиенту +79164372997 (WB).xlsx";
-        
-        private readonly string _incorrectFileName = "Отчет по клиенту по клиенту +79164372997 (WB).xlsx";
+        private string _testFilesPath;
         #endregion
 
         #region Functionality
-
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
+        protected override void StartTest()
         {
+            base.StartTest();
             _excelManager = new();
+            _testFilesPath = string.Concat(_excelManager.ProjectDirectory, "/testFiles"); ;
         }
 
         [Test, Order(1)]
-        public void GetFilesFromDir_Test() 
-        {
-        
-        }
-
-
-        [Test, Order(2)]
-        public void SaveСlientLogin_Test() 
+        public void FilesPath_Test()
         {
             // arrange
-            // ..
+            // ... 
 
-            // act 1 
-            // ...
+            // act 1
+            var dirInfo = new DirectoryInfo(_testFilesPath);
 
-            // assert 1 
-            //ExcelReportManager.SaveСlientLogin();
+            // assert 1
+            Assert.That(dirInfo, Is.Not.EqualTo(null));
 
+            // act 2
+            var fileInfos = from fileInfo in dirInfo.GetFiles()
+                            where fileInfo.Name.EndsWith(".xlsx")
+                            select fileInfo;
+
+            // assert 2
+            Assert.That(fileInfos, Is.Not.EqualTo(null));
+            Assert.That(fileInfos.Count(), Is.EqualTo(8));
         }
 
-        [OneTimeTearDown]
-        public void OneTimeTearDown()
+        [Test, Order(2)]
+        public void SplitStringIntoSubstrings_Test()
         {
-            // great code ...
+            // arrange
+            var spaceSeparator = "\u0020";
+            var testPath = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Отчет по клиенту +79164372997 (Ozon).xlsx";
+            var testFileInfo = new FileInfo(testPath);
+
+            // act
+            var succsess = SourceReportFileForSKU.SplitStringIntoSubstrings(Path.GetFileName(testFileInfo.FullName), [spaceSeparator], out string[] subStrings);
+
+            // assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(succsess, Is.EqualTo(true));
+                Assert.That(subStrings, Is.Not.EqualTo(null));
+                Assert.That(subStrings, Has.Length.EqualTo(5));
+            });
+        }
+
+        [Test, Order(3)]
+        public void GetReportFiles_Test()
+        {
+            // arrange
+            // ...
+
+            // act
+            _excelManager.GetReportFiles(_testFilesPath);
+
+            // assert
+            Assert.That(_excelManager.ReportsPaths, Has.Count.Not.EqualTo(8));
+        }
+
+        // [Test, Order(4)]
+        // public void SaveСlientLogin_Test() 
+        // {
+        //     // arrange
+        //     // ..
+
+        //     // act 1 
+        //     // ...
+
+        //     // assert 1 
+        //     //ExcelReportManager.SaveСlientLogin();
+
+        // }
+
+        protected override void EndTest()
+        {
+            base.EndTest();
         }
         #endregion
 
         // arrange
+        // ... 
+
         // act
+        // ... 
+
         // assert
+        // ...
     }
 }

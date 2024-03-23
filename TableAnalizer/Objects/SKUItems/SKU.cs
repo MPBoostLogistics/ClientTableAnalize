@@ -1,6 +1,6 @@
 ﻿using ClientTableAnalizer.Enums;
 
-namespace ClientTableAnalizer.Objects.ArticleItems
+namespace ClientTableAnalizer.Objects.SKUItems
 {
     public class SellmentStatus 
     {

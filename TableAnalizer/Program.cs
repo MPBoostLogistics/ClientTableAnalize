@@ -9,7 +9,7 @@ using OfficeOpenXml;
 using ClientTableAnalizer.Objects;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Managers;
-using ClientTableAnalizer.Objects.ArticleItems;
+using ClientTableAnalizer.Objects.SKUItems;
 
 internal class Program
 {
@@ -46,6 +46,8 @@ internal class Program
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
         Console.Clear();
+
+       //Console.WriteLine((int)'-');
 
         var helloString = $"" +
             $"--------------------------------------------\n" +

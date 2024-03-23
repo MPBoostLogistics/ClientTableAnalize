@@ -1,4 +1,4 @@
-namespace ClientTableAnalizer.Objects.ArticleItems
+namespace ClientTableAnalizer.Objects.SKUItems
 {
     /// <summary>
     /// “Lightweight” item of article (product).

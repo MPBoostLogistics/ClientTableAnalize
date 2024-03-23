@@ -20,11 +20,22 @@ namespace ClientTableAnalizer.Enums
     {
         GoodsExpected,      // Ожидаемое количество товаров на складе
         GoodsReceived,      // Принято товаров
-        GoodsShipped,       // Отгружено товароы
+        GoodsShipped,       // Отгружено товарами
         GoodsRemaining,     // Остаток товаров на складе
         WriteoffShortages   // Принято на склад и списано по недостачам
     }
 
+    public enum SourceReportFileKey 
+        {   
+            RedemtionWB,        // выкупы WB
+            RedemtionOZ,        // выкупы OZ
+            StorageWB,          // приходы и остатки WB
+            StorageOZ,          // приходы и остатки OZ
+            Shortages,          // недостачи 
+            WriteOffShortages,  // списание нелдостач общее 
+            ReGrades,           // пересорты
+            Shipped             // расходы товаром 
+        }
 
     public enum ArticleRedemptionStatus
     {

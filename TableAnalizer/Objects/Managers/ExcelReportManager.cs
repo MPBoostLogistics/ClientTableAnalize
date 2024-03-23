@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Objects.ArticleItems;
+using ClientTableAnalizer.Objects.SKUItems;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 
@@ -9,11 +9,13 @@ namespace ClientTableAnalizer.Objects.Managers
     public class ExcelReportManager : BaseManager
     {
         #region Constants && variables
+        private const string reportExt = ".xlsx";
         private const int DEFAULT_TABLE_ROW_HEIGHT = 18;
         private const int DEFAULT_TABLE_COL_WIDTH = 18;
         private const int RECORD_INDEX = 1;
         private const int HEADER_TABLE_ROW_HEIGHT = 120;
         private const string LOGISTIC_FLAG = "Да";
+        public Dictionary<SourceReportFileKey, SourceReportFileForSKU> ReportsPaths { get; private set; }= new();
         #endregion
 
         #region Properties
@@ -61,14 +63,30 @@ namespace ClientTableAnalizer.Objects.Managers
 
         #region Functionality
 
-        public static void GetFilesFromDir(string pathString) 
+        public int GetReportFiles(string dirPathString) 
         {
-            // проверить есть ли такая директория
-            // получить пути файлов из директории 
-            // сохранить FileInfo для каждого в словаре по ключам 
+            var files = GetFilesFromDirectory(dirPathString, reportExt);
+            
+            if(files is null || !files.Any())
+                throw new Exception("Directory of source report files is empty, add files to it!");
+            
+            foreach (var fileInfo in files)
+            {
+                try
+                {
+                    var sorceReportFile = new SourceReportFileForSKU(fileInfo);
+                    var key = sorceReportFile.ReportKey;
+                    if(sorceReportFile != null && key.HasValue) 
+                        ReportsPaths[key.Value] = sorceReportFile;
+                }
+                catch (System.Exception)
+                {
+                    throw;
+                }
+            }
+
+            return ReportsPaths.Count;
         }
-
-
 
         public static void SaveСlientLogin(string path)
         {

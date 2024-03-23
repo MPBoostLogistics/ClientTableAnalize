@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using ClientTableAnalizer.Enums;
 
-namespace ClientTableAnalizer.Objects.ArticleItems
+namespace ClientTableAnalizer.Objects.SKUItems
 {
     public class SKURowInReport
     {
