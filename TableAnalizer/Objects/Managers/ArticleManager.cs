@@ -7,28 +7,28 @@ namespace ClientTableAnalizer.Objects.Managers
     public class SKUManager : BaseManager
     {
         #region Properties 
-        public int DeadlineDays {get; private set;}
-        public readonly (int skuIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) RedemptionTableIndexes= (2, 7, 9, 10, 14);
+        public int DeadlineDays { get; private set; }
+        public readonly (int skuIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) RedemptionTableIndexes = (2, 7, 9, 10, 14);
         public readonly (int skuIndex, int nameIndex, int initBalanceIndex, int goodsReceivedIndex, int finBalanceIndex) StorageTableIndexes = (1, 6, 14, 15, 17);
-        private readonly Dictionary<int, SKU> _skus  = new();
+        private readonly Dictionary<int, SKU> _skus = new();
         public int SKUsCount => _skus.Count;
 
         #endregion
 
         #region Constructors and destructors
-        public SKUManager(){}
+        public SKUManager() { }
         #endregion
 
         #region Functionality
         /// <summary>
         /// Clears collection of articles.
         /// </summary>
-         /// <returns>Logical flag for performing an operation.</returns>
+        /// <returns>Logical flag for performing an operation.</returns>
         /// <remarks><i>New version, tested</i><b> Use for testing only!</b></remarks>
-        public bool ClearCollection() 
+        public bool ClearCollection()
         {
-             _skus.Clear();
-             return SKUsCount == 0;
+            _skus.Clear();
+            return SKUsCount == 0;
         }
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// </summary>
         /// <param name="days">Period until deadline, days</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public void SetDeadlineDays (int days) => DeadlineDays = days;
+        public void SetDeadlineDays(int days) => DeadlineDays = days;
 
         // public bool GetArticlesByRedemtionStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus,ArticleRowInReport>>? groups) 
         // {
@@ -45,7 +45,7 @@ namespace ClientTableAnalizer.Objects.Managers
         //               group item by item.ItemStatus into itemGroup
         //               orderby itemGroup.Key
         //               select itemGroup;
-                      
+
         //     return groups.Any();
         // }
 
@@ -64,20 +64,20 @@ namespace ClientTableAnalizer.Objects.Managers
         //              from balanceUnit in article.ArticleStorageBalance.StorageBalances
         //              select balanceUnit.Value
         //              group balanceUnit by balanceUnit.Key into balanceGroup
-                    
+
         //              orderby balanceGroup.Key
         //              select balanceGroup;
 
-            
+
 
         // }
 
-        public bool GetSKUByObjectValue (object value, out SKU? sku) 
+        public bool GetSKUByObjectValue(object value, out SKU? sku)
         {
             sku = null;
             int? skuNumber = ParseValueToInt(value);
 
-            if (!skuNumber.HasValue) 
+            if (!skuNumber.HasValue)
             {
                 sku = null;
                 return false;
@@ -99,12 +99,12 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="article">Link to a copy of article.</param>
         /// <returns>Logical flag for performing an operation.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public bool GetSKUByNumber (int articleNumber, out SKU? article) 
+        public bool GetSKUByNumber(int articleNumber, out SKU? article)
         {
             article = _skus.TryGetValue(articleNumber, out SKU? value) ? value : null;
             return article != null;
         }
-        
+
         /// <summary>
         /// Saves ArticleRowInReport in corresponding article. 
         /// </summary>
@@ -112,7 +112,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="marketplace">Marketplace products.</param>
         /// <returns>Time it takes to complete operation in seconds.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public double SaveSKURowsInReport(List<SKURowInReport> skuRowsInReport, Marketplace marketplace) 
+        public double SaveSKURowsInReport(List<SKURowInReport> skuRowsInReport, Marketplace marketplace)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -121,32 +121,32 @@ namespace ClientTableAnalizer.Objects.Managers
             {
                 var skuNumber = skuRowInReport.SKUNumber;
 
-                if(GetSKUByNumber(skuNumber, out SKU? sku) && sku != null) 
+                if (GetSKUByNumber(skuNumber, out SKU? sku) && sku != null)
                 {
                     sku.SetArticleRowInReport(skuRowInReport);
-                } 
-                else 
+                }
+                else
                 {
                     _skus.Add(skuNumber, new SKU(marketplace, skuNumber, skuRowInReport));
                 }
-            }  
+            }
 
             stopwatch.Stop();
 
             return stopwatch.ElapsedMilliseconds / 1000;
-        } 
-        
+        }
+
         /// <summary>
         /// Performs analysis of elements in article collection.
         /// </summary>
         /// <exception cref="Exception">An exception occurred when trying to parse an empty collection.</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public void AnalyzeSKUs() 
+        public void AnalyzeSKUs()
         {
-            if(Equals(_skus.Count, 0)) 
-                throw new Exception("An attempt to parse a dict with a number of elements - 0"); 
-            
-            foreach (var (key, value) in _skus) 
+            if (Equals(_skus.Count, 0))
+                throw new Exception("An attempt to parse a dict with a number of elements - 0");
+
+            foreach (var (key, value) in _skus)
                 value.AnalyzeSKU(DeadlineDays);
         }
 

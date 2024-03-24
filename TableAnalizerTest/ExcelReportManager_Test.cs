@@ -1,3 +1,4 @@
+using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Managers;
 using ClientTableAnalizer.Objects.SKUItems;
 
@@ -68,9 +69,16 @@ namespace TableAnalizerTest.Managers
 
             // act
             _excelManager.GetReportFiles(_testFilesPath);
+            //Trace.WriteLine($"{_excelManager.ReportsPaths.Count}");
+
+            var succsess = _excelManager.IsRequiredFilesProvided(out List<SourceReportFileKey> lostKeys);
 
             // assert
-            Assert.That(_excelManager.ReportsPaths, Has.Count.Not.EqualTo(8));
+            Assert.Multiple(() =>
+            {
+                Assert.That(_excelManager.ReportsPaths, Has.Count.EqualTo(8));
+                Assert.That(succsess, Is.EqualTo(true));
+            });
         }
 
         // [Test, Order(4)]
@@ -101,5 +109,7 @@ namespace TableAnalizerTest.Managers
 
         // assert
         // ...
+
+        // Trace.WriteLine("...");
     }
 }

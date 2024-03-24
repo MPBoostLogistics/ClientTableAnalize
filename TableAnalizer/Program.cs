@@ -1,6 +1,8 @@
 ﻿// https://suresh-kamrushi.medium.com/c-reading-excel-file-using-epplus-package-95cfb0ed98c5
 // https://htmlcolorcodes.com/
 
+// Unicode:  https://www.compart.com/en/unicode/
+
 #nullable enable
 
 using System.Diagnostics;
@@ -30,24 +32,24 @@ internal class Program
     private static readonly List<ArticleItemForReport> ShortagesInPickupPoints = new();
     private static readonly List<ArticleItemForReport> Overruns = new();
     private static string goodByMessage = "\nСпасибо за использование программы. Хорошего дня!";
-
+    private static readonly string failureMessage = "Некорретные данные, попробуйте еще раз.";
     #endregion
 
     #region Properties 
-    private static SKUManager skuManager = new ();
-    private static ExcelReportManager ExcelReportManager { get; } = new ();
+    private static readonly SKUManager skuManager = new();
+    private static readonly ExcelReportManager excelManager = new ();
     #endregion
 
     #region Functionality
-    
+
     private static async Task Main(string[] args)
     {
-
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-        Console.Clear();
+        excelManager.ManagerReached += Report;
+        skuManager.ManagerReached += Report;
 
-       //Console.WriteLine((int)'-');
+        Console.Clear();
 
         var helloString = $"" +
             $"--------------------------------------------\n" +
@@ -58,123 +60,183 @@ internal class Program
         Console.WriteLine(helloString);
 
         // Set deadline days
-        int deadLineDays = await GetDeadLineDays();
+        string deadLineDaysTitleMessage = "Введите срок дедлайна для клиента и нажмите 'Enter'\n(положительное целое число, отличное от 0): ";
+        string deadLineDaysSuccessMessage = "Срок дедлайна для текущего клиента";
+        int deadLineDays = await GetUserIntInfo(deadLineDaysTitleMessage, deadLineDaysSuccessMessage, failureMessage);
         skuManager.SetDeadlineDays(deadLineDays);
 
-        await GetUserRedemtionDataFile(Marketplace.WB, false);
+        await Task.Delay(500);
+        Console.WriteLine();
 
-        await GetUserRedemtionDataFile(Marketplace.OZ, false);
-
-        if(string.IsNullOrEmpty(redemtionFilePathWB) && string.IsNullOrEmpty(redemtionFilePathOZ))
+        // Set reports Path
+        string reportsPathTitleMessage = "Перетащите путь к директории c отчетами клиента и нажмите 'Enter':\n ";
+        string reportsPathSuccessMessage = "Директория c отчетами клиента:\n";
+        string reportsPath = await GetUserStringInfo(reportsPathTitleMessage, reportsPathSuccessMessage, failureMessage);
+        
+        try
         {
-            var goodByMessage02 = string.Concat($"Данные по заказам клиента не предоставлены, к сожалению невозможно сформировать отчет.\n", goodByMessage);
-            await Report(goodByMessage02, 2000, true);
+            var fileCount = excelManager.GetReportFiles(reportsPath);
+            var success = excelManager.IsRequiredFilesProvided(out List<SourceReportFileKey> lostKeys);
+
+            //if(!success || lostKeys.Count > 0)
+            // ERROR AND EXIT!!!! 
+        }
+        catch (System.Exception ex)
+        {
+            goodByMessage = string.Concat($"Ошибка данных: {ex.Message}", "\n", goodByMessage);
+            await Report(goodByMessage, 2000, true);
         }
 
-        Task[] readRedemptionTasksArray = new Task[2];
+        await Task.Delay(1000);
 
-        if(!string.IsNullOrEmpty(redemtionFilePathWB))
-            readRedemptionTasksArray[0] = ReadRedemptionReportFile(Marketplace.WB);
+        // //await GetUserRedemtionDataFile(Marketplace.WB, false);
 
-        if (!string.IsNullOrEmpty(redemtionFilePathOZ))
-            readRedemptionTasksArray[1] = ReadRedemptionReportFile(Marketplace.OZ);
+        // //await GetUserRedemtionDataFile(Marketplace.OZ, false);
 
-        if(readRedemptionTasksArray.Length > 0) 
-        {
-            foreach (var task in readRedemptionTasksArray)
-            {
-                _ = Task.Run (async () => await task) ;
-            }
-        } 
-        else 
-        {
-            // TODO: Ругаемся и выходим
-        }
+        // //if(string.IsNullOrEmpty(redemtionFilePathWB) && string.IsNullOrEmpty(redemtionFilePathOZ))
+        // {
+        //     var goodByMessage02 = string.Concat($"Данные по заказам клиента не предоставлены, к сожалению невозможно сформировать отчет.\n", goodByMessage);
+        //     await Report(goodByMessage02, 2000, true);
+        // }
 
-        Task.WaitAll(readRedemptionTasksArray);
-        
-        //await GetUserStorageData(Marketplace.WB);
+        // Task[] readRedemptionTasksArray = new Task[2];
 
-        //await GetUserStorageData(Marketplace.OZ);
+        // if (!string.IsNullOrEmpty(redemtionFilePathWB))
+        //     readRedemptionTasksArray[0] = ReadRedemptionReportFile(Marketplace.WB);
 
-       // if (!string.IsNullOrEmpty(storageFilePathWB))
-         //   await ReadStorageReportFile(Marketplace.WB);
+        // if (!string.IsNullOrEmpty(redemtionFilePathOZ))
+        //     readRedemptionTasksArray[1] = ReadRedemptionReportFile(Marketplace.OZ);
 
-       // if (!string.IsNullOrEmpty(storageFilePathOZ))
-         //   await ReadStorageReportFile(Marketplace.OZ);
+        // if (readRedemptionTasksArray.Length > 0)
+        // {
+        //     foreach (var task in readRedemptionTasksArray)
+        //     {
+        //         _ = Task.Run(async () => await task);
+        //     }
+        // }
+        // else
+        // {
+        //     // TODO: Ругаемся и выходим
+        // }
 
-       // await GetUserConsumingData();
+        // Task.WaitAll(readRedemptionTasksArray);
 
-        // if (!string.IsNullOrEmpty(consumptionPath))
-        //     await ReadConsumptionReport(consumptionPath, ArticeStorageIndex.GoodsShipped, 4, 28);
+        // //await GetUserStorageData(Marketplace.WB);
 
-        // await GetWriteoffShortagesData();
+        // //await GetUserStorageData(Marketplace.OZ);
 
-        // if (!string.IsNullOrEmpty(writeoffShortagesPath))
-        //     await ReadConsumptionReport(writeoffShortagesPath, ArticeStorageIndex.WriteoffShortages, 5, 39);
+        // // if (!string.IsNullOrEmpty(storageFilePathWB))
+        // //   await ReadStorageReportFile(Marketplace.WB);
 
-        // await GetUserPayShortagesData();
+        // // if (!string.IsNullOrEmpty(storageFilePathOZ))
+        // //   await ReadStorageReportFile(Marketplace.OZ);
 
-        // if (!string.IsNullOrEmpty(consumptionPath))
-        //     await ReadPayShortagesReport(payShortagesPath);
+        // // await GetUserConsumingData();
 
-        // await GetRegrandingData();
+        // // if (!string.IsNullOrEmpty(consumptionPath))
+        // //     await ReadConsumptionReport(consumptionPath, ArticeStorageIndex.GoodsShipped, 4, 28);
 
-        // if (!string.IsNullOrEmpty(regradingPath))
-        //     await ReadRegrandingReport(regradingPath);
+        // // await GetWriteoffShortagesData();
 
-        // await GetDummyData();
-        // if (!string.IsNullOrEmpty(dummyPath))
-        //     await ReadDummyReport(dummyPath);
+        // // if (!string.IsNullOrEmpty(writeoffShortagesPath))
+        // //     await ReadConsumptionReport(writeoffShortagesPath, ArticeStorageIndex.WriteoffShortages, 5, 39);
 
-        Task analizeAndReportTask = readRedemptionTasksArray.Last().ContinueWith(_ => 
-              AnalyzeDataAndSaveReport()
-        );
+        // // await GetUserPayShortagesData();
 
-       // Task analizeAndReportTask = new(async () => await AnalyzeDataAndSaveReport());
-        
-        analizeAndReportTask.Wait();
+        // // if (!string.IsNullOrEmpty(consumptionPath))
+        // //     await ReadPayShortagesReport(payShortagesPath);
 
-       
+        // // await GetRegrandingData();
+
+        // // if (!string.IsNullOrEmpty(regradingPath))
+        // //     await ReadRegrandingReport(regradingPath);
+
+        // // await GetDummyData();
+        // // if (!string.IsNullOrEmpty(dummyPath))
+        // //     await ReadDummyReport(dummyPath);
+
+        // Task analizeAndReportTask = readRedemptionTasksArray.Last().ContinueWith(_ =>
+        //       AnalyzeDataAndSaveReport()
+        // );
+
+        // // Task analizeAndReportTask = new(async () => await AnalyzeDataAndSaveReport());
+
+        // analizeAndReportTask.Wait();
+
+        await Exit();
     }
-    
+
+    private static async Task Exit() 
+    {
+        skuManager.ManagerReached -= Report;
+        excelManager.ManagerReached -= Report;
+
+        await Task.Delay(500);
+
+        Environment.Exit(0);
+    }
+
     private static string? ParseValueToString(object? obj) =>
         obj is not null && !string.IsNullOrEmpty(obj.ToString()) ?
         obj.ToString()!.Trim() :
         null;
-    
+
     private static int? ParseValueToInt(object? obj) =>
         obj is not null && !string.IsNullOrEmpty(obj.ToString()) ?
         int.Parse(obj.ToString()!.Trim()) :
         null;
-    
-    private static async Task<int> GetDeadLineDays()
+
+    private static async Task<string> GetUserStringInfo(string titleMessage, string successMessage, string failureMessage)
     {
-        int deadline = default;
-
-        while(deadline == default)
+        string? resultString = string.Empty;
+        while (resultString == string.Empty)
         {
-            Console.WriteLine("Введите срок дедлайна для клиента\n(положительное целое число, отличное от 0): ");
+            Console.WriteLine(titleMessage);
 
-            if(int.TryParse(Console.ReadLine(), out deadline))
+            resultString = Console.ReadLine();
+
+            if (!string.Equals(string.Empty, resultString))
             {
-                if (deadline > 0)
+                await Report($"{successMessage}: {resultString}");
+                break;
+            }
+            else
+            {
+                await Report(failureMessage);
+                resultString = default;
+                continue;
+            }
+        }
+
+        return resultString!;
+    }
+
+    private static async Task<int> GetUserIntInfo(string titleMessage, string successMessage, string failureMessage)
+    {
+        int resultValue = default;
+        while (resultValue == default)
+        {
+            Console.WriteLine(titleMessage);
+
+            if (int.TryParse(Console.ReadLine(), out resultValue))
+            {
+                if (resultValue > 0)
                 {
-                    await Report($"Срок дедлайна для клиента, дней: {deadline}");
+                    await Report($"{successMessage}: {resultValue}");
                     break;
                 }
                 else
                 {
-                    await Report("Введено неправильное значение, повторите попытку.");
-                    deadline = default;
+                    await Report(failureMessage);
+                    resultValue = default;
                     continue;
                 }
             }
         }
 
-        return deadline;
+        return resultValue;
     }
-    
+
     private static async Task GetUserRedemtionDataFile(Marketplace marketplace, bool necessarily)
     {
         var clDirInfo = FileManager.GetDirectoryInfo(PathKey.MPBoostClients);
@@ -185,11 +247,11 @@ internal class Program
         var messageInstruction = necessarily ? "ESC - выход" : "1 - пропустить, ESC - выход";
         var redemtionMessage01 = $"Перетащите путь к отчету по выкупам клиента на {marketplace} ({necessarilyMessage})\n({messageInstruction}):\n";
 
-        if(marketplace == Marketplace.WB)
+        if (marketplace == Marketplace.WB)
         {
             redemtionFilePathWB = await GetDirectoryPath(redemtionMessage01, necessarily, login is null);
         }
-        else if(marketplace == Marketplace.OZ)
+        else if (marketplace == Marketplace.OZ)
         {
             redemtionFilePathOZ = await GetDirectoryPath(redemtionMessage01, necessarily, login is null);
         }
@@ -197,32 +259,29 @@ internal class Program
         try
         {
             var clientDirectoryPath = await ExcelReportManager.GetClientOutputPath();
-            if(!string.IsNullOrEmpty(clientDirectoryPath)) 
+            if (!string.IsNullOrEmpty(clientDirectoryPath))
             {
                 var reportMessage = $"Директория для работы с клтентом: {clientDirectoryPath}";
                 await Report(reportMessage, 1000, false);
             }
         }
-        catch (System.Exception ex) 
-        { 
-            Console.WriteLine(ex.Message);    
+        catch (System.Exception ex)
+        {
+            Console.WriteLine(ex.Message);
             throw;
         }
-
-
-        
     }
 
     private static async Task GetUserStorageData(Marketplace marketplace)
     {
-        var necessarilyMessage = marketplace == Marketplace.WB ? 
-            "обязательно" : 
+        var necessarilyMessage = marketplace == Marketplace.WB ?
+            "обязательно" :
             "не обязательно";
 
-        var messageInstruction = marketplace == Marketplace.WB ? 
-            "ESC - выход" : 
+        var messageInstruction = marketplace == Marketplace.WB ?
+            "ESC - выход" :
             "1 - пропустить, ESC - выход";
-            
+
         var storagePathMessage = $"Перетащите путь к отчету по приходу и остаткам товаров {marketplace} ({necessarilyMessage})\n({messageInstruction}):";
 
         switch (marketplace)
@@ -282,11 +341,11 @@ internal class Program
     {
         await Report($"Анализирую отчет клиента {login} по выкупам {marketplace}...");
 
-        var filePath = marketplace == Marketplace.WB ? 
-            redemtionFilePathWB : 
+        var filePath = marketplace == Marketplace.WB ?
+            redemtionFilePathWB :
             redemtionFilePathOZ;
 
-        if(filePath is null) await Report(goodByMessage, 2000, true);
+        if (filePath is null) await Report(goodByMessage, 2000, true);
 
         (double time, List<SKURowInReport> rowInReports) = ExcelReportManager.AnalyzeRedemptionReport(filePath!, "Выкупы", skuManager.RedemptionTableIndexes);
         var saveTime = skuManager.SaveSKURowsInReport(rowInReports, marketplace);
@@ -300,8 +359,8 @@ internal class Program
     {
         bool isFileExists = default;
 
-        string? filePath = marketplace == Marketplace.WB ? 
-            storageFilePathWB : 
+        string? filePath = marketplace == Marketplace.WB ?
+            storageFilePathWB :
             storageFilePathOZ;
 
         // try
@@ -314,7 +373,7 @@ internal class Program
         //     await Report(goodByMessage, 2000, true);
         // }
 
-        if(!isFileExists) return;
+        if (!isFileExists) return;
 
         var existingFile = new FileInfo(filePath!);
 
@@ -330,15 +389,15 @@ internal class Program
         int rowFirstRoomAddress = default;
         int rowSecondRoomAddress = default;
         int rowFinalRoomAddress = default;
-  
+
         ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
 
         int firstRowIndex = 1, firstColIndex = 1;
 
         // Find addresses of special rows
-        for (int row = firstRowIndex; row <=  worksheet.Dimension.End.Row; row++)
+        for (int row = firstRowIndex; row <= worksheet.Dimension.End.Row; row++)
         {
-            for (int col = firstColIndex; col <=  worksheet.Dimension.End.Column; col++)
+            for (int col = firstColIndex; col <= worksheet.Dimension.End.Column; col++)
             {
                 var cellValue = worksheet.Cells[row, col].Value;
                 if (cellValue is not null && !string.IsNullOrEmpty(cellValue.ToString()))
@@ -370,14 +429,14 @@ internal class Program
         for (int row = firstRoomRowRange.First(); row <= firstRoomRowRange.Count; row++)
         {
             // article
-            if(skuManager.GetSKUByObjectValue(worksheet.Cells[row, skuManager.StorageTableIndexes.skuIndex].Value, out SKU? existingArticle) && 
-                existingArticle is not null) 
+            if (skuManager.GetSKUByObjectValue(worksheet.Cells[row, skuManager.StorageTableIndexes.skuIndex].Value, out SKU? existingArticle) &&
+                existingArticle is not null)
             {
                 // name
                 goodstName = ParseValueToString(worksheet.Cells[row, skuManager.StorageTableIndexes.nameIndex].Value);
-                if (!string.IsNullOrEmpty(goodstName)) 
+                if (!string.IsNullOrEmpty(goodstName))
                     existingArticle.SetName(goodstName!.Split(",")[0].Trim());
-                
+
                 // goods received
                 goodsReceivedCount = ParseValueToInt(worksheet.Cells[row, skuManager.StorageTableIndexes.goodsReceivedIndex].Value); ;
                 if (goodsReceivedCount.HasValue)
@@ -394,8 +453,8 @@ internal class Program
         for (int row = secondRoomRowRange.First(); row < rowFinalRoomAddress - 2; row++)
         {
             // article
-            if(skuManager.GetSKUByObjectValue(worksheet.Cells[row, skuManager.StorageTableIndexes.skuIndex].Value, out SKU? existingArticle) && 
-                existingArticle is not null) 
+            if (skuManager.GetSKUByObjectValue(worksheet.Cells[row, skuManager.StorageTableIndexes.skuIndex].Value, out SKU? existingArticle) &&
+                existingArticle is not null)
             {
                 // finalBalance
                 goodsRemainingCount = ParseValueToInt(worksheet.Cells[row, skuManager.StorageTableIndexes.finBalanceIndex].Value);
@@ -413,7 +472,7 @@ internal class Program
         //     storageBalanceGroups is not null) 
         // {
         //     var goodsRemainingCount = ArticleManager.GetArticleStorgeBalanceCountByIndex(ArticeStorageIndex.GoodsRemaining);
-  
+
         //     var goodsRemainingSum = storageBalanceGroups!
         //         .First(g => g.Key == ArticeStorageIndex.GoodsRemaining)
         //         .Select(g => g.Count)
@@ -430,7 +489,7 @@ internal class Program
     {
         // if (filePath is null && CheckFileExistence(filePath!) == null)
         //     await Report(goodByMessage, 2000, true);
-        
+
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
@@ -469,7 +528,7 @@ internal class Program
         //     case ArticeStorageIndex.GoodsShipped:
         //         result = articleDict.Sum(art => art.Value.StoreBalance.ShippedQuantity);
         //         break;
- 
+
         //     case ArticeStorageIndex.WriteoffShortages:
         //         result = articleDict.Sum(art => art.Value.StoreBalance.WriteoffShortages);
         //         break;
@@ -490,55 +549,55 @@ internal class Program
         const int COUNT_INDEX = 2;
         const int PRICE_INDEX = 3;
 
-  
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
 
-            using ExcelPackage package = new(new FileInfo(filePath));
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
 
-            // if (CheckSheets(in package) == null) return;
+        using ExcelPackage package = new(new FileInfo(filePath));
 
-            ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-            (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
+        // if (CheckSheets(in package) == null) return;
 
-            for (int row = 1; row <= rowCount; row++)
+        ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
+        (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
+
+        for (int row = 1; row <= rowCount; row++)
+        {
+            var articleAddress = worksheet.Cells[row, ARTICLE_INDEX];
+            var countAddress = worksheet.Cells[row, COUNT_INDEX];
+            var priceAddress = worksheet.Cells[row, PRICE_INDEX];
+
+            if (articleAddress.Value != null && int.TryParse(articleAddress.Value.ToString(), out int article) &&
+                countAddress.Value != null && int.TryParse(countAddress.Value.ToString(), out int count) &&
+                priceAddress.Value != null && double.TryParse(priceAddress.Value.ToString(), out double price))
             {
-                var articleAddress = worksheet.Cells[row, ARTICLE_INDEX];
-                var countAddress = worksheet.Cells[row, COUNT_INDEX];
-                var priceAddress = worksheet.Cells[row, PRICE_INDEX];
-
-                if (articleAddress.Value != null && int.TryParse(articleAddress.Value.ToString(), out int article) &&
-                    countAddress.Value != null && int.TryParse(countAddress.Value.ToString(), out int count) &&
-                    priceAddress.Value != null && double.TryParse(priceAddress.Value.ToString(), out double price))
-                {
-                    // if (articleDict.ContainsKey(article))
-                    // {
-                    //     articleDict[article].SetStoreBalance(count, price);
-                    // }
-                }
+                // if (articleDict.ContainsKey(article))
+                // {
+                //     articleDict[article].SetStoreBalance(count, price);
+                // }
             }
+        }
 
-            package.Dispose();
-            stopwatch.Stop();
+        package.Dispose();
+        stopwatch.Stop();
 
-            // var paySum = articleDict
-            //     .Aggregate(0.00, (acc, el) => acc + el.Value.StoreBalance.PayShortagesSum);
+        // var paySum = articleDict
+        //     .Aggregate(0.00, (acc, el) => acc + el.Value.StoreBalance.PayShortagesSum);
 
-            string payReport;
+        string payReport;
 
-            // if (paySum > 0.00)
-            // {
-            //     payReport = string.Format("Сумма компенсации за недостачи товаров: {0:C}.\n", paySum);
-            // }
-            // else
-            // {
-            //     payReport = "Нет погашений недостач по указанным артикулам";
-            // }
+        // if (paySum > 0.00)
+        // {
+        //     payReport = string.Format("Сумма компенсации за недостачи товаров: {0:C}.\n", paySum);
+        // }
+        // else
+        // {
+        //     payReport = "Нет погашений недостач по указанным артикулам";
+        // }
 
-            //payReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
+        //payReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
 
-            //await Report(payReport, 1500);
-        
+        //await Report(payReport, 1500);
+
     }
 
     private static async Task ReadRegrandingReport(string filePath)
@@ -549,7 +608,7 @@ internal class Program
         const int COMMENT_INDEX = 4;
 
         // if (filePath is null || CheckFileExistence(filePath) == null) return;
-        
+
         var stopwatch = new Stopwatch();
         stopwatch.Start();
 
@@ -585,7 +644,7 @@ internal class Program
             // {
             //     // Для текущего арта указываем артикул пересорта (regranding)
             //     articleDict[article].StoreBalance.SetRegrading(regranding, count);
-               
+
             //     commentForArticle = $"пересорт на арт {regranding} ({count} шт) ";
             //     commentForRegranding = $"пересорт от арт {article} ({count} шт) ";
 
@@ -678,13 +737,13 @@ internal class Program
             goodByMessage = string.Concat(ex.Message, "\n", goodByMessage);
             await Report(goodByMessage, 2000, true);
         }
-        
-       
- 
 
-      
-      
-     
+
+
+
+
+
+
         // ResultCell[] resultCellsForAddReports = new ResultCell[]
         // {
         //     new (1, "Артикул", 13, "0", false, 0),                         
@@ -759,6 +818,18 @@ internal class Program
         //}
     }
 
+    private static void Report(object? sender, ManagerReachedEventArgs e)
+    {
+        Console.WriteLine();
+        Console.WriteLine(e.Message);
+        Console.WriteLine();
+
+        Task.Delay(e.Delay);
+
+        if (e.Exit)
+            Task.Run(Exit) ;
+    }
+
     private static async Task Report(string message, int delay = 0, bool exit = false)
     {
         Console.WriteLine();
@@ -768,9 +839,7 @@ internal class Program
         await Task.Delay(delay);
 
         if (exit)
-        {
-            Environment.Exit(0);
-        }
+            await Exit();
     }
 
     private static string FormСorrectPath(string path)
@@ -801,16 +870,16 @@ internal class Program
     {
         string? path = default;
 
-        while(string.IsNullOrEmpty(path))
+        while (string.IsNullOrEmpty(path))
         {
             Console.Clear();
             Console.WriteLine(message);
 
             var key = Console.ReadKey();
 
-            List<ConsoleKey> exitKeys = new(2) { ConsoleKey.D1 , ConsoleKey.Escape };
+            List<ConsoleKey> exitKeys = new(2) { ConsoleKey.D1, ConsoleKey.Escape };
 
-            if(exitKeys.Contains(key.Key))
+            if (exitKeys.Contains(key.Key))
             {
                 if (key.Key == ConsoleKey.D1 && !necessarily) break;
                 if (key.Key == ConsoleKey.Escape) await Report(goodByMessage, 2000, true);
@@ -823,7 +892,7 @@ internal class Program
 
         if (path is null) return null;
 
-        if (path is not null && giveMeLogin) 
+        if (path is not null && giveMeLogin)
             ExcelReportManager.SaveСlientLogin(path);
 
         return FormСorrectPath(path!);

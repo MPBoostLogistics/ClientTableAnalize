@@ -29,8 +29,8 @@ namespace ClientTableAnalizer.Enums
         {   
             RedemtionWB,        // выкупы WB
             RedemtionOZ,        // выкупы OZ
-            StorageWB,          // приходы и остатки WB
-            StorageOZ,          // приходы и остатки OZ
+            RemainingWB,          // приходы и остатки WB
+            RemainingOZ,          // приходы и остатки OZ
             Shortages,          // недостачи 
             WriteOffShortages,  // списание нелдостач общее 
             ReGrades,           // пересорты
