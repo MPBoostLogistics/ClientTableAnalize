@@ -23,7 +23,7 @@ namespace ClientTableAnalizer.Objects.Managers
         #region Properties
         private static System.Drawing.Color DangerColor { get; } = System.Drawing.Color.DarkRed;
         public static DirectoryInfo? ClientDirectoryInfo { get; private set; }
-        public static string ClientLogin { get; private set; } = string.Empty;
+        public string ClientLogin { get; private set; } = string.Empty;
         public static string OutputReportFilePath { get; private set; } = string.Empty;
         private static ResultCell[] MainReportCells { get; } = new ResultCell[]
         {
@@ -72,7 +72,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <returns>Number of files transferred for analysis.</returns>
         /// <exception cref="Exception">Exception for empty directory without files.</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public int GetReportFiles(string dirPathString)
+        public async Task<int> GetReportFiles(string dirPathString)
         {
             ManagerReachedEventArgs? args = default;
 
@@ -80,7 +80,7 @@ namespace ClientTableAnalizer.Objects.Managers
 
             if (files is null || !files.Any())
             {
-                args = new ManagerReachedEventArgs("Directory of source report files is empty, add files to it!",
+                args = new ManagerReachedEventArgs("Директория с файлами для обработки не сущесвтует или пустая, проверьте ее.",
                     1000,
                     false);
             }
@@ -94,15 +94,41 @@ namespace ClientTableAnalizer.Objects.Managers
                         var key = sorceReportFile.ReportKey;
 
                         if (sorceReportFile != null && key.HasValue)
+                        {
+                            // Save filePath by key 
                             ReportsPaths[key.Value] = sorceReportFile;
 
-                        args = new($"{ReportsPaths.Count} files ready for processing", 500, false);
+                            // Save login
+                            if (sorceReportFile?.Login != null)
+                                ClientLogin = sorceReportFile.Login;
+                        }
                     }
                     catch (System.Exception ex)
                     {
                         args = new($"{ex.Message}", 500, true);
+                        throw;
                     }
                 }
+
+                var readinessMessage = $"Логин клиента: {ClientLogin}\n";
+                readinessMessage = string.Concat(readinessMessage, $"{ReportsPaths.Count} файлов (-ла) готово к обработке.\n");
+
+                try
+                {
+                    var clientOutputPath = await Task.Run(GetClientOutputPath);
+
+                    if(!string.IsNullOrEmpty(clientOutputPath)) 
+                    {
+                        readinessMessage = string.Concat(readinessMessage, $"Директория для работы с клиентом: {clientOutputPath}");
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    args = new($"{ex.Message}", 500, true);
+                    throw;
+                }
+
+                args = new(readinessMessage, 500, false);
             }
 
             if (args != null) OnManagerReached(args);
@@ -148,26 +174,6 @@ namespace ClientTableAnalizer.Objects.Managers
             return success;
         }
 
-
-
-        public static void SaveСlientLogin(string path)
-        {
-            var loginException = new Exception($"Client login cannot be determined and saved");
-
-            var substrings01 = path.Split("/");
-
-            if (substrings01.Length <= 1) throw loginException;
-
-            var loginChars = substrings01.Last().Split(" ")[3].Trim().ToList();
-
-            if (loginChars is null || loginChars.Count == 0) throw loginException;
-
-            // Clear non-digits in login
-            for (int i = 0; i < loginChars.Count; i++)
-                if (!int.TryParse(loginChars[i].ToString(), out _)) loginChars.RemoveAt(i);
-
-            ClientLogin = new string(loginChars.ToArray());
-        }
 
         public static (double time, List<SKURowInReport> articleRows) AnalyzeRedemptionReport(string path, string sheetName,
             (int articleIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) indices)
@@ -389,7 +395,7 @@ namespace ClientTableAnalizer.Objects.Managers
             excelWorksheet.Cells[$"{firstColLet}{firstRow}:{endColLet}{endRow}"].AutoFilter = true;
         }
 
-        public static async Task<string?> GetClientOutputPath()
+        public async Task<string?> GetClientOutputPath()
         {
             if (ClientLogin is null)
                 throw new Exception("Логин клинта не определен, поэтому невозможно создать директорию.");

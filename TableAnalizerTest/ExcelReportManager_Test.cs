@@ -68,7 +68,10 @@ namespace TableAnalizerTest.Managers
             // ...
 
             // act
-            _excelManager.GetReportFiles(_testFilesPath);
+            var getReportFilesTask = _excelManager.GetReportFiles(_testFilesPath);
+            getReportFilesTask.Wait();
+
+            //var aa = _excelManager.GetReportFiles(_testFilesPath);
             //Trace.WriteLine($"{_excelManager.ReportsPaths.Count}");
 
             var succsess = _excelManager.IsRequiredFilesProvided(out List<SourceReportFileKey> lostKeys);
@@ -78,6 +81,8 @@ namespace TableAnalizerTest.Managers
             {
                 Assert.That(_excelManager.ReportsPaths, Has.Count.EqualTo(8));
                 Assert.That(succsess, Is.EqualTo(true));
+                Assert.That(_excelManager.ClientLogin, Is.EqualTo("79164372997"));
+                Assert.That(_excelManager.GetClientOutputPath, Is.Not.EqualTo(null));
             });
         }
 

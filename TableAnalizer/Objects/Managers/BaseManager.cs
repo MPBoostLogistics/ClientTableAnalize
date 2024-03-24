@@ -60,6 +60,24 @@ namespace ClientTableAnalizer.Objects.Managers
             return true;
         }
 
+        // Из старой реалиазции
+        private static string FormСorrectPath(string path)
+        {
+            var copy = path;
+
+            // Clear "\"
+            var charArray = copy.Trim().ToList();
+            for (int i = 0; i < charArray.Count; i++)
+            {
+                if (charArray[i] == '\u005c') charArray.RemoveAt(i);
+            }
+
+            copy = new string(charArray.ToArray());
+
+            // Add "/"
+            return $"/{copy}";
+        }
+
         protected static int? ParseValueToInt(object? obj) =>
             obj is not null && !string.IsNullOrEmpty(obj.ToString()) ?
             int.Parse(obj.ToString()!.Trim()) :

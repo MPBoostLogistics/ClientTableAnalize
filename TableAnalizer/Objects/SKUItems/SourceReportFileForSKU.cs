@@ -21,6 +21,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #region Properties
         public SourceReportFileKey? ReportKey { get; }
         public FileInfo FileInfo { get; }
+        public string? Login { get; private set; }
         #endregion
 
         #region Constructors
@@ -114,6 +115,10 @@ namespace ClientTableAnalizer.Objects.SKUItems
                                     break;    
                             }
                         }
+
+                        if (Login is null && substrings[3] != null) 
+                            SaveСlientLogin(substrings[3]);
+
                         break;
 
                     default:
@@ -125,6 +130,14 @@ namespace ClientTableAnalizer.Objects.SKUItems
                 throw new Exception($"Cannot determine match key for report file at path\n{fileName} for keystring {keyString}");
         }
 
+        /// <summary>
+        /// Splits a string into substrings based on separators.
+        /// </summary>
+        /// <param name="sourceString">Source string.</param>
+        /// <param name="separators">Array of string separators.</param>
+        /// <param name="substrings">An array of substrings derived from source string.</param>
+        /// <returns>Logical flag for performing an operation.</returns>
+        /// <remarks><i>New version, tested</i></remarks>
         public static bool SplitStringIntoSubstrings(string sourceString, string[] separators, out string[]? substrings)
         {
             substrings = null;
@@ -140,6 +153,22 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
             return substrings is not null && substrings.Length > 0;
         }
+
+        public void SaveСlientLogin(string loginString)
+        {
+            var loginException = new Exception($"Client login cannot be determined and saved.");
+
+            var loginChars = loginString.Trim().ToList();
+
+            if (loginChars is null || loginChars.Count == 0) throw loginException;
+
+            // Clear non-digits in login
+            for (int i = 0; i < loginChars.Count; i++)
+                if (!int.TryParse(loginChars[i].ToString(), out _)) loginChars.RemoveAt(i);
+
+            Login = new string(loginChars.ToArray());
+        }
+
 
         #endregion
     }
