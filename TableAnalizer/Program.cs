@@ -21,9 +21,9 @@ internal class Program
     private const string NAME_SECOND_ROOM = "2 - Помещение длительного хранения и отгрузки";
     private const string NAME_FINAL_ROW = "Итого товаров в единицах хранения";
     private static List<ArticleShortage> ArticleShortages { get; set; } = new();
-    private static readonly List<ArticleItemForReport> ShortagesInWarehouse = new();
-    private static readonly List<ArticleItemForReport> ShortagesInPickupPoints = new();
-    private static readonly List<ArticleItemForReport> Overruns = new();
+    private static readonly List<SKUItemForReport> ShortagesInWarehouse = new();
+    private static readonly List<SKUItemForReport> ShortagesInPickupPoints = new();
+    private static readonly List<SKUItemForReport> Overruns = new();
     private static string goodByMessage = "\nСпасибо за использование программы. Хорошего дня!";
     private static readonly string failureMessage = "Некорретные данные, попробуйте еще раз.";
     #endregion
@@ -93,15 +93,20 @@ internal class Program
 
         await Task.Delay(1000);
 
-        // //await GetUserRedemtionDataFile(Marketplace.WB, false);
+        // Запустить цепочку обработок
+        // - выкупы wb и oz (обязательно)
+        // - приходы и хранение wb и oz (обязательно)
+        // - расходы общие (обязательно)
+        // - списаниния недостач (обязательно)
+        // - пересорты (опционально)
+        // - недостачи (опционально)
+        // - пустышки (опционально)
 
-        // //await GetUserRedemtionDataFile(Marketplace.OZ, false);
 
-        // //if(string.IsNullOrEmpty(redemtionFilePathWB) && string.IsNullOrEmpty(redemtionFilePathOZ))
-        // {
-        //     var goodByMessage02 = string.Concat($"Данные по заказам клиента не предоставлены, к сожалению невозможно сформировать отчет.\n", goodByMessage);
-        //     await Report(goodByMessage02, 2000, true);
-        // }
+        // Выдать отчет об исполении и путь в файлу
+
+
+
 
         // Task[] readRedemptionTasksArray = new Task[2];
 
@@ -239,66 +244,6 @@ internal class Program
         }
 
         return resultValue;
-    }
-
-    // private static async Task GetUserRedemtionDataFile(Marketplace marketplace, bool necessarily)
-    // {
-    //     var clDirInfo = FileManager.GetDirectoryInfo(PathKey.MPBoostClients);
-    //     if (clDirInfo is null || !clDirInfo.Exists)
-    //         FileManager.CreateDirectoryInfo(PathKey.MPBoostClients);
-
-    //     var necessarilyMessage = necessarily ? "обязательно" : "не обязательно";
-    //     var messageInstruction = necessarily ? "ESC - выход" : "1 - пропустить, ESC - выход";
-    //     var redemtionMessage01 = $"Перетащите путь к отчету по выкупам клиента на {marketplace} ({necessarilyMessage})\n({messageInstruction}):\n";
-
-    //     // if (marketplace == Marketplace.WB)
-    //     // {
-    //     //     redemtionFilePathWB = await GetDirectoryPath(redemtionMessage01, necessarily, login is null);
-    //     // }
-    //     // else if (marketplace == Marketplace.OZ)
-    //     // {
-    //     //     redemtionFilePathOZ = await GetDirectoryPath(redemtionMessage01, necessarily, login is null);
-    //     // }
-
-    //     try
-    //     {
-    //         var clientDirectoryPath = await ExcelReportManager.GetClientOutputPath();
-    //         if (!string.IsNullOrEmpty(clientDirectoryPath))
-    //         {
-    //             var reportMessage = $"Директория для работы с клтентом: {clientDirectoryPath}";
-    //             await Report(reportMessage, 1000, false);
-    //         }
-    //     }
-    //     catch (System.Exception ex)
-    //     {
-    //         Console.WriteLine(ex.Message);
-    //         throw;
-    //     }
-    // }
-
-    private static async Task GetUserStorageData(Marketplace marketplace)
-    {
-        var necessarilyMessage = marketplace == Marketplace.WB ?
-            "обязательно" :
-            "не обязательно";
-
-        var messageInstruction = marketplace == Marketplace.WB ?
-            "ESC - выход" :
-            "1 - пропустить, ESC - выход";
-
-        var storagePathMessage = $"Перетащите путь к отчету по приходу и остаткам товаров {marketplace} ({necessarilyMessage})\n({messageInstruction}):";
-
-        // switch (marketplace)
-        // {
-        //     case Marketplace.WB:
-        //         storageFilePathWB = await GetDirectoryPath(storagePathMessage, false, false);
-        //         break;
-        //     case Marketplace.OZ:
-        //         storageFilePathOZ = await GetDirectoryPath(storagePathMessage, false, false);
-        //         break;
-        // }
-
-        Console.WriteLine();
     }
 
     // private static async Task ReadRedemptionReportFile(Marketplace marketplace)
@@ -868,7 +813,7 @@ internal class Program
     //     worksheet.DefaultColWidth = TABLE_COL_WIDTH;
     // }
 
-    private static void MakeAdditionalReport(ResultCell[] cells, ref ExcelWorksheet worksheet, List<ArticleItemForReport> items)
+    private static void MakeAdditionalReport(TargetCell[] cells, ref ExcelWorksheet worksheet, List<SKUItemForReport> items)
     {
         // // Fill header data 
         // SetupTableHeader(cells, ref worksheet, 55);

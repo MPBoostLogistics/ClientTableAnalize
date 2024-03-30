@@ -2,31 +2,20 @@
 
 namespace ClientTableAnalizer.Objects.SKUItems
 {
-    public struct ArticleRedempionBalanceUnit 
-    {
-        public ArticleRedemptionStatus Status {get; set;}
-        public string Describtion {get; set;}
-        public int Count {get; set;}
-
-        public ArticleRedempionBalanceUnit(ArticleRedemptionStatus status, string describtion, int count)
-        {
-            Status = status; Describtion = describtion; Count = count;
-        }
-    }
-
 	public class SKURedempionBalance
 	{
         #region  Properties
-        public List<ArticleRedempionBalanceUnit> Balances { get; } = new () 
+        public List<SKURedempionBalanceUnit> Balances { get; } = new () 
         {
-             new(ArticleRedemptionStatus.Delivered, "Доставлено на ПВЗ, шт.", 0),
-             new(ArticleRedemptionStatus.WithDrawn, "Забрано с ПВЗ, шт.", 0),
-             new(ArticleRedemptionStatus.Canceled, "Отменено, шт.", 0),
-             new(ArticleRedemptionStatus.Unknown, "Неизвестный, шт.", 0)
+             new(SKURedemptionStatus.Delivered, "Доставлено на ПВЗ, шт.", 0),
+             new(SKURedemptionStatus.WithDrawn, "Забрано с ПВЗ, шт.", 0),
+             new(SKURedemptionStatus.Canceled, "Отменено, шт.", 0),
+             new(SKURedemptionStatus.Unknown, "Неизвестный, шт.", 0)
         };
         public List<SKURowInReport> SKURowsInRedemptionReport { get; private set; }
         #endregion
 
+        #region Constructors
         public SKURedempionBalance(SKURowInReport skuRowInReport)
         {
             SKURowsInRedemptionReport = new(){skuRowInReport};
@@ -36,10 +25,12 @@ namespace ClientTableAnalizer.Objects.SKUItems
         {
             SKURowsInRedemptionReport = new(skuRowsInReport);
         }
+        #endregion
 
+        #region Functionality
         public void Set(SKURowInReport articleRow) => SKURowsInRedemptionReport.Add(articleRow);
 
-        private int GetBalanceCountByStatus(ArticleRedemptionStatus ars) =>  
+        private int GetBalanceCountByStatus(SKURedemptionStatus ars) =>  
             Balances.FirstOrDefault(b => b.Status == ars).Count;
 
         // public int GetExpectedBalance() 
@@ -51,16 +42,16 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
         public void AnalizeBalance(ref SKUBalancesReport articleBalancesReport) 
         {
-            int canceled = GetBalanceCountByStatus(ArticleRedemptionStatus.Canceled);
-            int onWay = GetBalanceCountByStatus(ArticleRedemptionStatus.OnWay);
-            int delivered = GetBalanceCountByStatus(ArticleRedemptionStatus.Delivered);
-            int withDrawn = GetBalanceCountByStatus(ArticleRedemptionStatus.WithDrawn);
+            int canceled = GetBalanceCountByStatus(SKURedemptionStatus.Canceled);
+            int onWay = GetBalanceCountByStatus(SKURedemptionStatus.OnWay);
+            int delivered = GetBalanceCountByStatus(SKURedemptionStatus.Delivered);
+            int withDrawn = GetBalanceCountByStatus(SKURedemptionStatus.WithDrawn);
             int sum = canceled + onWay + delivered + withDrawn;
 
             articleBalancesReport.SetRedemtionsCount(sum, canceled, onWay, delivered, withDrawn);
         }
 
-        private bool GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus, SKURowInReport>> groups)
+        private bool GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<SKURedemptionStatus, SKURowInReport>> groups)
         {
            groups = from row in SKURowsInRedemptionReport
                     group row by row.ItemStatus
@@ -87,7 +78,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
             isDeadLine = (maxRedemptionDate - DateTime.Now).Duration().Days > deadLineDays;
 
             // Calculate rows, set balances && set average price
-            if(GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus, SKURowInReport>> groups))
+            if(GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<SKURedemptionStatus, SKURowInReport>> groups))
             {
                 foreach (var group in groups) 
                 {
@@ -108,5 +99,6 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
             return (maxRedemptionDate, averagePrice, isDeadLine);
         }
+        #endregion
     }
 }

@@ -13,14 +13,14 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #region Properties 
         public int SKUNumber { get; }
         public DateTime RedemptionDate { get; }             
-        public ArticleRedemptionStatus ItemStatus { get; }
+        public SKURedemptionStatus ItemStatus { get; }
         public double Price { get; }
         #endregion
         
         #region Constructors
-        public SKURowInReport(int articleNumber,  string redemptionDateString, string itemStatusString, string priceString)
+        public SKURowInReport(int skuNumber,  string redemptionDateString, string itemStatusString, string priceString)
         {
-            SKUNumber = articleNumber;
+            SKUNumber = skuNumber;
 
             if (DateTime.TryParseExact(redemptionDateString, DATE_TIME_FORMAT, Culture, DateTimeStyles.None, out DateTime dtv)) 
             {
@@ -39,15 +39,15 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #endregion
 
         #region Functionality
-        private static ArticleRedemptionStatus SetItemStatus(string statusText)
+        private static SKURedemptionStatus SetItemStatus(string statusText)
         {
             return statusText switch
             {
-                "Доставлен на ПВЗ" => ArticleRedemptionStatus.Delivered,
-                "Забран с ПВЗ" => ArticleRedemptionStatus.WithDrawn,
-                "Отменен" => ArticleRedemptionStatus.Canceled,
-                "В пути" => ArticleRedemptionStatus.OnWay,
-                _ => ArticleRedemptionStatus.Unknown
+                "Доставлен на ПВЗ" => SKURedemptionStatus.Delivered,
+                "Забран с ПВЗ" => SKURedemptionStatus.WithDrawn,
+                "Отменен" => SKURedemptionStatus.Canceled,
+                "В пути" => SKURedemptionStatus.OnWay,
+                _ => SKURedemptionStatus.Unknown
             };
         }
 

@@ -8,6 +8,7 @@ using OfficeOpenXml.Style;
 
 namespace ClientTableAnalizer.Objects.Managers
 {
+
     public class ExcelReportManager : BaseManager
     {
         #region Constants && variables
@@ -18,6 +19,9 @@ namespace ClientTableAnalizer.Objects.Managers
         private const int HEADER_TABLE_ROW_HEIGHT = 120;
         private const string LOGISTIC_FLAG = "Да";
         public Dictionary<SourceReportFileKey, SourceReportFileForSKU> ReportsPaths { get; private set; } = new();
+        private readonly (int skuIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) RedemptionTableIndexes = (2, 7, 9, 10, 14);
+        private readonly (int skuIndex, int nameIndex, int initBalanceIndex, int goodsReceivedIndex, int finBalanceIndex) StorageTableIndexes = (1, 6, 14, 15, 17);
+
         #endregion
 
         #region Properties
@@ -25,7 +29,7 @@ namespace ClientTableAnalizer.Objects.Managers
         public static DirectoryInfo? ClientDirectoryInfo { get; private set; }
         public string ClientLogin { get; private set; } = string.Empty;
         public static string OutputReportFilePath { get; private set; } = string.Empty;
-        private static ResultCell[] MainReportCells { get; } = new ResultCell[]
+        private static TargetCell[] MainReportCells { get; } = new TargetCell[]
         {
             // Article info
             new (1, "МП", 8, "0", false, 0),
@@ -117,7 +121,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 {
                     var clientOutputPath = await Task.Run(GetClientOutputPath);
 
-                    if(!string.IsNullOrEmpty(clientOutputPath)) 
+                    if (!string.IsNullOrEmpty(clientOutputPath))
                     {
                         readinessMessage = string.Concat(readinessMessage, $"Директория для работы с клиентом: {clientOutputPath}");
                     }
@@ -175,6 +179,89 @@ namespace ClientTableAnalizer.Objects.Managers
         }
 
 
+        // Запустить цепочку обработок
+        // - выкупы wb и oz (обязательно)
+        // - приходы и хранение wb и oz (обязательно)
+        // - расходы общие (обязательно)
+        // - списаниния недостач (обязательно)
+        // - пересорты (опционально)
+        // - недостачи (опционально)
+        // - пустышки (опционально)
+
+        public struct ExcelRowsRange 
+        {
+            public string? NameKey { get; }
+            public int StartRowIndex { get; }    
+            public IEnumerable<int>? RowsRange { get; set; }
+
+            public ExcelRowsRange(int startRowIndex, string? nameKey = null)
+            {
+                NameKey = nameKey;
+                StartRowIndex = startRowIndex;
+                RowsRange = null;
+            }
+
+        }
+
+
+
+        public double AnalizeReport(SourceReportFileKey reportFileKey, string workSheetName, bool isRequred = true)
+        {
+            var stopwatch = new Stopwatch();
+
+            double StopMethod()
+            {
+                stopwatch.Stop();
+                return (stopwatch.ElapsedMilliseconds / 1000);
+            }
+
+            stopwatch.Start();
+
+            // Get report file 
+            SourceReportFileForSKU? sourceReportFile = GetReportFile(reportFileKey, isRequred);
+            if (sourceReportFile == null && !isRequred) return StopMethod();
+
+            using ExcelPackage package = new(sourceReportFile!.FileInfo);
+            
+            var worksheet = package.Workbook.Worksheets.FirstOrDefault(sh => sh.Name == workSheetName) ??
+                throw new Exception($"В книге Excel нет листа с именем '{workSheetName}'.");
+
+
+
+
+            package.Dispose();
+            return StopMethod();
+        }
+
+        /// <summary>
+        /// Get a report file for analysis by key.
+        /// </summary>
+        /// <param name="reportFileKey">Key to search for report file.</param>
+        /// <param name="isRequred">Flag of required presence of file.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">An exception in which a required file for analysis was not found for given key.</exception>
+        /// <remarks><i>New version, tested</i></remarks>
+        public SourceReportFileForSKU? GetReportFile(SourceReportFileKey reportFileKey, bool isRequred)
+        {
+            var reportFileForSKU = ReportsPaths
+                .SingleOrDefault(k => Equals(k, reportFileKey))
+                .Value;
+
+            if (reportFileForSKU == null)
+            {
+                if (isRequred)
+                {
+                    throw new Exception($"Файл для анализа по ключу {reportFileKey} не найден.");
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            return reportFileForSKU;
+        }
+
         public static (double time, List<SKURowInReport> articleRows) AnalyzeRedemptionReport(string path, string sheetName,
             (int articleIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) indices)
         {
@@ -192,6 +279,8 @@ namespace ClientTableAnalizer.Objects.Managers
                 var dimention = worksheet.Dimension;
                 var endRowIndex = dimention.End.Row;
 
+
+                // Идем по диапазонам 
                 for (int row = 1; row <= dimention.End.Row; row++)
                 {
                     var logisticFlagValue = worksheet.Cells[row, indices.logisticFlagIndex].Value.ToString();
@@ -348,7 +437,7 @@ namespace ClientTableAnalizer.Objects.Managers
             worksheet.DefaultColWidth = DEFAULT_TABLE_COL_WIDTH;
         }
 
-        private static void SetupTableHeader(in ResultCell[] resultCells, ref ExcelWorksheet worksheet, double headerRowHeight = HEADER_TABLE_ROW_HEIGHT)
+        private static void SetupTableHeader(in TargetCell[] resultCells, ref ExcelWorksheet worksheet, double headerRowHeight = HEADER_TABLE_ROW_HEIGHT)
         {
             var firstRow = worksheet.Row(RECORD_INDEX);
             if (firstRow is not null)

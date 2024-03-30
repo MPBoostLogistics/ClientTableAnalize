@@ -50,7 +50,7 @@ namespace TableAnalizerTest.Managers
             var testFileInfo = new FileInfo(testPath);
 
             // act
-            var succsess = SourceReportFileForSKU.SplitStringIntoSubstrings(Path.GetFileName(testFileInfo.FullName), [spaceSeparator], out string[] subStrings);
+            var succsess = SourceReportFileForSKU.SplitStringIntoSubstrings(Path.GetFileName(testFileInfo.FullName), [spaceSeparator], out string[]? subStrings);
 
             // assert
             Assert.Multiple(() =>
@@ -71,7 +71,6 @@ namespace TableAnalizerTest.Managers
             var getReportFilesTask = _excelManager.GetReportFiles(_testFilesPath);
             getReportFilesTask.Wait();
 
-            //var aa = _excelManager.GetReportFiles(_testFilesPath);
             //Trace.WriteLine($"{_excelManager.ReportsPaths.Count}");
 
             var succsess = _excelManager.IsRequiredFilesProvided(out List<SourceReportFileKey> lostKeys);
@@ -86,19 +85,39 @@ namespace TableAnalizerTest.Managers
             });
         }
 
-        // [Test, Order(4)]
-        // public void SaveСlientLogin_Test() 
-        // {
-        //     // arrange
-        //     // ..
+        [Test, Order(4)]
+        public void GetReportFile_Test()
+        {
+            // arrange
+            var redemtionFileWBPath = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Отчет по клиенту +79164372997 (WB).xlsx";
+            var redemtionFileWBFileInfo = new FileInfo(redemtionFileWBPath);
+            var redemtionFileWB = new SourceReportFileForSKU(redemtionFileWBFileInfo);
 
-        //     // act 1 
-        //     // ...
+            // act 1
+            var getReportFilesTask = _excelManager.GetReportFiles(_testFilesPath);
+            getReportFilesTask.Wait();
 
-        //     // assert 1 
-        //     //ExcelReportManager.SaveСlientLogin();
+            getReportFilesTask.ContinueWith(t =>
+            {
+                 // act 2
+                var getReportRedemtionFileWB = _excelManager.GetReportFile(SourceReportFileKey.RedemtionWB, true);
 
-        // }
+                // assert
+                Assert.Multiple(() =>
+                {
+                    Assert.That(redemtionFileWBFileInfo, Is.Not.EqualTo(null));
+                    Assert.That(redemtionFileWB, Is.Not.EqualTo(null));
+                    Assert.That(getReportRedemtionFileWB, Is.EqualTo(redemtionFileWB));
+                });
+            });
+
+
+
+
+
+
+        }
+
 
         protected override void EndTest()
         {

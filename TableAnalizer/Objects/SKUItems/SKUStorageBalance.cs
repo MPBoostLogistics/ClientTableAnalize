@@ -2,22 +2,11 @@
 
 namespace ClientTableAnalizer.Objects.SKUItems
 {
-    public struct ArticleStorageBalanceUnit 
-    {
-        public string Describtion { get; set; }
-        public int Count { get; set; }
-
-        public ArticleStorageBalanceUnit(string describtion, int count)
-        {
-             Describtion = describtion; Count = count;
-        }
-    }
-
-    public class ArticleStorageBalance
+    public class SKUStorageBalance
     {
         #region Properties
 
-        public Dictionary<ArticeStorageIndex, ArticleStorageBalanceUnit> StorageBalances { get; private set;} = new() 
+        public Dictionary<ArticeStorageIndex, SKUStorageBalanceUnit> StorageBalances { get; private set;} = new() 
         {
             {ArticeStorageIndex.GoodsExpected, new ("Склад: ожидается товаров, шт.", 0)},
             {ArticeStorageIndex.GoodsReceived, new ("Склад: принято товаров, шт.", 0)},
@@ -35,7 +24,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #endregion
 
         #region Constructors
-        public ArticleStorageBalance() { }
+        public SKUStorageBalance() { }
         #endregion
 
         #region Functionality

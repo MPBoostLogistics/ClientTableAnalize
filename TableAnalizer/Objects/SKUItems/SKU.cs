@@ -58,10 +58,10 @@ namespace ClientTableAnalizer.Objects.SKUItems
         public int Number { get; private set; }
         public string Name { get; private set; }
         public SKURedempionBalance SKURedempionBalance { get; private set; }
-        public ArticleStorageBalance ArticleStorageBalance { get; private set; }
+        public SKUStorageBalance ArticleStorageBalance { get; private set; }
         private SKUBalancesReport? _articleBalancesReport;
         public ArticleShortage? ArticleShortage { get; private set; }
-        public ArticleItemForReport? Overrun { get; private set; }
+        public SKUItemForReport? Overrun { get; private set; }
         public DateTime MaxRedemptionDate { get; private set; }
         public bool IsDeadline { get; private set; }
         public SellmentStatus SellmentStatus { get; private set; }

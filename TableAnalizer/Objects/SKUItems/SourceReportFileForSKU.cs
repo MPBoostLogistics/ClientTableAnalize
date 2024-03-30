@@ -154,6 +154,11 @@ namespace ClientTableAnalizer.Objects.SKUItems
             return substrings is not null && substrings.Length > 0;
         }
 
+        /// <summary>
+        /// Saves client login.
+        /// </summary>
+        /// <param name="loginString">A string containing client's login.</param>
+        /// <remarks><i>New version, tested</i></remarks>
         public void SaveСlientLogin(string loginString)
         {
             var loginException = new Exception($"Client login cannot be determined and saved.");
@@ -168,7 +173,6 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
             Login = new string(loginChars.ToArray());
         }
-
 
         #endregion
     }
