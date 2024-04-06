@@ -1,4 +1,5 @@
 ﻿using ClientTableAnalizer.Enums;
+using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
 
 namespace ClientTableAnalizer.Objects.SKUItems
 {

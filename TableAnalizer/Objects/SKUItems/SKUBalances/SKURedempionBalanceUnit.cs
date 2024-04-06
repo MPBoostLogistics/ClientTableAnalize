@@ -1,6 +1,6 @@
 using ClientTableAnalizer.Enums;
 
-namespace ClientTableAnalizer.Objects.SKUItems
+namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
 {
     public struct SKURedempionBalanceUnit 
     {

@@ -1,29 +1,8 @@
-﻿namespace ClientTableAnalizer.Objects
+﻿namespace ClientTableAnalizer.Objects.Parsing
 {
     /// <summary>
-    /// Represents a cell in a source table.
+    /// Represents the result cell for an Excel table.
     /// </summary>
-    public readonly struct SourceCell 
-    {
-        #region Properties
-        public int ColumnNumber { get; }
-        public Type ValueType { get; }
-        public string? FilterString { get; }
-        #endregion
-
-        #region Constructors
-        public SourceCell(int columnNumber, Type valueType,  string? filterString = null)
-        {
-            ColumnNumber = columnNumber;
-            ValueType = valueType;
-            FilterString = filterString;
-        }
-        #endregion
-    }
-
-// Тип который нужно получит по строке ExcelRowType
-
-
     internal readonly struct TargetCell
     {
         #region Properties

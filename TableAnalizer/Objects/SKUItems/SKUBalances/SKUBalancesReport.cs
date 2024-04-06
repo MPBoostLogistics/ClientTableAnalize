@@ -1,4 +1,4 @@
-namespace ClientTableAnalizer.Objects.SKUItems
+namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
 {
    public class SKUBalancesReport
     {

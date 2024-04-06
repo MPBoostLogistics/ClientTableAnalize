@@ -2,13 +2,14 @@
 
 using System.Diagnostics;
 using ClientTableAnalizer.Enums;
+using ClientTableAnalizer.Objects.Parsing;
 using ClientTableAnalizer.Objects.SKUItems;
+using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 
 namespace ClientTableAnalizer.Objects.Managers
 {
-
     public class ExcelReportManager : BaseManager
     {
         #region Constants && variables
@@ -178,7 +179,6 @@ namespace ClientTableAnalizer.Objects.Managers
             return success;
         }
 
-
         // Запустить цепочку обработок
         // - выкупы wb и oz (обязательно)
         // - приходы и хранение wb и oz (обязательно)
@@ -188,31 +188,14 @@ namespace ClientTableAnalizer.Objects.Managers
         // - недостачи (опционально)
         // - пустышки (опционально)
 
-        public struct ExcelRowsRange 
-        {
-            public string? NameKey { get; }
-            public int StartRowIndex { get; }    
-            public IEnumerable<int>? RowsRange { get; set; }
-
-            public ExcelRowsRange(int startRowIndex, string? nameKey = null)
-            {
-                NameKey = nameKey;
-                StartRowIndex = startRowIndex;
-                RowsRange = null;
-            }
-
-        }
-
-
-
-        public double AnalizeReport(SourceReportFileKey reportFileKey, string workSheetName, bool isRequred = true)
+        public double AnalizeReport(SourceReportFileKey reportFileKey, string workSheetName,  bool isRequred = true)
         {
             var stopwatch = new Stopwatch();
 
             double StopMethod()
             {
                 stopwatch.Stop();
-                return (stopwatch.ElapsedMilliseconds / 1000);
+                return stopwatch.ElapsedMilliseconds / 1000;
             }
 
             stopwatch.Start();
@@ -226,7 +209,7 @@ namespace ClientTableAnalizer.Objects.Managers
             var worksheet = package.Workbook.Worksheets.FirstOrDefault(sh => sh.Name == workSheetName) ??
                 throw new Exception($"В книге Excel нет листа с именем '{workSheetName}'.");
 
-
+            // пройти по массиву диапазонов
 
 
             package.Dispose();
@@ -343,15 +326,15 @@ namespace ClientTableAnalizer.Objects.Managers
                 mainReportWorksheet.Cells[recordIndex, 6].Value = value.SellmentStatus.StatusLabel;
 
                 // Redemtion balance data 
-                var arb = value.GetArticleBalancesReport();
-                if (arb != null)
-                {
-                    mainReportWorksheet.Cells[recordIndex, 7].Value = arb.RedemtionSum;
-                    mainReportWorksheet.Cells[recordIndex, 8].Value = arb.RedemtionCanceled;
-                    mainReportWorksheet.Cells[recordIndex, 9].Value = arb.RedemtionOnWay;
-                    mainReportWorksheet.Cells[recordIndex, 10].Value = arb.RedemtionDelivered;
-                    mainReportWorksheet.Cells[recordIndex, 11].Value = arb.RedemtionWithDrawn;
-                }
+                // var arb = value.GetArticleBalancesReport();
+                // if (arb != null)
+                // {
+                //     mainReportWorksheet.Cells[recordIndex, 7].Value = arb.RedemtionSum;
+                //     mainReportWorksheet.Cells[recordIndex, 8].Value = arb.RedemtionCanceled;
+                //     mainReportWorksheet.Cells[recordIndex, 9].Value = arb.RedemtionOnWay;
+                //     mainReportWorksheet.Cells[recordIndex, 10].Value = arb.RedemtionDelivered;
+                //     mainReportWorksheet.Cells[recordIndex, 11].Value = arb.RedemtionWithDrawn;
+                // }
 
                 // // Storage balance data
                 // var articleStoreBalance = value.ArticleStorageBalance;
@@ -505,6 +488,27 @@ namespace ClientTableAnalizer.Objects.Managers
             }
 
         }
+
+        public void GetExcelWorksheetBy(string name, in ExcelPackage excelPackage, out ExcelWorksheet? worksheet) =>
+            worksheet =  excelPackage.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == name);
+        
+
+        public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSource, int startRangeRowIndex = 1) 
+        {
+            for (int i = 0; i < rangeSource.Count; i++)
+            {
+                // Если один элемент и у него нет ключа
+                if(rangeSource.Count == 1 && rangeSource[i].Key == null) 
+                {
+                    var dim = worksheet.Dimension;
+                    rangeSource[i].SetRange(startRangeRowIndex + 1, dim.End.Row - 1);
+                }
+            }
+
+            // ... 
+
+        }
+
 
         #endregion
     }
