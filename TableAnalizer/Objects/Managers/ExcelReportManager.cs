@@ -492,9 +492,12 @@ namespace ClientTableAnalizer.Objects.Managers
         public void GetExcelWorksheetBy(string name, in ExcelPackage excelPackage, out ExcelWorksheet? worksheet) =>
             worksheet =  excelPackage.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == name);
         
+        public static int? GetRowIndexBy(string key, in ExcelWorksheet worksheet) => 
+            worksheet.Cells.FirstOrDefault(c => c.Value != null && c.Value.ToString()?.Trim() == key)?.Start.Row;
 
         public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSource, int startRangeRowIndex = 1) 
         {
+
             for (int i = 0; i < rangeSource.Count; i++)
             {
                 // Если один элемент и у него нет ключа
@@ -502,10 +505,19 @@ namespace ClientTableAnalizer.Objects.Managers
                 {
                     var dim = worksheet.Dimension;
                     rangeSource[i].SetRange(startRangeRowIndex + 1, dim.End.Row - 1);
+                } 
+                else 
+                {
+                    var currentRowStringKey = rangeSource[i].Key ?? throw new Exception("Указание строкового ключа для диапазона обязательно");
+                    var startRowIndex = GetRowIndexBy(rangeSource[i].Key!, in worksheet);
+
+                    // Индекс строки с ключом
+                    // Индекс строки со следующим ключом
+
                 }
             }
 
-            // ... 
+            // ..
 
         }
 
