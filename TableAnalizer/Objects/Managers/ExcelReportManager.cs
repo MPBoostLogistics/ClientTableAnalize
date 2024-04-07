@@ -489,9 +489,23 @@ namespace ClientTableAnalizer.Objects.Managers
 
         }
 
-        public void GetExcelWorksheetBy(string name, in ExcelPackage excelPackage, out ExcelWorksheet? worksheet) =>
-            worksheet =  excelPackage.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == name);
+        /// <summary>
+        /// Returns a Excel worksheet in an Excel workbook by its name.
+        /// </summary>
+        /// <param name="name">Name of Excel Excel worksheet to search for.</param>
+        /// <param name="excelPackage">Excel package for specifying Excel workbook.</param>
+        /// <param name="worksheet">Found Excel worksheet or null.</param>
+        /// <remarks><i>New version, tested</i></remarks>
+        public static void GetExcelWorksheetBy(string name, in ExcelPackage excelPackage, out ExcelWorksheet? worksheet) =>
+            worksheet = excelPackage.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == name);
         
+        /// <summary>
+        /// Returns index of row from an Excel workbook by string value (key).
+        /// </summary>
+        /// <param name="key">String key to search for a row.</param>
+        /// <param name="worksheet">Excel worksheet for searching.</param>
+        /// <returns>Integer index of row or null.</returns>
+        /// <remarks><i>New version, tested</i></remarks>
         public static int? GetRowIndexBy(string key, in ExcelWorksheet worksheet) => 
             worksheet.Cells.FirstOrDefault(c => c.Value != null && c.Value.ToString()?.Trim() == key)?.Start.Row;
 

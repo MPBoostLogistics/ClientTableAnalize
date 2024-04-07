@@ -173,7 +173,7 @@ namespace TableAnalizerTest.Managers
 
             // arrange
             using ExcelPackage package = new(testReportFilesForSKU[SourceReportFileKey.RedemtionWB].FileInfo);
-            _excelManager.GetExcelWorksheetBy(Redemtion_Report_List_Name, in package, out ExcelWorksheet? worksheet);
+            ExcelReportManager.GetExcelWorksheetBy(Redemtion_Report_List_Name, in package, out ExcelWorksheet? worksheet);
             ExcelReportManager.GetRangeSourceReportRows(in worksheet!, ref _redemtionWBRangeSourceReportRows);
 
             // act
@@ -207,7 +207,7 @@ namespace TableAnalizerTest.Managers
 
             // act 
             using ExcelPackage package = new(testReportFilesRemainingWB.FileInfo);
-            _excelManager.GetExcelWorksheetBy("TDSheet", in package, out ExcelWorksheet? worksheet);
+            ExcelReportManager.GetExcelWorksheetBy("TDSheet", in package, out ExcelWorksheet? worksheet);
 
             // assert 01
             Assert.That(worksheet, Is.Not.EqualTo(null));
@@ -240,7 +240,7 @@ namespace TableAnalizerTest.Managers
 
             // arrange
             using ExcelPackage package = new(testReportFilesRemainingWB.FileInfo);
-            _excelManager.GetExcelWorksheetBy("TDSheet", in package, out ExcelWorksheet? worksheet);
+            ExcelReportManager.GetExcelWorksheetBy("TDSheet", in package, out ExcelWorksheet? worksheet);
             ExcelReportManager.GetRangeSourceReportRows(in worksheet!, ref _remainingWBRangeSourceReportRows);
 
             package.Dispose();
