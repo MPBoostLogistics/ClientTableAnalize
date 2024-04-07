@@ -23,6 +23,8 @@ namespace TableAnalizerTest.Managers
         private const string SPACE_SEPARATOR = "\u0020";
         private const string FIRST_ROOM_NAME = "1 - Помещение приемки, сортировки и упаковки";
         private const string SECOND_ROOM_NAME = "2 - Помещение длительного хранения и отгрузки";
+        private const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
+        private const int LAST_MARKER_KEY_OFFSET = 2;
         #endregion
 
         #region Functionality
@@ -59,7 +61,7 @@ namespace TableAnalizerTest.Managers
                 new(17, "Остаток", typeof(int))
             ];
 
-            _remainingWBRangeSourceReportRows = [new(_remainingWBSourceCells01, FIRST_ROOM_NAME), new(_remainingWBSourceCells02, SECOND_ROOM_NAME)];
+            _remainingWBRangeSourceReportRows = [new(_remainingWBSourceCells01, FIRST_ROOM_NAME), new(_remainingWBSourceCells02, SECOND_ROOM_NAME, (LAST_MARKER_KEY, LAST_MARKER_KEY_OFFSET))];
         }
 
         [Test, Order(1)]
@@ -190,7 +192,7 @@ namespace TableAnalizerTest.Managers
         }
 
         [Test, Order(6)]
-        public void GetRowIndexByStringKey_Test() 
+        public void GetRowIndexByStringKey_Test()
         {
             // input test assert
             var remainingWBKey = SourceReportFileKey.RemainingWB;
@@ -204,6 +206,7 @@ namespace TableAnalizerTest.Managers
             // arrange
             var testFirstIndex = 14;
             var testSecondIndex = 1237;
+            var testLastIndex = 2430;
 
             // act 
             using ExcelPackage package = new(testReportFilesRemainingWB.FileInfo);
@@ -214,14 +217,15 @@ namespace TableAnalizerTest.Managers
 
             var firstIndexInTest = ExcelReportManager.GetRowIndexBy(FIRST_ROOM_NAME, in worksheet);
             var secondIndexInTest = ExcelReportManager.GetRowIndexBy(SECOND_ROOM_NAME, in worksheet);
+            var lastIndexInTest = ExcelReportManager.GetRowIndexBy(LAST_MARKER_KEY, in worksheet);
 
             // assert 02
             Assert.Multiple(() =>
             {
                 Assert.That(firstIndexInTest, Is.EqualTo(testFirstIndex));
                 Assert.That(secondIndexInTest, Is.EqualTo(testSecondIndex));
+                Assert.That(lastIndexInTest, Is.EqualTo(testLastIndex));
             });
-
 
             package.Dispose();
         }
@@ -239,9 +243,23 @@ namespace TableAnalizerTest.Managers
             });
 
             // arrange
+            var testingFirstRange = Enumerable.Range(14 + 1, 1237 - 1);     // 15, 1236
+            var testingSecondRange = Enumerable.Range(1237 + 1, 2430 - 2);  // 1238, 2428
+
             using ExcelPackage package = new(testReportFilesRemainingWB.FileInfo);
             ExcelReportManager.GetExcelWorksheetBy("TDSheet", in package, out ExcelWorksheet? worksheet);
             ExcelReportManager.GetRangeSourceReportRows(in worksheet!, ref _remainingWBRangeSourceReportRows);
+
+            // act 
+
+            ExcelReportManager.GetRangeSourceReportRows(in worksheet!, ref _remainingWBRangeSourceReportRows);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(worksheet, Is.Not.EqualTo(null));
+                Assert.That(_remainingWBRangeSourceReportRows[0].RowsRange, Is.EqualTo(testingFirstRange));
+                Assert.That(_remainingWBRangeSourceReportRows[1].RowsRange, Is.EqualTo(testingSecondRange));
+            });
 
             package.Dispose();
         }

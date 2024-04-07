@@ -511,6 +511,9 @@ namespace ClientTableAnalizer.Objects.Managers
 
         public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSource, int startRangeRowIndex = 1) 
         {
+            Exception missingStringKeyExc = new ("Указание строкового ключа для диапазона обязательно");
+            Exception missingIntIndexExc = new ("Индекс строки по указанному ключу не был найден.");
+            Exception terminatingStringExc = new("В последнем диапазоне обязательно использование завершающего маркера.");
 
             for (int i = 0; i < rangeSource.Count; i++)
             {
@@ -522,17 +525,26 @@ namespace ClientTableAnalizer.Objects.Managers
                 } 
                 else 
                 {
-                    var currentRowStringKey = rangeSource[i].Key ?? throw new Exception("Указание строкового ключа для диапазона обязательно");
-                    var startRowIndex = GetRowIndexBy(rangeSource[i].Key!, in worksheet);
+                    var currentRowStringKey = rangeSource[i].Key ?? throw missingStringKeyExc;
+                    int startRowIndex = GetRowIndexBy(currentRowStringKey, in worksheet) ?? throw missingIntIndexExc;
+                    int lastRowIndex;
 
-                    // Индекс строки с ключом
-                    // Индекс строки со следующим ключом
-
+                    // If this is last element
+                    if (i == rangeSource.Count - 1) 
+                    {
+                        var (key, offset) = rangeSource[i].TerminatingStringValue ?? throw terminatingStringExc;
+                        lastRowIndex = GetRowIndexBy(key, in worksheet) ?? throw missingIntIndexExc;
+                        rangeSource[i].SetRange(startRowIndex + 1, lastRowIndex - offset);
+                    }
+                    // If this is not last element
+                    else 
+                    {
+                        var lastRowStringKey = rangeSource[i + 1].Key ?? throw missingStringKeyExc;
+                        lastRowIndex = GetRowIndexBy(lastRowStringKey, in worksheet) ?? throw missingIntIndexExc;
+                        rangeSource[i].SetRange(startRowIndex + 1, lastRowIndex - 1);
+                    }
                 }
             }
-
-            // ..
-
         }
 
 
