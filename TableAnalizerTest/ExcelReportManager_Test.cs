@@ -31,6 +31,8 @@ namespace TableAnalizerTest.Managers
         private const string SECOND_ROOM_NAME = "2 - Помещение длительного хранения и отгрузки";
         private const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
         private const int LAST_MARKER_KEY_OFFSET = 2;
+        private const int  REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01 = 1222; 
+        private const int  REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02 = 1190; 
         #endregion
 
         #region Functionality
@@ -64,12 +66,11 @@ namespace TableAnalizerTest.Managers
             [
                 new(1, "Артикул", typeof(int), true),
                 new(6, "Название товара", typeof(string), true), // TODO: Разделить на бренд и номенклатуру
-                new(17, "Остаток", typeof(int), true)
+                new(17, "Остаток", typeof(int), false)
             ];
 
             _remainingWBRangeSourceReportRows = [new(_remainingWBSourceCells01, FIRST_ROOM_NAME), new(_remainingWBSourceCells02, SECOND_ROOM_NAME, (LAST_MARKER_KEY, LAST_MARKER_KEY_OFFSET))];
 
-            
         }
 
         [Test, Order(1)]
@@ -245,8 +246,11 @@ namespace TableAnalizerTest.Managers
             Assert.That(_remainingWBWorksheet, Is.Not.EqualTo(null));
 
             // arrange
-            var testingFirstRange = Enumerable.Range(14 + 1, 1237 - 1);     // 15, 1236
-            var testingSecondRange = Enumerable.Range(1237 + 1, 2430 - 2);  // 1238, 2428
+            var testingFirstRangeFirstIndex = 14 + 1;
+            var testingFirstRange = Enumerable.Range(testingFirstRangeFirstIndex, 1237 - testingFirstRangeFirstIndex);     // 15, 1236 = 1222
+            
+            var testingSecondRangeFirstIndex = 1237 + 1;
+            var testingSecondRange = Enumerable.Range(testingSecondRangeFirstIndex, 2428 - testingSecondRangeFirstIndex);  // 1238, 2428 = 1190
 
             // act 
             ExcelReportManager.GetRangeSourceReportRows(in _remainingWBWorksheet, ref _remainingWBRangeSourceReportRows);
@@ -254,8 +258,14 @@ namespace TableAnalizerTest.Managers
             // assert 02 
             Assert.Multiple(() =>
             {
+                Assert.That(testingFirstRange.Count(), Is.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01));
+                Assert.That(testingSecondRange.Count(), Is.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02));
+
                 Assert.That(_remainingWBRangeSourceReportRows[0].RowsIndexRange, Is.EqualTo(testingFirstRange));
+                Assert.That(_remainingWBRangeSourceReportRows[0].RowsIndexRange!.Count, Is.EqualTo(testingFirstRange.Count()));
+
                 Assert.That(_remainingWBRangeSourceReportRows[1].RowsIndexRange, Is.EqualTo(testingSecondRange));
+                Assert.That(_remainingWBRangeSourceReportRows[1].RowsIndexRange!.Count, Is.EqualTo(testingSecondRange.Count()));
             });
 
         }
@@ -277,6 +287,27 @@ namespace TableAnalizerTest.Managers
             {
                 Assert.That(_redemtionWBRangeSourceReportRows, Has.Count.EqualTo(1));
                 Assert.That(_redemtionWBRangeSourceReportRows[0].Values, Has.Count.EqualTo(redemtionWBRangeSourceReportRowsCount));
+            });
+        }
+
+        [Test, Order(9)]
+        public void GetRawDataFromExcelRows_ManyRange_Test() 
+        {
+            // input assert
+            Assert.That(_remainingWBWorksheet, Is.Not.EqualTo(null));
+
+            // arrange
+            // ...
+
+            // act
+            ExcelReportManager.GetRawDataFromExcelRows(in _remainingWBWorksheet, ref _remainingWBRangeSourceReportRows); 
+
+            // assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_remainingWBRangeSourceReportRows, Has.Count.EqualTo(2));
+                Assert.That(_remainingWBRangeSourceReportRows[0]!.Values!, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01));
+                Assert.That(_remainingWBRangeSourceReportRows[1]!.Values!, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02));
             });
         }
 

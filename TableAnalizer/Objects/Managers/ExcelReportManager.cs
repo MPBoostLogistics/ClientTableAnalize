@@ -520,6 +520,13 @@ namespace ClientTableAnalizer.Objects.Managers
         public static int? GetRowIndexBy(string key, in ExcelWorksheet worksheet) =>
             worksheet.Cells.FirstOrDefault(c => c.Value != null && c.Value.ToString()?.Trim() == key)?.Start.Row;
 
+        /// <summary>
+        /// Gets data from row ranges in specified Excel worksheet.
+        /// </summary>
+        /// <param name="workSheet">Specified Excel worksheet</param>
+        /// <param name="reportRowsRanges">List of ranges.</param>
+        /// <exception cref="ArgumentException">Exceptions when there is a null range and a null range of rows in it.</exception>
+        /// <remarks><i>New version, tested</i></remarks>
         public static void GetRawDataFromExcelRows(in ExcelWorksheet workSheet, ref List<RangeSourceReportRows> reportRowsRanges)
         {
             // Iterating Ranges
@@ -540,7 +547,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 {
                     var rowIndex = rowsIndexRange[j];
 
-                    if (GetValuesFromRow(in workSheet, rowIndex , in currentSourceCells, out Dictionary<string, object>? values) &&
+                    if (GetValuesFromRow(in workSheet, rowIndex, in currentSourceCells, out Dictionary<string, object>? values) &&
                         values is not null)
                     {
                         reportRowsRange.SetValues(values);
@@ -550,6 +557,15 @@ namespace ClientTableAnalizer.Objects.Managers
             }
         }
 
+        /// <summary>
+        /// Gets data from a range row in specified Excel worksheet.
+        /// </summary>
+        /// <param name="workSheet">Specified Excel worksheet.</param>
+        /// <param name="rowIndex">Row index.</param>
+        /// <param name="sourceCells">A list with a description of source cells in a row.</param>
+        /// <param name="values">Dictionary of retrieved values by row.</param>
+        /// <returns>Boolean flag for success of completed operation.</returns>
+        /// <remarks><i>New version, tested</i></remarks>
         public static bool GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells, out Dictionary<string, object>? values)
         {
             values = new();
@@ -561,27 +577,37 @@ namespace ClientTableAnalizer.Objects.Managers
                 var value = workSheet.Cells[rowIndex, sorceCell.ColIndex].Value;
 
                 // nullable check
-                if ((value is null || string.IsNullOrEmpty(value.ToString()))
-                    && sorceCell.IsValueRequired)
+                if (value is null || string.IsNullOrEmpty(value.ToString()))
                 {
-                    break;
-                };
-
-                // filter check
-                var stringValue = value!.ToString();
-                if (sorceCell.FilterString is not null &&
-                    stringValue!.Trim().ToLower() != sorceCell.FilterString.Trim().ToLower())
-                {
-                    break;
+                    if (sorceCell.IsValueRequired) break;
+                    value = 0;
                 }
 
-                // Set value
-                values.Add(sorceCell.Name, stringValue!);
+                // filter check
+                if (value is not null)
+                {
+                    var stringValue = value.ToString();
+                    if (sorceCell.FilterString is not null &&
+                        stringValue!.Trim().ToLower() != sorceCell.FilterString.Trim().ToLower())
+                    {
+                        break;
+                    }
+
+                    // Set value
+                    values.Add(sorceCell.Name, stringValue!);
+                }
             }
 
             return Equals(values.Count, sourceCells.Count);
         }
 
+        /// <summary>
+        /// Gets row ranges in an Excel worksheet.
+        /// </summary>
+        /// <param name="worksheet">Excel worksheet.</param>
+        /// <param name="rangeSource">Range prototypes.</param>
+        /// <param name="startRangeRowIndex">Start index.</param>
+        /// <remarks><i>New version, tested</i></remarks>
         public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSource, int startRangeRowIndex = 1)
         {
             Exception missingStringKeyExc = new("Указание строкового ключа для диапазона обязательно");
@@ -596,10 +622,13 @@ namespace ClientTableAnalizer.Objects.Managers
                     var dim = worksheet.Dimension;
                     rangeSource[i].SetRange(startRangeRowIndex + 1, dim.End.Row - 1);
                 }
+                // Если не элемент и у низ есть ключи
                 else
                 {
                     var currentRowStringKey = rangeSource[i].Key ?? throw missingStringKeyExc;
                     int startRowIndex = GetRowIndexBy(currentRowStringKey, in worksheet) ?? throw missingIntIndexExc;
+                    int start = startRowIndex + 1;
+
                     int lastRowIndex;
 
                     // If this is last element
@@ -607,26 +636,22 @@ namespace ClientTableAnalizer.Objects.Managers
                     {
                         var (key, offset) = rangeSource[i].TerminatingStringValue ?? throw terminatingStringExc;
                         lastRowIndex = GetRowIndexBy(key, in worksheet) ?? throw missingIntIndexExc;
-                        rangeSource[i].SetRange(startRowIndex + 1, lastRowIndex - offset);
+                        rangeSource[i].SetRange(start, lastRowIndex - start - offset);
                     }
                     // If this is not last element
                     else
                     {
-                        var lastRowStringKey = rangeSource[i + 1].Key ?? throw missingStringKeyExc;
-                        lastRowIndex = GetRowIndexBy(lastRowStringKey, in worksheet) ?? throw missingIntIndexExc;
-                        rangeSource[i].SetRange(startRowIndex + 1, lastRowIndex - 1);
+                        var lastRowStringKey = rangeSource[i + 1].Key
+                            ?? throw missingStringKeyExc;
+
+                        lastRowIndex = GetRowIndexBy(lastRowStringKey, in worksheet) ??
+                            throw missingIntIndexExc;
+
+                        rangeSource[i].SetRange(start, lastRowIndex - start);
                     }
                 }
             }
         }
-
-
-        private static bool IsStringFilterMatches(object? value, string? filterString) =>
-            value is not null &&
-            filterString is not null &&
-            !string.IsNullOrEmpty(value.ToString()) &&
-            string.Equals(value.ToString()!.Trim().ToLower(), filterString.Trim().ToLower());
-
         #endregion
     }
 }
