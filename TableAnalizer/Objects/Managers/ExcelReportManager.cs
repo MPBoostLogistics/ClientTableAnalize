@@ -1,6 +1,8 @@
 #nullable enable
 
 using System.Diagnostics;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Parsing;
 using ClientTableAnalizer.Objects.SKUItems;
@@ -188,7 +190,7 @@ namespace ClientTableAnalizer.Objects.Managers
         // - недостачи (опционально)
         // - пустышки (опционально)
 
-        public double AnalizeReport(SourceReportFileKey reportFileKey, string workSheetName,  bool isRequred = true)
+        public double AnalizeReport<T>(SourceReportFileKey reportFileKey, string workSheetName, out List<T>? items, bool isRequred = true)
         {
             var stopwatch = new Stopwatch();
 
@@ -202,10 +204,16 @@ namespace ClientTableAnalizer.Objects.Managers
 
             // Get report file 
             SourceReportFileForSKU? sourceReportFile = GetReportFile(reportFileKey, isRequred);
-            if (sourceReportFile == null && !isRequred) return StopMethod();
+            if (sourceReportFile == null && !isRequred)
+            {
+                items = null;
+                return StopMethod();
+            }
+
+            items = new List<T>();
 
             using ExcelPackage package = new(sourceReportFile!.FileInfo);
-            
+
             var worksheet = package.Workbook.Worksheets.FirstOrDefault(sh => sh.Name == workSheetName) ??
                 throw new Exception($"В книге Excel нет листа с именем '{workSheetName}'.");
 
@@ -213,6 +221,9 @@ namespace ClientTableAnalizer.Objects.Managers
 
 
             package.Dispose();
+
+
+            items = null; // Dummy
             return StopMethod();
         }
 
@@ -498,7 +509,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public static void GetExcelWorksheetBy(string name, in ExcelPackage excelPackage, out ExcelWorksheet? worksheet) =>
             worksheet = excelPackage.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == name);
-        
+
         /// <summary>
         /// Returns index of row from an Excel workbook by string value (key).
         /// </summary>
@@ -506,38 +517,100 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="worksheet">Excel worksheet for searching.</param>
         /// <returns>Integer index of row or null.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public static int? GetRowIndexBy(string key, in ExcelWorksheet worksheet) => 
+        public static int? GetRowIndexBy(string key, in ExcelWorksheet worksheet) =>
             worksheet.Cells.FirstOrDefault(c => c.Value != null && c.Value.ToString()?.Trim() == key)?.Start.Row;
 
-        public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSource, int startRangeRowIndex = 1) 
+        public static void GetRawDataFromExcelRows(in ExcelWorksheet workSheet, ref List<RangeSourceReportRows> reportRowsRanges)
         {
-            Exception missingStringKeyExc = new ("Указание строкового ключа для диапазона обязательно");
-            Exception missingIntIndexExc = new ("Индекс строки по указанному ключу не был найден.");
+            // Iterating Ranges
+            for (int i = 0; i < reportRowsRanges.Count; i++)
+            {
+                RangeSourceReportRows? reportRowsRange = reportRowsRanges[i];
+
+                if (reportRowsRange is null || reportRowsRange.RowsIndexRange is null)
+                    throw new ArgumentException("Range for table or row index range cannot be empty");
+
+                // Iterating Rows 
+                var rowsIndexRange = reportRowsRange.RowsIndexRange.ToList();
+                var currentSourceCells = reportRowsRange.SourceCells;
+
+                Trace.Write($"currentSourceCells Count: {currentSourceCells.Count}");
+
+                for (int j = 0; j < rowsIndexRange.Count; j++)
+                {
+                    var rowIndex = rowsIndexRange[j];
+
+                    if (GetValuesFromRow(in workSheet, rowIndex , in currentSourceCells, out Dictionary<string, object>? values) &&
+                        values is not null)
+                    {
+                        reportRowsRange.SetValues(values);
+                        reportRowsRanges![i] = reportRowsRange;
+                    }
+                }
+            }
+        }
+
+        public static bool GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells, out Dictionary<string, object>? values)
+        {
+            values = new();
+
+            // Iterate over table columns at a given row index
+            for (int i = 0; i < sourceCells.Count; i++)
+            {
+                SourceCell sorceCell = sourceCells[i];
+                var value = workSheet.Cells[rowIndex, sorceCell.ColIndex].Value;
+
+                // nullable check
+                if ((value is null || string.IsNullOrEmpty(value.ToString()))
+                    && sorceCell.IsValueRequired)
+                {
+                    break;
+                };
+
+                // filter check
+                var stringValue = value!.ToString();
+                if (sorceCell.FilterString is not null &&
+                    stringValue!.Trim().ToLower() != sorceCell.FilterString.Trim().ToLower())
+                {
+                    break;
+                }
+
+                // Set value
+                values.Add(sorceCell.Name, stringValue!);
+            }
+
+            return Equals(values.Count, sourceCells.Count);
+        }
+
+        public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSource, int startRangeRowIndex = 1)
+        {
+            Exception missingStringKeyExc = new("Указание строкового ключа для диапазона обязательно");
+            Exception missingIntIndexExc = new("Индекс строки по указанному ключу не был найден.");
             Exception terminatingStringExc = new("В последнем диапазоне обязательно использование завершающего маркера.");
 
             for (int i = 0; i < rangeSource.Count; i++)
             {
                 // Если один элемент и у него нет ключа
-                if(rangeSource.Count == 1 && rangeSource[i].Key == null) 
+                if (rangeSource.Count == 1 && rangeSource[i].Key == null)
                 {
                     var dim = worksheet.Dimension;
                     rangeSource[i].SetRange(startRangeRowIndex + 1, dim.End.Row - 1);
-                } 
-                else 
+                }
+                else
                 {
                     var currentRowStringKey = rangeSource[i].Key ?? throw missingStringKeyExc;
                     int startRowIndex = GetRowIndexBy(currentRowStringKey, in worksheet) ?? throw missingIntIndexExc;
                     int lastRowIndex;
 
                     // If this is last element
-                    if (i == rangeSource.Count - 1) 
+                    if (i == rangeSource.Count - 1)
                     {
                         var (key, offset) = rangeSource[i].TerminatingStringValue ?? throw terminatingStringExc;
                         lastRowIndex = GetRowIndexBy(key, in worksheet) ?? throw missingIntIndexExc;
                         rangeSource[i].SetRange(startRowIndex + 1, lastRowIndex - offset);
                     }
                     // If this is not last element
-                    else 
+                    else
                     {
                         var lastRowStringKey = rangeSource[i + 1].Key ?? throw missingStringKeyExc;
                         lastRowIndex = GetRowIndexBy(lastRowStringKey, in worksheet) ?? throw missingIntIndexExc;
@@ -547,6 +620,12 @@ namespace ClientTableAnalizer.Objects.Managers
             }
         }
 
+
+        private static bool IsStringFilterMatches(object? value, string? filterString) =>
+            value is not null &&
+            filterString is not null &&
+            !string.IsNullOrEmpty(value.ToString()) &&
+            string.Equals(value.ToString()!.Trim().ToLower(), filterString.Trim().ToLower());
 
         #endregion
     }

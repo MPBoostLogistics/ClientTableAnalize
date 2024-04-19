@@ -19,7 +19,13 @@ namespace TableAnalizerTest.Managers
         private List<SourceCell> _remainingWBSourceCells01;
         private List<SourceCell> _remainingWBSourceCells02;
         private List<RangeSourceReportRows> _redemtionWBRangeSourceReportRows;
+        private SourceReportFileForSKU? _testReportFilesRemainingWB;
+        private SourceReportFileForSKU? _testReportFilesRedemptionWB;
+        private ExcelWorksheet? _redemtionWBWorksheet;
+        private ExcelWorksheet? _remainingWBWorksheet;
         private List<RangeSourceReportRows> _remainingWBRangeSourceReportRows;
+        private ExcelPackage? _testRemainingWBPackage;
+        private ExcelPackage? _testRedemptionWBPackage;
         private const string SPACE_SEPARATOR = "\u0020";
         private const string FIRST_ROOM_NAME = "1 - Помещение приемки, сортировки и упаковки";
         private const string SECOND_ROOM_NAME = "2 - Помещение длительного хранения и отгрузки";
@@ -38,30 +44,32 @@ namespace TableAnalizerTest.Managers
 
             _redemtionWBSourceCells =
             [
-                new(2, "Артикул", typeof(int)),
-                new(9, "Статус доставки", typeof(string)),
-                new(10, "Логистика", typeof(string), "Да" ),
-                new(14, "Стоимость товара", typeof(string)) // 1137 руб.
+                new(1, "Артикул", typeof(int), true),
+                new(9, "Статус доставки", typeof(string), true),
+                new(10, "Логистика", typeof(string), true, "Да"),
+                new(14, "Стоимость товара",  typeof(string), true) // 1137 руб.
             ];
 
             _redemtionWBRangeSourceReportRows = [new(_redemtionWBSourceCells)];
 
             _remainingWBSourceCells01 =
             [
-                new(1, "Артикул", typeof(int)),
-                new(6, "Название товара", typeof(string)), // TODO: Разделить на бренд и номенклатуру
-                new(15, "Приход", typeof(int)),
-                new(17, "Остаток", typeof(int))
+                new(1, "Артикул", typeof(int), true),
+                new(6, "Название товара", typeof(string), true), // TODO: Разделить на бренд и номенклатуру
+                new(15, "Приход", typeof(int), false),
+                new(17, "Остаток", typeof(int), false)
             ];
 
             _remainingWBSourceCells02 =
             [
-                new(1, "Артикул", typeof(int)),
-                new(6, "Название товара", typeof(string)), // TODO: Разделить на бренд и номенклатуру
-                new(17, "Остаток", typeof(int))
+                new(1, "Артикул", typeof(int), true),
+                new(6, "Название товара", typeof(string), true), // TODO: Разделить на бренд и номенклатуру
+                new(17, "Остаток", typeof(int), true)
             ];
 
             _remainingWBRangeSourceReportRows = [new(_remainingWBSourceCells01, FIRST_ROOM_NAME), new(_remainingWBSourceCells02, SECOND_ROOM_NAME, (LAST_MARKER_KEY, LAST_MARKER_KEY_OFFSET))];
+
+            
         }
 
         [Test, Order(1)]
@@ -133,16 +141,19 @@ namespace TableAnalizerTest.Managers
             testReportFilesForSKU.Add(SourceReportFileKey.RemainingWB, _excelManager.ReportsPaths
                 .FirstOrDefault(rp => rp.Value.ReportKey == SourceReportFileKey.RemainingWB).Value);
 
+
+            _testReportFilesRemainingWB = testReportFilesForSKU[SourceReportFileKey.RemainingWB];
+            _testReportFilesRedemptionWB = testReportFilesForSKU[SourceReportFileKey.RedemtionWB];
+
+            _testRemainingWBPackage = new(_testReportFilesRemainingWB.FileInfo);
+            _testRedemptionWBPackage = new(_testReportFilesRedemptionWB.FileInfo);
         }
 
         [Test, Order(4)]
         public void GetReportFile_Test()
         {
             // inpet test assert
-            Assert.That(testReportFilesForSKU[SourceReportFileKey.RedemtionWB], Is.Not.EqualTo(null));
-
-            // arrange
-            var _redemtionFileWB = new SourceReportFileForSKU(testReportFilesForSKU[SourceReportFileKey.RedemtionWB].FileInfo);
+            Assert.That(_testReportFilesRedemptionWB, Is.Not.EqualTo(null));
 
             // act 1
             var getReportFilesTask = _excelManager.GetReportFiles(_testFilesPath);
@@ -157,8 +168,8 @@ namespace TableAnalizerTest.Managers
                 Assert.Multiple(() =>
                 {
                     Assert.That(testReportFilesForSKU[SourceReportFileKey.RedemtionWB], Is.Not.EqualTo(null));
-                    Assert.That(_redemtionFileWB, Is.Not.EqualTo(null));
-                    Assert.That(getReportRedemtionFileWB, Is.EqualTo(_redemtionFileWB));
+                    Assert.That(_testReportFilesRedemptionWB, Is.Not.EqualTo(null));
+                    Assert.That(getReportRedemtionFileWB, Is.EqualTo(_testReportFilesRedemptionWB));
                 });
             });
         }
@@ -169,14 +180,15 @@ namespace TableAnalizerTest.Managers
             // input test assert
             Assert.Multiple(() =>
             {
-                Assert.That(testReportFilesForSKU[SourceReportFileKey.RedemtionWB], Is.Not.EqualTo(null));
-                Assert.That(testReportFilesForSKU[SourceReportFileKey.RedemtionWB].ReportKey, Is.EqualTo(SourceReportFileKey.RedemtionWB));
+                Assert.That(_testRedemptionWBPackage, Is.Not.EqualTo(null));
+                Assert.That(_testReportFilesRedemptionWB, Is.Not.EqualTo(null));
+                Assert.That(_testReportFilesRedemptionWB!.ReportKey, Is.EqualTo(SourceReportFileKey.RedemtionWB));
             });
 
             // arrange
-            using ExcelPackage package = new(testReportFilesForSKU[SourceReportFileKey.RedemtionWB].FileInfo);
-            ExcelReportManager.GetExcelWorksheetBy(Redemtion_Report_List_Name, in package, out ExcelWorksheet? worksheet);
-            ExcelReportManager.GetRangeSourceReportRows(in worksheet!, ref _redemtionWBRangeSourceReportRows);
+
+            ExcelReportManager.GetExcelWorksheetBy(Redemtion_Report_List_Name, in _testRedemptionWBPackage, out _redemtionWBWorksheet);
+            ExcelReportManager.GetRangeSourceReportRows(in _redemtionWBWorksheet!, ref _redemtionWBRangeSourceReportRows);
 
             // act
             var testingRange = Enumerable.Range(2, 148706 - 1);
@@ -184,24 +196,16 @@ namespace TableAnalizerTest.Managers
             // assert
             Assert.Multiple(() =>
             {
-                Assert.That(worksheet, Is.Not.EqualTo(null));
-                Assert.That(_redemtionWBRangeSourceReportRows[0].RowsRange, Is.EqualTo(testingRange));
+                Assert.That(_redemtionWBWorksheet, Is.Not.EqualTo(null));
+                Assert.That(_redemtionWBRangeSourceReportRows[0].RowsIndexRange, Is.EqualTo(testingRange));
             });
-
-            package.Dispose();
         }
 
         [Test, Order(6)]
         public void GetRowIndexByStringKey_Test()
         {
             // input test assert
-            var remainingWBKey = SourceReportFileKey.RemainingWB;
-            var testReportFilesRemainingWB = testReportFilesForSKU[remainingWBKey];
-            Assert.Multiple(() =>
-            {
-                Assert.That(testReportFilesRemainingWB, Is.Not.EqualTo(null));
-                Assert.That(testReportFilesRemainingWB.ReportKey, Is.EqualTo(remainingWBKey));
-            });
+            Assert.That(_testRemainingWBPackage, Is.Not.EqualTo(null));
 
             // arrange
             var testFirstIndex = 14;
@@ -209,15 +213,15 @@ namespace TableAnalizerTest.Managers
             var testLastIndex = 2430;
 
             // act 
-            using ExcelPackage package = new(testReportFilesRemainingWB.FileInfo);
-            ExcelReportManager.GetExcelWorksheetBy("TDSheet", in package, out ExcelWorksheet? worksheet);
+   
+            ExcelReportManager.GetExcelWorksheetBy("TDSheet", in _testRemainingWBPackage, out _remainingWBWorksheet);
 
             // assert 01
-            Assert.That(worksheet, Is.Not.EqualTo(null));
+            Assert.That(_remainingWBWorksheet, Is.Not.EqualTo(null));
 
-            var firstIndexInTest = ExcelReportManager.GetRowIndexBy(FIRST_ROOM_NAME, in worksheet);
-            var secondIndexInTest = ExcelReportManager.GetRowIndexBy(SECOND_ROOM_NAME, in worksheet);
-            var lastIndexInTest = ExcelReportManager.GetRowIndexBy(LAST_MARKER_KEY, in worksheet);
+            var firstIndexInTest = ExcelReportManager.GetRowIndexBy(FIRST_ROOM_NAME, in _remainingWBWorksheet);
+            var secondIndexInTest = ExcelReportManager.GetRowIndexBy(SECOND_ROOM_NAME, in _remainingWBWorksheet);
+            var lastIndexInTest = ExcelReportManager.GetRowIndexBy(LAST_MARKER_KEY, in _remainingWBWorksheet);
 
             // assert 02
             Assert.Multiple(() =>
@@ -226,46 +230,61 @@ namespace TableAnalizerTest.Managers
                 Assert.That(secondIndexInTest, Is.EqualTo(testSecondIndex));
                 Assert.That(lastIndexInTest, Is.EqualTo(testLastIndex));
             });
-
-            package.Dispose();
         }
 
         [Test, Order(7)]
         public void GetRangesSourceReportRows_ManyRange_Test()
         {
+             // input assert 01
+            Assert.That(_testRemainingWBPackage, Is.Not.EqualTo(null));
+            
+            // act 
+            ExcelReportManager.GetExcelWorksheetBy("TDSheet", in _testRemainingWBPackage, out _remainingWBWorksheet);
+
             // input test assert
-            var remainingWBKey = SourceReportFileKey.RemainingWB;
-            var testReportFilesRemainingWB = testReportFilesForSKU[remainingWBKey];
-            Assert.Multiple(() =>
-            {
-                Assert.That(testReportFilesRemainingWB, Is.Not.EqualTo(null));
-                Assert.That(testReportFilesRemainingWB.ReportKey, Is.EqualTo(remainingWBKey));
-            });
+            Assert.That(_remainingWBWorksheet, Is.Not.EqualTo(null));
 
             // arrange
             var testingFirstRange = Enumerable.Range(14 + 1, 1237 - 1);     // 15, 1236
             var testingSecondRange = Enumerable.Range(1237 + 1, 2430 - 2);  // 1238, 2428
 
-            using ExcelPackage package = new(testReportFilesRemainingWB.FileInfo);
-            ExcelReportManager.GetExcelWorksheetBy("TDSheet", in package, out ExcelWorksheet? worksheet);
-            ExcelReportManager.GetRangeSourceReportRows(in worksheet!, ref _remainingWBRangeSourceReportRows);
-
             // act 
-            ExcelReportManager.GetRangeSourceReportRows(in worksheet!, ref _remainingWBRangeSourceReportRows);
+            ExcelReportManager.GetRangeSourceReportRows(in _remainingWBWorksheet, ref _remainingWBRangeSourceReportRows);
 
+            // assert 02 
             Assert.Multiple(() =>
             {
-                Assert.That(worksheet, Is.Not.EqualTo(null));
-                Assert.That(_remainingWBRangeSourceReportRows[0].RowsRange, Is.EqualTo(testingFirstRange));
-                Assert.That(_remainingWBRangeSourceReportRows[1].RowsRange, Is.EqualTo(testingSecondRange));
+                Assert.That(_remainingWBRangeSourceReportRows[0].RowsIndexRange, Is.EqualTo(testingFirstRange));
+                Assert.That(_remainingWBRangeSourceReportRows[1].RowsIndexRange, Is.EqualTo(testingSecondRange));
             });
 
-            package.Dispose();
+        }
+
+        [Test, Order(8)]
+        public void GetRawDataFromExcelRows_SimpleRange_Test() 
+        {
+            // input assert
+            Assert.That(_redemtionWBWorksheet, Is.Not.EqualTo(null));
+
+            // arrange
+            int redemtionWBRangeSourceReportRowsCount = 61138;
+
+            // act
+            ExcelReportManager.GetRawDataFromExcelRows(in _redemtionWBWorksheet, ref _redemtionWBRangeSourceReportRows); 
+
+            // assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_redemtionWBRangeSourceReportRows, Has.Count.EqualTo(1));
+                Assert.That(_redemtionWBRangeSourceReportRows[0].Values, Has.Count.EqualTo(redemtionWBRangeSourceReportRowsCount));
+            });
         }
 
         protected override void EndTest()
         {
             base.EndTest();
+            _testRemainingWBPackage?.Dispose();
+            _testRedemptionWBPackage?.Dispose();
         }
         #endregion
 

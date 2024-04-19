@@ -1,3 +1,5 @@
+using Microsoft.VisualBasic;
+
 namespace ClientTableAnalizer.Objects.Parsing
 {
     /// <summary>
@@ -8,16 +10,20 @@ namespace ClientTableAnalizer.Objects.Parsing
         public string? Key { get; }
         public (string key, int offset)? TerminatingStringValue { get; }
         public List<SourceCell> SourceCells { get; }
-        public IEnumerable<int>? RowsRange { get; set; }
+        public IEnumerable<int>? RowsIndexRange { get; set; }
+        public List<Dictionary<string, object>> Values { get; private set; } = new();
 
-        public RangeSourceReportRows(List<SourceCell> sourceCells,  string? key = null, (string key, int offset)? terminatingStringValue = null)
+        public RangeSourceReportRows(List<SourceCell> sourceCells, string? key = null, (string key, int offset)? terminatingStringValue = null)
         {
             SourceCells = sourceCells;
             Key = key;
             TerminatingStringValue = terminatingStringValue;
         }
 
-        public void SetRange(int startRowIndex, int endRowIndex) => 
-            RowsRange = Enumerable.Range(startRowIndex, endRowIndex);
+        public void SetRange(int startRowIndex, int endRowIndex) =>
+            RowsIndexRange = Enumerable.Range(startRowIndex, endRowIndex);
+
+        public void SetValues(Dictionary<string, object> values) =>
+            Values.Add(values);
     }
 }
