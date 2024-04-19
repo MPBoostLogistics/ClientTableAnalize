@@ -251,7 +251,6 @@ namespace TableAnalizerTest.Managers
             ExcelReportManager.GetRangeSourceReportRows(in worksheet!, ref _remainingWBRangeSourceReportRows);
 
             // act 
-
             ExcelReportManager.GetRangeSourceReportRows(in worksheet!, ref _remainingWBRangeSourceReportRows);
 
             Assert.Multiple(() =>
