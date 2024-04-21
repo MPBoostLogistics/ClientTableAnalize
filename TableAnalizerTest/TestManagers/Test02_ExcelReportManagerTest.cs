@@ -3,10 +3,10 @@ using ClientTableAnalizer.Objects.Managers;
 using ClientTableAnalizer.Objects.Parsing;
 using OfficeOpenXml;
 
-namespace TableAnalizerTest.TestManagers 
+namespace TableAnalizerTest.TestManagers
 {
     [TestFixture, Order(2)]
-    public class ExcelReportManager_Test : BaseTests
+    public class Test02_ExcelReportManagerTest : BaseTests
     {
         #region Constants && variables
         private const string Ransoms_Report_List_Name = "Выкупы";
@@ -19,8 +19,8 @@ namespace TableAnalizerTest.TestManagers
         private const string SECOND_ROOM_NAME = "2 - Помещение длительного хранения и отгрузки";
         private const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
         private const int LAST_MARKER_KEY_OFFSET = 2;
-        private const int  REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01 = 1222; 
-        private const int  REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02 = 1190; 
+        private const int REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01 = 1222;
+        private const int REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02 = 1190;
         #endregion
 
         #region Functionality
@@ -47,14 +47,40 @@ namespace TableAnalizerTest.TestManagers
         }
 
         [Test, Order(1)]
+        public void CreateExcelPackages_Test()
+        {
+            // input assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(TestData._testReportFilesRedemptionWB, Is.Not.Null);
+                Assert.That(TestData._testReportFilesRansomsWB, Is.Not.Null);
+            });
+
+            // arrange
+            // ... 
+
+            // act
+            _testRansomsWBPackage = new(TestData._testReportFilesRedemptionWB.FileInfo);
+            _testRemainingWBPackage = new(TestData._testReportFilesRansomsWB.FileInfo);
+
+            // assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_testRansomsWBPackage, Is.Not.Null);
+                Assert.That(_testRemainingWBPackage, Is.Not.Null);
+            });
+        }
+
+
+        [Test, Order(2)]
         public void GetRangesSourceReportRows_OneRange_Test()
         {
             // input test assert
             Assert.Multiple(() =>
             {
                 Assert.That(_testRansomsWBPackage, Is.Not.EqualTo(null));
-                Assert.That(_testReportFilesRedemptionWB, Is.Not.EqualTo(null));
-                Assert.That(_testReportFilesRedemptionWB!.ReportKey, Is.EqualTo(SourceSKUReportFileKey.RansomsWB));
+                Assert.That(TestData._testReportFilesRedemptionWB, Is.Not.EqualTo(null));
+                Assert.That(TestData._testReportFilesRedemptionWB!.ReportKey, Is.EqualTo(SourceSKUReportFileKey.RansomsWB));
             });
 
             // arrange
@@ -73,7 +99,7 @@ namespace TableAnalizerTest.TestManagers
             });
         }
 
-        [Test, Order(2)]
+        [Test, Order(3)]
         public void GetRowIndexByStringKey_Test()
         {
             // input test assert
@@ -85,7 +111,7 @@ namespace TableAnalizerTest.TestManagers
             var testLastIndex = 2430;
 
             // act 
-   
+
             ExcelReportManager.GetExcelWorksheetBy("TDSheet", in _testRemainingWBPackage, out _remainingWBWorksheet);
 
             // assert 01
@@ -104,12 +130,12 @@ namespace TableAnalizerTest.TestManagers
             });
         }
 
-        [Test, Order(3)]
+        [Test, Order(4)]
         public void GetRangesSourceReportRows_ManyRange_Test()
         {
-             // input assert 01
+            // input assert 01
             Assert.That(_testRemainingWBPackage, Is.Not.EqualTo(null));
-            
+
             // act 
             ExcelReportManager.GetExcelWorksheetBy("TDSheet", in _testRemainingWBPackage, out _remainingWBWorksheet);
 
@@ -119,7 +145,7 @@ namespace TableAnalizerTest.TestManagers
             // arrange
             var testingFirstRangeFirstIndex = 14 + 1;
             var testingFirstRange = Enumerable.Range(testingFirstRangeFirstIndex, 1237 - testingFirstRangeFirstIndex);     // 15, 1236 = 1222
-            
+
             var testingSecondRangeFirstIndex = 1237 + 1;
             var testingSecondRange = Enumerable.Range(testingSecondRangeFirstIndex, 2428 - testingSecondRangeFirstIndex);  // 1238, 2428 = 1190
 
@@ -141,8 +167,8 @@ namespace TableAnalizerTest.TestManagers
 
         }
 
-        [Test, Order(4)]
-        public void GetRawDataFromExcelRows_SimpleRange_Test() 
+        [Test, Order(5)]
+        public void GetRawDataFromExcelRows_SimpleRange_Test()
         {
             // input assert
             Assert.That(_ransomsWBWorksheet, Is.Not.EqualTo(null));
@@ -151,7 +177,7 @@ namespace TableAnalizerTest.TestManagers
             int redemtionWBRangeSourceReportRowsCount = 61138;
 
             // act
-            ExcelReportManager.GetRawDataFromExcelRows(in _ransomsWBWorksheet, ref _testRansomsRangeSourceReportRows); 
+            ExcelReportManager.GetRawDataFromExcelRows(in _ransomsWBWorksheet, ref _testRansomsRangeSourceReportRows);
 
             // assert
             Assert.Multiple(() =>
@@ -161,8 +187,8 @@ namespace TableAnalizerTest.TestManagers
             });
         }
 
-        [Test, Order(5)]
-        public void GetRawDataFromExcelRows_ManyRange_Test() 
+        [Test, Order(6)]
+        public void GetRawDataFromExcelRows_ManyRange_Test()
         {
             // input assert
             Assert.That(_remainingWBWorksheet, Is.Not.EqualTo(null));
@@ -171,7 +197,7 @@ namespace TableAnalizerTest.TestManagers
             // ...
 
             // act
-            ExcelReportManager.GetRawDataFromExcelRows(in _remainingWBWorksheet, ref _remainingWBRangeSourceReportRows); 
+            ExcelReportManager.GetRawDataFromExcelRows(in _remainingWBWorksheet, ref _remainingWBRangeSourceReportRows);
 
             // assert
             Assert.Multiple(() =>
@@ -185,8 +211,10 @@ namespace TableAnalizerTest.TestManagers
         protected override void EndTest()
         {
             base.EndTest();
-            _testRemainingWBPackage?.Dispose();
+
             _testRansomsWBPackage?.Dispose();
+            _testRemainingWBPackage?.Dispose();
+            
         }
         #endregion
 

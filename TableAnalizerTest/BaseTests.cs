@@ -7,6 +7,7 @@ using OfficeOpenXml;
 
 namespace TableAnalizerTest.TestManagers 
 {
+    [TestFixture, Order(0)]
     public class BaseTests
     {
         #region Variables and constants
@@ -14,13 +15,10 @@ namespace TableAnalizerTest.TestManagers
         protected ExcelReportManager _excelManager;
         protected FileManager _fileManager;
         protected const int TEST_FILEINFOS_COUNT = 8;
-        protected string? _testFilesPath;
         protected IEnumerable<FileInfo>? testFileInfos;
         protected readonly Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> testReportFilesForSKU = [];
         protected ExcelPackage? _testRansomsWBPackage;
         protected ExcelPackage? _testRemainingWBPackage;
-        protected SourceReportFileForSKU? _testReportFilesRansomsWB;
-        protected SourceReportFileForSKU? _testReportFilesRedemptionWB;
         protected List<SourceCell> _testRansomsSourceCells;
         protected List<RangeSourceReportRows> _testRansomsRangeSourceReportRows;
 
@@ -35,7 +33,7 @@ namespace TableAnalizerTest.TestManagers
 
             // Create managers and init values 
             _fileManager = new();
-            _testFilesPath = string.Concat(_fileManager.ProjectDirectory, "/testFiles");
+            TestData.TestFilesPath = string.Concat(_fileManager.ProjectDirectory, "/testFiles");
 
             _excelManager = new();
 

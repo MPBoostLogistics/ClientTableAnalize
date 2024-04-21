@@ -5,20 +5,20 @@ using ClientTableAnalizer.Objects.SKUItems;
 namespace TableAnalizerTest.TestManagers
 {
     [TestFixture, Order(1)]
-    public class FileManager_Test : BaseTests
+    public class Test01_FileManagerTest : BaseTests
     {
         #region Functionality
         [Test, Order(1)]
         public void FilesPath_Test()
         {
             // input assert 
-            Assert.That(_testFilesPath, Is.Not.EqualTo(null));
+            Assert.That(TestData.TestFilesPath, Is.Not.EqualTo(null));
 
             // arrange
             // ... 
 
             // act 1
-            var dirInfo = new DirectoryInfo(_testFilesPath);
+            var dirInfo = new DirectoryInfo(TestData.TestFilesPath);
 
             // assert 1
             Assert.That(dirInfo, Is.Not.EqualTo(null));
@@ -55,13 +55,13 @@ namespace TableAnalizerTest.TestManagers
         public void GetReportFiles_Test()
         {
             // input assert 
-            Assert.That(_testFilesPath, Is.Not.EqualTo(null));
+            Assert.That(TestData.TestFilesPath, Is.Not.EqualTo(null));
 
             // arrange
             // ...
 
             // act
-            var getReportFilesTask = _fileManager.GetReportFiles(_testFilesPath);
+            var getReportFilesTask = _fileManager.GetReportFiles(TestData.TestFilesPath);
             getReportFilesTask.Wait();
 
             var succsess = _fileManager.IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys);
@@ -81,11 +81,8 @@ namespace TableAnalizerTest.TestManagers
             testReportFilesForSKU.Add(SourceSKUReportFileKey.RemainingWB, _fileManager.ReportsPaths
                 .FirstOrDefault(rp => rp.Value.ReportKey == SourceSKUReportFileKey.RemainingWB).Value);
 
-            _testReportFilesRansomsWB = testReportFilesForSKU[SourceSKUReportFileKey.RemainingWB];
-            _testReportFilesRedemptionWB = testReportFilesForSKU[SourceSKUReportFileKey.RansomsWB];
-
-            _testRansomsWBPackage = new(_testReportFilesRedemptionWB.FileInfo);
-            _testRemainingWBPackage = new(_testReportFilesRansomsWB.FileInfo);
+            TestData._testReportFilesRansomsWB = testReportFilesForSKU[SourceSKUReportFileKey.RemainingWB];
+            TestData._testReportFilesRedemptionWB = testReportFilesForSKU[SourceSKUReportFileKey.RansomsWB];
         }
 
         // [Test, Order(4)]
