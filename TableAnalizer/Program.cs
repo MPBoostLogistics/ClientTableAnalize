@@ -38,61 +38,61 @@ internal class Program
 
     private static async Task Main(string[] args)
     {
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        // ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-        excelManager.ManagerReached += Report;
-        skuManager.ManagerReached += Report;
+        // excelManager.ManagerReached += Report;
+        // skuManager.ManagerReached += Report;
 
-        Console.Clear();
+        // Console.Clear();
 
-        var helloString = $"" +
-            $"--------------------------------------------\n" +
-            $"Программа формирования отчета по клиенту логистики\n" +
-            $"Версия: {AppVersion}\n" +
-            $"---------------------------------------------";
+        // var helloString = $"" +
+        //     $"--------------------------------------------\n" +
+        //     $"Программа формирования отчета по клиенту логистики\n" +
+        //     $"Версия: {AppVersion}\n" +
+        //     $"---------------------------------------------";
 
-        Console.WriteLine(helloString);
+        // Console.WriteLine(helloString);
 
-        // Set deadline days
-        string deadLineDaysTitleMessage = "Введите срок дедлайна для клиента и нажмите 'Enter'\n(положительное целое число, отличное от 0): ";
-        string deadLineDaysSuccessMessage = "Срок дедлайна для текущего клиента";
-        int deadLineDays = await GetUserIntInfo(deadLineDaysTitleMessage, deadLineDaysSuccessMessage, failureMessage);
-        skuManager.SetDeadlineDays(deadLineDays);
+        // // Set deadline days
+        // string deadLineDaysTitleMessage = "Введите срок дедлайна для клиента и нажмите 'Enter'\n(положительное целое число, отличное от 0): ";
+        // string deadLineDaysSuccessMessage = "Срок дедлайна для текущего клиента";
+        // int deadLineDays = await GetUserIntInfo(deadLineDaysTitleMessage, deadLineDaysSuccessMessage, failureMessage);
+        // skuManager.SetDeadlineDays(deadLineDays);
 
-        await Task.Delay(500);
-        Console.WriteLine();
+        // await Task.Delay(500);
+        // Console.WriteLine();
 
-        // Set reports Path
-        string reportsPathTitleMessage = "Перетащите путь к директории c отчетами клиента и нажмите 'Enter':\n ";
-        string reportsPathSuccessMessage = "Директория c отчетами клиента:\n";
-        string reportsPath = await GetUserStringInfo(reportsPathTitleMessage, reportsPathSuccessMessage, failureMessage);
+        // // Set reports Path
+        // string reportsPathTitleMessage = "Перетащите путь к директории c отчетами клиента и нажмите 'Enter':\n ";
+        // string reportsPathSuccessMessage = "Директория c отчетами клиента:\n";
+        // string reportsPath = await GetUserStringInfo(reportsPathTitleMessage, reportsPathSuccessMessage, failureMessage);
         
-        try
-        {
-            var fileCount = excelManager.GetReportFiles(reportsPath);
-            var success = excelManager.IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys);
+        // try
+        // {
+        //     var fileCount = fileManager.GetReportFiles(reportsPath);
+        //     var success = excelManager.IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys);
 
-            if(!success || lostKeys.Count > 0) 
-            {   
-                var lastKey = lostKeys.Last();
-                var lostKeysString = string.Empty;
+        //     if(!success || lostKeys.Count > 0) 
+        //     {   
+        //         var lastKey = lostKeys.Last();
+        //         var lostKeysString = string.Empty;
 
-                foreach (var lostKey in lostKeys)
-                    lostKeysString = string.Concat(lostKeysString, lostKey, !Equals(lostKey, lastKey) ? ", " : ". ");
+        //         foreach (var lostKey in lostKeys)
+        //             lostKeysString = string.Concat(lostKeysString, lostKey, !Equals(lostKey, lastKey) ? ", " : ". ");
                 
-                var lostKeysMessage = string.Concat("Не предоставлены обязательные данные для анализа: ", lostKeysString);
-                goodByMessage = string.Concat(lostKeysMessage,"\n",goodByMessage);
+        //         var lostKeysMessage = string.Concat("Не предоставлены обязательные данные для анализа: ", lostKeysString);
+        //         goodByMessage = string.Concat(lostKeysMessage,"\n",goodByMessage);
 
-                await Report(goodByMessage, 2000, true);
-            }
-        }
-        catch (System.Exception ex)
-        {
-            goodByMessage = string.Concat($"Ошибка данных: {ex.Message}", "\n", goodByMessage);
-            await Report(goodByMessage, 2000, true);
-        }
+        //         await Report(goodByMessage, 2000, true);
+        //     }
+        // }
+        // catch (System.Exception ex)
+        // {
+        //     goodByMessage = string.Concat($"Ошибка данных: {ex.Message}", "\n", goodByMessage);
+        //     await Report(goodByMessage, 2000, true);
+        // }
 
-        await Task.Delay(1000);
+        // await Task.Delay(1000);
 
         // Запустить цепочку обработок
         // - выкупы wb и oz (обязательно)
@@ -631,7 +631,7 @@ internal class Program
         {
             skuManager.AnalyzeSKUs();
 
-            var outputPath = ExcelReportManager.CreateMainReportSheet("Отчет", skuManager.GetSKUs());
+           //. var outputPath = ExcelReportManager.CreateMainReportSheet("Отчет", skuManager.GetSKUs());
             //ExcelReportManager.SaveReportFiles();
 
             // Console.WriteLine($"Новый отчет по клиенту создан по пути: {outputPath}");

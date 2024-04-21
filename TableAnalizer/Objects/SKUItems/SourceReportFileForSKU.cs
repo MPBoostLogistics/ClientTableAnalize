@@ -105,7 +105,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
                             {
                                 case wbKey:
                                     // Отчет по клиенту +79164372997 (WB).xlsx
-                                    ReportKey = SourceSKUReportFileKey.RedemtionWB;
+                                    ReportKey = SourceSKUReportFileKey.RansomsWB;
                                     break;
                                 case ozKey:
                                     // Отчет по клиенту +79164372997 (Ozon).xlsx

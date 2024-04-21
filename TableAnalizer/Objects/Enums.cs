@@ -27,7 +27,7 @@ namespace ClientTableAnalizer.Enums
 
     public enum SourceSKUReportFileKey 
         {   
-            RedemtionWB,        // выкупы WB
+            RansomsWB,        // выкупы WB
             RedemtionOZ,        // выкупы OZ
             RemainingWB,        // приходы и остатки WB
             RemainingOZ,        // приходы и остатки OZ

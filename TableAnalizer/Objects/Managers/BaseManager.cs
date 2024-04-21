@@ -1,14 +1,14 @@
 namespace ClientTableAnalizer.Objects.Managers
 {
-
     public class BaseManager
     {
+        protected const string reportFileExtension = ".xlsx";
+
+        #region Properties 
+        public string? ClientLogin { get; protected set; } = string.Empty;
+        #endregion
 
         #region
-        // This will get the current WORKING directory (i.e. \bin\Debug)
-        protected readonly string workingDirectory = Environment.CurrentDirectory;
-        // This will get the current PROJECT directory
-        public string ProjectDirectory { get; }
         /// <summary>
         /// Manager event delegate.
         /// </summary>
@@ -21,9 +21,7 @@ namespace ClientTableAnalizer.Objects.Managers
         #region Constuctor and destructors
         protected BaseManager()
         {
-            // Get project directory
-            var getParentworkingDirectory = Directory.GetParent(workingDirectory) ?? throw new DirectoryNotFoundException();
-            ProjectDirectory = getParentworkingDirectory.Parent!.Parent!.FullName;
+
         }
         #endregion
 

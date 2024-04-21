@@ -1,32 +1,20 @@
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Managers;
 using ClientTableAnalizer.Objects.Parsing;
-using ClientTableAnalizer.Objects.SKUItems;
 using OfficeOpenXml;
 
-namespace TableAnalizerTest.Managers
+namespace TableAnalizerTest.TestManagers 
 {
+    [TestFixture, Order(2)]
     public class ExcelReportManager_Test : BaseTests
     {
         #region Constants && variables
-        private ExcelReportManager _excelManager;
-        private string _testFilesPath;
-        private readonly Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> testReportFilesForSKU = [];
         private const string Ransoms_Report_List_Name = "Выкупы";
-        private List<SourceCell> _ransomsWBSourceCells;
         private List<SourceCell> _remainingWBSourceCells01;
         private List<SourceCell> _remainingWBSourceCells02;
-        private List<RangeSourceReportRows> _ransomsWBRangeSourceReportRows;
-        private SourceReportFileForSKU? _testReportFilesRansomsWB;
-        private SourceReportFileForSKU? _testReportFilesRedemptionWB;
         private ExcelWorksheet? _ransomsWBWorksheet;
         private ExcelWorksheet? _remainingWBWorksheet;
         private List<RangeSourceReportRows> _remainingWBRangeSourceReportRows;
-        private ExcelPackage? _testRemainingWBPackage;
-        private ExcelPackage? _testRedemptionWBPackage;
-        private const string SPACE_SEPARATOR = "\u0020";
         private const string FIRST_ROOM_NAME = "1 - Помещение приемки, сортировки и упаковки";
         private const string SECOND_ROOM_NAME = "2 - Помещение длительного хранения и отгрузки";
         private const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
@@ -39,20 +27,6 @@ namespace TableAnalizerTest.Managers
         protected override void StartTest()
         {
             base.StartTest();
-            _excelManager = new();
-            _testFilesPath = string.Concat(_excelManager.ProjectDirectory, "/testFiles");
-
-            //_redemtionFileWBFileInfo = new FileInfo(Redemtion_File_WB_Path);
-
-            _ransomsWBSourceCells =
-            [
-                new(1, "SKUNumber", typeof(int), true),
-                new(9, "SKURansomsStatus", typeof(string), true),
-                new(10, "Логистика", typeof(string), true, "Да"),
-                new(14, "SKUCost",  typeof(string), true) // 1137 руб.
-            ];
-
-            _ransomsWBRangeSourceReportRows = [new(_ransomsWBSourceCells)];
 
             _remainingWBSourceCells01 =
             [
@@ -73,122 +47,20 @@ namespace TableAnalizerTest.Managers
         }
 
         [Test, Order(1)]
-        public void FilesPath_Test()
-        {
-            // arrange
-            // ... 
-
-            // act 1
-            var dirInfo = new DirectoryInfo(_testFilesPath);
-
-            // assert 1
-            Assert.That(dirInfo, Is.Not.EqualTo(null));
-
-            // act 2
-            var fileInfos = from fileInfo in dirInfo.GetFiles()
-                            where fileInfo.Name.EndsWith(".xlsx")
-                            select fileInfo;
-
-            // assert 2
-            Assert.That(fileInfos, Is.Not.EqualTo(null));
-            Assert.That(fileInfos.Count(), Is.EqualTo(8));
-        }
-
-        [Test, Order(2)]
-        public void SplitStringIntoSubstrings_Test()
-        {
-            // arrange
-            var testPath = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Отчет по клиенту +79164372997 (Ozon).xlsx";
-            var testFileInfo = new FileInfo(testPath);
-
-            // act
-            var succsess = SourceReportFileForSKU.SplitStringIntoSubstrings(Path.GetFileName(testFileInfo.FullName), [SPACE_SEPARATOR], out string[]? subStrings);
-
-            // assert
-            Assert.Multiple(() =>
-            {
-                Assert.That(succsess, Is.EqualTo(true));
-                Assert.That(subStrings, Has.Length.EqualTo(5));
-            });
-        }
-
-        [Test, Order(3)]
-        public void GetReportFiles_Test()
-        {
-            // arrange
-            // ...
-
-            // act
-            var getReportFilesTask = _excelManager.GetReportFiles(_testFilesPath);
-            getReportFilesTask.Wait();
-
-            //Trace.WriteLine($"{_excelManager.ReportsPaths.Count}");
-
-            var succsess = _excelManager.IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys);
-
-            // assert
-            Assert.Multiple(() =>
-            {
-                Assert.That(_excelManager.ReportsPaths, Has.Count.EqualTo(8));
-                Assert.That(succsess, Is.EqualTo(true));
-                Assert.That(_excelManager.ClientLogin, Is.EqualTo("79164372997"));
-                Assert.That(_excelManager.GetClientOutputPath, Is.Not.EqualTo(null));
-            });
-
-            // Set redemtionWB file path
-            testReportFilesForSKU.Add(SourceSKUReportFileKey.RedemtionWB, _excelManager.ReportsPaths
-                .FirstOrDefault(rp => rp.Value.ReportKey == SourceSKUReportFileKey.RedemtionWB).Value);
-            testReportFilesForSKU.Add(SourceSKUReportFileKey.RemainingWB, _excelManager.ReportsPaths
-                .FirstOrDefault(rp => rp.Value.ReportKey == SourceSKUReportFileKey.RemainingWB).Value);
-
-
-            _testReportFilesRansomsWB = testReportFilesForSKU[SourceSKUReportFileKey.RemainingWB];
-            _testReportFilesRedemptionWB = testReportFilesForSKU[SourceSKUReportFileKey.RedemtionWB];
-
-            _testRemainingWBPackage = new(_testReportFilesRansomsWB.FileInfo);
-            _testRedemptionWBPackage = new(_testReportFilesRedemptionWB.FileInfo);
-        }
-
-        [Test, Order(4)]
-        public void GetReportFile_Test()
-        {
-            // inpet test assert
-            Assert.That(_testReportFilesRedemptionWB, Is.Not.EqualTo(null));
-
-            // act 1
-            var getReportFilesTask = _excelManager.GetReportFiles(_testFilesPath);
-            getReportFilesTask.Wait();
-
-            getReportFilesTask.ContinueWith(t =>
-            {
-                // act 2
-                var getReportRedemtionFileWB = _excelManager.GetReportFile(SourceSKUReportFileKey.RedemtionWB, true);
-
-                // assert
-                Assert.Multiple(() =>
-                {
-                    Assert.That(testReportFilesForSKU[SourceSKUReportFileKey.RedemtionWB], Is.Not.EqualTo(null));
-                    Assert.That(_testReportFilesRedemptionWB, Is.Not.EqualTo(null));
-                    Assert.That(getReportRedemtionFileWB, Is.EqualTo(_testReportFilesRedemptionWB));
-                });
-            });
-        }
-
-        [Test, Order(5)]
         public void GetRangesSourceReportRows_OneRange_Test()
         {
             // input test assert
             Assert.Multiple(() =>
             {
-                Assert.That(_testRedemptionWBPackage, Is.Not.EqualTo(null));
+                Assert.That(_testRansomsWBPackage, Is.Not.EqualTo(null));
                 Assert.That(_testReportFilesRedemptionWB, Is.Not.EqualTo(null));
-                Assert.That(_testReportFilesRedemptionWB!.ReportKey, Is.EqualTo(SourceSKUReportFileKey.RedemtionWB));
+                Assert.That(_testReportFilesRedemptionWB!.ReportKey, Is.EqualTo(SourceSKUReportFileKey.RansomsWB));
             });
 
             // arrange
 
-            ExcelReportManager.GetExcelWorksheetBy(Ransoms_Report_List_Name, in _testRedemptionWBPackage, out _ransomsWBWorksheet);
-            ExcelReportManager.GetRangeSourceReportRows(in _ransomsWBWorksheet!, ref _ransomsWBRangeSourceReportRows);
+            ExcelReportManager.GetExcelWorksheetBy(Ransoms_Report_List_Name, in _testRansomsWBPackage, out _ransomsWBWorksheet);
+            ExcelReportManager.GetRangeSourceReportRows(in _ransomsWBWorksheet!, ref _testRansomsRangeSourceReportRows);
 
             // act
             var testingRange = Enumerable.Range(2, 148706 - 1);
@@ -197,11 +69,11 @@ namespace TableAnalizerTest.Managers
             Assert.Multiple(() =>
             {
                 Assert.That(_ransomsWBWorksheet, Is.Not.EqualTo(null));
-                Assert.That(_ransomsWBRangeSourceReportRows[0].RowsIndexRange, Is.EqualTo(testingRange));
+                Assert.That(_testRansomsRangeSourceReportRows[0].RowsIndexRange, Is.EqualTo(testingRange));
             });
         }
 
-        [Test, Order(6)]
+        [Test, Order(2)]
         public void GetRowIndexByStringKey_Test()
         {
             // input test assert
@@ -232,7 +104,7 @@ namespace TableAnalizerTest.Managers
             });
         }
 
-        [Test, Order(7)]
+        [Test, Order(3)]
         public void GetRangesSourceReportRows_ManyRange_Test()
         {
              // input assert 01
@@ -269,7 +141,7 @@ namespace TableAnalizerTest.Managers
 
         }
 
-        [Test, Order(8)]
+        [Test, Order(4)]
         public void GetRawDataFromExcelRows_SimpleRange_Test() 
         {
             // input assert
@@ -279,17 +151,17 @@ namespace TableAnalizerTest.Managers
             int redemtionWBRangeSourceReportRowsCount = 61138;
 
             // act
-            ExcelReportManager.GetRawDataFromExcelRows(in _ransomsWBWorksheet, ref _ransomsWBRangeSourceReportRows); 
+            ExcelReportManager.GetRawDataFromExcelRows(in _ransomsWBWorksheet, ref _testRansomsRangeSourceReportRows); 
 
             // assert
             Assert.Multiple(() =>
             {
-                Assert.That(_ransomsWBRangeSourceReportRows, Has.Count.EqualTo(1));
-                Assert.That(_ransomsWBRangeSourceReportRows[0].Values, Has.Count.EqualTo(redemtionWBRangeSourceReportRowsCount));
+                Assert.That(_testRansomsRangeSourceReportRows, Has.Count.EqualTo(1));
+                Assert.That(_testRansomsRangeSourceReportRows[0].Values, Has.Count.EqualTo(redemtionWBRangeSourceReportRowsCount));
             });
         }
 
-        [Test, Order(9)]
+        [Test, Order(5)]
         public void GetRawDataFromExcelRows_ManyRange_Test() 
         {
             // input assert
@@ -314,7 +186,7 @@ namespace TableAnalizerTest.Managers
         {
             base.EndTest();
             _testRemainingWBPackage?.Dispose();
-            _testRedemptionWBPackage?.Dispose();
+            _testRansomsWBPackage?.Dispose();
         }
         #endregion
 
