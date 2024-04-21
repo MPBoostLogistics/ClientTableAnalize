@@ -1,12 +1,9 @@
 #nullable enable
 
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Parsing;
 using ClientTableAnalizer.Objects.SKUItems;
-using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 
@@ -21,7 +18,7 @@ namespace ClientTableAnalizer.Objects.Managers
         private const int RECORD_INDEX = 1;
         private const int HEADER_TABLE_ROW_HEIGHT = 120;
         private const string LOGISTIC_FLAG = "Да";
-        public Dictionary<SourceReportFileKey, SourceReportFileForSKU> ReportsPaths { get; private set; } = new();
+        public Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> ReportsPaths { get; private set; } = new();
         private readonly (int skuIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) RedemptionTableIndexes = (2, 7, 9, 10, 14);
         private readonly (int skuIndex, int nameIndex, int initBalanceIndex, int goodsReceivedIndex, int finBalanceIndex) StorageTableIndexes = (1, 6, 14, 15, 17);
 
@@ -149,33 +146,33 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="lostKeys">A collection of required file keys that were not provided.</param>
         /// <returns>Logical flag for performing an operation.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public bool IsRequiredFilesProvided(out List<SourceReportFileKey> lostKeys)
+        public bool IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys)
         {
-            lostKeys = new(Array.Empty<SourceReportFileKey>());
+            lostKeys = new(Array.Empty<SourceSKUReportFileKey>());
 
-            var isContainsKeyRedemtionWB = ReportsPaths.ContainsKey(SourceReportFileKey.RedemtionWB);
-            var isContainsKeyRedemtionOZ = ReportsPaths.ContainsKey(SourceReportFileKey.RedemtionOZ);
+            var isContainsKeyRedemtionWB = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RedemtionWB);
+            var isContainsKeyRedemtionOZ = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RedemtionOZ);
 
-            var isContainsKeyStorageWB = ReportsPaths.ContainsKey(SourceReportFileKey.RemainingWB);
-            var isContainsKeyStorageOZ = ReportsPaths.ContainsKey(SourceReportFileKey.RemainingOZ);
+            var isContainsKeyStorageWB = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RemainingWB);
+            var isContainsKeyStorageOZ = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RemainingOZ);
 
-            var isContainsKeyShipped = ReportsPaths.ContainsKey(SourceReportFileKey.Shipped);
+            var isContainsKeyShipped = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Shipped);
 
             var isWBSuccess = isContainsKeyRedemtionWB && isContainsKeyStorageWB && isContainsKeyShipped;
             if (!isWBSuccess)
             {
-                if (!isContainsKeyRedemtionWB) lostKeys.Add(SourceReportFileKey.RedemtionWB);
-                if (!isContainsKeyStorageWB) lostKeys.Add(SourceReportFileKey.RemainingWB);
+                if (!isContainsKeyRedemtionWB) lostKeys.Add(SourceSKUReportFileKey.RedemtionWB);
+                if (!isContainsKeyStorageWB) lostKeys.Add(SourceSKUReportFileKey.RemainingWB);
             }
 
             var isOZSuccess = isContainsKeyRedemtionOZ && isContainsKeyStorageOZ && isContainsKeyShipped;
             if (!isOZSuccess)
             {
-                if (!isContainsKeyRedemtionOZ) lostKeys.Add(SourceReportFileKey.RedemtionOZ);
-                if (!isContainsKeyStorageOZ) lostKeys.Add(SourceReportFileKey.RemainingOZ);
+                if (!isContainsKeyRedemtionOZ) lostKeys.Add(SourceSKUReportFileKey.RedemtionOZ);
+                if (!isContainsKeyStorageOZ) lostKeys.Add(SourceSKUReportFileKey.RemainingOZ);
             }
 
-            if (!isContainsKeyShipped) lostKeys.Add(SourceReportFileKey.Shipped);
+            if (!isContainsKeyShipped) lostKeys.Add(SourceSKUReportFileKey.Shipped);
 
             var success = isWBSuccess == true || isOZSuccess == true;
             return success;
@@ -186,11 +183,12 @@ namespace ClientTableAnalizer.Objects.Managers
         // - приходы и хранение wb и oz (обязательно)
         // - расходы общие (обязательно)
         // - списаниния недостач (обязательно)
+        // Единый отчет (все листы опцонально)
         // - пересорты (опционально)
         // - недостачи (опционально)
         // - пустышки (опционально)
 
-        public double AnalizeReport<T>(SourceReportFileKey reportFileKey, string workSheetName, out List<T>? items, bool isRequred = true)
+        public double AnalizeReport<T>(SourceSKUReportFileKey reportFileKey, string workSheetName, out List<T>? items, bool isRequred = true)
         {
             var stopwatch = new Stopwatch();
 
@@ -219,7 +217,6 @@ namespace ClientTableAnalizer.Objects.Managers
 
             // пройти по массиву диапазонов
 
-
             package.Dispose();
 
 
@@ -235,7 +232,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <returns></returns>
         /// <exception cref="Exception">An exception in which a required file for analysis was not found for given key.</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public SourceReportFileForSKU? GetReportFile(SourceReportFileKey reportFileKey, bool isRequred)
+        public SourceReportFileForSKU? GetReportFile(SourceSKUReportFileKey reportFileKey, bool isRequred)
         {
             var reportFileForSKU = ReportsPaths
                 .SingleOrDefault(k => Equals(k, reportFileKey))
@@ -403,8 +400,6 @@ namespace ClientTableAnalizer.Objects.Managers
                 mainReportWorksheet.Column(i).Collapsed = true;
             }
 
-            //}
-
             // Save work (temp)
             if (File.Exists(OutputReportFilePath)) File.Delete(OutputReportFilePath);
 
@@ -541,13 +536,11 @@ namespace ClientTableAnalizer.Objects.Managers
                 var rowsIndexRange = reportRowsRange.RowsIndexRange.ToList();
                 var currentSourceCells = reportRowsRange.SourceCells;
 
-                Trace.Write($"currentSourceCells Count: {currentSourceCells.Count}");
-
                 for (int j = 0; j < rowsIndexRange.Count; j++)
                 {
                     var rowIndex = rowsIndexRange[j];
 
-                    if (GetValuesFromRow(in workSheet, rowIndex, in currentSourceCells, out Dictionary<string, object>? values) &&
+                    if (GetValuesFromRow(in workSheet, rowIndex, in currentSourceCells, out Dictionary<string, (string value, Type type)>? values) &&
                         values is not null)
                     {
                         reportRowsRange.SetValues(values);
@@ -566,7 +559,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="values">Dictionary of retrieved values by row.</param>
         /// <returns>Boolean flag for success of completed operation.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public static bool GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells, out Dictionary<string, object>? values)
+        public static bool GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells, out Dictionary<string, (string value, Type type)>? values)
         {
             values = new();
 
@@ -594,7 +587,7 @@ namespace ClientTableAnalizer.Objects.Managers
                     }
 
                     // Set value
-                    values.Add(sorceCell.Name, stringValue!);
+                    values.Add(sorceCell.Name, (stringValue!, sorceCell.ValueType));
                 }
             }
 

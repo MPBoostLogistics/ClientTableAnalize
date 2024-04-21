@@ -19,7 +19,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #endregion 
 
         #region Properties
-        public SourceReportFileKey? ReportKey { get; }
+        public SourceSKUReportFileKey? ReportKey { get; }
         public FileInfo FileInfo { get; }
         public string? Login { get; private set; }
         #endregion
@@ -55,22 +55,22 @@ namespace ClientTableAnalizer.Objects.SKUItems
                 {
                     // недостачи
                     case shortagesKey:
-                        ReportKey = SourceReportFileKey.Shortages;
+                        ReportKey = SourceSKUReportFileKey.Shortages;
                         break;
 
                     // списание
                     case writeOffShortagesKey:
-                        ReportKey = SourceReportFileKey.WriteOffShortages;
+                        ReportKey = SourceSKUReportFileKey.WriteOffShortages;
                         break;
 
                     // пересорты
                     case reGradesKey:
-                        ReportKey = SourceReportFileKey.ReGrades;
+                        ReportKey = SourceSKUReportFileKey.ReGrades;
                         break;
 
                     // расходы
                     case shippedKey:
-                        ReportKey = SourceReportFileKey.Shipped;
+                        ReportKey = SourceSKUReportFileKey.Shipped;
                         break;
 
                     // приходы и остатки
@@ -83,11 +83,11 @@ namespace ClientTableAnalizer.Objects.SKUItems
                             {
                                 case wbKey:
                                     // Юсупов приходы и остатки 220324 (WB).xlsx
-                                    ReportKey = SourceReportFileKey.RemainingWB;
+                                    ReportKey = SourceSKUReportFileKey.RemainingWB;
                                     break;
                                 case ozKey:
                                     // Юсупов приходы и остатки 220324 (OZ).xlsx
-                                    ReportKey = SourceReportFileKey.RemainingOZ;
+                                    ReportKey = SourceSKUReportFileKey.RemainingOZ;
                                     break;
                                 default:
                                     break;    
@@ -105,11 +105,11 @@ namespace ClientTableAnalizer.Objects.SKUItems
                             {
                                 case wbKey:
                                     // Отчет по клиенту +79164372997 (WB).xlsx
-                                    ReportKey = SourceReportFileKey.RedemtionWB;
+                                    ReportKey = SourceSKUReportFileKey.RedemtionWB;
                                     break;
                                 case ozKey:
                                     // Отчет по клиенту +79164372997 (Ozon).xlsx
-                                    ReportKey = SourceReportFileKey.RedemtionOZ;
+                                    ReportKey = SourceSKUReportFileKey.RedemtionOZ;
                                     break;
                                 default:
                                     break;    

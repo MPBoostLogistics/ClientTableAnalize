@@ -25,7 +25,7 @@ namespace ClientTableAnalizer.Enums
         WriteoffShortages   // Принято на склад и списано по недостачам
     }
 
-    public enum SourceReportFileKey 
+    public enum SourceSKUReportFileKey 
         {   
             RedemtionWB,        // выкупы WB
             RedemtionOZ,        // выкупы OZ

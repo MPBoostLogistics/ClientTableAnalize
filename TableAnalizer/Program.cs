@@ -70,7 +70,7 @@ internal class Program
         try
         {
             var fileCount = excelManager.GetReportFiles(reportsPath);
-            var success = excelManager.IsRequiredFilesProvided(out List<SourceReportFileKey> lostKeys);
+            var success = excelManager.IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys);
 
             if(!success || lostKeys.Count > 0) 
             {   

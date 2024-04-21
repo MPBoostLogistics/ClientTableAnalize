@@ -13,7 +13,7 @@ namespace TableAnalizerTest.Managers
         #region Constants && variables
         private ExcelReportManager _excelManager;
         private string _testFilesPath;
-        private readonly Dictionary<SourceReportFileKey, SourceReportFileForSKU> testReportFilesForSKU = [];
+        private readonly Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> testReportFilesForSKU = [];
         private const string Redemtion_Report_List_Name = "Выкупы";
         private List<SourceCell> _redemtionWBSourceCells;
         private List<SourceCell> _remainingWBSourceCells01;
@@ -46,17 +46,17 @@ namespace TableAnalizerTest.Managers
 
             _redemtionWBSourceCells =
             [
-                new(1, "Артикул", typeof(int), true),
-                new(9, "Статус доставки", typeof(string), true),
+                new(1, "SKUNumber", typeof(int), true),
+                new(9, "SKURedemptionStatus", typeof(string), true),
                 new(10, "Логистика", typeof(string), true, "Да"),
-                new(14, "Стоимость товара",  typeof(string), true) // 1137 руб.
+                new(14, "SKUCost",  typeof(string), true) // 1137 руб.
             ];
 
             _redemtionWBRangeSourceReportRows = [new(_redemtionWBSourceCells)];
 
             _remainingWBSourceCells01 =
             [
-                new(1, "Артикул", typeof(int), true),
+                new(1, "SKUNumber", typeof(int), true),
                 new(6, "Название товара", typeof(string), true), // TODO: Разделить на бренд и номенклатуру
                 new(15, "Приход", typeof(int), false),
                 new(17, "Остаток", typeof(int), false)
@@ -64,13 +64,12 @@ namespace TableAnalizerTest.Managers
 
             _remainingWBSourceCells02 =
             [
-                new(1, "Артикул", typeof(int), true),
+                new(1, "SKUNumber", typeof(int), true),
                 new(6, "Название товара", typeof(string), true), // TODO: Разделить на бренд и номенклатуру
                 new(17, "Остаток", typeof(int), false)
             ];
 
             _remainingWBRangeSourceReportRows = [new(_remainingWBSourceCells01, FIRST_ROOM_NAME), new(_remainingWBSourceCells02, SECOND_ROOM_NAME, (LAST_MARKER_KEY, LAST_MARKER_KEY_OFFSET))];
-
         }
 
         [Test, Order(1)]
@@ -125,7 +124,7 @@ namespace TableAnalizerTest.Managers
 
             //Trace.WriteLine($"{_excelManager.ReportsPaths.Count}");
 
-            var succsess = _excelManager.IsRequiredFilesProvided(out List<SourceReportFileKey> lostKeys);
+            var succsess = _excelManager.IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys);
 
             // assert
             Assert.Multiple(() =>
@@ -137,14 +136,14 @@ namespace TableAnalizerTest.Managers
             });
 
             // Set redemtionWB file path
-            testReportFilesForSKU.Add(SourceReportFileKey.RedemtionWB, _excelManager.ReportsPaths
-                .FirstOrDefault(rp => rp.Value.ReportKey == SourceReportFileKey.RedemtionWB).Value);
-            testReportFilesForSKU.Add(SourceReportFileKey.RemainingWB, _excelManager.ReportsPaths
-                .FirstOrDefault(rp => rp.Value.ReportKey == SourceReportFileKey.RemainingWB).Value);
+            testReportFilesForSKU.Add(SourceSKUReportFileKey.RedemtionWB, _excelManager.ReportsPaths
+                .FirstOrDefault(rp => rp.Value.ReportKey == SourceSKUReportFileKey.RedemtionWB).Value);
+            testReportFilesForSKU.Add(SourceSKUReportFileKey.RemainingWB, _excelManager.ReportsPaths
+                .FirstOrDefault(rp => rp.Value.ReportKey == SourceSKUReportFileKey.RemainingWB).Value);
 
 
-            _testReportFilesRemainingWB = testReportFilesForSKU[SourceReportFileKey.RemainingWB];
-            _testReportFilesRedemptionWB = testReportFilesForSKU[SourceReportFileKey.RedemtionWB];
+            _testReportFilesRemainingWB = testReportFilesForSKU[SourceSKUReportFileKey.RemainingWB];
+            _testReportFilesRedemptionWB = testReportFilesForSKU[SourceSKUReportFileKey.RedemtionWB];
 
             _testRemainingWBPackage = new(_testReportFilesRemainingWB.FileInfo);
             _testRedemptionWBPackage = new(_testReportFilesRedemptionWB.FileInfo);
@@ -163,12 +162,12 @@ namespace TableAnalizerTest.Managers
             getReportFilesTask.ContinueWith(t =>
             {
                 // act 2
-                var getReportRedemtionFileWB = _excelManager.GetReportFile(SourceReportFileKey.RedemtionWB, true);
+                var getReportRedemtionFileWB = _excelManager.GetReportFile(SourceSKUReportFileKey.RedemtionWB, true);
 
                 // assert
                 Assert.Multiple(() =>
                 {
-                    Assert.That(testReportFilesForSKU[SourceReportFileKey.RedemtionWB], Is.Not.EqualTo(null));
+                    Assert.That(testReportFilesForSKU[SourceSKUReportFileKey.RedemtionWB], Is.Not.EqualTo(null));
                     Assert.That(_testReportFilesRedemptionWB, Is.Not.EqualTo(null));
                     Assert.That(getReportRedemtionFileWB, Is.EqualTo(_testReportFilesRedemptionWB));
                 });
@@ -183,7 +182,7 @@ namespace TableAnalizerTest.Managers
             {
                 Assert.That(_testRedemptionWBPackage, Is.Not.EqualTo(null));
                 Assert.That(_testReportFilesRedemptionWB, Is.Not.EqualTo(null));
-                Assert.That(_testReportFilesRedemptionWB!.ReportKey, Is.EqualTo(SourceReportFileKey.RedemtionWB));
+                Assert.That(_testReportFilesRedemptionWB!.ReportKey, Is.EqualTo(SourceSKUReportFileKey.RedemtionWB));
             });
 
             // arrange
