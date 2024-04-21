@@ -2,7 +2,7 @@ using TableAnalizerTest.TestManagers;
 
 namespace TableAnalizerTest.Managers
 {
-    public class ArticleRansomsTest : BaseTests
+    public class T03_ArticleRansoms_Test : BaseTests
     {
         #region Functionality
         protected override void StartTest()

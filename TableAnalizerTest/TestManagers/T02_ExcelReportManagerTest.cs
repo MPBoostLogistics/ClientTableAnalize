@@ -6,7 +6,7 @@ using OfficeOpenXml;
 namespace TableAnalizerTest.TestManagers
 {
     [TestFixture, Order(2)]
-    public class Test02_ExcelReportManagerTest : BaseTests
+    public class T02_ExcelReportManagerTest : BaseTests
     {
         #region Constants && variables
         private const string Ransoms_Report_List_Name = "Выкупы";
@@ -52,16 +52,16 @@ namespace TableAnalizerTest.TestManagers
             // input assert
             Assert.Multiple(() =>
             {
-                Assert.That(TestData._testReportFilesRedemptionWB, Is.Not.Null);
-                Assert.That(TestData._testReportFilesRansomsWB, Is.Not.Null);
+                Assert.That(TestData.TestReportFilesRedemptionWB, Is.Not.Null);
+                Assert.That(TestData.TestReportFilesRansomsWB, Is.Not.Null);
             });
 
             // arrange
             // ... 
 
             // act
-            _testRansomsWBPackage = new(TestData._testReportFilesRedemptionWB.FileInfo);
-            _testRemainingWBPackage = new(TestData._testReportFilesRansomsWB.FileInfo);
+            _testRansomsWBPackage = new(TestData.TestReportFilesRedemptionWB.FileInfo);
+            _testRemainingWBPackage = new(TestData.TestReportFilesRansomsWB.FileInfo);
 
             // assert
             Assert.Multiple(() =>
@@ -79,8 +79,8 @@ namespace TableAnalizerTest.TestManagers
             Assert.Multiple(() =>
             {
                 Assert.That(_testRansomsWBPackage, Is.Not.EqualTo(null));
-                Assert.That(TestData._testReportFilesRedemptionWB, Is.Not.EqualTo(null));
-                Assert.That(TestData._testReportFilesRedemptionWB!.ReportKey, Is.EqualTo(SourceSKUReportFileKey.RansomsWB));
+                Assert.That(TestData.TestReportFilesRedemptionWB, Is.Not.EqualTo(null));
+                Assert.That(TestData.TestReportFilesRedemptionWB!.ReportKey, Is.EqualTo(SourceSKUReportFileKey.RansomsWB));
             });
 
             // arrange

@@ -5,7 +5,7 @@ using ClientTableAnalizer.Objects.SKUItems;
 namespace TableAnalizerTest.TestManagers
 {
     [TestFixture, Order(1)]
-    public class Test01_FileManagerTest : BaseTests
+    public class T3_ArticleRansoms_Test : BaseTests
     {
         #region Functionality
         [Test, Order(1)]
@@ -81,8 +81,8 @@ namespace TableAnalizerTest.TestManagers
             testReportFilesForSKU.Add(SourceSKUReportFileKey.RemainingWB, _fileManager.ReportsPaths
                 .FirstOrDefault(rp => rp.Value.ReportKey == SourceSKUReportFileKey.RemainingWB).Value);
 
-            TestData._testReportFilesRansomsWB = testReportFilesForSKU[SourceSKUReportFileKey.RemainingWB];
-            TestData._testReportFilesRedemptionWB = testReportFilesForSKU[SourceSKUReportFileKey.RansomsWB];
+            TestData.TestReportFilesRansomsWB = testReportFilesForSKU[SourceSKUReportFileKey.RemainingWB];
+            TestData.TestReportFilesRedemptionWB = testReportFilesForSKU[SourceSKUReportFileKey.RansomsWB];
         }
 
         // [Test, Order(4)]
