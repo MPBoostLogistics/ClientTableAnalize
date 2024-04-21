@@ -37,7 +37,7 @@ namespace ClientTableAnalizer.Enums
             Shipped             // расходы товаром 
         }
 
-    public enum SKURedemptionStatus
+    public enum SKURansomsStatus
     {
         Delivered,  // Доставлен на ПВЗ
         WithDrawn,  // Забран с ПВЗ

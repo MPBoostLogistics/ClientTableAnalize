@@ -5,7 +5,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances.Redemtpion
 	public class SKURedempionBalance
 	{
         #region  Properties
-        public List<SKURedempionBalanceUnit> Balances { get; } = new () 
+        public List<SKURansomsBalanceUnit> Balances { get; } = new () 
         {
              //new(SKURedemptionStatus.Delivered, "Доставлено на ПВЗ, шт.", 0),
              //new(SKURedemptionStatus.WithDrawn, "Забрано с ПВЗ, шт.", 0),
@@ -51,7 +51,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances.Redemtpion
             // articleBalancesReport.SetRedemtionsCount(sum, canceled, onWay, delivered, withDrawn);
         }
 
-        private bool GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<SKURedemptionStatus, SKURowInReport>> groups)
+        private bool GetRowGroupsByStatus(out IOrderedEnumerable<IGrouping<SKURansomsStatus, SKURowInReport>> groups)
         {
            groups = from row in SKURowsInRedemptionReport
                     group row by row.ItemStatus

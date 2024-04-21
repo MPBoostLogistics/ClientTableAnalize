@@ -58,7 +58,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
         public Marketplace Marketplace { get; private set; }
         public int Number { get; private set; }
         public string Name { get; private set; }
-        public SKURedempionBalance SKURedempionBalance { get; private set; }
+        //public SKURedempionBalance SKURedempionBalance { get; private set; }
         public SKUStorageBalance ArticleStorageBalance { get; private set; }
         private SKUBalancesReport? _articleBalancesReport;
         public ArticleShortage? ArticleShortage { get; private set; }
@@ -77,7 +77,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
             Marketplace = marketplace;
             Number = skuNumber;
             Name = "No name";
-            SKURedempionBalance = new(articleRowInReport);
+            //SKURedempionBalance = new(articleRowInReport);
             ArticleStorageBalance = new();
             MaxRedemptionDate = DateTime.Now;
             IsDeadline = false;
@@ -91,7 +91,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
             Marketplace = marketplace;
             Number = skuNumber;
             Name = "No name";
-            SKURedempionBalance = new(skuRowsInReport);
+            //SKURedempionBalance = new(skuRowsInReport);
             ArticleStorageBalance = new();
             MaxRedemptionDate = DateTime.Now;
             IsDeadline = false;
@@ -103,8 +103,8 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #endregion
 
         #region Functionality
-        public void SetArticleRowInReport(SKURowInReport articleRowInReport) =>
-            SKURedempionBalance.Set(articleRowInReport);
+        public void SetArticleRowInReport(SKURowInReport articleRowInReport) {} // Dummy
+            //SKURedempionBalance.Set(articleRowInReport);
             
         public void SetName(string name) => Name = name;
 
@@ -117,7 +117,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
         public void AnalyzeSKU(int deadLineDays)
         {
             // Analize artilce rows  and set average price, max redemption date && deadline
-            (MaxRedemptionDate, AveragePrice, IsDeadline) = SKURedempionBalance.AnalizeArticleRows(deadLineDays);
+           // (MaxRedemptionDate, AveragePrice, IsDeadline) = SKURedempionBalance.AnalizeArticleRows(deadLineDays);
 
             // Set expected balance of goods
             //ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsExpected, ArticleRedempionBalance.GetExpectedBalance());
@@ -207,7 +207,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
         public void AnalizeArticleRedemtionBalance(ref SKUBalancesReport abr) 
         {
-             SKURedempionBalance.AnalizeBalance(ref abr);
+            // SKURedempionBalance.AnalizeBalance(ref abr);
         }
 
         public SKUBalancesReport? GetArticleBalancesReport() => _articleBalancesReport;

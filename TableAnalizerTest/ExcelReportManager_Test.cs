@@ -14,14 +14,14 @@ namespace TableAnalizerTest.Managers
         private ExcelReportManager _excelManager;
         private string _testFilesPath;
         private readonly Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> testReportFilesForSKU = [];
-        private const string Redemtion_Report_List_Name = "Выкупы";
-        private List<SourceCell> _redemtionWBSourceCells;
+        private const string Ransoms_Report_List_Name = "Выкупы";
+        private List<SourceCell> _ransomsWBSourceCells;
         private List<SourceCell> _remainingWBSourceCells01;
         private List<SourceCell> _remainingWBSourceCells02;
-        private List<RangeSourceReportRows> _redemtionWBRangeSourceReportRows;
-        private SourceReportFileForSKU? _testReportFilesRemainingWB;
+        private List<RangeSourceReportRows> _ransomsWBRangeSourceReportRows;
+        private SourceReportFileForSKU? _testReportFilesRansomsWB;
         private SourceReportFileForSKU? _testReportFilesRedemptionWB;
-        private ExcelWorksheet? _redemtionWBWorksheet;
+        private ExcelWorksheet? _ransomsWBWorksheet;
         private ExcelWorksheet? _remainingWBWorksheet;
         private List<RangeSourceReportRows> _remainingWBRangeSourceReportRows;
         private ExcelPackage? _testRemainingWBPackage;
@@ -44,15 +44,15 @@ namespace TableAnalizerTest.Managers
 
             //_redemtionFileWBFileInfo = new FileInfo(Redemtion_File_WB_Path);
 
-            _redemtionWBSourceCells =
+            _ransomsWBSourceCells =
             [
                 new(1, "SKUNumber", typeof(int), true),
-                new(9, "SKURedemptionStatus", typeof(string), true),
+                new(9, "SKURansomsStatus", typeof(string), true),
                 new(10, "Логистика", typeof(string), true, "Да"),
                 new(14, "SKUCost",  typeof(string), true) // 1137 руб.
             ];
 
-            _redemtionWBRangeSourceReportRows = [new(_redemtionWBSourceCells)];
+            _ransomsWBRangeSourceReportRows = [new(_ransomsWBSourceCells)];
 
             _remainingWBSourceCells01 =
             [
@@ -142,10 +142,10 @@ namespace TableAnalizerTest.Managers
                 .FirstOrDefault(rp => rp.Value.ReportKey == SourceSKUReportFileKey.RemainingWB).Value);
 
 
-            _testReportFilesRemainingWB = testReportFilesForSKU[SourceSKUReportFileKey.RemainingWB];
+            _testReportFilesRansomsWB = testReportFilesForSKU[SourceSKUReportFileKey.RemainingWB];
             _testReportFilesRedemptionWB = testReportFilesForSKU[SourceSKUReportFileKey.RedemtionWB];
 
-            _testRemainingWBPackage = new(_testReportFilesRemainingWB.FileInfo);
+            _testRemainingWBPackage = new(_testReportFilesRansomsWB.FileInfo);
             _testRedemptionWBPackage = new(_testReportFilesRedemptionWB.FileInfo);
         }
 
@@ -187,8 +187,8 @@ namespace TableAnalizerTest.Managers
 
             // arrange
 
-            ExcelReportManager.GetExcelWorksheetBy(Redemtion_Report_List_Name, in _testRedemptionWBPackage, out _redemtionWBWorksheet);
-            ExcelReportManager.GetRangeSourceReportRows(in _redemtionWBWorksheet!, ref _redemtionWBRangeSourceReportRows);
+            ExcelReportManager.GetExcelWorksheetBy(Ransoms_Report_List_Name, in _testRedemptionWBPackage, out _ransomsWBWorksheet);
+            ExcelReportManager.GetRangeSourceReportRows(in _ransomsWBWorksheet!, ref _ransomsWBRangeSourceReportRows);
 
             // act
             var testingRange = Enumerable.Range(2, 148706 - 1);
@@ -196,8 +196,8 @@ namespace TableAnalizerTest.Managers
             // assert
             Assert.Multiple(() =>
             {
-                Assert.That(_redemtionWBWorksheet, Is.Not.EqualTo(null));
-                Assert.That(_redemtionWBRangeSourceReportRows[0].RowsIndexRange, Is.EqualTo(testingRange));
+                Assert.That(_ransomsWBWorksheet, Is.Not.EqualTo(null));
+                Assert.That(_ransomsWBRangeSourceReportRows[0].RowsIndexRange, Is.EqualTo(testingRange));
             });
         }
 
@@ -273,19 +273,19 @@ namespace TableAnalizerTest.Managers
         public void GetRawDataFromExcelRows_SimpleRange_Test() 
         {
             // input assert
-            Assert.That(_redemtionWBWorksheet, Is.Not.EqualTo(null));
+            Assert.That(_ransomsWBWorksheet, Is.Not.EqualTo(null));
 
             // arrange
             int redemtionWBRangeSourceReportRowsCount = 61138;
 
             // act
-            ExcelReportManager.GetRawDataFromExcelRows(in _redemtionWBWorksheet, ref _redemtionWBRangeSourceReportRows); 
+            ExcelReportManager.GetRawDataFromExcelRows(in _ransomsWBWorksheet, ref _ransomsWBRangeSourceReportRows); 
 
             // assert
             Assert.Multiple(() =>
             {
-                Assert.That(_redemtionWBRangeSourceReportRows, Has.Count.EqualTo(1));
-                Assert.That(_redemtionWBRangeSourceReportRows[0].Values, Has.Count.EqualTo(redemtionWBRangeSourceReportRowsCount));
+                Assert.That(_ransomsWBRangeSourceReportRows, Has.Count.EqualTo(1));
+                Assert.That(_ransomsWBRangeSourceReportRows[0].Values, Has.Count.EqualTo(redemtionWBRangeSourceReportRowsCount));
             });
         }
 

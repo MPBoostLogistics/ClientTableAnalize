@@ -7,6 +7,11 @@ namespace ClientTableAnalizer.Objects.Parsing
     /// </summary>
     public abstract class ParsingEntity
     {
+        #region Variables and constants
+        protected const string SPACE_SEPARATOR = "\u0020";
+        #endregion
+
+
         #region Properties
         protected PropertyInfo[] PropertyInfos { get; private set; }
         protected string DateOnlyFormat;
@@ -81,8 +86,8 @@ namespace ClientTableAnalizer.Objects.Parsing
 
                     var elementDoubleValueString = elementValueString;
 
-                    if(elementValueString.Split(' ').Length == 2) 
-                        elementDoubleValueString = elementValueString.Split(' ')[0];
+                    if(elementValueString.Split(SPACE_SEPARATOR).Length == 2) 
+                        elementDoubleValueString = elementValueString.Split(SPACE_SEPARATOR)[0];
                     
                     if (!double.TryParse(elementDoubleValueString, out double doubleValue))
                         ThrowExceptionCast(element.Key, targetType);
@@ -90,7 +95,7 @@ namespace ClientTableAnalizer.Objects.Parsing
                     property.SetValue(this, doubleValue);
 
                     break;
-                    
+
                 case TypeCode.Int32:
 
                     if (!int.TryParse(elementValueString, out int intValue))

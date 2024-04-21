@@ -13,7 +13,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #region Properties 
         public int SKUNumber { get; }
         public DateTime RedemptionDate { get; }             
-        public SKURedemptionStatus ItemStatus { get; }
+        public SKURansomsStatus ItemStatus { get; }
         public double Price { get; }
         #endregion
         
@@ -39,15 +39,15 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #endregion
 
         #region Functionality
-        private static SKURedemptionStatus SetItemStatus(string statusText)
+        private static SKURansomsStatus SetItemStatus(string statusText)
         {
             return statusText switch
             {
-                "Доставлен на ПВЗ" => SKURedemptionStatus.Delivered,
-                "Забран с ПВЗ" => SKURedemptionStatus.WithDrawn,
-                "Отменен" => SKURedemptionStatus.Canceled,
-                "В пути" => SKURedemptionStatus.OnWay,
-                _ => SKURedemptionStatus.Unknown
+                "Доставлен на ПВЗ" => SKURansomsStatus.Delivered,
+                "Забран с ПВЗ" => SKURansomsStatus.WithDrawn,
+                "Отменен" => SKURansomsStatus.Canceled,
+                "В пути" => SKURansomsStatus.OnWay,
+                _ => SKURansomsStatus.Unknown
             };
         }
 
