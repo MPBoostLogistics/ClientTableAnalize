@@ -34,7 +34,7 @@ namespace ClientTableAnalizer.Objects.Parsing
             }
             catch (System.Exception ex)
             {
-                // TODO: Обработать
+                Trace.WriteLine(ex.Message);
                 throw;
             }
 
@@ -92,7 +92,7 @@ namespace ClientTableAnalizer.Objects.Parsing
                     property.SetValue(this, doubleValue);
 
                     break;
-                    
+
                 case ParsingTypeCode.IntTypeCode:
 
                     if (!int.TryParse(elementValueString, out int intValue))
@@ -128,7 +128,7 @@ namespace ClientTableAnalizer.Objects.Parsing
                         "Забран с ПВЗ" => SKURansomsStatus.WithDrawn,
                         "Отменен" => SKURansomsStatus.Canceled,
                         "В пути" => SKURansomsStatus.OnWay,
-                        _ => SKURansomsStatus.Unknown,
+                        _ => throw new NotImplementedException()
                     };
 
                     property.SetValue(this, skuRansomsStatus);

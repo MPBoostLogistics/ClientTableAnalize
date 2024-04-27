@@ -42,8 +42,7 @@ namespace ClientTableAnalizer.Enums
         Delivered,  // Доставлен на ПВЗ
         WithDrawn,  // Забран с ПВЗ
         Canceled,   // Отменен 
-        OnWay,      // В пути
-        Unknown     // Неизвестный
+        OnWay      // В пути
     }
 
     public enum ParsingTypeCode

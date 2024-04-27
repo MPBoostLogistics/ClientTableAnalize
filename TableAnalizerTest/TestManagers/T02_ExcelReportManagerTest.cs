@@ -1,7 +1,8 @@
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Managers;
 using ClientTableAnalizer.Objects.Parsing;
-using ClientTableAnalizer.Objects.SKUItems.SKUBalances.Redemtpion;
+using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
+using NUnit.Framework.Internal;
 using OfficeOpenXml;
 
 namespace TableAnalizerTest.Managers
@@ -217,7 +218,7 @@ namespace TableAnalizerTest.Managers
         [Test, Order(7)]
         public void SaveSKURansomsBalanceUnits_Test()
         {
-            // inpit assert
+            // input assert
             Assert.That(TestData.testRansomsRangeSourceReportRows, Is.Not.Null);
             Assert.That(TestData.testRansomsRangeSourceReportRows, Has.Count.EqualTo(1));
             Assert.That(TestData.testRansomsRangeSourceReportRows[0].RawRowItems, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
@@ -230,6 +231,61 @@ namespace TableAnalizerTest.Managers
 
             // assert
             Assert.That(keyCount, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
+
+            TestData.SkuRansomsBalanceUnits = SKUManager.SkuRansomsBalanceUnits;
+        }
+
+        [Test, Order(8)]
+        public void MakeSKUs_Test() 
+        {
+            // input assert
+            Assert.That(TestData.SkuRansomsBalanceUnits, Is.Not.Null);
+            Assert.That(TestData.SkuRansomsBalanceUnits, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
+
+            // arrange
+            SKUManager.SkuRansomsBalanceUnits = TestData.SkuRansomsBalanceUnits;
+
+            // act
+            _skuManager.MakeSKUs();
+
+            // assert
+            Assert.That(_skuManager.SKUsCount, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
+
+            TestData.Skus = _skuManager.SKUs;
+        }
+
+        [Test, Order(9)]
+        public void SKURansomsBalances_Test() 
+        {
+             // input assert
+            Assert.That(TestData.Skus, Is.Not.Null);
+            Assert.That(TestData.Skus, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
+
+            // arrange
+            Dictionary<int,SKURansomsBalance> testSKURansomsBalances = new() 
+            {
+                {15320659, new SKURansomsBalance(onWay: 0, canceled: 0, delivered: 0, withDrawn: 10)},
+                {216237114, new SKURansomsBalance(onWay: 2, canceled: 0, delivered: 1, withDrawn: 0)},
+                {214569047, new SKURansomsBalance(onWay: 3, canceled: 0, delivered: 1, withDrawn: 3)}
+            };
+
+            // act
+            var sku15320659RansomsBalance = TestData.Skus[15320659]?.SKURansomsBalance;
+            var sku216237114RansomsBalance = TestData.Skus[216237114]?.SKURansomsBalance;
+            var sku214569047RansomsBalance = TestData.Skus[214569047]?.SKURansomsBalance;
+
+            // assert  
+            Assert.Multiple(() =>
+            {
+                Assert.That(sku15320659RansomsBalance, Is.Not.Null);
+                Assert.That(testSKURansomsBalances[15320659], Is.EqualTo(sku15320659RansomsBalance));
+
+                Assert.That(sku216237114RansomsBalance, Is.Not.Null);
+                Assert.That(testSKURansomsBalances[216237114], Is.EqualTo(sku216237114RansomsBalance));
+
+                Assert.That(sku214569047RansomsBalance, Is.Not.Null);
+                Assert.That(testSKURansomsBalances[214569047], Is.EqualTo(sku214569047RansomsBalance));
+            });
         }
 
         protected override void EndTest()

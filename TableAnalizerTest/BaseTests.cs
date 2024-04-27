@@ -12,7 +12,7 @@ namespace TableAnalizerTest.Managers
     {
         #region Variables and constants
         protected static ExcelReportManager _excelManager;
-        protected static SKUManager _skulManager;
+        protected static SKUManager _skuManager;
         protected const string SPACE_SEPARATOR = "\u0020";
         
         protected FileManager _fileManager;
@@ -36,7 +36,7 @@ namespace TableAnalizerTest.Managers
             TestData.TestFilesPath = string.Concat(_fileManager.ProjectDirectory, "/testFiles");
 
             _excelManager = new();
-            _skulManager = new(_excelManager);
+            _skuManager = new(_excelManager);
 
             TestData.testRansomsRangeSourceReportRows = [new(ExcelReportManager.RansomsSourceCells)];
         }

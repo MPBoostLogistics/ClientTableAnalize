@@ -1,8 +1,6 @@
-using System.Diagnostics;
 using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Objects.Parsing;
 using ClientTableAnalizer.Objects.SKUItems;
-using ClientTableAnalizer.Objects.SKUItems.SKUBalances.Redemtpion;
+using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
 
 namespace ClientTableAnalizer.Objects.Managers
 {
@@ -10,10 +8,27 @@ namespace ClientTableAnalizer.Objects.Managers
     {
         #region Properties 
         public int DeadlineDays { get; private set; }
-        private readonly Dictionary<int, SKU> _skus = new();
-        public int SKUsCount => _skus.Count;
+        public Dictionary<int, SKU> SKUs {get;} = new();
+        public static Dictionary<int, List<SKURansomsBalanceDataUnit>> SkuRansomsBalanceUnits { get; set; } = new();
 
-        public static Dictionary<int, List<SKURansomsBalanceUnit>> SkuRansomsBalanceUnits { get; private set; } = new();
+        /// <summary>
+        /// Returns SKU by SKU number.
+        /// </summary>
+        /// <param name="skuNumber">SKU number.</param>
+        /// <returns>SKU object or null.</returns>
+        /// <remarks><i>New version, tested</i></remarks>
+        public SKU? this[int skuNumber] 
+        {   
+            get => (!SKUs.TryGetValue(skuNumber, out SKU? sku) && sku == null) ? sku : null; 
+            set => SKUs[skuNumber] = value!;  
+        } 
+
+        /// <summary>
+        /// Returns number of SKUs in collection.
+        /// </summary>
+        /// <returns>Number of SKUs in collection.</returns>
+        /// <remarks><i>New version, tested</i></remarks>
+        public int SKUsCount() => SKUs.Count;
 
         #endregion
 
@@ -23,7 +38,6 @@ namespace ClientTableAnalizer.Objects.Managers
 
         #region Functionality
 
-
         /// <summary>
         /// Sets period before deadline when paying a client (in days).
         /// </summary>
@@ -31,41 +45,60 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public void SetDeadlineDays(int days) => DeadlineDays = days;
 
+        /// <summary>
+        /// Creates and saves SKURansomsBalanceUnit collection from a list of raw data dictionaries.
+        /// </summary>
+        /// <param name="rawDataRowItems">List of raw data dictionaries.</param>
+        /// <returns>Number of keys in final dictionary.</returns>
+        /// <exception cref="ArgumentException">Exception when passing an empty dictionary.</exception>
+        /// <remarks><i>New version, tested</i></remarks>
         public static int SaveSKURansomsBalanceUnits(List<Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)>> rawDataRowItems)
         {
-            int count = 0;
-
-
             foreach (var rawDataRowItem in rawDataRowItems)
             {
                 if (rawDataRowItem is null)
                     throw new ArgumentException("Невозможно создать SKURansomsBalanceUnit из пустого значения");
 
                 // Parsing && save data  
-                SKURansomsBalanceUnit? unit = new(in rawDataRowItem);
+                SKURansomsBalanceDataUnit? unit = new(in rawDataRowItem);
                 if (unit is not null)
                 {
-                    Trace.WriteLine(unit); 
-                    count ++;   
 
                     var key = unit.SKUNumber;
-                    if (SkuRansomsBalanceUnits.TryGetValue(key, out List<SKURansomsBalanceUnit>? value))
+                    if (SkuRansomsBalanceUnits.TryGetValue(key, out List<SKURansomsBalanceDataUnit>? value))
                     {
                         value.Add(unit);
                     }
                     else
                     {
-                        SkuRansomsBalanceUnits.TryAdd(key: unit.SKUNumber, value: new List<SKURansomsBalanceUnit> { unit });
+                        SkuRansomsBalanceUnits.TryAdd(key: unit.SKUNumber, value: new List<SKURansomsBalanceDataUnit> { unit });
                     }
                 }
             }
 
-            Trace.WriteLine(count);
-
             return SkuRansomsBalanceUnits.Count;
         }
 
-        //public static int GetSkuRansomsBalanceUnitsCount() => SkuRansomsBalanceUnits.Count;
+        /// <summary>
+        /// Creates a collection of SKUs objects from an array of "raw data".
+        /// </summary>
+        /// <exception cref="ArgumentException">Manager does not contain an array of "raw data".</exception>
+        /// <remarks><i>New version, tested</i></remarks>
+        public void MakeSKUs()
+        {
+            if (SkuRansomsBalanceUnits == null || SkuRansomsBalanceUnits.Count == 0) 
+                throw new ArgumentException("It is not possible to create SKUs objects from an empty raw data dictionary.");
+
+            foreach (var skuRansomsBalanceUnit in SkuRansomsBalanceUnits)
+            {
+                var skuNumber = skuRansomsBalanceUnit.Key;
+                if (!SKUs.TryGetValue(skuNumber, out SKU? sku) && sku == null)
+                {
+                    SKURansomsBalance ransomsBalance = new(skuRansomsBalanceUnit.Value);
+                    this[skuNumber] = new (skuNumber, ransomsBalance);
+                }
+            }
+        }
 
 
         // public bool GetArticlesByRedemtionStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus,ArticleRowInReport>>? groups) 
