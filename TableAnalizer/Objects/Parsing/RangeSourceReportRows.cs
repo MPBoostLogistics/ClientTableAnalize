@@ -1,3 +1,4 @@
+using ClientTableAnalizer.Enums;
 using Microsoft.VisualBasic;
 
 namespace ClientTableAnalizer.Objects.Parsing
@@ -11,7 +12,7 @@ namespace ClientTableAnalizer.Objects.Parsing
         public (string key, int offset)? TerminatingStringValue { get; }
         public List<SourceCell> SourceCells { get; }
         public IEnumerable<int>? RowsIndexRange { get; set; }
-        public List<Dictionary<string, (string value, Type type)>> Values { get; private set; } = new();
+        public List<Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)>> RawRowItems { get; private set; } = new();
 
         public RangeSourceReportRows(List<SourceCell> sourceCells, string? key = null, (string key, int offset)? terminatingStringValue = null)
         {
@@ -23,6 +24,6 @@ namespace ClientTableAnalizer.Objects.Parsing
         public void SetRange(int startRowIndex, int endRowIndex) =>
             RowsIndexRange = Enumerable.Range(startRowIndex, endRowIndex);
 
-        public void SetValues(Dictionary<string, (string value, Type type)> values) => Values.Add(values);
+        public void SetValues(Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)> values) => RawRowItems.Add(values);
     }
 }

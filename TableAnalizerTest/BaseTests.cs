@@ -5,22 +5,22 @@ using ClientTableAnalizer.Objects.Parsing;
 using ClientTableAnalizer.Objects.SKUItems;
 using OfficeOpenXml;
 
-namespace TableAnalizerTest.TestManagers 
+namespace TableAnalizerTest.Managers
 {
     [TestFixture, Order(0)]
     public class BaseTests
     {
         #region Variables and constants
+        protected static ExcelReportManager _excelManager;
+        protected static SKUManager _skulManager;
         protected const string SPACE_SEPARATOR = "\u0020";
-        protected ExcelReportManager _excelManager;
+        
         protected FileManager _fileManager;
         protected const int TEST_FILEINFOS_COUNT = 8;
         protected IEnumerable<FileInfo>? testFileInfos;
         protected readonly Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> testReportFilesForSKU = [];
         protected ExcelPackage? _testRansomsWBPackage;
         protected ExcelPackage? _testRemainingWBPackage;
-        protected List<SourceCell> _testRansomsSourceCells;
-        protected List<RangeSourceReportRows> _testRansomsRangeSourceReportRows;
 
         #endregion
 
@@ -36,16 +36,9 @@ namespace TableAnalizerTest.TestManagers
             TestData.TestFilesPath = string.Concat(_fileManager.ProjectDirectory, "/testFiles");
 
             _excelManager = new();
+            _skulManager = new(_excelManager);
 
-            _testRansomsSourceCells =
-            [
-                new(1, "SKUNumber", typeof(int), true),
-                new(9, "SKURansomsStatus", typeof(string), true),
-                new(10, "Логистика", typeof(string), true, "Да"),
-                new(14, "SKUCost",  typeof(string), true) // 1137 руб.
-            ];
-
-            _testRansomsRangeSourceReportRows = [new(_testRansomsSourceCells)];
+            TestData.testRansomsRangeSourceReportRows = [new(ExcelReportManager.RansomsSourceCells)];
         }
 
         [OneTimeTearDown]

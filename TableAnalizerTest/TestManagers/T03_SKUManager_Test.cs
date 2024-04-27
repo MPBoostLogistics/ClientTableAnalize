@@ -1,9 +1,12 @@
-using TableAnalizerTest.TestManagers;
-
 namespace TableAnalizerTest.Managers
 {
-    public class T03_ArticleRansoms_Test : BaseTests
+   // [TestFixture, Order(3)]
+    public class T03_SKUManager_Test : BaseTests
     {
+        #region Variables and constants
+
+        #endregion
+
         #region Functionality
         protected override void StartTest()
         {
@@ -16,5 +19,13 @@ namespace TableAnalizerTest.Managers
         }
         #endregion
     }
-
 }
+
+// arrange
+// ... 
+
+// act
+// ... 
+
+// assert
+// ...

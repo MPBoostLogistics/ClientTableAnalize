@@ -2,10 +2,10 @@
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.SKUItems;
 
-namespace TableAnalizerTest.TestManagers
+namespace TableAnalizerTest.Managers
 {
     [TestFixture, Order(1)]
-    public class T3_ArticleRansoms_Test : BaseTests
+    public class T01_FileManagerTest : BaseTests
     {
         #region Functionality
         [Test, Order(1)]

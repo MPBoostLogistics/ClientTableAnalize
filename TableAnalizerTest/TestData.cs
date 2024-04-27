@@ -1,3 +1,5 @@
+using System.Reflection.Metadata;
+using ClientTableAnalizer.Objects.Parsing;
 using ClientTableAnalizer.Objects.SKUItems;
 
 namespace TableAnalizerTest
@@ -10,5 +12,9 @@ namespace TableAnalizerTest
         public static string? TestFilesPath { get; set; }
         public static SourceReportFileForSKU? TestReportFilesRansomsWB { get; set;}
         public static SourceReportFileForSKU? TestReportFilesRedemptionWB { get;set;}
+        public static List<RangeSourceReportRows>? testRansomsRangeSourceReportRows;
+        
+        public const int RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT = 61138;
+        public const int RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT = 1299;
     }
 }

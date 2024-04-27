@@ -1,8 +1,7 @@
 #nullable enable
 
-using System.Diagnostics;
+using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Parsing;
-using ClientTableAnalizer.Objects.SKUItems;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 
@@ -11,6 +10,7 @@ namespace ClientTableAnalizer.Objects.Managers
     public class ExcelReportManager : BaseManager
     {
         #region Constants && variables
+        public const string RANSOMS_WORKSHEET_NAME = "Выкупы";
         private const int DEFAULT_TABLE_ROW_HEIGHT = 18;
         private const int DEFAULT_TABLE_COL_WIDTH = 18;
         private const int RECORD_INDEX = 1;
@@ -20,7 +20,15 @@ namespace ClientTableAnalizer.Objects.Managers
 
         #region Properties
         private static System.Drawing.Color DangerColor { get; } = System.Drawing.Color.DarkRed;
-        
+
+        public static List<SourceCell> RansomsSourceCells { get; } = new()
+        {
+            new(2, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
+            new(9, "SKURansomsStatus", ParsingTypeCode.SKURansomsStatus, true),
+            new(10, "Логистика", ParsingTypeCode.StringTypeCode, true, "Да"),
+            new(14, "SKUCost",  ParsingTypeCode.DoubleTypeCode, true) // 1137 руб.
+        };
+
         private static TargetCell[] MainReportCells { get; } = new TargetCell[]
         {
             // Article info
@@ -60,16 +68,6 @@ namespace ClientTableAnalizer.Objects.Managers
         #endregion
 
         #region Functionality
-    
-        // Запустить цепочку обработок
-        // - выкупы wb и oz (обязательно)
-        // - приходы и хранение wb и oz (обязательно)
-        // - расходы общие (обязательно)
-        // - списаниния недостач (обязательно)
-        // Единый отчет (все листы опцонально)
-        // - пересорты (опционально)
-        // - недостачи (опционально)
-        // - пустышки (опционально)
 
         // public double AnalizeReport<T>(SourceSKUReportFileKey reportFileKey, string workSheetName, out List<T>? items, bool isRequred = true)
         // {
@@ -107,58 +105,59 @@ namespace ClientTableAnalizer.Objects.Managers
         //     return StopMethod();
         // }
 
-        public static (double time, List<SKURowInReport> articleRows) AnalyzeRedemptionReport(string path, string sheetName,
-            (int articleIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) indices)
-        {
-            List<SKURowInReport> articleRows = new();
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
 
-            if (IsDataPathExists(path, out FileInfo fileInfo))
-            {
-                using ExcelPackage package = new(fileInfo);
+        // public static (double time, List<SKURowInReport> articleRows) AnalyzeRedemptionReport(string path, string sheetName,
+        //     (int articleIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) indices)
+        // {
+        //     List<SKURowInReport> articleRows = new();
+        //     var stopwatch = new Stopwatch();
+        //     stopwatch.Start();
 
-                var worksheet = package.Workbook.Worksheets.FirstOrDefault(sh => sh.Name == sheetName) ??
-                    throw new Exception($"In found workbook there is no sheet with name '{sheetName}'.");
+        //     if (IsDataPathExists(path, out FileInfo fileInfo))
+        //     {
+        //         using ExcelPackage package = new(fileInfo);
 
-                var dimention = worksheet.Dimension;
-                var endRowIndex = dimention.End.Row;
+        //         var worksheet = package.Workbook.Worksheets.FirstOrDefault(sh => sh.Name == sheetName) ??
+        //             throw new Exception($"In found workbook there is no sheet with name '{sheetName}'.");
+
+        //         var dimention = worksheet.Dimension;
+        //         var endRowIndex = dimention.End.Row;
 
 
-                // Идем по диапазонам 
-                for (int row = 1; row <= dimention.End.Row; row++)
-                {
-                    var logisticFlagValue = worksheet.Cells[row, indices.logisticFlagIndex].Value.ToString();
+        //         // Идем по диапазонам 
+        //         for (int row = 1; row <= dimention.End.Row; row++)
+        //         {
+        //             var logisticFlagValue = worksheet.Cells[row, indices.logisticFlagIndex].Value.ToString();
 
-                    if (!string.IsNullOrEmpty(logisticFlagValue))
-                    {
-                        var logisticFlag = logisticFlagValue.Replace(" ", "");
+        //             if (!string.IsNullOrEmpty(logisticFlagValue))
+        //             {
+        //                 var logisticFlag = logisticFlagValue.Replace(" ", "");
 
-                        if (logisticFlag == LOGISTIC_FLAG)
-                        {
-                            var articleNumber = ParseValueToInt(worksheet.Cells[row, indices.articleIndex].Value);
+        //                 if (logisticFlag == LOGISTIC_FLAG)
+        //                 {
+        //                     var articleNumber = ParseValueToInt(worksheet.Cells[row, indices.articleIndex].Value);
 
-                            if (!articleNumber.HasValue) continue;
+        //                     if (!articleNumber.HasValue) continue;
 
-                            var redemptionDateString = worksheet.Cells[row, indices.dateIndex].Value.ToString();
-                            var goodStatusString = worksheet.Cells[row, indices.statusIndex].Value.ToString();
-                            var priceSting = worksheet.Cells[row, indices.priceIndex].Value.ToString();
+        //                     var redemptionDateString = worksheet.Cells[row, indices.dateIndex].Value.ToString();
+        //                     var goodStatusString = worksheet.Cells[row, indices.statusIndex].Value.ToString();
+        //                     var priceSting = worksheet.Cells[row, indices.priceIndex].Value.ToString();
 
-                            if (!string.IsNullOrEmpty(redemptionDateString) &&
-                                !string.IsNullOrEmpty(goodStatusString) &&
-                                !string.IsNullOrEmpty(priceSting))
-                            {
-                                var articleRow = new SKURowInReport(articleNumber.Value, redemptionDateString.Trim(), goodStatusString.Trim(), priceSting.Trim());
-                                articleRows.Add(articleRow);
-                            }
-                        }
-                    }
-                }
-            }
+        //                     if (!string.IsNullOrEmpty(redemptionDateString) &&
+        //                         !string.IsNullOrEmpty(goodStatusString) &&
+        //                         !string.IsNullOrEmpty(priceSting))
+        //                     {
+        //                         var articleRow = new SKURowInReport(articleNumber.Value, redemptionDateString.Trim(), goodStatusString.Trim(), priceSting.Trim());
+        //                         articleRows.Add(articleRow);
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
 
-            stopwatch.Stop();
-            return (stopwatch.ElapsedMilliseconds / 1000, articleRows);
-        }
+        //     stopwatch.Stop();
+        //     return (stopwatch.ElapsedMilliseconds / 1000, articleRows);
+        // }
 
         // public static string CreateMainReportSheet(string workSheetName, in Dictionary<int, SKU> articles)
         // {
@@ -372,7 +371,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 {
                     var rowIndex = rowsIndexRange[j];
 
-                    if (GetValuesFromRow(in workSheet, rowIndex, in currentSourceCells, out Dictionary<string, (string value, Type type)>? values) &&
+                    if (GetValuesFromRow(in workSheet, rowIndex, in currentSourceCells, out Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)>? values) &&
                         values is not null)
                     {
                         reportRowsRange.SetValues(values);
@@ -391,39 +390,60 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="values">Dictionary of retrieved values by row.</param>
         /// <returns>Boolean flag for success of completed operation.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public static bool GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells, out Dictionary<string, (string value, Type type)>? values)
+        public static bool GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells, out Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)>? values)
         {
             values = new();
+            bool isMatchFilters = true;
 
-            // Iterate over table columns at a given row index
-            for (int i = 0; i < sourceCells.Count; i++)
+            var filterCols = sourceCells
+                .Where(cell => !string.IsNullOrEmpty(cell.FilterString))
+                .Select(cell => (cell.ColIndex, cell.FilterString!.Trim().ToLower()))
+                .ToList();
+
+            // Есть фильтрационные колонки 
+            if (filterCols.Count > 0)
             {
-                SourceCell sorceCell = sourceCells[i];
-                var value = workSheet.Cells[rowIndex, sorceCell.ColIndex].Value;
-
-                // nullable check
-                if (value is null || string.IsNullOrEmpty(value.ToString()))
+                foreach (var (colIndex, stringKey) in filterCols)
                 {
-                    if (sorceCell.IsValueRequired) break;
-                    value = 0;
-                }
+                    var value = workSheet.Cells[rowIndex, colIndex].Value;
 
-                // filter check
-                if (value is not null)
-                {
-                    var stringValue = value.ToString();
-                    if (sorceCell.FilterString is not null &&
-                        stringValue!.Trim().ToLower() != sorceCell.FilterString.Trim().ToLower())
+                    if (value is null || string.IsNullOrEmpty(value.ToString()))
+                        throw new ArgumentException($"В ячейке {rowIndex}:{colIndex} нет данных для фильтрации");
+
+                    if (!IsFilterMatch(stringKey, value))
                     {
+                        isMatchFilters = false;
                         break;
                     }
-
-                    // Set value
-                    values.Add(sorceCell.Name, (stringValue!, sorceCell.ValueType));
                 }
             }
 
-            return Equals(values.Count, sourceCells.Count);
+            if (isMatchFilters)
+            {
+                var colsForGetValues = sourceCells
+                    .Where(cell => string.IsNullOrEmpty(cell.FilterString))
+                    .ToList();
+
+                foreach (var sourceCell in colsForGetValues)
+                {
+                    var value = workSheet.Cells[rowIndex, sourceCell.ColIndex].Value;
+
+                    if (value is null)
+                    {
+                        if (sourceCell.IsValueRequired)
+                            throw new ArgumentException($"В ячейке не представлено обязательно значание для имени {sourceCell.Name}");
+                        else
+                            value = string.Empty;
+                    }
+
+                    var valueToString = value.ToString();
+                    if (valueToString is not null)
+                        values.Add(sourceCell.Name, (valueToString, sourceCell.ParsingTypeCode));
+                }
+
+            }
+
+            return Equals(values?.Count, sourceCells.Count - filterCols.Count);
         }
 
         /// <summary>
@@ -477,6 +497,12 @@ namespace ClientTableAnalizer.Objects.Managers
                 }
             }
         }
+
+        private static bool IsFilterMatch(string filter, object value) =>
+            value is not null &&
+            !string.IsNullOrEmpty(value.ToString()) &&
+            string.Equals(filter.Trim().ToLower(), value.ToString()!.Trim().ToLower());
+
         #endregion
     }
 }

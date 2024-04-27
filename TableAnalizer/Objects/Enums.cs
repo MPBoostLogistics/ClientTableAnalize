@@ -25,17 +25,17 @@ namespace ClientTableAnalizer.Enums
         WriteoffShortages   // Принято на склад и списано по недостачам
     }
 
-    public enum SourceSKUReportFileKey 
-        {   
-            RansomsWB,        // выкупы WB
-            RedemtionOZ,        // выкупы OZ
-            RemainingWB,        // приходы и остатки WB
-            RemainingOZ,        // приходы и остатки OZ
-            Shortages,          // недостачи 
-            WriteOffShortages,  // списание нелдостач общее 
-            ReGrades,           // пересорты
-            Shipped             // расходы товаром 
-        }
+    public enum SourceSKUReportFileKey
+    {
+        RansomsWB,        // выкупы WB
+        RedemtionOZ,        // выкупы OZ
+        RemainingWB,        // приходы и остатки WB
+        RemainingOZ,        // приходы и остатки OZ
+        Shortages,          // недостачи 
+        WriteOffShortages,  // списание нелдостач общее 
+        ReGrades,           // пересорты
+        Shipped             // расходы товаром 
+    }
 
     public enum SKURansomsStatus
     {
@@ -45,4 +45,14 @@ namespace ClientTableAnalizer.Enums
         OnWay,      // В пути
         Unknown     // Неизвестный
     }
+
+    public enum ParsingTypeCode
+    {
+        IntTypeCode,        // 0
+        DoubleTypeCode,     // 1
+        DataOnlyTypeCode,   // 2
+        StringTypeCode,     // 3
+        SKURansomsStatus,   // 4
+    }
+
 }

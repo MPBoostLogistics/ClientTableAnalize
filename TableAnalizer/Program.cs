@@ -3,6 +3,8 @@
 
 // Unicode:  https://www.compart.com/en/unicode/
 
+// Внедрить Autofac
+
 #nullable enable
 
 using System.Diagnostics;
@@ -30,69 +32,54 @@ internal class Program
     #endregion
 
     #region Properties 
-    private static readonly SKUManager skuManager = new();
-    private static readonly ExcelReportManager excelManager = new ();
+    private static readonly FileManager fileManager = new();
+    private static readonly ExcelReportManager excelManager = new();
+    private static readonly SKUManager skuManager = new(excelManager);
+
     #endregion
 
     #region Functionality
 
     private static async Task Main(string[] args)
     {
-        // ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-        // excelManager.ManagerReached += Report;
-        // skuManager.ManagerReached += Report;
+        fileManager.ManagerReached += Report;
+        excelManager.ManagerReached += Report;
+        skuManager.ManagerReached += Report;
 
-        // Console.Clear();
+        var helloString = $"" +
+            $"--------------------------------------------\n" +
+            $"Программа формирования отчета по клиенту логистики\n" +
+            $"Версия: {AppVersion}\n" +
+            $"---------------------------------------------";
 
-        // var helloString = $"" +
-        //     $"--------------------------------------------\n" +
-        //     $"Программа формирования отчета по клиенту логистики\n" +
-        //     $"Версия: {AppVersion}\n" +
-        //     $"---------------------------------------------";
+        Console.WriteLine(helloString);
 
-        // Console.WriteLine(helloString);
+        // Set deadline days
+        string deadLineDaysTitleMessage = "Введите срок дедлайна для клиента и нажмите 'Enter'\n(положительное целое число, отличное от 0): ";
+        string deadLineDaysSuccessMessage = "Срок дедлайна для текущего клиента";
+        int deadLineDays = await GetUserIntInfo(deadLineDaysTitleMessage, deadLineDaysSuccessMessage, failureMessage);
+        skuManager.SetDeadlineDays(deadLineDays);
 
-        // // Set deadline days
-        // string deadLineDaysTitleMessage = "Введите срок дедлайна для клиента и нажмите 'Enter'\n(положительное целое число, отличное от 0): ";
-        // string deadLineDaysSuccessMessage = "Срок дедлайна для текущего клиента";
-        // int deadLineDays = await GetUserIntInfo(deadLineDaysTitleMessage, deadLineDaysSuccessMessage, failureMessage);
-        // skuManager.SetDeadlineDays(deadLineDays);
+        await Task.Delay(500);
+        Console.WriteLine();
 
-        // await Task.Delay(500);
-        // Console.WriteLine();
+        // Set source reports path
+        string reportsPathTitleMessage = "Перетащите путь к директории c отчетами клиента и нажмите 'Enter':\n ";
+        string reportsPathSuccessMessage = "Директория c отчетами клиента:\n";
+        string reportsPath = await GetUserStringInfo(reportsPathTitleMessage, reportsPathSuccessMessage, failureMessage);
 
-        // // Set reports Path
-        // string reportsPathTitleMessage = "Перетащите путь к директории c отчетами клиента и нажмите 'Enter':\n ";
-        // string reportsPathSuccessMessage = "Директория c отчетами клиента:\n";
-        // string reportsPath = await GetUserStringInfo(reportsPathTitleMessage, reportsPathSuccessMessage, failureMessage);
-        
-        // try
-        // {
-        //     var fileCount = fileManager.GetReportFiles(reportsPath);
-        //     var success = excelManager.IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys);
+        List<Task> tasks = new()
+        {
+            CheckingPresenceFilesForAnalysis(reportsPath),
+            ProcessingDataRansoms(SourceSKUReportFileKey.RansomsWB)
+        };
 
-        //     if(!success || lostKeys.Count > 0) 
-        //     {   
-        //         var lastKey = lostKeys.Last();
-        //         var lostKeysString = string.Empty;
 
-        //         foreach (var lostKey in lostKeys)
-        //             lostKeysString = string.Concat(lostKeysString, lostKey, !Equals(lostKey, lastKey) ? ", " : ". ");
-                
-        //         var lostKeysMessage = string.Concat("Не предоставлены обязательные данные для анализа: ", lostKeysString);
-        //         goodByMessage = string.Concat(lostKeysMessage,"\n",goodByMessage);
 
-        //         await Report(goodByMessage, 2000, true);
-        //     }
-        // }
-        // catch (System.Exception ex)
-        // {
-        //     goodByMessage = string.Concat($"Ошибка данных: {ex.Message}", "\n", goodByMessage);
-        //     await Report(goodByMessage, 2000, true);
-        // }
 
-        // await Task.Delay(1000);
+
 
         // Запустить цепочку обработок
         // - выкупы wb и oz (обязательно)
@@ -176,7 +163,89 @@ internal class Program
         await Exit();
     }
 
-    private static async Task Exit() 
+    private static async Task ProcessingDataRansoms(SourceSKUReportFileKey reportFileKey)
+    {
+        var reportFile = await fileManager.GetReportFile(reportFileKey);
+
+        if (reportFile is not null)
+        {
+            switch (reportFileKey)
+            {
+                case SourceSKUReportFileKey.RansomsWB:
+
+                    // Make ExcelPackage
+                    ExcelPackage ransomsWBExcelPackage = new(reportFile.FileInfo);
+
+                    // Get ExcelWorksheet
+                    ExcelReportManager.GetExcelWorksheetBy(ExcelReportManager.RANSOMS_WORKSHEET_NAME, in ransomsWBExcelPackage, out ExcelWorksheet? ransomsWBworksheet);
+
+                    if (ransomsWBworksheet is null)
+                        throw new Exception($"В файле .xlsx нет листа и имененем {ExcelReportManager.RANSOMS_WORKSHEET_NAME}");
+
+                    // Get ranges 
+                    RangeSourceReportRows ransomsWBrangeSourceReportRows = new(ExcelReportManager.RansomsSourceCells);
+                    List<RangeSourceReportRows> ransomsWBReportRowsRanges = new(1){ransomsWBrangeSourceReportRows};
+                    ExcelReportManager.GetRangeSourceReportRows(in ransomsWBworksheet, ref ransomsWBReportRowsRanges);
+                    
+                    // Get Raw Data
+                    ExcelReportManager.GetRawDataFromExcelRows(in ransomsWBworksheet, ref ransomsWBReportRowsRanges);
+
+                    
+
+
+
+                    ransomsWBExcelPackage.Dispose();
+                    break;
+                case SourceSKUReportFileKey.RedemtionOZ:
+                    break;
+                case SourceSKUReportFileKey.RemainingWB:
+                    break;
+                case SourceSKUReportFileKey.RemainingOZ:
+                    break;
+                case SourceSKUReportFileKey.Shortages:
+                    break;
+                case SourceSKUReportFileKey.WriteOffShortages:
+                    break;
+                case SourceSKUReportFileKey.ReGrades:
+                    break;
+                case SourceSKUReportFileKey.Shipped:
+                    break;
+            }
+        }
+
+
+
+    }
+
+    private static async Task CheckingPresenceFilesForAnalysis(string reportsPath)
+    {
+        try
+        {
+            var fileCount = fileManager.GetReportFiles(reportsPath);
+            var success = fileManager.IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys);
+
+            if (!success || lostKeys.Count > 0)
+            {
+                var lastKey = lostKeys.Last();
+                var lostKeysString = string.Empty;
+
+                foreach (var lostKey in lostKeys)
+                    lostKeysString = string.Concat(lostKeysString, lostKey, !Equals(lostKey, lastKey) ? ", " : ". ");
+
+                var lostKeysMessage = string.Concat("Не предоставлены обязательные данные для анализа: ", lostKeysString);
+                goodByMessage = string.Concat(lostKeysMessage, "\n", goodByMessage);
+
+                await Report(goodByMessage, 2000, true);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            goodByMessage = string.Concat($"Ошибка данных: {ex.Message}", "\n", goodByMessage);
+            await Report(goodByMessage, 2000, true);
+        }
+    }
+
+    private static async Task Exit()
     {
         skuManager.ManagerReached -= Report;
         excelManager.ManagerReached -= Report;
@@ -629,9 +698,9 @@ internal class Program
     {
         try
         {
-            skuManager.AnalyzeSKUs();
+            //skuManager.AnalyzeSKUs();
 
-           //. var outputPath = ExcelReportManager.CreateMainReportSheet("Отчет", skuManager.GetSKUs());
+            //. var outputPath = ExcelReportManager.CreateMainReportSheet("Отчет", skuManager.GetSKUs());
             //ExcelReportManager.SaveReportFiles();
 
             // Console.WriteLine($"Новый отчет по клиенту создан по пути: {outputPath}");
@@ -737,7 +806,7 @@ internal class Program
         Task.Delay(e.Delay);
 
         if (e.Exit)
-            Task.Run(Exit) ;
+            Task.Run(Exit);
     }
 
     private static async Task Report(string message, int delay = 0, bool exit = false)

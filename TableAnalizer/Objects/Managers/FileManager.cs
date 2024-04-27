@@ -14,6 +14,9 @@ namespace ClientTableAnalizer.Objects.Managers
 
         #region Properties
         public string ProjectDirectory { get; }
+        /// <summary>
+        /// Dictionary, where key is the key of report file for a client of a certain type, and value is report file itself.
+        /// </summary>
         public Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> ReportsPaths { get; private set; } = new();
         public static DirectoryInfo? ClientDirectoryInfo { get; private set; }
         public static string OutputReportFilePath { get; private set; } = string.Empty;
@@ -38,16 +41,13 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public async Task<int> GetReportFiles(string dirPathString)
         {
-            Trace.WriteLine(dirPathString);
-
-
             ManagerReachedEventArgs? args = default;
 
-            var files = GetFilesFromDirectory(dirPathString, reportFileExtension);
+            var files = GetFilesFromDirectory(dirPathString, REPORT_EXCEL_FILE_EXTENSION);
 
             if (files is null || !files.Any())
             {
-                args = new ManagerReachedEventArgs("Директория с файлами для обработки не сущесвтует или пустая, проверьте ее.",1000, false);
+                args = new ManagerReachedEventArgs("Директория с файлами для обработки не сущесвтует или пустая, проверьте ее.", 1000, false);
             }
             else
             {
@@ -102,6 +102,15 @@ namespace ClientTableAnalizer.Objects.Managers
         }
 
         /// <summary>
+        /// Returns info about report file by key.
+        /// </summary>
+        /// <param name="key">Key to search for report file in dict.</param>
+        /// <returns>SourceReportFileForSKU as Task (optional).</returns>
+        /// <remarks><i>New version.</i></remarks>
+        public async Task<SourceReportFileForSKU?> GetReportFile(SourceSKUReportFileKey key) =>
+            await Task.Run (() => ReportsPaths.TryGetValue(key, out var reportFile) ? reportFile : null);
+
+        /// <summary>
         /// Define directory for client report output.
         /// </summary>
         /// <returns>Path string to directory to save data.</returns>
@@ -128,7 +137,7 @@ namespace ClientTableAnalizer.Objects.Managers
             }
         }
 
-         /// <summary>
+        /// <summary>
         /// Checks whether required files have been added to create a client report.
         /// </summary>
         /// <param name="lostKeys">A collection of required file keys that were not provided.</param>
@@ -165,6 +174,35 @@ namespace ClientTableAnalizer.Objects.Managers
             var success = isWBSuccess == true || isOZSuccess == true;
             return success;
         }
+
+        /// <summary>
+        /// Gets the FileInfo collection for client reporting files.
+        /// </summary>
+        /// <param name="dirPathString">Path string to directory to search for files.</param>
+        /// <param name="ext">File extensions.</param>
+        /// <returns>Сollection for client reporting files.</returns>
+        /// <exception cref="DirectoryNotFoundException">Exception: Directory at spec path was not found.</exception>
+        /// <exception cref="Exception">Exception: Cannot create DirectoryInfo for directory specified in path.</exception>
+        /// <remarks><i>New version, tested</i></remarks>
+        protected static IEnumerable<FileInfo>? GetFilesFromDirectory(string dirPathString, string? ext = null)
+        {
+            if (!Directory.Exists(dirPathString))
+                throw new DirectoryNotFoundException($"Directory at path {dirPathString} was not found");
+
+            var dirInfo = new DirectoryInfo(dirPathString) ?? throw new Exception($"Cannot make DirectoryInfo path {dirPathString}");
+
+            if (ext == null)
+            {
+                return dirInfo.GetFiles();
+            }
+            else
+            {
+                return from fileInfo in dirInfo.GetFiles()
+                       where fileInfo.Name.EndsWith(REPORT_EXCEL_FILE_EXTENSION)
+                       select fileInfo;
+            }
+        }
+
         #endregion
 
         /// ???        
