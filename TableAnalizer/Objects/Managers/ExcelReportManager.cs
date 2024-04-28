@@ -21,9 +21,13 @@ namespace ClientTableAnalizer.Objects.Managers
         #region Properties
         private static System.Drawing.Color DangerColor { get; } = System.Drawing.Color.DarkRed;
 
+        /// <summary>
+        /// Collection of descriptions of source table cells (client ransoms).
+        /// </summary>
         public static List<SourceCell> RansomsSourceCells { get; } = new()
         {
             new(2, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
+            new(7, "SKURansomDate", ParsingTypeCode.DataOnlyTypeCode,true),
             new(9, "SKURansomsStatus", ParsingTypeCode.SKURansomsStatus, true),
             new(10, "Логистика", ParsingTypeCode.StringTypeCode, true, "Да"),
             new(14, "SKUCost",  ParsingTypeCode.DoubleTypeCode, true) // 1137 руб.

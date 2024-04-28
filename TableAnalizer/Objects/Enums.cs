@@ -6,7 +6,7 @@ namespace ClientTableAnalizer.Enums
 
     public enum ShortagesPlace { Warehouse, PickupPoint }
 
-    public enum ArticleSellmentStatus
+    public enum SKUSellmentStatus
     {
         FullSet,                    // Полный расчет
         InWork,                     // В работе

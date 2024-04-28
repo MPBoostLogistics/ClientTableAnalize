@@ -101,60 +101,6 @@ namespace ClientTableAnalizer.Objects.Managers
         }
 
 
-        // public bool GetArticlesByRedemtionStatus(out IOrderedEnumerable<IGrouping<ArticleRedemptionStatus,ArticleRowInReport>>? groups) 
-        // {
-        //      groups = from article in Articles
-        //               from item in article.Value.ArticleRedempionBalance.ArticleRowsInRedemptionReport
-        //               group item by item.ItemStatus into itemGroup
-        //               orderby itemGroup.Key
-        //               select itemGroup;
-
-        //     return groups.Any();
-        // }
-
-        // public int? GetArticleStorgeBalanceCountByIndex(int articleNumber, ArticeStorageIndex index) 
-        // {
-        //     if(GetArticleByNumber(articleNumber, out Article? article) && article is not null) 
-        //     {
-        //         return article.ArticleStorageBalance.GetBalanceCountByStorageIndex(index);
-        //     }
-        //     return null;
-        // }
-
-        // public int GetArticlesStorgeBalanceByIndex(ArticeStorageIndex index) 
-        // {
-        //     var aa = from article in Articles.Values
-        //              from balanceUnit in article.ArticleStorageBalance.StorageBalances
-        //              select balanceUnit.Value
-        //              group balanceUnit by balanceUnit.Key into balanceGroup
-
-        //              orderby balanceGroup.Key
-        //              select balanceGroup;
-
-
-
-        // }
-
-        // public bool GetSKUByObjectValue(object value, out SKU? sku)
-        // {
-        //     sku = null;
-        //     int? skuNumber = ParseValueToInt(value);
-
-        //     if (!skuNumber.HasValue)
-        //     {
-        //         sku = null;
-        //         return false;
-        //     }
-
-        //     return GetSKUByNumber(skuNumber.Value, out sku);
-        // }
-
-        // /// <summary>
-        // /// Returns a collection of SKUs.
-        // /// </summary>
-        // /// <returns>Collection of SKUs.</returns>
-        // public Dictionary<int, SKU> GetSKUs() => _skus;
-
         // /// <summary>
         // /// Returns saved article by its number or null.
         // /// </summary>

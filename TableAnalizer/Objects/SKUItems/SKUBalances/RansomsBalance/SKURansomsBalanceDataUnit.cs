@@ -13,11 +13,12 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         public int SKUNumber { get; private set; }
         public SKURansomsStatus? SKURansomsStatus { get; private set; }
         public double SKUCost { get; private set; }
+        public DateOnly SKURansomDate { get; private set; }
         #endregion
 
         #region  Constructors
-        public SKURansomsBalanceDataUnit(in Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)> parsingElements, string dateOnlyFormat = "dd.MM.yyyy") :
-            base(parsingElements, dateOnlyFormat) {}
+        public SKURansomsBalanceDataUnit(in Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)> parsingElements) :
+            base(parsingElements) {}
         override public string ToString() =>
             $"number: {SKUNumber}, ransoms status: {SKURansomsStatus}, cost: {SKUCost}";
         

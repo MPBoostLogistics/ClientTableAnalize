@@ -23,7 +23,7 @@ namespace ClientTableAnalizer.Objects.Parsing
         #endregion
 
         #region  Constructors
-        public ParsingEntity(in Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)> parsingElements, string dateOnlyFormat = "dd.MM.yyyy")
+        public ParsingEntity(in Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)> parsingElements, string dateOnlyFormat = "dd.MM.yyyy HH:mm")
         {
             PropertyInfos = GetType().GetProperties();
             DateOnlyFormat = dateOnlyFormat;
@@ -102,13 +102,13 @@ namespace ClientTableAnalizer.Objects.Parsing
 
                     break;
 
-               
+               //22.03.2024 14:00
                 case ParsingTypeCode.DataOnlyTypeCode:
 
-                    if (!DateOnly.TryParseExact(elementValueString, DateOnlyFormat, out DateOnly dateValue))
+                    if (!DateOnly.TryParseExact(elementValueString, DateOnlyFormat, out DateOnly dateOnlyValue))
                         ThrowExceptionCast(element.Key, targetType);
 
-                    property.SetValue(this, dateValue);
+                    property.SetValue(this, dateOnlyValue);
                     break;
 
                 case ParsingTypeCode.StringTypeCode:
