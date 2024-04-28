@@ -19,14 +19,13 @@ namespace ClientTableAnalizer.Objects.Parsing
 
         #region Properties
         protected PropertyInfo[] PropertyInfos { get; private set; }
-        protected string DateOnlyFormat;
+        protected readonly List<string> DateOnlyFormats = new() { "dd.MM.yyyy HH:mm", "dd.MM.yyyy HH:mm:ss"};
         #endregion
 
         #region  Constructors
-        public ParsingEntity(in Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)> parsingElements, string dateOnlyFormat = "dd.MM.yyyy HH:mm")
+        public ParsingEntity(in Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)> parsingElements)
         {
             PropertyInfos = GetType().GetProperties();
-            DateOnlyFormat = dateOnlyFormat;
 
             try
             {
@@ -105,7 +104,7 @@ namespace ClientTableAnalizer.Objects.Parsing
                //22.03.2024 14:00
                 case ParsingTypeCode.DataOnlyTypeCode:
 
-                    if (!DateOnly.TryParseExact(elementValueString, DateOnlyFormat, out DateOnly dateOnlyValue))
+                    if (!DateOnly.TryParseExact(elementValueString, DateOnlyFormats.ToArray(), out DateOnly dateOnlyValue))
                         ThrowExceptionCast(element.Key, targetType);
 
                     property.SetValue(this, dateOnlyValue);

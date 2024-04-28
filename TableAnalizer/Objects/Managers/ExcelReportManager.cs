@@ -19,8 +19,7 @@ namespace ClientTableAnalizer.Objects.Managers
         #endregion
 
         #region Properties
-        private static System.Drawing.Color DangerColor { get; } = System.Drawing.Color.DarkRed;
-
+    
         /// <summary>
         /// Collection of descriptions of source table cells (client ransoms).
         /// </summary>
@@ -30,7 +29,7 @@ namespace ClientTableAnalizer.Objects.Managers
             new(7, "SKURansomDate", ParsingTypeCode.DataOnlyTypeCode,true),
             new(9, "SKURansomsStatus", ParsingTypeCode.SKURansomsStatus, true),
             new(10, "Логистика", ParsingTypeCode.StringTypeCode, true, "Да"),
-            new(14, "SKUCost",  ParsingTypeCode.DoubleTypeCode, true) // 1137 руб.
+            new(14, "SKUCost",  ParsingTypeCode.DoubleTypeCode, true)
         };
 
         private static TargetCell[] MainReportCells { get; } = new TargetCell[]

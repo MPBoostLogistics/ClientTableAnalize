@@ -1,3 +1,4 @@
+using System.Globalization;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Managers;
 using ClientTableAnalizer.Objects.Parsing;
@@ -232,18 +233,18 @@ namespace TableAnalizerTest.Managers
             // assert
             Assert.That(keyCount, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
 
-            TestData.SkuRansomsBalanceUnits = SKUManager.SkuRansomsBalanceUnits;
+            //TestData.SkuRansomsBalanceUnits = SKUManager.SkuRansomsBalanceUnits;
         }
 
         [Test, Order(8)]
-        public void MakeSKUs_Test() 
+        public void MakeSKUs_Test()
         {
             // input assert
-            Assert.That(TestData.SkuRansomsBalanceUnits, Is.Not.Null);
-            Assert.That(TestData.SkuRansomsBalanceUnits, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
+            Assert.That(SKUManager.SkuRansomsBalanceUnits, Is.Not.Null);
+            Assert.That(SKUManager.SkuRansomsBalanceUnits, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
 
             // arrange
-            SKUManager.SkuRansomsBalanceUnits = TestData.SkuRansomsBalanceUnits;
+            // ... 
 
             // act
             _skuManager.MakeSKUs();
@@ -251,18 +252,18 @@ namespace TableAnalizerTest.Managers
             // assert
             Assert.That(_skuManager.SKUsCount, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
 
-            TestData.Skus = _skuManager.SKUs;
+            //TestData.Skus = _skuManager.SKUs;
         }
 
         [Test, Order(9)]
-        public void SKURansomsBalances_Test() 
+        public void SKURansomsBalances_Test()
         {
-             // input assert
-            Assert.That(TestData.Skus, Is.Not.Null);
-            Assert.That(TestData.Skus, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
+            // input assert
+            Assert.That(_skuManager.SKUs, Is.Not.Null);
+            Assert.That(_skuManager.SKUs, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
 
             // arrange
-            Dictionary<int,SKURansomsBalance> testSKURansomsBalances = new() 
+            Dictionary<int, SKURansomsBalance> testSKURansomsBalances = new()
             {
                 {15320659, new SKURansomsBalance(onWay: 0, canceled: 0, delivered: 0, withDrawn: 10)},
                 {216237114, new SKURansomsBalance(onWay: 2, canceled: 0, delivered: 1, withDrawn: 0)},
@@ -270,9 +271,9 @@ namespace TableAnalizerTest.Managers
             };
 
             // act
-            var sku15320659RansomsBalance = TestData.Skus[15320659]?.SKURansomsBalance;
-            var sku216237114RansomsBalance = TestData.Skus[216237114]?.SKURansomsBalance;
-            var sku214569047RansomsBalance = TestData.Skus[214569047]?.SKURansomsBalance;
+            var sku15320659RansomsBalance = _skuManager.SKUs[15320659]?.SKURansomsBalance;
+            var sku216237114RansomsBalance = _skuManager.SKUs[216237114]?.SKURansomsBalance;
+            var sku214569047RansomsBalance = _skuManager.SKUs[214569047]?.SKURansomsBalance;
 
             // assert  
             Assert.Multiple(() =>
@@ -288,13 +289,36 @@ namespace TableAnalizerTest.Managers
             });
         }
 
+        [Test, Order(10)]
+        public void SKUMaxRansomsDate_Test()
+        {
+            // arrange
+            var gregorian = new GregorianCalendar();
+            DateOnly maxSku15320659RansomsDate = new(2023, 12, 29, gregorian);
+            DateOnly maxSku216237114RansomsDate = new(2024, 03, 22, gregorian);
+            DateOnly maxSku214569047RansomsDate = new(2024, 03, 21, gregorian);
+
+            // act
+            // ... 
+
+            // assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_skuManager.SKUs, Is.Not.Null);
+                Assert.That(maxSku15320659RansomsDate, Is.EqualTo(_skuManager.SKUs[15320659].MaxRansomsDate));
+                Assert.That(maxSku216237114RansomsDate, Is.EqualTo(_skuManager.SKUs[216237114].MaxRansomsDate));
+                Assert.That(maxSku214569047RansomsDate, Is.EqualTo(_skuManager.SKUs[214569047].MaxRansomsDate));
+            });
+
+        }
+
         protected override void EndTest()
         {
             base.EndTest();
 
             _testRansomsWBPackage?.Dispose();
             _testRemainingWBPackage?.Dispose();
-            
+
         }
         #endregion
 

@@ -57,13 +57,12 @@ namespace ClientTableAnalizer.Objects.Managers
             foreach (var rawDataRowItem in rawDataRowItems)
             {
                 if (rawDataRowItem is null)
-                    throw new ArgumentException("Невозможно создать SKURansomsBalanceUnit из пустого значения");
+                    throw new ArgumentException("It is not possible to create SKURansomsBalanceUnit from an empty value.");
 
                 // Parsing && save data  
                 SKURansomsBalanceDataUnit? unit = new(in rawDataRowItem);
                 if (unit is not null)
                 {
-
                     var key = unit.SKUNumber;
                     if (SkuRansomsBalanceUnits.TryGetValue(key, out List<SKURansomsBalanceDataUnit>? value))
                     {
@@ -92,10 +91,16 @@ namespace ClientTableAnalizer.Objects.Managers
             foreach (var skuRansomsBalanceUnit in SkuRansomsBalanceUnits)
             {
                 var skuNumber = skuRansomsBalanceUnit.Key;
+                
                 if (!SKUs.TryGetValue(skuNumber, out SKU? sku) && sku == null)
                 {
                     SKURansomsBalance ransomsBalance = new(skuRansomsBalanceUnit.Value);
-                    this[skuNumber] = new (skuNumber, ransomsBalance);
+
+                    var skuMaxRansomDate = skuRansomsBalanceUnit.Value
+                        .Select(u => u.SKURansomDate)
+                        .Max();
+
+                    this[skuNumber] = new (skuNumber, ransomsBalance, skuMaxRansomDate);
                 }
             }
         }

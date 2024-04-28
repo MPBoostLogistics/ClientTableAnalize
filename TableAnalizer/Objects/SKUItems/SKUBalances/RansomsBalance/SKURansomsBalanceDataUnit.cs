@@ -16,7 +16,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         public DateOnly SKURansomDate { get; private set; }
         #endregion
 
-        #region  Constructors
+        #region  Constructors   
         public SKURansomsBalanceDataUnit(in Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)> parsingElements) :
             base(parsingElements) {}
         override public string ToString() =>

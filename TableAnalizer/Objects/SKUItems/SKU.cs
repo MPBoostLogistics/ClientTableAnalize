@@ -7,18 +7,19 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #region Variables && constants
         public int SKUNumber { get; }
         public SKURansomsBalance SKURansomsBalance { get;  }
+        public DateOnly MaxRansomsDate { get; }
         
 
 
         // public Marketplace Marketplace { get; private set; }
-        // public int Number { get; private set; }
+
         // public string Name { get; private set; }
-        // //public SKURedempionBalance SKURedempionBalance { get; private set; }
+   
         // public SKUStorageBalance ArticleStorageBalance { get; private set; }
         // private SKUBalancesReport? _articleBalancesReport;
         // public ArticleShortage? ArticleShortage { get; private set; }
         // public SKUItemForReport? Overrun { get; private set; }
-        // public DateTime MaxRedemptionDate { get; private set; }
+        // 
         // public bool IsDeadline { get; private set; }
         // public SellmentStatus SellmentStatus { get; private set; }
         // public double AveragePrice {get; private set; } 
@@ -27,10 +28,11 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #endregion
 
         #region Constructors && destructors
-        public SKU(int skuNumber, SKURansomsBalance skuRansomsBalance) 
+        public SKU(int skuNumber, SKURansomsBalance skuRansomsBalance, DateOnly maxRansomsDate) 
         {
             SKUNumber = skuNumber;
             SKURansomsBalance = skuRansomsBalance;
+            MaxRansomsDate = maxRansomsDate;
         }
 
 
