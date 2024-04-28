@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.SKUItems;
+using OfficeOpenXml.Packaging.Ionic.Zip;
 
 namespace ClientTableAnalizer.Objects.Managers
 {
@@ -14,12 +15,14 @@ namespace ClientTableAnalizer.Objects.Managers
 
         #region Properties
         public string ProjectDirectory { get; }
+
         /// <summary>
         /// Dictionary, where key is the key of report file for a client of a certain type, and value is report file itself.
         /// </summary>
         public Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> ReportsPaths { get; private set; } = new();
-        public static DirectoryInfo? ClientDirectoryInfo { get; private set; }
-        public static string OutputReportFilePath { get; private set; } = string.Empty;
+        public static DirectoryInfo? DirInfoForClientTargetReports { get; private set; }
+        public static string? InputReportsFilePath { get; set; } = string.Empty;
+        public static string OutputClientReportFilePath { get; private set; } = string.Empty;
         #endregion
 
         #region Constructors 
@@ -32,6 +35,16 @@ namespace ClientTableAnalizer.Objects.Managers
         #endregion
 
         #region  Functionality
+        public static bool GetFileInfosFromDirInfoByExtensions(DirectoryInfo? dirInfo, out IEnumerable<FileInfo>? fileInfos, string ext)
+        {
+            fileInfos = from fileInfo in dirInfo?.GetFiles()
+                        where fileInfo.Name.EndsWith(ext)
+                        select fileInfo;
+
+            return fileInfos is not null && fileInfos.Any();
+        }
+
+
         /// <summary>
         /// Receives supplied files from directory.
         /// </summary>
@@ -80,7 +93,7 @@ namespace ClientTableAnalizer.Objects.Managers
 
                 try
                 {
-                    var clientOutputPath = await Task.Run(GetClientOutputPath);
+                    var clientOutputPath = await Task.Run(DefineDirInfoForClientTargetReports);
 
                     if (!string.IsNullOrEmpty(clientOutputPath))
                     {
@@ -108,33 +121,42 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <returns>SourceReportFileForSKU as Task (optional).</returns>
         /// <remarks><i>New version.</i></remarks>
         public async Task<SourceReportFileForSKU?> GetReportFile(SourceSKUReportFileKey key) =>
-            await Task.Run (() => ReportsPaths.TryGetValue(key, out var reportFile) ? reportFile : null);
+            await Task.Run(() => ReportsPaths.TryGetValue(key, out var reportFile) ? reportFile : null);
 
         /// <summary>
         /// Define directory for client report output.
         /// </summary>
         /// <returns>Path string to directory to save data.</returns>
-        /// <exception cref="Exception"></exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public async Task<string?> GetClientOutputPath()
+        public async Task<string?> DefineDirInfoForClientTargetReports()
         {
-            if (ClientLogin is null)
-                throw new Exception("Логин клинта не определен, поэтому невозможно создать директорию.");
-
-            ClientDirectoryInfo = GetDirectoryInfo(PathKey.MPBoostClients, ClientLogin);
-
-            if (ClientLogin != null && ClientDirectoryInfo != null)
-            {
-                var dateTime = DateTime.Now.ToString("dd-MM-yyyy");
-                OutputReportFilePath = $"{ClientDirectoryInfo.FullName}/ClientReport_{ClientLogin}_{dateTime}.xlsx";
-
-                return ClientDirectoryInfo.FullName;
-            }
-            else
+            ManagerReachedEventArgs args;
+            
+            if (ClientLogin is null) 
             {
                 await Task.Delay(100);
-                throw new Exception("Логин клинта не определен, невозможно создать директорию для работы с ним.");
+                args = new("Clint's login is not defined, so it is impossible to create a directory.", 2000, true);
+                OnManagerReached(args);
+                return null;
             }
+               
+            DirInfoForClientTargetReports = GetDirectoryInfo(PathKey.MPBoostClients, ClientLogin);
+
+            if (DirInfoForClientTargetReports == null)
+            {
+                await Task.Delay(100);
+                args = new("Clint's login is not defined, so it is impossible to create a directory.", 2000, false);
+                OnManagerReached(args);
+                return null;
+            }
+
+            var dateTime = DateTime.Now.ToString("dd-MM-yyyy");
+            OutputClientReportFilePath = $"{DirInfoForClientTargetReports!.FullName}/ClientReport_{ClientLogin}_{dateTime}.xlsx";
+
+            args = new($"Directory for client final reports:{DirInfoForClientTargetReports.FullName}\nClient target report file name:{OutputClientReportFilePath}", 1000, false);
+            OnManagerReached(args);
+
+            return DirInfoForClientTargetReports.FullName ?? null;
         }
 
         /// <summary>

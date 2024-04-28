@@ -10,6 +10,7 @@ namespace ClientTableAnalizer.Objects.Managers
     public class ExcelReportManager : BaseManager
     {
         #region Constants && variables
+        public const string OUTPUT_REPORT_WORKSHEET01_NAME = "Отчет";
         public const string RANSOMS_WORKSHEET_NAME = "Выкупы";
         private const int DEFAULT_TABLE_ROW_HEIGHT = 18;
         private const int DEFAULT_TABLE_COL_WIDTH = 18;
@@ -19,6 +20,8 @@ namespace ClientTableAnalizer.Objects.Managers
         #endregion
 
         #region Properties
+
+        public ExcelPackage? excelPackage;
     
         /// <summary>
         /// Collection of descriptions of source table cells (client ransoms).
@@ -28,7 +31,7 @@ namespace ClientTableAnalizer.Objects.Managers
             new(2, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(7, "SKURansomDate", ParsingTypeCode.DataOnlyTypeCode,true),
             new(9, "SKURansomsStatus", ParsingTypeCode.SKURansomsStatus, true),
-            new(10, "Логистика", ParsingTypeCode.StringTypeCode, true, "Да"),
+            new(10, "Логистика", ParsingTypeCode.StringTypeCode, true, LOGISTIC_FLAG),
             new(14, "SKUCost",  ParsingTypeCode.DoubleTypeCode, true)
         };
 
@@ -68,9 +71,26 @@ namespace ClientTableAnalizer.Objects.Managers
 
         #region Constructors && destructors
         public ExcelReportManager() { }
+
+        ~ ExcelReportManager() {
+            excelPackage?.Dispose();
+        }
+
         #endregion
 
         #region Functionality
+
+        /// <summary>
+        /// Creates an Excel workbook using specified FileInfo.
+        /// </summary>
+        /// <param name="fileInfo">Specified FileInfo.</param>
+        /// <returns>Boolean operation execution flag.</returns>
+         /// <remarks><i>New version, tested</i></remarks>
+        public bool CreateExcelPackage(FileInfo fileInfo) 
+        {
+            excelPackage = new ExcelPackage(fileInfo);
+            return excelPackage is not null;
+        }
 
         // public double AnalizeReport<T>(SourceSKUReportFileKey reportFileKey, string workSheetName, out List<T>? items, bool isRequred = true)
         // {
@@ -267,7 +287,15 @@ namespace ClientTableAnalizer.Objects.Managers
         //     return OutputReportFilePath;
         // }
 
-        private static void CreateWorkSheet(string workSheetName, in ExcelPackage excelPackage, out ExcelWorksheet worksheet, System.Drawing.Color tabColor)
+        /// <summary>
+        /// Creates an Excel worksheet in specified Excel workbook.
+        /// </summary>
+        /// <param name="workSheetName">Excel worksheet name.</param>
+        /// <param name="excelPackage">Excel workbook name.</param>
+        /// <param name="worksheet">Excel worksheet that is created.</param>
+        /// <param name="tabColor">Worksheet label (tab) color.</param>
+        /// <remarks><i>New version, tested</i></remarks>
+        public static void CreateExcelWorkSheet(string workSheetName, in ExcelPackage excelPackage, out ExcelWorksheet worksheet, System.Drawing.Color tabColor)
         {
             // Remove existing worksheet
             var existingWorksheet = excelPackage.Workbook.Worksheets.SingleOrDefault(x => x.Name == workSheetName);

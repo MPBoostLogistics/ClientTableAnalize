@@ -81,7 +81,7 @@ namespace TableAnalizerTest.Managers
             Assert.Multiple(() =>
             {
                 Assert.That(_testRansomsWBPackage, Is.Not.EqualTo(null));
-                Assert.That(TestData.testRansomsRangeSourceReportRows, Is.Not.Null);
+                Assert.That(TestData._testRansomsRangeSourceReportRows, Is.Not.Null);
                 Assert.That(TestData.TestReportFilesRedemptionWB, Is.Not.EqualTo(null));
                 Assert.That(TestData.TestReportFilesRedemptionWB!.ReportKey, Is.EqualTo(SourceSKUReportFileKey.RansomsWB));
 
@@ -91,7 +91,7 @@ namespace TableAnalizerTest.Managers
             // arrange
 
             ExcelReportManager.GetExcelWorksheetBy(Ransoms_Report_List_Name, in _testRansomsWBPackage, out _ransomsWBWorksheet);
-            ExcelReportManager.GetRangeSourceReportRows(in _ransomsWBWorksheet!, ref TestData.testRansomsRangeSourceReportRows);
+            ExcelReportManager.GetRangeSourceReportRows(in _ransomsWBWorksheet!, ref TestData._testRansomsRangeSourceReportRows);
 
             // act
             var testingRange = Enumerable.Range(2, 148706 - 1);
@@ -100,7 +100,7 @@ namespace TableAnalizerTest.Managers
             Assert.Multiple(() =>
             {
                 Assert.That(_ransomsWBWorksheet, Is.Not.EqualTo(null));
-                Assert.That(TestData.testRansomsRangeSourceReportRows[0].RowsIndexRange, Is.EqualTo(testingRange));
+                Assert.That(TestData._testRansomsRangeSourceReportRows[0].RowsIndexRange, Is.EqualTo(testingRange));
             });
         }
 
@@ -178,20 +178,20 @@ namespace TableAnalizerTest.Managers
             Assert.Multiple(() =>
             {
                 Assert.That(_ransomsWBWorksheet, Is.Not.Null);
-                Assert.That(TestData.testRansomsRangeSourceReportRows, Is.Not.Null);
+                Assert.That(TestData._testRansomsRangeSourceReportRows, Is.Not.Null);
             });
 
             // arrange
             // ...
 
             // act
-            ExcelReportManager.GetRawDataFromExcelRows(in _ransomsWBWorksheet, ref TestData.testRansomsRangeSourceReportRows);
+            ExcelReportManager.GetRawDataFromExcelRows(in _ransomsWBWorksheet, ref TestData._testRansomsRangeSourceReportRows);
 
             // assert
             Assert.Multiple(() =>
             {
-                Assert.That(TestData.testRansomsRangeSourceReportRows, Has.Count.EqualTo(1));
-                Assert.That(TestData.testRansomsRangeSourceReportRows[0].RawRowItems, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
+                Assert.That(TestData._testRansomsRangeSourceReportRows, Has.Count.EqualTo(1));
+                Assert.That(TestData._testRansomsRangeSourceReportRows[0].RawRowItems, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
             });
         }
 
@@ -220,15 +220,15 @@ namespace TableAnalizerTest.Managers
         public void SaveSKURansomsBalanceUnits_Test()
         {
             // input assert
-            Assert.That(TestData.testRansomsRangeSourceReportRows, Is.Not.Null);
-            Assert.That(TestData.testRansomsRangeSourceReportRows, Has.Count.EqualTo(1));
-            Assert.That(TestData.testRansomsRangeSourceReportRows[0].RawRowItems, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
+            Assert.That(TestData._testRansomsRangeSourceReportRows, Is.Not.Null);
+            Assert.That(TestData._testRansomsRangeSourceReportRows, Has.Count.EqualTo(1));
+            Assert.That(TestData._testRansomsRangeSourceReportRows[0].RawRowItems, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
 
             // arrange
             //...
 
             // act
-            var keyCount = SKUManager.SaveSKURansomsBalanceUnits(TestData.testRansomsRangeSourceReportRows[0].RawRowItems);
+            var keyCount = SKUManager.SaveSKURansomsBalanceUnits(TestData._testRansomsRangeSourceReportRows[0].RawRowItems);
 
             // assert
             Assert.That(keyCount, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
@@ -310,6 +310,30 @@ namespace TableAnalizerTest.Managers
                 Assert.That(maxSku214569047RansomsDate, Is.EqualTo(_skuManager.SKUs[214569047].MaxRansomsDate));
             });
 
+        }
+
+        [Test, Order(11)]
+        public void CreateOutputReport() 
+        {
+            // input assert 01  
+            Assert.That(FileManager.OutputClientReportFilePath, Is.Not.Null);
+
+            // act 01
+            _excelManager.CreateExcelPackage(new FileInfo(FileManager.OutputClientReportFilePath));
+
+            // assert 02
+            Assert.That(_excelManager.excelPackage, Is.Not.Null);
+
+            // act 02
+            var reportSheetName = ExcelReportManager.OUTPUT_REPORT_WORKSHEET01_NAME;
+            ExcelReportManager.CreateExcelWorkSheet(reportSheetName, in _excelManager.excelPackage, out var sheet, _excelManager.Colors[SKUSellmentStatus.FullSet]);
+
+             // assert 03
+            Assert.That(sheet, Is.Not.Null);
+
+            // Используем настройки таблиц
+            // Заполняем данные
+            // Если файл с таким именем есть - перезаписываем
         }
 
         protected override void EndTest()

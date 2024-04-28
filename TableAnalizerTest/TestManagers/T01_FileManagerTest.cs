@@ -1,5 +1,6 @@
 
 using ClientTableAnalizer.Enums;
+using ClientTableAnalizer.Objects.Managers;
 using ClientTableAnalizer.Objects.SKUItems;
 
 namespace TableAnalizerTest.Managers
@@ -15,22 +16,24 @@ namespace TableAnalizerTest.Managers
             Assert.That(TestData.TestFilesPath, Is.Not.EqualTo(null));
 
             // arrange
-            // ... 
+            FileManager.InputReportsFilePath = TestData.TestFilesPath;
 
             // act 1
-            var dirInfo = new DirectoryInfo(TestData.TestFilesPath);
+            var dirInfo = new DirectoryInfo(FileManager.InputReportsFilePath);
 
             // assert 1
             Assert.That(dirInfo, Is.Not.EqualTo(null));
 
             // act 2
-            testFileInfos = from fileInfo in dirInfo.GetFiles()
-                            where fileInfo.Name.EndsWith(".xlsx")
-                            select fileInfo;
+            var success = FileManager.GetFileInfosFromDirInfoByExtensions(dirInfo, out var testFileInfos, ".xlsx");
 
             // assert 2
-            Assert.That(testFileInfos, Is.Not.EqualTo(null));
-            Assert.That(testFileInfos.Count(), Is.EqualTo(TEST_FILEINFOS_COUNT));
+            Assert.Multiple(() =>
+            {
+                Assert.That(success, Is.True);
+                Assert.That(testFileInfos, Is.Not.EqualTo(null));
+                Assert.That(testFileInfos!.Count(), Is.EqualTo(TEST_FILEINFOS_COUNT));
+            });
         }
 
         [Test, Order(2)]
@@ -72,7 +75,7 @@ namespace TableAnalizerTest.Managers
                 Assert.That(_fileManager.ReportsPaths, Has.Count.EqualTo(8));
                 Assert.That(succsess, Is.EqualTo(true));
                 Assert.That(_fileManager.ClientLogin, Is.EqualTo("79164372997"));
-                Assert.That(_fileManager.GetClientOutputPath, Is.Not.EqualTo(null));
+                Assert.That(_fileManager.DefineDirInfoForClientTargetReports, Is.Not.EqualTo(null));
             });
 
             // Set redemtionWB file path
@@ -84,35 +87,6 @@ namespace TableAnalizerTest.Managers
             TestData.TestReportFilesRansomsWB = testReportFilesForSKU[SourceSKUReportFileKey.RemainingWB];
             TestData.TestReportFilesRedemptionWB = testReportFilesForSKU[SourceSKUReportFileKey.RansomsWB];
         }
-
-        // [Test, Order(4)]
-        // public void GetReportFile_Test()
-        // {
-        //     // inpet test assert
-        //     Assert.Multiple(() =>
-        //     {
-        //         Assert.That(_testFilesPath, Is.Not.Null);
-        //         Assert.That(_testReportFilesRedemptionWB, Is.Not.EqualTo(null));
-        //     });
-
-        //     // act 1
-        //     var getReportFilesTask = _fileManager.GetReportFiles(_testFilesPath);
-        //     getReportFilesTask.Wait();
-
-        //     getReportFilesTask.ContinueWith(t =>
-        //     {
-        //         // act 2
-        //         var getReportRedemtionFileWB = _fileManager.GetReportFile(SourceSKUReportFileKey.RedemtionWB, true);
-
-        //         // assert
-        //         Assert.Multiple(() =>
-        //         {
-        //             Assert.That(testReportFilesForSKU[SourceSKUReportFileKey.RedemtionWB], Is.Not.EqualTo(null));
-        //             Assert.That(_testReportFilesRedemptionWB, Is.Not.EqualTo(null));
-        //             Assert.That(getReportRedemtionFileWB, Is.EqualTo(_testReportFilesRedemptionWB));
-        //         });
-        //     });
-        // }
 
         protected override void EndTest()
         {
