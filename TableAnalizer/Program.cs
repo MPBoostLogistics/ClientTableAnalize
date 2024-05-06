@@ -5,6 +5,7 @@
 
 // Внедрить Autofac
 
+// /Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles
 #nullable enable
 
 using System.Diagnostics;
@@ -71,19 +72,24 @@ internal class Program
 
         // Availability necessary reports
         Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(reportsPath);
-        availabilityNecessaryTask.Start();
+        await Task.Run(async () => await availabilityNecessaryTask);
         availabilityNecessaryTask.Wait();
 
         // Report analysis tasks
         var existingKeys = availabilityNecessaryTask.Result;
         if (existingKeys is not null && existingKeys.Count > 0)
         {
-            Task[] tasks = Array.Empty<Task>();
+            var count = existingKeys.Count;
+            Task[] tasks =  new Task[count];
             for (int i = 0; i < existingKeys.Count; i++)
             {
                 SourceSKUReportFileKey existingKey = existingKeys[i];
                 tasks[i] = ProcessingData(existingKey);
-                tasks[i].Start();
+            }
+
+            for (int i = 0; i < tasks.Length; i++)
+            {
+                await Task.Run(async () => await tasks[i]);
             }
 
             Task.WaitAll(tasks);
@@ -217,7 +223,7 @@ internal class Program
     private static async Task ProcessingData(SourceSKUReportFileKey reportFileKey)
     {
         var getReportFileTask = fileManager.GetReportFile(reportFileKey);
-        getReportFileTask.Start();
+        await Task.Run(async() => await getReportFileTask);
         getReportFileTask.Wait();
         var reportFile = getReportFileTask.Result;
 
@@ -234,23 +240,27 @@ internal class Program
                     ExcelManager.GetExcelWorksheetByName(ExcelManager.RANSOMS_WORKSHEET_NAME, reportFileKey, out ExcelWorksheet? ransomsWBworksheet);
                     if (ransomsWBworksheet is null)
                     {
-                        await Report($"В файле книги нет листа и именем {ExcelManager.RANSOMS_WORKSHEET_NAME}", 2000, true);
+                        await Report($"В файле книги нет листа с именем {ExcelManager.RANSOMS_WORKSHEET_NAME}", 2000, true);
                         return;
                     }
 
                     // Get ranges from source excel worksheet
-                    RangeSourceReportRows ransomsWBrangeSourceReportRows = new(ExcelManager.RansomsSourceCells);
-                    List<RangeSourceReportRows> ransomsWBReportRowsRanges = new(1) { ransomsWBrangeSourceReportRows };
+                    RangeSourceReportRows ransomsWBRangeSourceReportRows = new(ExcelManager.RansomsSourceCells);
+                    List<RangeSourceReportRows> ransomsWBReportRowsRanges = new(1) { ransomsWBRangeSourceReportRows };
                     ExcelManager.GetRangeSourceReportRows(in ransomsWBworksheet, ref ransomsWBReportRowsRanges);
 
                     // Get raw data from cells in source excel worksheet
                     ExcelManager.GetRawDataFromExcelRows(in ransomsWBworksheet, ref ransomsWBReportRowsRanges);
 
                     // Save ransoms balances for sku's
-                    SKUManager.SaveSKURansomsBalanceUnits(ransomsWBReportRowsRanges[1].RawRowItems);
+                    SKUManager.SaveSKURansomsBalanceUnits(ransomsWBReportRowsRanges[0].RawRowItems);
 
                     // Make sku's from ransoms balance units 
                     skuManager.MakeSKUsFromRansomsBalanceUnits(Marketplace.WB);
+
+                    // Dummy
+                    Console.WriteLine(skuManager.SKUs.Count);
+                    Console.ReadLine();
 
                     break;
                 case SourceSKUReportFileKey.RansomsOZ:
