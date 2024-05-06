@@ -83,7 +83,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// </summary>
         /// <exception cref="ArgumentException">Manager does not contain an array of "raw data".</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public void MakeSKUs()
+        public void MakeSKUsFromRansomsBalanceUnits(Marketplace marketplace)
         {
             if (SkuRansomsBalanceUnits == null || SkuRansomsBalanceUnits.Count == 0) 
                 throw new ArgumentException("It is not possible to create SKUs objects from an empty raw data dictionary.");
@@ -100,7 +100,10 @@ namespace ClientTableAnalizer.Objects.Managers
                         .Select(u => u.SKURansomDate)
                         .Max();
 
-                    this[skuNumber] = new (skuNumber, ransomsBalance, skuMaxRansomDate);
+                    var averagePrice = skuRansomsBalanceUnit.Value
+                        .Average(u => u.SKUCost);
+
+                    this[skuNumber] = new (marketplace, skuNumber, ransomsBalance, averagePrice, skuMaxRansomDate);
                 }
             }
         }

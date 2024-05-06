@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Globalization;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Managers;
 using ClientTableAnalizer.Objects.Parsing;
+using ClientTableAnalizer.Objects.SKUItems;
 using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
 using NUnit.Framework.Internal;
 using OfficeOpenXml;
@@ -13,41 +15,21 @@ namespace TableAnalizerTest.Managers
     {
         #region Constants && variables
         private const string Ransoms_Report_List_Name = "Выкупы";
-        private List<SourceCell> _remainingWBSourceCells01;
-        private List<SourceCell> _remainingWBSourceCells02;
+
+        private List<RangeSourceReportRows> _remainingWBRangeSourceReportRows  = 
+        [
+            new(TestData.RemainingWBSourceCells01, TestData.FIRST_ROOM_NAME), 
+            new(TestData.RemainingWBSourceCells02, TestData.SECOND_ROOM_NAME,(TestData.LAST_MARKER_KEY, TestData.LAST_MARKER_KEY_OFFSET))
+        ];
+        
         private ExcelWorksheet? _ransomsWBWorksheet;
         private ExcelWorksheet? _remainingWBWorksheet;
-        private List<RangeSourceReportRows> _remainingWBRangeSourceReportRows;
-        private const string FIRST_ROOM_NAME = "1 - Помещение приемки, сортировки и упаковки";
-        private const string SECOND_ROOM_NAME = "2 - Помещение длительного хранения и отгрузки";
-        private const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
-        private const int LAST_MARKER_KEY_OFFSET = 2;
+        
         private const int REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01 = 1222;
         private const int REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02 = 1190;
         #endregion
 
         #region Functionality
-        protected override void StartTest()
-        {
-            base.StartTest();
-
-            _remainingWBSourceCells01 =
-            [
-                new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-                new(6, "Название товара", ParsingTypeCode.StringTypeCode, true), // TODO: Разделить на бренд и номенклатуру
-                new(15, "Приход", ParsingTypeCode.IntTypeCode, false),
-                new(17, "Остаток", ParsingTypeCode.IntTypeCode, false)
-            ];
-
-            _remainingWBSourceCells02 =
-            [
-                new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-                new(6, "Название товара", ParsingTypeCode.StringTypeCode, true), // TODO: Разделить на бренд и номенклатуру
-                new(17, "Остаток", ParsingTypeCode.IntTypeCode, false)
-            ];
-
-            _remainingWBRangeSourceReportRows = [new(_remainingWBSourceCells01, FIRST_ROOM_NAME), new(_remainingWBSourceCells02, SECOND_ROOM_NAME, (LAST_MARKER_KEY, LAST_MARKER_KEY_OFFSET))];
-        }
 
         [Test, Order(1)]
         public void CreateExcelPackages_Test()
@@ -90,7 +72,7 @@ namespace TableAnalizerTest.Managers
 
             // arrange
 
-            ExcelReportManager.GetExcelWorksheetBy(Ransoms_Report_List_Name, in _testRansomsWBPackage, out _ransomsWBWorksheet);
+            ExcelReportManager.GetExcelWorksheetByName(Ransoms_Report_List_Name, in _testRansomsWBPackage, out _ransomsWBWorksheet);
             ExcelReportManager.GetRangeSourceReportRows(in _ransomsWBWorksheet!, ref TestData._testRansomsRangeSourceReportRows);
 
             // act
@@ -117,14 +99,14 @@ namespace TableAnalizerTest.Managers
 
             // act 
 
-            ExcelReportManager.GetExcelWorksheetBy("TDSheet", in _testRemainingWBPackage, out _remainingWBWorksheet);
+            ExcelReportManager.GetExcelWorksheetByName("TDSheet", in _testRemainingWBPackage, out _remainingWBWorksheet);
 
             // assert 01
             Assert.That(_remainingWBWorksheet, Is.Not.EqualTo(null));
 
-            var firstIndexInTest = ExcelReportManager.GetRowIndexBy(FIRST_ROOM_NAME, in _remainingWBWorksheet);
-            var secondIndexInTest = ExcelReportManager.GetRowIndexBy(SECOND_ROOM_NAME, in _remainingWBWorksheet);
-            var lastIndexInTest = ExcelReportManager.GetRowIndexBy(LAST_MARKER_KEY, in _remainingWBWorksheet);
+            var firstIndexInTest = ExcelReportManager.GetRowIndexBy(TestData.FIRST_ROOM_NAME, in _remainingWBWorksheet);
+            var secondIndexInTest = ExcelReportManager.GetRowIndexBy(TestData.SECOND_ROOM_NAME, in _remainingWBWorksheet);
+            var lastIndexInTest = ExcelReportManager.GetRowIndexBy(TestData.LAST_MARKER_KEY, in _remainingWBWorksheet);
 
             // assert 02
             Assert.Multiple(() =>
@@ -142,7 +124,7 @@ namespace TableAnalizerTest.Managers
             Assert.That(_testRemainingWBPackage, Is.Not.EqualTo(null));
 
             // act 
-            ExcelReportManager.GetExcelWorksheetBy("TDSheet", in _testRemainingWBPackage, out _remainingWBWorksheet);
+            ExcelReportManager.GetExcelWorksheetByName("TDSheet", in _testRemainingWBPackage, out _remainingWBWorksheet);
 
             // input test assert
             Assert.That(_remainingWBWorksheet, Is.Not.EqualTo(null));
@@ -247,12 +229,10 @@ namespace TableAnalizerTest.Managers
             // ... 
 
             // act
-            _skuManager.MakeSKUs();
+            _skuManager.MakeSKUsFromRansomsBalanceUnits(Marketplace.WB);
 
             // assert
             Assert.That(_skuManager.SKUsCount, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
-
-            //TestData.Skus = _skuManager.SKUs;
         }
 
         [Test, Order(9)]
@@ -313,27 +293,70 @@ namespace TableAnalizerTest.Managers
         }
 
         [Test, Order(11)]
+        public void GetPropertyValue_Test() 
+        {
+            // https://code-maze.com/csharp-get-a-value-of-a-property-by-using-its-name/
+
+            // arrange
+            var testSku = _skuManager.SKUs.OrderBy(s => s.Value.MaxRansomsDate).Select(s => s.Value).First();
+            int testSku157270554_Number = 157270554;
+            Marketplace testSku157270554_Marketplace = Marketplace.WB; 
+            string testSku157270554_Name = "No name";
+            string testSku157270554_Brand = "No name";
+            double testSku157270554_Average = 2000.00;
+            DateOnly testSku157270554_Date = new(2023, 06, 23);;
+
+            // Ransoms: total: 30, on way: 0, canceled: 0, delivered: 0, withDrawn: 30 (waiting: 30)
+            //  public SKURansomsBalance SKURansomsBalance { get;  }
+
+    
+            // act
+            var numberSuccess = _skuManager.TryGetPropertyValue<int,SKU>(testSku,"SKUNumber", out var number);
+            var marketplaceSuccess = _skuManager.TryGetPropertyValue<Marketplace,SKU>(testSku,"Marketplace", out var marketplace);
+            var nameSuccess = _skuManager.TryGetPropertyValue<string,SKU>(testSku,"SKUName", out var name);
+            var brandSuccess = _skuManager.TryGetPropertyValue<string,SKU>(testSku,"SKUBrand", out var brand);
+            var averageSuccess = _skuManager.TryGetPropertyValue<double,SKU>(testSku,"AveragePrice", out var average);
+            var dateSuccess = _skuManager.TryGetPropertyValue<DateOnly,SKU>(testSku,"MaxRansomsDate", out var date);
+
+            // assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(testSku157270554_Number, Is.EqualTo(number));
+                Assert.That(testSku157270554_Marketplace, Is.EqualTo(marketplace));
+                Assert.That(testSku157270554_Name, Is.EqualTo(name));
+                Assert.That(testSku157270554_Brand, Is.EqualTo(brand));
+                Assert.That(testSku157270554_Average, Is.EqualTo(average));
+                Assert.That(testSku157270554_Date, Is.EqualTo(date));
+            });
+        }
+
+        [Test, Order(12)]
         public void CreateOutputReport() 
         {
             // input assert 01  
             Assert.That(FileManager.OutputClientReportFilePath, Is.Not.Null);
 
             // act 01
-            _excelManager.CreateExcelPackage(new FileInfo(FileManager.OutputClientReportFilePath));
+            var outputPackage = new ExcelPackage(new FileInfo(FileManager.OutputClientReportFilePath));
 
             // assert 02
-            Assert.That(_excelManager.excelPackage, Is.Not.Null);
+            Assert.That(outputPackage, Is.Not.Null);
 
             // act 02
             var reportSheetName = ExcelReportManager.OUTPUT_REPORT_WORKSHEET01_NAME;
-            ExcelReportManager.CreateExcelWorkSheet(reportSheetName, in _excelManager.excelPackage, out var sheet, _excelManager.Colors[SKUSellmentStatus.FullSet]);
+            ExcelReportManager.CreateExcelWorkSheet(reportSheetName, in outputPackage, out var sheet, _excelManager.Colors[SKUSellmentStatus.FullSet]);
 
              // assert 03
             Assert.That(sheet, Is.Not.Null);
 
-            // Используем настройки таблиц
-            // Заполняем данные
-            // Если файл с таким именем есть - перезаписываем
+            // act 03
+            var outputSkus = _skuManager.SKUs.Select(s => s.Value.GetSKUOutput).ToList();
+            FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
+            _excelManager.FillingСellsWithData<SKUOutput>(outputPackage, ref sheet, in outputSkus, ExcelReportManager.MainReportSKUInfoCells, FileManager.OutputClientReportFilePath); 
+
+            // ... 
+            outputPackage.Dispose();
+
         }
 
         protected override void EndTest()
@@ -358,3 +381,12 @@ namespace TableAnalizerTest.Managers
         // Trace.WriteLine("...");
     }
 }
+
+
+/*
+    Указание листа
+    Указание соответствия SorceCells и TargetCells
+    Проход по книге и заполнение 
+    Настройки хидера и тп
+    Сохранение
+*/

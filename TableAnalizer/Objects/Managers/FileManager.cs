@@ -1,7 +1,5 @@
-﻿using System.Diagnostics;
-using ClientTableAnalizer.Enums;
+﻿using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.SKUItems;
-using OfficeOpenXml.Packaging.Ionic.Zip;
 
 namespace ClientTableAnalizer.Objects.Managers
 {
@@ -224,6 +222,16 @@ namespace ClientTableAnalizer.Objects.Managers
                        select fileInfo;
             }
         }
+
+        public static bool DeleteExistingFile(string path) 
+        {
+            if(File.Exists(path)) 
+               File.Delete(path);
+            
+            return !File.Exists(path);
+        }
+
+
 
         #endregion
 

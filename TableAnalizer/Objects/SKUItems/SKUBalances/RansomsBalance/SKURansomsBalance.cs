@@ -9,12 +9,12 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
     public class SKURansomsBalance : IEquatable<SKURansomsBalance>
     {
         #region Properties
-        public int Total { get; private set; }
-        public int Waiting { get; private set; }
-        public int OnWay { get; }
-        public int Canceled { get; }
-        public int Delivered { get; }
-        public int WithDrawn { get; }
+        public int SKURansomsTotal { get; private set; }
+        public int SKURansomsWaiting { get; private set; }
+        public int SKURansomsOnWay { get; }
+        public int SKURansomsCanceled { get; }
+        public int SKURansomsDelivered { get; }            // Доставлен на ПВЗ
+        public int SKURansomsWithDrawn { get; }            // Забран с ПВЗ
         #endregion
 
         #region Constructors
@@ -31,16 +31,16 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
                 switch (group.Key)
                 {
                     case SKURansomsStatus.Delivered:
-                        Delivered = group.Count();
+                        SKURansomsDelivered = group.Count();
                         break;
                     case SKURansomsStatus.WithDrawn:
-                        WithDrawn = group.Count();
+                        SKURansomsWithDrawn = group.Count();
                         break;
                     case SKURansomsStatus.Canceled:
-                        Canceled = group.Count();
+                        SKURansomsCanceled = group.Count();
                         break;
                     case SKURansomsStatus.OnWay:
-                        OnWay = group.Count();
+                        SKURansomsOnWay = group.Count();
                         break;
                     case null:
                         break;
@@ -55,32 +55,35 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         /// </summary>
         public SKURansomsBalance(int? onWay, int? canceled, int? delivered, int? withDrawn)
         {
-            OnWay = onWay ?? default;
-            Canceled = canceled ?? default;
-            Delivered = delivered ?? default;
-            WithDrawn = withDrawn ?? default;
+            SKURansomsOnWay = onWay ?? default;
+            SKURansomsCanceled = canceled ?? default;
+            SKURansomsDelivered = delivered ?? default;
+            SKURansomsWithDrawn = withDrawn ?? default;
 
             CalculateTotalAndWaiting();
         }
-        #endregion
+        #endregion Constructors
+
+        #region Functionality
+        public override string ToString() => $"Ransoms: total: {SKURansomsTotal}, on way: {SKURansomsOnWay}, canceled: {SKURansomsCanceled}, delivered: {SKURansomsDelivered}, withDrawn: {SKURansomsWithDrawn} (waiting: {SKURansomsWaiting})";
 
         private void CalculateTotalAndWaiting()
         {
-            Total = Delivered + WithDrawn + Canceled + OnWay;
-            Waiting = Delivered + WithDrawn;
+            SKURansomsTotal = SKURansomsDelivered + SKURansomsWithDrawn + SKURansomsCanceled + SKURansomsOnWay;
+            SKURansomsWaiting = SKURansomsDelivered + SKURansomsWithDrawn;
         }
 
         public bool Equals(SKURansomsBalance? other) =>
-            this.Total == other?.Total &&
-            this.Waiting == other?.Waiting &&
-            this.OnWay == other?.OnWay &&
-            this.Canceled == other?.Canceled &&
-            this.Delivered == other?.Delivered &&
-            this.WithDrawn == other?.WithDrawn;
+            this.SKURansomsTotal == other?.SKURansomsTotal &&
+            this.SKURansomsWaiting == other?.SKURansomsWaiting &&
+            this.SKURansomsOnWay == other?.SKURansomsOnWay &&
+            this.SKURansomsCanceled == other?.SKURansomsCanceled &&
+            this.SKURansomsDelivered == other?.SKURansomsDelivered &&
+            this.SKURansomsWithDrawn == other?.SKURansomsWithDrawn;
 
         public override bool Equals(object? other)
         {
-            if (other is null) return false; 
+            if (other is null) return false;
             if (ReferenceEquals(this, other)) return true;
             if (other.GetType() != this.GetType()) return false;
             return Equals((SKURansomsBalance)other);
@@ -90,5 +93,6 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         {
             return new Guid().GetHashCode();
         }
+        #endregion Functionality
     }
 }

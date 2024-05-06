@@ -1,7 +1,10 @@
 #nullable enable
 
+using System.Drawing;
 using ClientTableAnalizer.Enums;
+using ClientTableAnalizer.Interfaces;
 using ClientTableAnalizer.Objects.Parsing;
+using ClientTableAnalizer.Objects.SKUItems;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 
@@ -20,9 +23,28 @@ namespace ClientTableAnalizer.Objects.Managers
         #endregion
 
         #region Properties
+        private static Dictionary<SourceSKUReportFileKey, ExcelPackage> ExcelPackages { get; }= new();
 
-        public ExcelPackage? excelPackage;
-    
+        //public ExcelPackage? excelPackage;
+        private static Type TypeString { get; } = typeof(string);
+        private static Type TypeInt { get; } = typeof(int);
+        private static Type TypeDouble { get; } = typeof(double);
+        private static Type TypeDateOnly { get; } = typeof(DateOnly);
+        private static Type TypeSKURansomsStatus { get; } = typeof(SKURansomsStatus);
+        private static Type TypeMarketplace { get; } = typeof(Marketplace);
+        private static Type TypeSellmentStatus { get; } = typeof(SellmentStatus);
+
+        public static Dictionary<ParsingTypeCode, Type> TypeMappingTable { get; } = new()
+        {
+            { ParsingTypeCode.StringTypeCode, TypeString },
+            { ParsingTypeCode.IntTypeCode, TypeInt },
+            { ParsingTypeCode.DoubleTypeCode, TypeDouble },
+            { ParsingTypeCode.DataOnlyTypeCode, TypeDateOnly },
+            { ParsingTypeCode.SKURansomsStatus, TypeSKURansomsStatus },
+            { ParsingTypeCode.Marketplace, TypeMarketplace },
+            { ParsingTypeCode.SellmentStatus, TypeSellmentStatus }
+        };
+
         /// <summary>
         /// Collection of descriptions of source table cells (client ransoms).
         /// </summary>
@@ -35,62 +57,195 @@ namespace ClientTableAnalizer.Objects.Managers
             new(14, "SKUCost",  ParsingTypeCode.DoubleTypeCode, true)
         };
 
-        private static TargetCell[] MainReportCells { get; } = new TargetCell[]
+        public static TargetCell[] MainReportSKUInfoCells { get; } = new TargetCell[]
         {
-            // Article info
-            new (1, "МП", 8, "0", false, 0),
-            new (2, "Артикул", 12, "0", false, 0),
-            new (3, "Название", 60, "0", true, 0),
-            new (4, "Средняя цена, руб.", 12, "0.00", true, 0),
-            new (5, "Дата последнего выкупа", 13, "dd.MM.yyyy", true, 0),
-            new (6, "Статус", 12, "0", false, 0),                          
-
-            // Buyout info
-            new (7, "Всего, шт.", 12, "0", false, 0),
-            new (8, "Отменено, шт.", 7, "0", false, 90),
-            new (9, "В пути, шт.", 7, "0", false, 90),
-            new (10, "Доставлено на ПВЗ. шт.", 7, "0", true, 90),
-            new (11, "Забрано с ПВЗ, шт.", 7, "0", true, 90),                   
+            new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
+                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUMp",
+                parsingTypeCode: ParsingTypeCode.Marketplace, excelFillStyle:  ExcelFillStyle.None),
+            new (colNumber: 2, colName: "Артикул", colWidth: 12, format: "0",
+                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUNumber",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
+            new (colNumber: 3, colName: "Бренд товара", colWidth: 10, format: "0",
+                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUBrand",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None),
+            new (colNumber: 4, colName: "Название товара", colWidth: 50, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUName",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None),
+            new (colNumber: 5, colName: "Средняя цена, руб.", colWidth: 12, format: "0.00",
+                wrapTextInHeader: true, textRotationInHeader: 0, "SKUAveragePrice",
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None),
+            new (colNumber: 6, colName: "Дата последнего выкупа", colWidth: 13, format: "dd.MM.yyyy",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUMaxRansomsDate",
+                parsingTypeCode: ParsingTypeCode.DataOnlyTypeCode, excelFillStyle:  ExcelFillStyle.Solid),
+            new (colNumber: 7, colName: "Статус взаиморасчета", colWidth: 12, format: "0",
+                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUSellmentStatus",
+                parsingTypeCode: ParsingTypeCode.SellmentStatus, excelFillStyle:  ExcelFillStyle.None),
+            new (colNumber: 8, "Всего заказов", colWidth: 12, format: "0",
+                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKURansomsTotal",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
+            new (colNumber: 9, "Отменено",colWidth: 7, format: "0",
+                wrapTextInHeader: false, textRotationInHeader: 90, propertyName: "SKURansomsCanceled",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
+            new (colNumber: 10, "В пути", colWidth: 7, format: "0",
+                wrapTextInHeader: false, textRotationInHeader: 90, propertyName: "SKURansomsOnWay",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
+            new (colNumber: 11, "Доставлено на ПВЗ", colWidth: 7, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsDelivered",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
+            new (colNumber: 12, "Забрано с ПВЗ", colWidth: 7, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsWithDrawn",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
+            new (colNumber: 13, "Склад: Ожидание", colWidth: 7, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsWaiting",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: true)                                             
 
             // Info on arrival of goods at warehouse
-            new (12, "Склад: Ожидание", 11.5,"0", true, 0),
-            new (13, "Склад: Приход", 11 ,"0",true, 0),
-            new (14, "Склад: Недовоз от ПВЗ",11, "0", true, 0),          
+            // new (12, "Склад: Ожидание", 11.5,"0", true, 0),
+            // new (13, "Склад: Приход", 11 ,"0",true, 0),
+            // new (14, "Склад: Недовоз от ПВЗ",11, "0", true, 0),          
 
-            // Info on shipment of goods from warehouse
-            new (15, "Склад: Расход всего",12, "0", true, 0),
-            new (16, "Склад: Расход товаром",7, "0", true, 90),
-            new (17, "Склад: Расход пересортом",7, "0", true, 90),
-            new (18, "Склад: Расход компенсацией",7, "0", true, 90),
-            new (19, "Склад: Учтено 'пустышками'",7, "0", true, 90),
-            new (20, "Склад: Остаток", 9, "0", true, 0),
+            // // Info on shipment of goods from warehouse
+            // new (15, "Склад: Расход всего",12, "0", true, 0),
+            // new (16, "Склад: Расход товаром",7, "0", true, 90),
+            // new (17, "Склад: Расход пересортом",7, "0", true, 90),
+            // new (18, "Склад: Расход компенсацией",7, "0", true, 90),
+            // new (19, "Склад: Учтено 'пустышками'",7, "0", true, 90),
+            // new (20, "Склад: Остаток", 9, "0", true, 0),
 
-            new (21, "Комментарий", 60, "0", true, 0)
+            // new (21, "Комментарий", 60, "0", true, 0)
         };
         #endregion
 
         #region Constructors && destructors
         public ExcelReportManager() { }
 
-        ~ ExcelReportManager() {
-            excelPackage?.Dispose();
+        ~ExcelReportManager()
+        {
+            foreach (var excelPackage in ExcelPackages)
+            {
+                excelPackage.Value?.Dispose();
+            }
+
+            ExcelPackages.Clear();
         }
 
         #endregion
 
         #region Functionality
 
-        /// <summary>
-        /// Creates an Excel workbook using specified FileInfo.
-        /// </summary>
-        /// <param name="fileInfo">Specified FileInfo.</param>
-        /// <returns>Boolean operation execution flag.</returns>
-         /// <remarks><i>New version, tested</i></remarks>
-        public bool CreateExcelPackage(FileInfo fileInfo) 
+        // <summary>
+        // Creates an Excel workbook using specified FileInfo.
+        // </summary>
+        // <param name="key">Specified key.</param>
+        // <param name="fileInfo">Specified FileInfo.</param>
+        // <returns>Existing ExcelPackage (optional).</returns>
+        // <remarks><i>New version, tested</i></remarks>
+        public static ExcelPackage? CreateExcelPackage(SourceSKUReportFileKey key, FileInfo fileInfo)
         {
-            excelPackage = new ExcelPackage(fileInfo);
-            return excelPackage is not null;
+            if(ExcelPackages.TryGetValue(key, out var package) && package is null) 
+                ExcelPackages[key] = new ExcelPackage(fileInfo);
+            
+            return ExcelPackages[key];
         }
+
+        public void FillingСellsWithData<T>(ExcelPackage package, ref ExcelWorksheet worksheet, in List<T> items, TargetCell[] targetCells, string outputPath, int recordIndex = 1)
+            where T : IColorable
+        {
+            int rowIndex = recordIndex + 1;
+
+            foreach (var item in items)
+            {
+                foreach (var targetCell in targetCells)
+                {
+                    object? value = null;
+
+                    switch (targetCell.ParsingTypeCode)
+                    {
+                        case ParsingTypeCode.IntTypeCode:
+                            if (TryGetPropertyValue(item, targetCell.PropertyName, out int intValue))
+                            {
+                                value = intValue;
+                            }
+                            break;
+                        case ParsingTypeCode.DoubleTypeCode:
+                            if (TryGetPropertyValue(item, targetCell.PropertyName, out double doubleValue))
+                            {
+                                value = doubleValue;
+                            }
+                            break;
+                        case ParsingTypeCode.DataOnlyTypeCode:
+                            if (TryGetPropertyValue(item, targetCell.PropertyName, out DateOnly dateOnlyValue))
+                            {
+                                value = dateOnlyValue.ToDateTime(new TimeOnly());
+                            }
+                            break;
+                        case ParsingTypeCode.StringTypeCode:
+                            if (TryGetPropertyValue(item, targetCell.PropertyName, out string? stringValue))
+                            {
+                                value = stringValue ?? null;
+                            }
+                            break;
+                        case ParsingTypeCode.SKURansomsStatus:
+                            if (TryGetPropertyValue(item, targetCell.PropertyName, out SKURansomsStatus ransomsStatusValue))
+                            {
+                                value = ransomsStatusValue;
+                            }
+                            break;
+                        case ParsingTypeCode.Marketplace:
+                            if (TryGetPropertyValue(item, targetCell.PropertyName, out Marketplace marketplaceValue))
+                            {
+                                value = marketplaceValue;
+                            }
+                            break;
+                        case ParsingTypeCode.SellmentStatus:
+                            if (TryGetPropertyValue(item, targetCell.PropertyName, out SellmentStatus? sellmentStatus))
+                            {
+                                value = sellmentStatus;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+
+                    if (value is not null)
+                    {
+                        // Set value for cell 
+                        var cell = worksheet.Cells[rowIndex, targetCell.ColNumber];
+                        cell.Value = value;
+
+                        // Cell value format
+                        cell.Style.Numberformat.Format = targetCell.Format;
+                        
+                        // Filling cells with color   
+                        cell.Style.Fill.PatternType = targetCell.ExcelFillStyle;
+                        if (cell.Style.Fill.PatternType == ExcelFillStyle.Solid &&
+                            item.FillColor != Color.Empty)
+                        {
+                            cell.Style.Fill.BackgroundColor.SetColor(item.FillColor);
+                        }
+
+                        // Bold font for cell
+                        cell.Style.Font.Bold = targetCell.IsBoldFont;
+                    }
+                }
+                rowIndex++;
+            }
+        
+            SaveReceivedData(outputPath, ref package);
+        }
+
+        /// <summary>
+        /// Saves received data to an Excel workbook file.
+        /// </summary>
+        /// <param name="path">Directory to save file.</param>
+        public static void SaveReceivedData(string path, ref ExcelPackage package) 
+        {
+            FileStream? fileStream = File.Create(path);
+            fileStream.Close();
+           
+            File.WriteAllBytes(path, package.GetAsByteArray());
+        }
+
 
         // public double AnalizeReport<T>(SourceSKUReportFileKey reportFileKey, string workSheetName, out List<T>? items, bool isRequred = true)
         // {
@@ -325,7 +480,7 @@ namespace ClientTableAnalizer.Objects.Managers
             for (int i = 0; i < resultCells.Length; i++)
             {
                 var currentResultCell = resultCells[i];
-                var columnNumber = currentResultCell.ColumnNumber;
+                var columnNumber = currentResultCell.ColNumber;
 
                 ExcelColumn columnInWorkSheet = worksheet.Column(columnNumber) ??
                     throw new Exception($"Column number {columnNumber} not found on worksheet");
@@ -333,7 +488,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 ExcelRange firstRowCell = worksheet.Cells[RECORD_INDEX, columnNumber] ?? throw new Exception($"Cell at address {RECORD_INDEX} {columnNumber} not found on worksheet");
 
                 // Add name of column
-                firstRowCell.Value = currentResultCell.Name;
+                firstRowCell.Value = currentResultCell.ColName;
 
                 // Rotation text in header 
                 firstRowCell.Style.TextRotation = currentResultCell.TextRotationInHeader;
@@ -364,7 +519,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="excelPackage">Excel package for specifying Excel workbook.</param>
         /// <param name="worksheet">Found Excel worksheet or null.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public static void GetExcelWorksheetBy(string name, in ExcelPackage excelPackage, out ExcelWorksheet? worksheet) =>
+        public static void GetExcelWorksheetByName(string name, in ExcelPackage excelPackage, out ExcelWorksheet? worksheet) =>
             worksheet = excelPackage.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == name);
 
         /// <summary>

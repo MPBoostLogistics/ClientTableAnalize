@@ -58,7 +58,7 @@ internal class Program
 
         // Set deadline days
         string deadLineDaysTitleMessage = "Введите срок дедлайна для клиента и нажмите 'Enter'\n(положительное целое число, отличное от 0): ";
-        string deadLineDaysSuccessMessage = "Срок дедлайна для текущего клиента";
+        string deadLineDaysSuccessMessage = "Срок дедлайна для текущего клиента, дней: ";
         int deadLineDays = await GetUserIntInfo(deadLineDaysTitleMessage, deadLineDaysSuccessMessage, failureMessage);
         skuManager.SetDeadlineDays(deadLineDays);
 
@@ -66,14 +66,14 @@ internal class Program
         Console.WriteLine();
 
         // Set source reports path
-        string reportsPathTitleMessage = "Перетащите путь к директории c отчетами клиента и нажмите 'Enter':\n ";
+        string reportsPathTitleMessage = "Укажите путь к директории c отчетами клиента и нажмите 'Enter':\n ";
         string reportsPathSuccessMessage = "Директория c отчетами клиента:\n";
         string reportsPath = await GetUserStringInfo(reportsPathTitleMessage, reportsPathSuccessMessage, failureMessage);
 
         List<Task> tasks = new()
         {
             CheckingPresenceFilesForAnalysis(reportsPath),
-            ProcessingDataRansoms(SourceSKUReportFileKey.RansomsWB)
+            ProcessingData(SourceSKUReportFileKey.RansomsWB)
         };
 
 
@@ -163,7 +163,7 @@ internal class Program
         await Exit();
     }
 
-    private static async Task ProcessingDataRansoms(SourceSKUReportFileKey reportFileKey)
+    private static async Task ProcessingData(SourceSKUReportFileKey reportFileKey)
     {
         var reportFile = await fileManager.GetReportFile(reportFileKey);
 
@@ -176,23 +176,24 @@ internal class Program
                     // Make ExcelPackage
                     ExcelPackage ransomsWBExcelPackage = new(reportFile.FileInfo);
 
-                    // Get ExcelWorksheet
-                    ExcelReportManager.GetExcelWorksheetBy(ExcelReportManager.RANSOMS_WORKSHEET_NAME, in ransomsWBExcelPackage, out ExcelWorksheet? ransomsWBworksheet);
-
+                    // Get source excel worksheet by name
+                    ExcelReportManager.GetExcelWorksheetByName(ExcelReportManager.RANSOMS_WORKSHEET_NAME, in ransomsWBExcelPackage, out ExcelWorksheet? ransomsWBworksheet);
                     if (ransomsWBworksheet is null)
                         throw new Exception($"В файле .xlsx нет листа и имененем {ExcelReportManager.RANSOMS_WORKSHEET_NAME}");
 
-                    // Get ranges 
+                    // Get ranges from source excel worksheet
                     RangeSourceReportRows ransomsWBrangeSourceReportRows = new(ExcelReportManager.RansomsSourceCells);
                     List<RangeSourceReportRows> ransomsWBReportRowsRanges = new(1){ransomsWBrangeSourceReportRows};
                     ExcelReportManager.GetRangeSourceReportRows(in ransomsWBworksheet, ref ransomsWBReportRowsRanges);
                     
-                    // Get Raw Data
+                    // Get raw data from cells in source excel worksheet
                     ExcelReportManager.GetRawDataFromExcelRows(in ransomsWBworksheet, ref ransomsWBReportRowsRanges);
 
-                    
+                    // Save ransoms balances for sku's
+                    SKUManager.SaveSKURansomsBalanceUnits(ransomsWBReportRowsRanges[1].RawRowItems);
 
-
+                    // Make sku's from ransoms balance units 
+                    skuManager.MakeSKUsFromRansomsBalanceUnits(Marketplace.WB);
 
                     ransomsWBExcelPackage.Dispose();
                     break;
@@ -249,6 +250,7 @@ internal class Program
     {
         skuManager.ManagerReached -= Report;
         excelManager.ManagerReached -= Report;
+        fileManager.ManagerReached -= Report;
 
         await Task.Delay(500);
 
@@ -265,6 +267,14 @@ internal class Program
         int.Parse(obj.ToString()!.Trim()) :
         null;
 
+    /// <summary>
+    /// Receives data from user from console as a string.
+    /// </summary>
+    /// <param name="titleMessage">Title message.</param>
+    /// <param name="successMessage">Message to user if successful.</param>
+    /// <param name="failureMessage">Message to user in case of failure.</param>
+    /// <returns>Received data as a string.</returns>
+    /// <remarks><i>New version ok</i></remarks>
     private static async Task<string> GetUserStringInfo(string titleMessage, string successMessage, string failureMessage)
     {
         string? resultString = string.Empty;

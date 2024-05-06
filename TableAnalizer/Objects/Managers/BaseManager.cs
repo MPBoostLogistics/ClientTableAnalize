@@ -1,10 +1,13 @@
+using System.Reflection;
 using ClientTableAnalizer.Enums;
 
 namespace ClientTableAnalizer.Objects.Managers
 {
-    public class BaseManager
+    public class BaseManager 
     {
+        #region Variables and constants 
         protected const string REPORT_EXCEL_FILE_EXTENSION = ".xlsx";
+        #endregion Variables and constant
 
         #region Properties 
         public string? ClientLogin { get; protected set; } = string.Empty;
@@ -13,25 +16,23 @@ namespace ClientTableAnalizer.Objects.Managers
         /// Сollection of colors to indicate status of mutual settlements with clients.
         /// </summary>
         /// <remarks><i>New version</i></remarks>
-        public Dictionary<SKUSellmentStatus, System.Drawing.Color> Colors {get;} = new () 
+        public Dictionary<SKUSellmentStatus, System.Drawing.Color> Colors { get; } = new()
         {
-            {SKUSellmentStatus.FullSet, System.Drawing.ColorTranslator.FromHtml("#D5F5E3")}, 
-            {SKUSellmentStatus.InWork, System.Drawing.ColorTranslator.FromHtml("#FDEBD0")}, 
-            {SKUSellmentStatus.OnSearchWarehouseAndPoints, System.Drawing.ColorTranslator.FromHtml("#F5B7B1")},                  
-            {SKUSellmentStatus.OnSearchWarehouse, System.Drawing.ColorTranslator.FromHtml("#EBDEF0")},  
+            {SKUSellmentStatus.FullSet, System.Drawing.ColorTranslator.FromHtml("#D5F5E3")},
+            {SKUSellmentStatus.InWork, System.Drawing.ColorTranslator.FromHtml("#FDEBD0")},
+            {SKUSellmentStatus.OnSearchWarehouseAndPoints, System.Drawing.ColorTranslator.FromHtml("#F5B7B1")},
+            {SKUSellmentStatus.OnSearchWarehouse, System.Drawing.ColorTranslator.FromHtml("#EBDEF0")},
             {SKUSellmentStatus.OnSearchPoint, System.Drawing.ColorTranslator.FromHtml("#FDEDEC")},
             {SKUSellmentStatus.Unknown, System.Drawing.ColorTranslator.FromHtml("#E5E8E8")}
         };
-        #endregion
+        #endregion Properties
 
-        #region
+        #region Events
         /// <summary>
         /// Manager event delegate.
         /// </summary>
         /// <remarks><i>New version</i></remarks>
         public event EventHandler<ManagerReachedEventArgs>? ManagerReached;
-
-        #endregion
 
         /// <summary>
         /// Manager event handler.
@@ -39,10 +40,21 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="message">Event message.</param>
         /// <remarks><i>New version</i></remarks>
         public delegate void ManagerHandler(string message);
+        #endregion Events
 
         #region Constuctor and destructors
-        protected BaseManager(){ }
+        protected BaseManager() { }
         #endregion
+
+        #region Functionality
+        /// <summary>
+        /// Raises a manager event with arguments.
+        /// </summary>
+        /// <param name="e">Manager event arguments.</param>
+        /// <remarks><i>New version</i></remarks>
+        protected virtual void OnManagerReached(ManagerReachedEventArgs e) =>
+            ManagerReached?.Invoke(this, e);
+        #endregion Functionality
 
         // Из старой реалиазции
         private static string FormСorrectPath(string path)
@@ -62,13 +74,45 @@ namespace ClientTableAnalizer.Objects.Managers
             return $"/{copy}";
         }
 
-        /// <summary>
-        /// Raises a manager event with arguments.
-        /// </summary>
-        /// <param name="e">Manager event arguments.</param>
-        /// <remarks><i>New version</i></remarks>
-        protected virtual void OnManagerReached(ManagerReachedEventArgs e) =>
-            ManagerReached?.Invoke(this, e);
-    }
+        public bool TryGetPropertyValue<TType, TObj>(TObj obj, string propertyName, out TType? value)
+        {
+            ManagerReachedEventArgs args;    
 
+            value = default;
+
+            if (obj is null)
+            {
+                args = new ("TryGetPropertyValue: object is null.", 1000, true);
+                this.OnManagerReached(args);
+                return false;
+            }
+
+            PropertyInfo? propertyInfo = typeof(TObj).GetProperty(propertyName);
+            if (propertyInfo is null)
+            {
+                args = new ($"TryGetPropertyValue: Property '{propertyName}' not found.", 1000, true);
+                this.OnManagerReached(args);
+                return false;
+            }
+
+            object? propertyValue = propertyInfo.GetValue(obj);
+            if (propertyValue is null && Nullable.GetUnderlyingType(typeof(TType)) is not null)
+            {
+                return true;
+            }
+
+            if (propertyValue is not TType typedValue)
+            {
+                args = new ($"Property '{propertyName}' is of type {propertyInfo.PropertyType}, got {typeof(TType)}.", 1000, true);
+                this.OnManagerReached(args);
+                return false;
+            }
+
+            value = typedValue;
+
+            return true;
+        }
+
+        
+    }
 }

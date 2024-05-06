@@ -52,6 +52,8 @@ namespace ClientTableAnalizer.Enums
         DataOnlyTypeCode,   // 2
         StringTypeCode,     // 3
         SKURansomsStatus,   // 4
+        Marketplace,        // 5
+        SellmentStatus      // 6
     }
 
 }

@@ -1,40 +1,57 @@
-﻿using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
+﻿using System.Drawing;
+using ClientTableAnalizer.Enums;
+using ClientTableAnalizer.Interfaces;
+using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
 
 namespace ClientTableAnalizer.Objects.SKUItems
 {
-    public class SKU
+    /// <remarks><i>New version.</i></remarks>
+    public class SKU : IColorable
     {
-        #region Variables && constants
+        #region Properties
+        public Marketplace Marketplace { get; }
         public int SKUNumber { get; }
+        public string SKUBrand { get;}
+        public string SKUName { get; }
         public SKURansomsBalance SKURansomsBalance { get;  }
+        public double AveragePrice {get;}
         public DateOnly MaxRansomsDate { get; }
-        
+        public bool IsSKUDeadline => (MaxRansomsDate.ToDateTime(new TimeOnly()) - DateTime.Now).Duration().Days > 14;
+        public SellmentStatus SellmentStatus { get; private set; }
+        public Color FillColor { get; set;} = Color.Empty;
 
-
-        // public Marketplace Marketplace { get; private set; }
-
-        // public string Name { get; private set; }
-   
         // public SKUStorageBalance ArticleStorageBalance { get; private set; }
         // private SKUBalancesReport? _articleBalancesReport;
         // public ArticleShortage? ArticleShortage { get; private set; }
         // public SKUItemForReport? Overrun { get; private set; }
         // 
         // public bool IsDeadline { get; private set; }
-        // public SellmentStatus SellmentStatus { get; private set; }
-        // public double AveragePrice {get; private set; } 
+        // 
+        //  
         // public string Comment { get; private set; }
+
+        //this.IsDeadline = (this.MaxRedemptionDate - DateTime.Now).Duration().Days > DeadLineDays;
 
         #endregion
 
         #region Constructors && destructors
-        public SKU(int skuNumber, SKURansomsBalance skuRansomsBalance, DateOnly maxRansomsDate) 
+        public SKU(Marketplace marketplace, int skuNumber, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate) 
         {
+            Marketplace = marketplace;
             SKUNumber = skuNumber;
+            SKUBrand = "No name";
+            SKUName = "No name";
             SKURansomsBalance = skuRansomsBalance;
+            AveragePrice = averagePrice;
             MaxRansomsDate = maxRansomsDate;
+            SellmentStatus = new(SKUSellmentStatus.Unknown);
+
+            // Set fill color
+            FillColor = !IsSKUDeadline ? Color.DarkOrange : Color.DarkRed;
         }
 
+        public override string ToString() => 
+            $"{SKUNumber} ({Marketplace}): '{SKUBrand} / {SKUName}', {AveragePrice}. Date: {MaxRansomsDate}\n{SKURansomsBalance}";
 
 
         // public SKU(Marketplace marketplace, int skuNumber, SKURowInReport articleRowInReport)
@@ -68,13 +85,19 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #endregion
 
         #region Functionality
-       // public void SetArticleRowInReport(SKURowInReport articleRowInReport) {} // Dummy
-            //SKURedempionBalance.Set(articleRowInReport);
-            
-       // public void SetName(string name) => Name = name;
 
-       // public void SetComment(string message) =>
-         //   Comment = string.IsNullOrEmpty(Comment) ? message : string.Concat(Comment, " ", message);
+        public SKUOutput GetSKUOutput => new(this);
+
+
+
+
+        // public void SetArticleRowInReport(SKURowInReport articleRowInReport) {} // Dummy
+        //SKURedempionBalance.Set(articleRowInReport);
+
+        // public void SetName(string name) => Name = name;
+
+        // public void SetComment(string message) =>
+        //   Comment = string.IsNullOrEmpty(Comment) ? message : string.Concat(Comment, " ", message);
 
         // public void SetStoreBalance(int count, double price) =>
         //     ArticleStorageBalance.SetPayShortage(count, price);
@@ -157,7 +180,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
         //             //     if(ArticleStorageBalance.Undelivery > 0)
         //             //         articleShortage.SetArticleShortage(ShortagesPlace.PickupPoint, ArticleStorageBalance.Undelivery);
         //             // }
-    
+
         //             // Если общий расход меньше одидания 
         //             // if (StoreBalance.TotalConsumption < StoreBalance.ReceivedQuantity && StoreBalance.FinBalance <= 0)
         //             // {
