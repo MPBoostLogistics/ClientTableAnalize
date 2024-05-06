@@ -22,8 +22,6 @@ namespace TableAnalizerTest
         #region Properties
 
         public string TestFilesPath { get; set; }
-        public SourceReportFileForSKU? TestReportFilesRansomsWB { get; set; }
-        public SourceReportFileForSKU? TestReportFilesRedemptionWB { get; set; }
 
         public static List<SourceCell> RemainingWBSourceCells01 { get; } =
         [

@@ -10,7 +10,7 @@ using OfficeOpenXml.Style;
 
 namespace ClientTableAnalizer.Objects.Managers
 {
-    public class ExcelReportManager : BaseManager
+    public class ExcelManager : BaseManager
     {
         #region Constants && variables
         public const string OUTPUT_REPORT_WORKSHEET01_NAME = "Отчет";
@@ -23,9 +23,7 @@ namespace ClientTableAnalizer.Objects.Managers
         #endregion
 
         #region Properties
-        private static Dictionary<SourceSKUReportFileKey, ExcelPackage> ExcelPackages { get; }= new();
-
-        //public ExcelPackage? excelPackage;
+        private static Dictionary<SourceSKUReportFileKey, ExcelPackage> ExcelPackages { get; } = new();
         private static Type TypeString { get; } = typeof(string);
         private static Type TypeInt { get; } = typeof(int);
         private static Type TypeDouble { get; } = typeof(double);
@@ -117,9 +115,9 @@ namespace ClientTableAnalizer.Objects.Managers
         #endregion
 
         #region Constructors && destructors
-        public ExcelReportManager() { }
+        public ExcelManager() { }
 
-        ~ExcelReportManager()
+        ~ExcelManager()
         {
             foreach (var excelPackage in ExcelPackages)
             {
@@ -142,12 +140,28 @@ namespace ClientTableAnalizer.Objects.Managers
         // <remarks><i>New version, tested</i></remarks>
         public static ExcelPackage? CreateExcelPackage(SourceSKUReportFileKey key, FileInfo fileInfo)
         {
-            if(ExcelPackages.TryGetValue(key, out var package) && package is null) 
-                ExcelPackages[key] = new ExcelPackage(fileInfo);
-            
-            return ExcelPackages[key];
+            if (!GetExcelPackageByKey(key, out ExcelPackage? package) && package is null)
+            {
+                ExcelPackages.Add(key, new ExcelPackage(fileInfo));
+            }
+
+            GetExcelPackageByKey(key, out ExcelPackage? existingPackage);
+            return existingPackage;
         }
 
+        /// <summary>
+        /// Returns ExcelPackage from internal dictionary by key.
+        /// </summary>
+        /// <param name="key">ExcelPackage search key.</param>
+        /// <param name="package">ExcelPackage or null.</param>
+        /// <returns>Boolean flag of operation.</returns>
+        // <remarks><i>New version, tested</i></remarks>
+        public static bool GetExcelPackageByKey(SourceSKUReportFileKey key, out ExcelPackage? package)
+        {
+            ExcelPackages.TryGetValue(key, out package);
+            return package is not null;
+        }
+ 
         public void FillingСellsWithData<T>(ExcelPackage package, ref ExcelWorksheet worksheet, in List<T> items, TargetCell[] targetCells, string outputPath, int recordIndex = 1)
             where T : IColorable
         {
@@ -215,7 +229,7 @@ namespace ClientTableAnalizer.Objects.Managers
 
                         // Cell value format
                         cell.Style.Numberformat.Format = targetCell.Format;
-                        
+
                         // Filling cells with color   
                         cell.Style.Fill.PatternType = targetCell.ExcelFillStyle;
                         if (cell.Style.Fill.PatternType == ExcelFillStyle.Solid &&
@@ -230,7 +244,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 }
                 rowIndex++;
             }
-        
+
             SaveReceivedData(outputPath, ref package);
         }
 
@@ -238,11 +252,11 @@ namespace ClientTableAnalizer.Objects.Managers
         /// Saves received data to an Excel workbook file.
         /// </summary>
         /// <param name="path">Directory to save file.</param>
-        public static void SaveReceivedData(string path, ref ExcelPackage package) 
+        public static void SaveReceivedData(string path, ref ExcelPackage package)
         {
             FileStream? fileStream = File.Create(path);
             fileStream.Close();
-           
+
             File.WriteAllBytes(path, package.GetAsByteArray());
         }
 
@@ -515,12 +529,14 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <summary>
         /// Returns a Excel worksheet in an Excel workbook by its name.
         /// </summary>
-        /// <param name="name">Name of Excel Excel worksheet to search for.</param>
-        /// <param name="excelPackage">Excel package for specifying Excel workbook.</param>
+        /// <param name="name">Name of Excel worksheet to search for.</param>
+        /// <param name="key">Key for searching ExcelPackage in internal dictionary.</param>
         /// <param name="worksheet">Found Excel worksheet or null.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public static void GetExcelWorksheetByName(string name, in ExcelPackage excelPackage, out ExcelWorksheet? worksheet) =>
-            worksheet = excelPackage.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == name);
+        public static void GetExcelWorksheetByName(string name, SourceSKUReportFileKey key, out ExcelWorksheet? worksheet) =>
+             worksheet = (GetExcelPackageByKey(key, out ExcelPackage? package) && package is not null) ?
+                package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == name) :
+                null;
 
         /// <summary>
         /// Returns index of row from an Excel workbook by string value (key).

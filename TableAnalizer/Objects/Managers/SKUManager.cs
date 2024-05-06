@@ -33,7 +33,7 @@ namespace ClientTableAnalizer.Objects.Managers
         #endregion
 
         #region Constructors and destructors
-        public SKUManager(ExcelReportManager excelReportManager) { }
+        public SKUManager(ExcelManager excelReportManager) { }
         #endregion
 
         #region Functionality

@@ -67,7 +67,7 @@ namespace TableAnalizerTest.Managers
             var getReportFilesTask = _fileManager.GetReportFiles(TestData.TestFilesPath);
             getReportFilesTask.Wait();
 
-            var succsess = _fileManager.IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys);
+            var succsess = _fileManager.IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existKeys);
 
             // assert
             Assert.Multiple(() =>
@@ -83,16 +83,11 @@ namespace TableAnalizerTest.Managers
                 .FirstOrDefault(rp => rp.Value.ReportKey == SourceSKUReportFileKey.RansomsWB).Value);
             testReportFilesForSKU.Add(SourceSKUReportFileKey.RemainingWB, _fileManager.ReportsPaths
                 .FirstOrDefault(rp => rp.Value.ReportKey == SourceSKUReportFileKey.RemainingWB).Value);
-
-            TestData.TestReportFilesRansomsWB = testReportFilesForSKU[SourceSKUReportFileKey.RemainingWB];
-            TestData.TestReportFilesRedemptionWB = testReportFilesForSKU[SourceSKUReportFileKey.RansomsWB];
         }
 
         protected override void EndTest()
         {
             base.EndTest();
-            _testRansomsWBPackage?.Dispose();
-            _testRemainingWBPackage?.Dispose();
         }
 
         #endregion

@@ -33,13 +33,12 @@ internal class Program
 
     #region Properties 
     private static readonly FileManager fileManager = new();
-    private static readonly ExcelReportManager excelManager = new();
+    private static readonly ExcelManager excelManager = new();
     private static readonly SKUManager skuManager = new(excelManager);
 
     #endregion
 
     #region Functionality
-
     private static async Task Main(string[] args)
     {
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -50,7 +49,7 @@ internal class Program
 
         var helloString = $"" +
             $"--------------------------------------------\n" +
-            $"Программа формирования отчета по клиенту логистики\n" +
+            $"Отчета по взаиморасчетам с клиентом логистики\n" +
             $"Версия: {AppVersion}\n" +
             $"---------------------------------------------";
 
@@ -58,7 +57,7 @@ internal class Program
 
         // Set deadline days
         string deadLineDaysTitleMessage = "Введите срок дедлайна для клиента и нажмите 'Enter'\n(положительное целое число, отличное от 0): ";
-        string deadLineDaysSuccessMessage = "Срок дедлайна для текущего клиента, дней: ";
+        string deadLineDaysSuccessMessage = "Срок дедлайна для текущего клиента, дней";
         int deadLineDays = await GetUserIntInfo(deadLineDaysTitleMessage, deadLineDaysSuccessMessage, failureMessage);
         skuManager.SetDeadlineDays(deadLineDays);
 
@@ -66,15 +65,67 @@ internal class Program
         Console.WriteLine();
 
         // Set source reports path
-        string reportsPathTitleMessage = "Укажите путь к директории c отчетами клиента и нажмите 'Enter':\n ";
+        string reportsPathTitleMessage = "Укажите путь к директории c исходными отчетами клиента и нажмите 'Enter':\n ";
         string reportsPathSuccessMessage = "Директория c отчетами клиента:\n";
         string reportsPath = await GetUserStringInfo(reportsPathTitleMessage, reportsPathSuccessMessage, failureMessage);
 
-        List<Task> tasks = new()
+        // Availability necessary reports
+        Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(reportsPath);
+        availabilityNecessaryTask.Start();
+        availabilityNecessaryTask.Wait();
+
+        // Report analysis tasks
+        var existingKeys = availabilityNecessaryTask.Result;
+        if (existingKeys is not null && existingKeys.Count > 0)
         {
-            CheckingPresenceFilesForAnalysis(reportsPath),
-            ProcessingData(SourceSKUReportFileKey.RansomsWB)
-        };
+            Task[] tasks = Array.Empty<Task>();
+            for (int i = 0; i < existingKeys.Count; i++)
+            {
+                SourceSKUReportFileKey existingKey = existingKeys[i];
+                tasks[i] = ProcessingData(existingKey);
+                tasks[i].Start();
+            }
+
+            Task.WaitAll(tasks);
+
+            // Анализ 
+        }
+        else
+        {
+            await Report(string.Concat("Нет отчетов, доступеых для анализа\n", goodByMessage), 2000, true);
+        }
+
+        // Отчет по выкупами WB
+        // Отчет по выкупами OZ
+        // Отчет по приходу и остаткам WB
+        // Отчет по приходу и остаткам OZ
+        // Отчет по расходу
+        // Отчет по списанию недостач (общие)
+        // Отчет по недостачам
+        // Отчет по пересортам
+        // Анализ - после всех отчетов
+
+
+
+
+        // for (int i = 0; i < tasks.Count; i++)
+        // {
+        //     Task? currentTask = tasks[i];
+        //     if(currentTask == tasks.First()) 
+        //     {
+        //         currentTask.Start();
+        //     } 
+        //     else 
+        //     {
+        //         Task nextTask = tasks[i - 1].ContinueWith;
+        //     } 
+        // }
+
+
+
+
+
+
 
 
 
@@ -165,29 +216,35 @@ internal class Program
 
     private static async Task ProcessingData(SourceSKUReportFileKey reportFileKey)
     {
-        var reportFile = await fileManager.GetReportFile(reportFileKey);
+        var getReportFileTask = fileManager.GetReportFile(reportFileKey);
+        getReportFileTask.Start();
+        getReportFileTask.Wait();
+        var reportFile = getReportFileTask.Result;
 
         if (reportFile is not null)
         {
+            // Make ExcelPackage
+            ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
+
             switch (reportFileKey)
             {
                 case SourceSKUReportFileKey.RansomsWB:
 
-                    // Make ExcelPackage
-                    ExcelPackage ransomsWBExcelPackage = new(reportFile.FileInfo);
-
                     // Get source excel worksheet by name
-                    ExcelReportManager.GetExcelWorksheetByName(ExcelReportManager.RANSOMS_WORKSHEET_NAME, in ransomsWBExcelPackage, out ExcelWorksheet? ransomsWBworksheet);
+                    ExcelManager.GetExcelWorksheetByName(ExcelManager.RANSOMS_WORKSHEET_NAME, reportFileKey, out ExcelWorksheet? ransomsWBworksheet);
                     if (ransomsWBworksheet is null)
-                        throw new Exception($"В файле .xlsx нет листа и имененем {ExcelReportManager.RANSOMS_WORKSHEET_NAME}");
+                    {
+                        await Report($"В файле книги нет листа и именем {ExcelManager.RANSOMS_WORKSHEET_NAME}", 2000, true);
+                        return;
+                    }
 
                     // Get ranges from source excel worksheet
-                    RangeSourceReportRows ransomsWBrangeSourceReportRows = new(ExcelReportManager.RansomsSourceCells);
-                    List<RangeSourceReportRows> ransomsWBReportRowsRanges = new(1){ransomsWBrangeSourceReportRows};
-                    ExcelReportManager.GetRangeSourceReportRows(in ransomsWBworksheet, ref ransomsWBReportRowsRanges);
-                    
+                    RangeSourceReportRows ransomsWBrangeSourceReportRows = new(ExcelManager.RansomsSourceCells);
+                    List<RangeSourceReportRows> ransomsWBReportRowsRanges = new(1) { ransomsWBrangeSourceReportRows };
+                    ExcelManager.GetRangeSourceReportRows(in ransomsWBworksheet, ref ransomsWBReportRowsRanges);
+
                     // Get raw data from cells in source excel worksheet
-                    ExcelReportManager.GetRawDataFromExcelRows(in ransomsWBworksheet, ref ransomsWBReportRowsRanges);
+                    ExcelManager.GetRawDataFromExcelRows(in ransomsWBworksheet, ref ransomsWBReportRowsRanges);
 
                     // Save ransoms balances for sku's
                     SKUManager.SaveSKURansomsBalanceUnits(ransomsWBReportRowsRanges[1].RawRowItems);
@@ -195,9 +252,8 @@ internal class Program
                     // Make sku's from ransoms balance units 
                     skuManager.MakeSKUsFromRansomsBalanceUnits(Marketplace.WB);
 
-                    ransomsWBExcelPackage.Dispose();
                     break;
-                case SourceSKUReportFileKey.RedemtionOZ:
+                case SourceSKUReportFileKey.RansomsOZ:
                     break;
                 case SourceSKUReportFileKey.RemainingWB:
                     break;
@@ -213,38 +269,13 @@ internal class Program
                     break;
             }
         }
-
-
-
-    }
-
-    private static async Task CheckingPresenceFilesForAnalysis(string reportsPath)
-    {
-        try
+        else
         {
-            var fileCount = fileManager.GetReportFiles(reportsPath);
-            var success = fileManager.IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys);
-
-            if (!success || lostKeys.Count > 0)
-            {
-                var lastKey = lostKeys.Last();
-                var lostKeysString = string.Empty;
-
-                foreach (var lostKey in lostKeys)
-                    lostKeysString = string.Concat(lostKeysString, lostKey, !Equals(lostKey, lastKey) ? ", " : ". ");
-
-                var lostKeysMessage = string.Concat("Не предоставлены обязательные данные для анализа: ", lostKeysString);
-                goodByMessage = string.Concat(lostKeysMessage, "\n", goodByMessage);
-
-                await Report(goodByMessage, 2000, true);
-            }
-        }
-        catch (System.Exception ex)
-        {
-            goodByMessage = string.Concat($"Ошибка данных: {ex.Message}", "\n", goodByMessage);
-            await Report(goodByMessage, 2000, true);
+            // Ошибка - нет отчета по ключу, выходим
         }
     }
+
+
 
     private static async Task Exit()
     {

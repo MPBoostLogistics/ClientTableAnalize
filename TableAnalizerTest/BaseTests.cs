@@ -12,7 +12,7 @@ namespace TableAnalizerTest.Managers
         #region Variables and constants
 
         protected static TestData TestData {get; set;}
-        protected static ExcelReportManager _excelManager;
+        protected static ExcelManager _excelManager;
         protected static SKUManager _skuManager;
         protected FileManager _fileManager;
         protected const string SPACE_SEPARATOR = "\u0020";
@@ -20,8 +20,6 @@ namespace TableAnalizerTest.Managers
         protected const int TEST_FILEINFOS_COUNT = 8;
         protected IEnumerable<FileInfo>? testFileInfos;
         protected readonly Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> testReportFilesForSKU = [];
-        protected ExcelPackage? _testRansomsWBPackage;
-        protected ExcelPackage? _testRemainingWBPackage;
 
         #endregion
 
@@ -39,7 +37,7 @@ namespace TableAnalizerTest.Managers
             _excelManager = new();
             _skuManager = new(_excelManager);
 
-            TestData._testRansomsRangeSourceReportRows = [new(ExcelReportManager.RansomsSourceCells)];
+            TestData._testRansomsRangeSourceReportRows = [new(ExcelManager.RansomsSourceCells)];
         }
 
         [OneTimeTearDown]

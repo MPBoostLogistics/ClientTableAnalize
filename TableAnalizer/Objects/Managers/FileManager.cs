@@ -42,6 +42,49 @@ namespace ClientTableAnalizer.Objects.Managers
             return fileInfos is not null && fileInfos.Any();
         }
 
+        /// <summary>
+        /// Checks availability of necessary files for data analysis.
+        /// </summary>
+        /// <param name="reportsPath">Directory with client reports.</param>
+        /// <returns>List of existing keys as Task result.</returns>
+        public async Task<List<SourceSKUReportFileKey>?> ChecksAvailabilityNecessaryFiles(string reportsPath)
+        {
+            ManagerReachedEventArgs? args = null;
+
+            try
+            {
+                var fileCount = GetReportFiles(reportsPath);
+                var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys);
+
+                if (!success || lostKeys.Count > 0)
+                {
+                    var lastKey = lostKeys.Last();
+                    var lostKeysString = string.Empty;
+
+                    foreach (var lostKey in lostKeys)
+                        lostKeysString = string.Concat(lostKeysString, lostKey, !Equals(lostKey, lastKey) ? ", " : ". ");
+
+                    await Task.Delay(100);
+                    args = new (string.Concat("Не предоставлены обязательные данные для анализа: ", lostKeysString), 2000, true);
+                    return null;
+                }
+                else 
+                {
+                    return existingKeys;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                await Task.Delay(100);
+                args = new (string.Concat($"Ошибка данных: {ex.Message}", "\n"), 2000, true);
+                return null;
+            } 
+            finally 
+            {
+                if(args is not null)
+                    OnManagerReached(args);
+            }
+        }
 
         /// <summary>
         /// Receives supplied files from directory.
@@ -129,15 +172,15 @@ namespace ClientTableAnalizer.Objects.Managers
         public async Task<string?> DefineDirInfoForClientTargetReports()
         {
             ManagerReachedEventArgs args;
-            
-            if (ClientLogin is null) 
+
+            if (ClientLogin is null)
             {
                 await Task.Delay(100);
                 args = new("Clint's login is not defined, so it is impossible to create a directory.", 2000, true);
                 OnManagerReached(args);
                 return null;
             }
-               
+
             DirInfoForClientTargetReports = GetDirectoryInfo(PathKey.MPBoostClients, ClientLogin);
 
             if (DirInfoForClientTargetReports == null)
@@ -163,33 +206,84 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="lostKeys">A collection of required file keys that were not provided.</param>
         /// <returns>Logical flag for performing an operation.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public bool IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys)
+        public bool IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys)
         {
+            existingKeys = new(Array.Empty<SourceSKUReportFileKey>());
             lostKeys = new(Array.Empty<SourceSKUReportFileKey>());
 
-            var isContainsKeyRedemtionWB = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RansomsWB);
-            var isContainsKeyRedemtionOZ = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RedemtionOZ);
+            var isContainsKeyRansomsWB = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RansomsWB);
+            var isContainsKeyRansomsOZ = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RansomsOZ);
 
             var isContainsKeyStorageWB = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RemainingWB);
             var isContainsKeyStorageOZ = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RemainingOZ);
 
             var isContainsKeyShipped = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Shipped);
 
-            var isWBSuccess = isContainsKeyRedemtionWB && isContainsKeyStorageWB && isContainsKeyShipped;
+            // WB
+            var isWBSuccess = isContainsKeyRansomsWB && isContainsKeyStorageWB && isContainsKeyShipped;
             if (!isWBSuccess)
             {
-                if (!isContainsKeyRedemtionWB) lostKeys.Add(SourceSKUReportFileKey.RansomsWB);
+                if (!isContainsKeyRansomsWB) lostKeys.Add(SourceSKUReportFileKey.RansomsWB);
                 if (!isContainsKeyStorageWB) lostKeys.Add(SourceSKUReportFileKey.RemainingWB);
+            } 
+            else 
+            {
+                if (isContainsKeyRansomsWB) existingKeys.Add(SourceSKUReportFileKey.RansomsWB);
+                if (isContainsKeyStorageWB) existingKeys.Add(SourceSKUReportFileKey.RemainingWB);
             }
 
-            var isOZSuccess = isContainsKeyRedemtionOZ && isContainsKeyStorageOZ && isContainsKeyShipped;
+            // OZ
+            var isOZSuccess = isContainsKeyRansomsOZ && isContainsKeyStorageOZ && isContainsKeyShipped;
             if (!isOZSuccess)
             {
-                if (!isContainsKeyRedemtionOZ) lostKeys.Add(SourceSKUReportFileKey.RedemtionOZ);
+                if (!isContainsKeyRansomsOZ) lostKeys.Add(SourceSKUReportFileKey.RansomsOZ);
                 if (!isContainsKeyStorageOZ) lostKeys.Add(SourceSKUReportFileKey.RemainingOZ);
+            } 
+            else 
+            {
+                if (isContainsKeyRansomsOZ) existingKeys.Add(SourceSKUReportFileKey.RansomsOZ);
+                if (isContainsKeyStorageOZ) existingKeys.Add(SourceSKUReportFileKey.RemainingOZ);
             }
 
-            if (!isContainsKeyShipped) lostKeys.Add(SourceSKUReportFileKey.Shipped);
+            // Shipped 
+            if (!isContainsKeyShipped) 
+            {
+                lostKeys.Add(SourceSKUReportFileKey.Shipped);
+            } 
+            else 
+            {
+                existingKeys.Add(SourceSKUReportFileKey.Shipped);
+            }
+
+            // ReGrades (пересорты)
+            if(!ReportsPaths.ContainsKey(SourceSKUReportFileKey.ReGrades)) 
+            {
+                lostKeys.Add(SourceSKUReportFileKey.ReGrades);
+            } 
+            else 
+            {
+                existingKeys.Add(SourceSKUReportFileKey.ReGrades);
+            }
+
+            // Shortages (недостачи)
+            if(!ReportsPaths.ContainsKey(SourceSKUReportFileKey.Shortages)) 
+            {
+                lostKeys.Add(SourceSKUReportFileKey.Shortages);
+            } 
+            else 
+            {
+                existingKeys.Add(SourceSKUReportFileKey.Shortages);
+            }
+
+            // WriteOffShortages (cписание недостач)
+            if(!ReportsPaths.ContainsKey(SourceSKUReportFileKey.WriteOffShortages)) 
+            {
+                lostKeys.Add(SourceSKUReportFileKey.WriteOffShortages);
+            } 
+            else 
+            {
+                existingKeys.Add(SourceSKUReportFileKey.WriteOffShortages);
+            }
 
             var success = isWBSuccess == true || isOZSuccess == true;
             return success;
@@ -223,11 +317,12 @@ namespace ClientTableAnalizer.Objects.Managers
             }
         }
 
-        public static bool DeleteExistingFile(string path) 
+        // TODO: Описать функционал 
+        public static bool DeleteExistingFile(string path)
         {
-            if(File.Exists(path)) 
-               File.Delete(path);
-            
+            if (File.Exists(path))
+                File.Delete(path);
+
             return !File.Exists(path);
         }
 

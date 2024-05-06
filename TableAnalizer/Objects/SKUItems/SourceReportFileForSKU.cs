@@ -109,7 +109,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
                                     break;
                                 case ozKey:
                                     // Отчет по клиенту +79164372997 (Ozon).xlsx
-                                    ReportKey = SourceSKUReportFileKey.RedemtionOZ;
+                                    ReportKey = SourceSKUReportFileKey.RansomsOZ;
                                     break;
                                 default:
                                     break;    

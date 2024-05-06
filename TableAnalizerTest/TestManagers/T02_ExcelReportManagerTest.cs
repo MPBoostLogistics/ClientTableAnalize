@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Globalization;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Managers;
@@ -34,25 +33,22 @@ namespace TableAnalizerTest.Managers
         [Test, Order(1)]
         public void CreateExcelPackages_Test()
         {
-            // input assert
-            Assert.Multiple(() =>
-            {
-                Assert.That(TestData.TestReportFilesRedemptionWB, Is.Not.Null);
-                Assert.That(TestData.TestReportFilesRansomsWB, Is.Not.Null);
-            });
+            var testRansomsWBFilePath = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Отчет по клиенту +79164372997 (WB).xlsx";
+            var testRemainingWBilePath = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Юсупов приходы и остатки 220324 (WB).xlsx";
 
-            // arrange
-            // ... 
 
             // act
-            _testRansomsWBPackage = new(TestData.TestReportFilesRedemptionWB.FileInfo);
-            _testRemainingWBPackage = new(TestData.TestReportFilesRansomsWB.FileInfo);
+            ExcelManager.CreateExcelPackage(SourceSKUReportFileKey.RansomsWB, new FileInfo(testRansomsWBFilePath));
+            ExcelManager.CreateExcelPackage(SourceSKUReportFileKey.RemainingWB, new FileInfo(testRemainingWBilePath));
+
+            ExcelManager.GetExcelPackageByKey(SourceSKUReportFileKey.RansomsWB, out ExcelPackage? testRansomsWBPackage);
+            ExcelManager.GetExcelPackageByKey(SourceSKUReportFileKey.RemainingWB, out ExcelPackage? testRemainingWBPackage);
 
             // assert
             Assert.Multiple(() =>
             {
-                Assert.That(_testRansomsWBPackage, Is.Not.Null);
-                Assert.That(_testRemainingWBPackage, Is.Not.Null);
+                Assert.That(testRansomsWBPackage, Is.Not.Null);
+                Assert.That(testRemainingWBPackage, Is.Not.Null);
             });
         }
 
@@ -62,18 +58,13 @@ namespace TableAnalizerTest.Managers
             // input test assert
             Assert.Multiple(() =>
             {
-                Assert.That(_testRansomsWBPackage, Is.Not.EqualTo(null));
+                //Assert.That(_testRansomsWBPackage, Is.Not.EqualTo(null));
                 Assert.That(TestData._testRansomsRangeSourceReportRows, Is.Not.Null);
-                Assert.That(TestData.TestReportFilesRedemptionWB, Is.Not.EqualTo(null));
-                Assert.That(TestData.TestReportFilesRedemptionWB!.ReportKey, Is.EqualTo(SourceSKUReportFileKey.RansomsWB));
-
-
             });
 
             // arrange
-
-            ExcelReportManager.GetExcelWorksheetByName(Ransoms_Report_List_Name, in _testRansomsWBPackage, out _ransomsWBWorksheet);
-            ExcelReportManager.GetRangeSourceReportRows(in _ransomsWBWorksheet!, ref TestData._testRansomsRangeSourceReportRows);
+            ExcelManager.GetExcelWorksheetByName(Ransoms_Report_List_Name, SourceSKUReportFileKey.RansomsWB, out _ransomsWBWorksheet);
+            ExcelManager.GetRangeSourceReportRows(in _ransomsWBWorksheet!, ref TestData._testRansomsRangeSourceReportRows);
 
             // act
             var testingRange = Enumerable.Range(2, 148706 - 1);
@@ -90,7 +81,8 @@ namespace TableAnalizerTest.Managers
         public void GetRowIndexByStringKey_Test()
         {
             // input test assert
-            Assert.That(_testRemainingWBPackage, Is.Not.EqualTo(null));
+            ExcelManager.GetExcelPackageByKey(SourceSKUReportFileKey.RemainingWB, out ExcelPackage? testRemainingWBPackage);
+            Assert.That(testRemainingWBPackage, Is.Not.EqualTo(null));
 
             // arrange
             var testFirstIndex = 14;
@@ -99,14 +91,14 @@ namespace TableAnalizerTest.Managers
 
             // act 
 
-            ExcelReportManager.GetExcelWorksheetByName("TDSheet", in _testRemainingWBPackage, out _remainingWBWorksheet);
+            ExcelManager.GetExcelWorksheetByName("TDSheet", SourceSKUReportFileKey.RemainingWB, out _remainingWBWorksheet);
 
             // assert 01
             Assert.That(_remainingWBWorksheet, Is.Not.EqualTo(null));
 
-            var firstIndexInTest = ExcelReportManager.GetRowIndexBy(TestData.FIRST_ROOM_NAME, in _remainingWBWorksheet);
-            var secondIndexInTest = ExcelReportManager.GetRowIndexBy(TestData.SECOND_ROOM_NAME, in _remainingWBWorksheet);
-            var lastIndexInTest = ExcelReportManager.GetRowIndexBy(TestData.LAST_MARKER_KEY, in _remainingWBWorksheet);
+            var firstIndexInTest = ExcelManager.GetRowIndexBy(TestData.FIRST_ROOM_NAME, in _remainingWBWorksheet);
+            var secondIndexInTest = ExcelManager.GetRowIndexBy(TestData.SECOND_ROOM_NAME, in _remainingWBWorksheet);
+            var lastIndexInTest = ExcelManager.GetRowIndexBy(TestData.LAST_MARKER_KEY, in _remainingWBWorksheet);
 
             // assert 02
             Assert.Multiple(() =>
@@ -121,10 +113,11 @@ namespace TableAnalizerTest.Managers
         public void GetRangesSourceReportRows_ManyRange_Test()
         {
             // input assert 01
-            Assert.That(_testRemainingWBPackage, Is.Not.EqualTo(null));
+            ExcelManager.GetExcelPackageByKey(SourceSKUReportFileKey.RemainingWB, out ExcelPackage? testRemainingWBPackage);
+            Assert.That(testRemainingWBPackage, Is.Not.EqualTo(null));
 
             // act 
-            ExcelReportManager.GetExcelWorksheetByName("TDSheet", in _testRemainingWBPackage, out _remainingWBWorksheet);
+            ExcelManager.GetExcelWorksheetByName("TDSheet", SourceSKUReportFileKey.RemainingWB, out _remainingWBWorksheet);
 
             // input test assert
             Assert.That(_remainingWBWorksheet, Is.Not.EqualTo(null));
@@ -137,7 +130,7 @@ namespace TableAnalizerTest.Managers
             var testingSecondRange = Enumerable.Range(testingSecondRangeFirstIndex, 2428 - testingSecondRangeFirstIndex);  // 1238, 2428 = 1190
 
             // act 
-            ExcelReportManager.GetRangeSourceReportRows(in _remainingWBWorksheet, ref _remainingWBRangeSourceReportRows);
+            ExcelManager.GetRangeSourceReportRows(in _remainingWBWorksheet, ref _remainingWBRangeSourceReportRows);
 
             // assert 02 
             Assert.Multiple(() =>
@@ -167,7 +160,7 @@ namespace TableAnalizerTest.Managers
             // ...
 
             // act
-            ExcelReportManager.GetRawDataFromExcelRows(in _ransomsWBWorksheet, ref TestData._testRansomsRangeSourceReportRows);
+            ExcelManager.GetRawDataFromExcelRows(in _ransomsWBWorksheet, ref TestData._testRansomsRangeSourceReportRows);
 
             // assert
             Assert.Multiple(() =>
@@ -187,7 +180,7 @@ namespace TableAnalizerTest.Managers
             // ...
 
             // act
-            ExcelReportManager.GetRawDataFromExcelRows(in _remainingWBWorksheet, ref _remainingWBRangeSourceReportRows);
+            ExcelManager.GetRawDataFromExcelRows(in _remainingWBWorksheet, ref _remainingWBRangeSourceReportRows);
 
             // assert
             Assert.Multiple(() =>
@@ -343,8 +336,8 @@ namespace TableAnalizerTest.Managers
             Assert.That(outputPackage, Is.Not.Null);
 
             // act 02
-            var reportSheetName = ExcelReportManager.OUTPUT_REPORT_WORKSHEET01_NAME;
-            ExcelReportManager.CreateExcelWorkSheet(reportSheetName, in outputPackage, out var sheet, _excelManager.Colors[SKUSellmentStatus.FullSet]);
+            var reportSheetName = ExcelManager.OUTPUT_REPORT_WORKSHEET01_NAME;
+            ExcelManager.CreateExcelWorkSheet(reportSheetName, in outputPackage, out var sheet, _excelManager.Colors[SKUSellmentStatus.FullSet]);
 
              // assert 03
             Assert.That(sheet, Is.Not.Null);
@@ -352,21 +345,13 @@ namespace TableAnalizerTest.Managers
             // act 03
             var outputSkus = _skuManager.SKUs.Select(s => s.Value.GetSKUOutput).ToList();
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
-            _excelManager.FillingСellsWithData<SKUOutput>(outputPackage, ref sheet, in outputSkus, ExcelReportManager.MainReportSKUInfoCells, FileManager.OutputClientReportFilePath); 
+            _excelManager.FillingСellsWithData<SKUOutput>(outputPackage, ref sheet, in outputSkus, ExcelManager.MainReportSKUInfoCells, FileManager.OutputClientReportFilePath); 
 
             // ... 
             outputPackage.Dispose();
 
         }
 
-        protected override void EndTest()
-        {
-            base.EndTest();
-
-            _testRansomsWBPackage?.Dispose();
-            _testRemainingWBPackage?.Dispose();
-
-        }
         #endregion
 
         // arrange
