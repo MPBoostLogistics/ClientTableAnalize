@@ -1,6 +1,6 @@
 ﻿using ClientTableAnalizer.Enums;
 
-namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
+namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances  
 {
     /// <summary>
     ///  Client's ransoms balance.

@@ -80,7 +80,7 @@ internal class Program
         if (existingKeys is not null && existingKeys.Count > 0)
         {
             var count = existingKeys.Count;
-            Task[] tasks =  new Task[count];
+            Task[] tasks = new Task[count];
             for (int i = 0; i < existingKeys.Count; i++)
             {
                 SourceSKUReportFileKey existingKey = existingKeys[i];
@@ -110,46 +110,6 @@ internal class Program
         // Отчет по недостачам
         // Отчет по пересортам
         // Анализ - после всех отчетов
-
-
-
-
-        // for (int i = 0; i < tasks.Count; i++)
-        // {
-        //     Task? currentTask = tasks[i];
-        //     if(currentTask == tasks.First()) 
-        //     {
-        //         currentTask.Start();
-        //     } 
-        //     else 
-        //     {
-        //         Task nextTask = tasks[i - 1].ContinueWith;
-        //     } 
-        // }
-
-
-
-
-
-
-
-
-
-
-
-
-        // Запустить цепочку обработок
-        // - выкупы wb и oz (обязательно)
-        // - приходы и хранение wb и oz (обязательно)
-        // - расходы общие (обязательно)
-        // - списаниния недостач (обязательно)
-        // - пересорты (опционально)
-        // - недостачи (опционально)
-        // - пустышки (опционально)
-
-
-        // Выдать отчет об исполении и путь в файлу
-
 
 
 
@@ -226,55 +186,44 @@ internal class Program
     /// <param name="reportFileKey">Key of source file with report.</param>
     /// <returns></returns>
     /// <remarks><i>New version</i></remarks>
-    private static async Task ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey)
+    private static async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey)
     {
         var getReportFileTask = fileManager.GetReportFile(reportFileKey);
-        await Task.Run(async() => await getReportFileTask);
+        await Task.Run(async () => await getReportFileTask);
         getReportFileTask.Wait();
-        var reportFile = getReportFileTask.Result;
 
+        var reportFile = getReportFileTask.Result;
         if (reportFile is not null)
         {
-            // Make ExcelPackage
-            ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
-
-            // Processing data 
-            switch (reportFileKey)
+            if (reportFileKey == SourceSKUReportFileKey.RansomsWB ||
+                reportFileKey == SourceSKUReportFileKey.RansomsOZ ||
+                reportFileKey == SourceSKUReportFileKey.RemainingWB ||
+                reportFileKey == SourceSKUReportFileKey.RemainingOZ)
             {
-                // Ransoms 
-                case SourceSKUReportFileKey.RansomsWB: case SourceSKUReportFileKey.RansomsOZ:
-                    var processingRansomsDataTask = skuManager.ReceivingAndProcessingRansomsData(reportFileKey);
-                    await Task.Run(async () => await processingRansomsDataTask);
-                    processingRansomsDataTask.Wait();
+                // Make ExcelPackage
+                ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
 
-                    var time = processingRansomsDataTask.Result;
+                // ReceivingAndProcessing
+                var processingRansomsDataTask = skuManager.ReceivingAndProcessingRansomsData(reportFileKey);
+                await Task.Run(async () => await processingRansomsDataTask);
+                processingRansomsDataTask.Wait();
 
-                    Console.WriteLine($"Time {time}");
-
-                    break;
-
-                case SourceSKUReportFileKey.RemainingWB: case SourceSKUReportFileKey.RemainingOZ:
-                    
-                    // ... 
-                    break;
-                
-                case SourceSKUReportFileKey.Shortages:
-                    break;
-                case SourceSKUReportFileKey.WriteOffShortages:
-                    break;
-                case SourceSKUReportFileKey.ReGrades:
-                    break;
-                case SourceSKUReportFileKey.Shipped:
-                    break;
+                // Return time
+                return processingRansomsDataTask.Result;
+            } 
+            else 
+            {
+                return 0;
             }
+
+
         }
         else
         {
-            // Ошибка - нет отчета по ключу, выходим
+            // TODO: Ошибка - нет отчета по ключу, выходим
+            return 0;
         }
     }
-
-
 
     private static async Task Exit()
     {

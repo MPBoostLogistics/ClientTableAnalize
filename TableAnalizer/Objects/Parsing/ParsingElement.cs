@@ -13,7 +13,6 @@ namespace ClientTableAnalizer.Objects.Parsing
     {
         #region Variables and constants
         protected const string SPACE_SEPARATOR = "\u0020";
-
         protected readonly List<TypeCode> baseTypeCodes = new() { TypeCode.Double, TypeCode.Int32, TypeCode.DateTime, TypeCode.String };
         #endregion
 
@@ -45,8 +44,8 @@ namespace ClientTableAnalizer.Objects.Parsing
         protected static void ThrowExceptionOnArgument(string valueKey) =>
             throw new ArgumentException($"Key value not provided: '{valueKey}'");
 
-        protected static void ThrowExceptionCast(string valueKey, Type type) =>
-            throw new InvalidCastException($"Element with key {valueKey} cannot be casting to type {type}.");
+        protected static void ThrowExceptionCast(string valueKey, string value, Type type) =>
+            throw new InvalidCastException($"Element with key '{valueKey}' and value '{value}' cannot be casting to type {type}.");
 
         protected void ParseValues(in Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)> parsingElements)
         {
@@ -86,7 +85,7 @@ namespace ClientTableAnalizer.Objects.Parsing
                         elementDoubleValueString = elementValueString.Split(SPACE_SEPARATOR)[0];
 
                     if (!double.TryParse(elementDoubleValueString, out double doubleValue))
-                        ThrowExceptionCast(element.Key, targetType);
+                        ThrowExceptionCast(element.Key, elementDoubleValueString, targetType);
 
                     property.SetValue(this, doubleValue);
 
@@ -95,7 +94,7 @@ namespace ClientTableAnalizer.Objects.Parsing
                 case ParsingTypeCode.IntTypeCode:
 
                     if (!int.TryParse(elementValueString, out int intValue))
-                        ThrowExceptionCast(element.Key, targetType);
+                        ThrowExceptionCast(element.Key, elementValueString, targetType);
 
                     property.SetValue(this, intValue);
 
@@ -105,7 +104,7 @@ namespace ClientTableAnalizer.Objects.Parsing
                 case ParsingTypeCode.DataOnlyTypeCode:
 
                     if (!DateOnly.TryParseExact(elementValueString, DateOnlyFormats.ToArray(), out DateOnly dateOnlyValue))
-                        ThrowExceptionCast(element.Key, targetType);
+                        ThrowExceptionCast(element.Key, elementValueString, targetType);
 
                     property.SetValue(this, dateOnlyValue);
                     break;
@@ -113,7 +112,7 @@ namespace ClientTableAnalizer.Objects.Parsing
                 case ParsingTypeCode.StringTypeCode:
 
                     if (elementValueString is null)
-                        ThrowExceptionCast(element.Key, targetType);
+                        ThrowExceptionCast(element.Key, elementValueString ?? " " , targetType);
 
                     property.SetValue(this, elementValueString);
 

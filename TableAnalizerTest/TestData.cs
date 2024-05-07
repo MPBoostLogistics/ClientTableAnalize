@@ -13,10 +13,6 @@ namespace TableAnalizerTest
         #region Variables and constants
         public const int RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT = 61138;
         public const int RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT = 1299;
-        public const string FIRST_ROOM_NAME = "1 - Помещение приемки, сортировки и упаковки";
-        public const string SECOND_ROOM_NAME = "2 - Помещение длительного хранения и отгрузки";
-        public const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
-        public const int LAST_MARKER_KEY_OFFSET = 2;
         #endregion
 
         #region Properties

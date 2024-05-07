@@ -13,8 +13,13 @@ namespace ClientTableAnalizer.Objects.Managers
     public class ExcelManager : BaseManager
     {
         #region Constants && variables
+        public const string FIRST_ROOM_NAME = "1 - Помещение приемки, сортировки и упаковки";
+        public const string SECOND_ROOM_NAME = "2 - Помещение длительного хранения и отгрузки";
+        public const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
+        public const int LAST_MARKER_KEY_OFFSET = 2;
         public const string OUTPUT_REPORT_WORKSHEET01_NAME = "Отчет";
         public const string RANSOMS_WORKSHEET_NAME = "Выкупы";
+        public const string REMAINING_WORKSHEET_NAME = "TDSheet";
         private const int DEFAULT_TABLE_ROW_HEIGHT = 18;
         private const int DEFAULT_TABLE_COL_WIDTH = 18;
         private const int RECORD_INDEX = 1;
@@ -53,6 +58,21 @@ namespace ClientTableAnalizer.Objects.Managers
             new(9, "SKURansomsStatus", ParsingTypeCode.SKURansomsStatus, true),
             new(10, "Логистика", ParsingTypeCode.StringTypeCode, true, LOGISTIC_FLAG),
             new(14, "SKUCost",  ParsingTypeCode.DoubleTypeCode, true)
+        };
+
+        public static List<SourceCell> RemainingWBSourceCells01 { get; } = new()
+        {
+            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
+            new(6, "SKUName", ParsingTypeCode.StringTypeCode, true),
+            new(15, "SKUReceipt", ParsingTypeCode.IntTypeCode, false),
+            new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
+        };
+
+        public static List<SourceCell> RemainingWBSourceCells02 { get; } = new()
+        {
+            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
+            new(6, "SKUName", ParsingTypeCode.StringTypeCode, true),
+            new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
         };
 
         public static TargetCell[] MainReportSKUInfoCells { get; } = new TargetCell[]
@@ -161,7 +181,7 @@ namespace ClientTableAnalizer.Objects.Managers
             ExcelPackages.TryGetValue(key, out package);
             return package is not null;
         }
- 
+
         public void FillingСellsWithData<T>(ExcelPackage package, ref ExcelWorksheet worksheet, in List<T> items, TargetCell[] targetCells, string outputPath, int recordIndex = 1)
             where T : IColorable
         {

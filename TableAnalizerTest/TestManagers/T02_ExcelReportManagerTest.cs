@@ -17,8 +17,8 @@ namespace TableAnalizerTest.Managers
 
         private List<RangeSourceReportRows> _remainingWBRangeSourceReportRows  = 
         [
-            new(TestData.RemainingWBSourceCells01, TestData.FIRST_ROOM_NAME), 
-            new(TestData.RemainingWBSourceCells02, TestData.SECOND_ROOM_NAME,(TestData.LAST_MARKER_KEY, TestData.LAST_MARKER_KEY_OFFSET))
+            new(TestData.RemainingWBSourceCells01, ExcelManager.FIRST_ROOM_NAME), 
+            new(TestData.RemainingWBSourceCells02, ExcelManager.SECOND_ROOM_NAME,(ExcelManager.LAST_MARKER_KEY, ExcelManager.LAST_MARKER_KEY_OFFSET))
         ];
         
         private ExcelWorksheet? _ransomsWBWorksheet;
@@ -96,9 +96,9 @@ namespace TableAnalizerTest.Managers
             // assert 01
             Assert.That(_remainingWBWorksheet, Is.Not.EqualTo(null));
 
-            var firstIndexInTest = ExcelManager.GetRowIndexBy(TestData.FIRST_ROOM_NAME, in _remainingWBWorksheet);
-            var secondIndexInTest = ExcelManager.GetRowIndexBy(TestData.SECOND_ROOM_NAME, in _remainingWBWorksheet);
-            var lastIndexInTest = ExcelManager.GetRowIndexBy(TestData.LAST_MARKER_KEY, in _remainingWBWorksheet);
+            var firstIndexInTest = ExcelManager.GetRowIndexBy(ExcelManager.FIRST_ROOM_NAME, in _remainingWBWorksheet);
+            var secondIndexInTest = ExcelManager.GetRowIndexBy(ExcelManager.SECOND_ROOM_NAME, in _remainingWBWorksheet);
+            var lastIndexInTest = ExcelManager.GetRowIndexBy(ExcelManager.LAST_MARKER_KEY, in _remainingWBWorksheet);
 
             // assert 02
             Assert.Multiple(() =>
@@ -203,7 +203,7 @@ namespace TableAnalizerTest.Managers
             //...
 
             // act
-            var keyCount = SKUManager.SaveSKURansomsBalanceUnits(TestData._testRansomsRangeSourceReportRows[0].RawRowItems);
+            var keyCount = _skuManager.SaveSKUBalanceUnits(SourceSKUReportFileKey.RansomsWB,TestData._testRansomsRangeSourceReportRows[0].RawRowItems);
 
             // assert
             Assert.That(keyCount, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
