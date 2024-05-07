@@ -84,7 +84,7 @@ internal class Program
             for (int i = 0; i < existingKeys.Count; i++)
             {
                 SourceSKUReportFileKey existingKey = existingKeys[i];
-                tasks[i] = ProcessingData(existingKey);
+                tasks[i] = ReceivingAndProcessingData(existingKey);
             }
 
             for (int i = 0; i < tasks.Length; i++)
@@ -220,7 +220,13 @@ internal class Program
         await Exit();
     }
 
-    private static async Task ProcessingData(SourceSKUReportFileKey reportFileKey)
+    /// <summary>
+    /// Receiving and processing data from seller reports.
+    /// </summary>
+    /// <param name="reportFileKey">Key of source file with report.</param>
+    /// <returns></returns>
+    /// <remarks><i>New version</i></remarks>
+    private static async Task ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey)
     {
         var getReportFileTask = fileManager.GetReportFile(reportFileKey);
         await Task.Run(async() => await getReportFileTask);
@@ -232,43 +238,26 @@ internal class Program
             // Make ExcelPackage
             ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
 
+            // Processing data 
             switch (reportFileKey)
             {
-                case SourceSKUReportFileKey.RansomsWB:
+                // Ransoms 
+                case SourceSKUReportFileKey.RansomsWB: case SourceSKUReportFileKey.RansomsOZ:
+                    var processingRansomsDataTask = skuManager.ReceivingAndProcessingRansomsData(reportFileKey);
+                    await Task.Run(async () => await processingRansomsDataTask);
+                    processingRansomsDataTask.Wait();
 
-                    // Get source excel worksheet by name
-                    ExcelManager.GetExcelWorksheetByName(ExcelManager.RANSOMS_WORKSHEET_NAME, reportFileKey, out ExcelWorksheet? ransomsWBworksheet);
-                    if (ransomsWBworksheet is null)
-                    {
-                        await Report($"В файле книги нет листа с именем {ExcelManager.RANSOMS_WORKSHEET_NAME}", 2000, true);
-                        return;
-                    }
+                    var time = processingRansomsDataTask.Result;
 
-                    // Get ranges from source excel worksheet
-                    RangeSourceReportRows ransomsWBRangeSourceReportRows = new(ExcelManager.RansomsSourceCells);
-                    List<RangeSourceReportRows> ransomsWBReportRowsRanges = new(1) { ransomsWBRangeSourceReportRows };
-                    ExcelManager.GetRangeSourceReportRows(in ransomsWBworksheet, ref ransomsWBReportRowsRanges);
-
-                    // Get raw data from cells in source excel worksheet
-                    ExcelManager.GetRawDataFromExcelRows(in ransomsWBworksheet, ref ransomsWBReportRowsRanges);
-
-                    // Save ransoms balances for sku's
-                    SKUManager.SaveSKURansomsBalanceUnits(ransomsWBReportRowsRanges[0].RawRowItems);
-
-                    // Make sku's from ransoms balance units 
-                    skuManager.MakeSKUsFromRansomsBalanceUnits(Marketplace.WB);
-
-                    // Dummy
-                    Console.WriteLine(skuManager.SKUs.Count);
-                    Console.ReadLine();
+                    Console.WriteLine($"Time {time}");
 
                     break;
-                case SourceSKUReportFileKey.RansomsOZ:
+
+                case SourceSKUReportFileKey.RemainingWB: case SourceSKUReportFileKey.RemainingOZ:
+                    
+                    // ... 
                     break;
-                case SourceSKUReportFileKey.RemainingWB:
-                    break;
-                case SourceSKUReportFileKey.RemainingOZ:
-                    break;
+                
                 case SourceSKUReportFileKey.Shortages:
                     break;
                 case SourceSKUReportFileKey.WriteOffShortages:

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using ClientTableAnalizer.Enums;
 
@@ -54,6 +55,18 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <remarks><i>New version</i></remarks>
         protected virtual void OnManagerReached(ManagerReachedEventArgs e) =>
             ManagerReached?.Invoke(this, e);
+
+        /// <summary>
+        /// Stops a launched Stopwatch and returns its execution time in seconds.
+        /// </summary>
+        /// <param name="stopwatch">Launched Stopwatch.</param>
+        /// <returns>Stopwatch execution time in seconds.</returns>
+        /// <remarks><i>New version</i></remarks>
+        protected static double StopFuctionExecuting(ref Stopwatch stopwatch) 
+        {
+            stopwatch.Stop();
+            return stopwatch.ElapsedMilliseconds / 1000;
+        }
         #endregion Functionality
 
         // Из старой реалиазции

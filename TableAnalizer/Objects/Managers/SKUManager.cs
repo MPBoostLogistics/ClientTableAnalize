@@ -1,6 +1,9 @@
+using System.Diagnostics;
 using ClientTableAnalizer.Enums;
+using ClientTableAnalizer.Objects.Parsing;
 using ClientTableAnalizer.Objects.SKUItems;
 using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
+using OfficeOpenXml;
 
 namespace ClientTableAnalizer.Objects.Managers
 {
@@ -44,6 +47,46 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="days">Period until deadline, days</param>
         /// <remarks><i>New version, tested</i></remarks>
         public void SetDeadlineDays(int days) => DeadlineDays = days;
+
+        /// <summary>
+        /// Processes data from seller ransoms reports.
+        /// </summary>
+        /// <param name="reportFileKey">Key of source file with report.</param>
+        /// <returns>Function execution time in seconds.</returns>
+        /// <remarks><i>New version</i></remarks>
+        public async Task<double> ReceivingAndProcessingRansomsData(SourceSKUReportFileKey reportFileKey)
+        {
+            // Start
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            // Get source excel worksheet by name
+            ExcelManager.GetExcelWorksheetByName(ExcelManager.RANSOMS_WORKSHEET_NAME, reportFileKey, out ExcelWorksheet? ransomsWorksheet);
+            if (ransomsWorksheet is null)
+            {
+                await Task.Delay(100);
+                OnManagerReached(new ($"В файле книги нет листа с именем {ExcelManager.RANSOMS_WORKSHEET_NAME}", 2000, true));
+                return StopFuctionExecuting(ref stopwatch);
+            }
+
+            // Get ranges from source excel worksheet
+            List<RangeSourceReportRows> ransomsReportRowsRanges = new(1) { new(ExcelManager.RansomsSourceCells)};
+            ExcelManager.GetRangeSourceReportRows(in ransomsWorksheet, ref ransomsReportRowsRanges);
+
+            // Get raw data from cells in source excel worksheet 
+            ExcelManager.GetRawDataFromExcelRows(in ransomsWorksheet, ref ransomsReportRowsRanges);
+
+            // Save ransoms balances for sku's
+            SaveSKURansomsBalanceUnits(ransomsReportRowsRanges[0].RawRowItems);
+
+            // Make sku's from ransoms balance units 
+            MakeSKUsFromRansomsBalanceUnits(reportFileKey == SourceSKUReportFileKey.RansomsWB ? Marketplace.WB : Marketplace.OZ);
+
+            // Report
+            OnManagerReached(new ($"Записано артикулов, всего: {SKUs.Count}", 1000, false));
+
+            // Finish
+            return StopFuctionExecuting(ref stopwatch);
+        }
 
         /// <summary>
         /// Creates and saves SKURansomsBalanceUnit collection from a list of raw data dictionaries.
