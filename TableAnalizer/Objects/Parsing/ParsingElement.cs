@@ -18,11 +18,11 @@ namespace ClientTableAnalizer.Objects.Parsing
 
         #region Properties
         protected PropertyInfo[] PropertyInfos { get; private set; }
-        protected readonly List<string> DateOnlyFormats = new() { "dd.MM.yyyy HH:mm", "dd.MM.yyyy HH:mm:ss"};
+        protected readonly List<string> DateOnlyFormats = new() { "dd.MM.yyyy HH:mm", "dd.MM.yyyy HH:mm:ss" };
         #endregion
 
         #region  Constructors
-        public ParsingEntity(in Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)> parsingElements)
+        public ParsingEntity(in Dictionary<string, ParsingItem> parsingElements)
         {
             PropertyInfos = GetType().GetProperties();
 
@@ -47,7 +47,7 @@ namespace ClientTableAnalizer.Objects.Parsing
         protected static void ThrowExceptionCast(string valueKey, string value, Type type) =>
             throw new InvalidCastException($"Element with key '{valueKey}' and value '{value}' cannot be casting to type {type}.");
 
-        protected void ParseValues(in Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)> parsingElements)
+        protected void ParseValues(in Dictionary<string, ParsingItem> parsingElements)
         {
             foreach (var parsingElement in parsingElements)
             {
@@ -68,53 +68,97 @@ namespace ClientTableAnalizer.Objects.Parsing
             }
         }
 
-        private void ParseValue(in KeyValuePair<string, (string value, ParsingTypeCode parsingTypeCode)> element, ref PropertyInfo property)
+        private void ParseValue(in KeyValuePair<string, ParsingItem> element, ref PropertyInfo property)
         {
             Type targetType = property.PropertyType;
 
-            var elementValueString = element.Value.value.Trim() ??
-                throw new Exception($"Parsing value with key '{element.Key}' cannot be null.");
+            string? elementValueString = element.Value.Value;
+            bool isMaybeNullable = element.Value.IsMaybeNullable;
 
-            switch (element.Value.parsingTypeCode)
+            if (string.IsNullOrEmpty(elementValueString))
             {
-                 case ParsingTypeCode.DoubleTypeCode:
+                if (!isMaybeNullable)
+                    throw new Exception($"Parsing value with key '{element.Key}' cannot be null.");
+
+                elementValueString = String.Empty;
+            }
+            else
+            {
+                elementValueString = elementValueString.Trim();
+            }
+
+
+            switch (element.Value.TypeCode)
+            {
+                case ParsingTypeCode.DoubleTypeCode:
 
                     var elementDoubleValueString = elementValueString;
+                    if (isMaybeNullable && string.IsNullOrEmpty(elementDoubleValueString))
+                    {
+                        property.SetValue(this, 0.00);
+                    }
+                    else
+                    {
+                        if (elementValueString.Split(SPACE_SEPARATOR).Length == 2)
+                            elementDoubleValueString = elementValueString.Split(SPACE_SEPARATOR)[0];
 
-                    if (elementValueString.Split(SPACE_SEPARATOR).Length == 2)
-                        elementDoubleValueString = elementValueString.Split(SPACE_SEPARATOR)[0];
+                        if (!double.TryParse(elementDoubleValueString, out double doubleValue))
+                            ThrowExceptionCast(element.Key, elementDoubleValueString, targetType);
 
-                    if (!double.TryParse(elementDoubleValueString, out double doubleValue))
-                        ThrowExceptionCast(element.Key, elementDoubleValueString, targetType);
-
-                    property.SetValue(this, doubleValue);
+                        property.SetValue(this, doubleValue);
+                    }
 
                     break;
 
                 case ParsingTypeCode.IntTypeCode:
 
-                    if (!int.TryParse(elementValueString, out int intValue))
-                        ThrowExceptionCast(element.Key, elementValueString, targetType);
+                    var elementIntValueString = elementValueString;
+                    if (isMaybeNullable && string.IsNullOrEmpty(elementIntValueString))
+                    {
+                        property.SetValue(this, 0);
+                    }
+                    else
+                    {
+                        if (!int.TryParse(elementIntValueString, out int intValue))
+                            ThrowExceptionCast(element.Key, elementValueString, targetType);
 
-                    property.SetValue(this, intValue);
+                        property.SetValue(this, intValue);
+                    }
 
                     break;
 
-               //22.03.2024 14:00
+                //22.03.2024 14:00
                 case ParsingTypeCode.DataOnlyTypeCode:
 
-                    if (!DateOnly.TryParseExact(elementValueString, DateOnlyFormats.ToArray(), out DateOnly dateOnlyValue))
-                        ThrowExceptionCast(element.Key, elementValueString, targetType);
+                    var elementDateValueString = elementValueString;
 
-                    property.SetValue(this, dateOnlyValue);
+                    if (isMaybeNullable && string.IsNullOrEmpty(elementDateValueString))
+                    {
+                        property.SetValue(this, new DateOnly(0001, 01, 01));
+                    }
+                    else
+                    {
+                        if (!DateOnly.TryParseExact(elementValueString, DateOnlyFormats.ToArray(), out DateOnly dateOnlyValue))
+                            ThrowExceptionCast(element.Key, elementValueString, targetType);
+
+                        property.SetValue(this, dateOnlyValue);
+                    }
+
                     break;
 
                 case ParsingTypeCode.StringTypeCode:
 
-                    if (elementValueString is null)
-                        ThrowExceptionCast(element.Key, elementValueString ?? " " , targetType);
+                    if (isMaybeNullable && string.IsNullOrEmpty(elementValueString))
+                    {
+                        property.SetValue(this, String.Empty);
+                    }
+                    else
+                    {
+                        if (elementValueString is null)
+                            ThrowExceptionCast(element.Key, elementValueString ?? " ", targetType);
 
-                    property.SetValue(this, elementValueString);
+                        property.SetValue(this, elementValueString);
+                    }
 
                     break;
 

@@ -593,7 +593,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 {
                     var rowIndex = rowsIndexRange[j];
 
-                    if (GetValuesFromRow(in workSheet, rowIndex, in currentSourceCells, out Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)>? values) &&
+                    if (GetValuesFromRow(in workSheet, rowIndex, in currentSourceCells, out Dictionary<string, ParsingItem>? values) &&
                         values is not null)
                     {
                         reportRowsRange.SetValues(values);
@@ -612,7 +612,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="values">Dictionary of retrieved values by row.</param>
         /// <returns>Boolean flag for success of completed operation.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public static bool GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells, out Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)>? values)
+        public static bool GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells, out Dictionary<string, ParsingItem>? values)
         {
             values = new();
             bool isMatchFilters = true;
@@ -660,7 +660,7 @@ namespace ClientTableAnalizer.Objects.Managers
 
                     var valueToString = value.ToString();
                     if (valueToString is not null)
-                        values.Add(sourceCell.Name, (valueToString, sourceCell.ParsingTypeCode));
+                        values.Add(sourceCell.Name, new(valueToString, sourceCell.ParsingTypeCode, !sourceCell.IsValueRequired));
                 }
 
             }

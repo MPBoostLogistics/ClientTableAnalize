@@ -1,4 +1,3 @@
-using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Parsing;
 
 namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
@@ -17,7 +16,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         #endregion
 
         #region  Constructors   
-        public SKURemainingBalanceDataUnit(in Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)> parsingElements) :
+        public SKURemainingBalanceDataUnit(in Dictionary<string, ParsingItem> parsingElements) :
             base(parsingElements) {}
         override public string ToString() => $"number: {SKUNumber}, name: {SKUName}, receipt: {SKUReceipt}, remaining: {SKURemaining}";
         #endregion

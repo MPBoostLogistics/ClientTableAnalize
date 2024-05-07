@@ -92,7 +92,7 @@ namespace ClientTableAnalizer.Objects.Managers
             ExcelManager.GetRawDataFromExcelRows(in currentWorksheet, ref sourceReportRowsRanges);
 
             // Union collections
-            List<Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)>> rawRowsItems = new() { };
+            List<Dictionary<string, ParsingItem>> rawRowsItems = new() { };
             foreach (var sourceReportRowsRange in sourceReportRowsRanges)
             {
                 sourceReportRowsRange.RawRowItems.ForEach(rawRowsItems.Add);
@@ -144,7 +144,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <returns>Number of keys in final dictionary.</returns>
         /// <exception cref="ArgumentException">Exception when passing an empty dictionary.</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, List<Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)>> rawDataRowItems)
+        public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, List<Dictionary<string, ParsingItem>> rawDataRowItems)
         {
             List<SourceSKUReportFileKey> validKeys = new()
             {

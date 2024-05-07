@@ -17,7 +17,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         #endregion
 
         #region  Constructors   
-        public SKURansomsBalanceDataUnit(in Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)> parsingElements) :
+        public SKURansomsBalanceDataUnit(in Dictionary<string, ParsingItem> parsingElements) :
             base(parsingElements) {}
         override public string ToString() =>
             $"number: {SKUNumber}, ransoms status: {SKURansomsStatus}, cost: {SKUCost}";
