@@ -1,6 +1,6 @@
 using ClientTableAnalizer.Enums;
 
-namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances  
+namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
 {
     /// <summary>
     ///  Client's remaining balance.
@@ -9,26 +9,29 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
     public class SKURemainingBalance : IEquatable<SKURemainingBalance>
     {
         #region Properties
-        public int SKUNumber { get; private set; }   
-        public int SKUReceipt { get; private set; }   // Приход товаров
-        public int  SKURemaining { get; private set; } // Остаток товаров 
+        public int SKUNumber { get; private set; }
+        public string SKUBrandAndName { get; private set; }
+        public int SKUReceipt { get; private set; }     // Приход товаров
+        public int SKURemaining { get; private set; }  // Остаток товаров 
         #endregion
 
         #region Constructors
         public SKURemainingBalance(List<SKURemainingBalanceDataUnit> skuRemainingBalanceDataUnit)
         {
-            // var groupsBySKUNumber = from unit in skuRemainingBalanceDataUnit
-            //                         group unit by unit.SKUNumber
-            //                         into nameGroup
-            //                         orderby nameGroup.Key
-            //                         select nameGroup;
+            SKUBrandAndName = skuRemainingBalanceDataUnit
+                .Select(u => u.SKUBrandAndName)
+                .First();
+
+            SKUReceipt = skuRemainingBalanceDataUnit
+                .Aggregate(0, (acc, unit) => acc + unit.SKUReceipt);
+
+            SKURemaining = skuRemainingBalanceDataUnit
+                .Aggregate(0, (acc, unit) => acc + unit.SKURemaining);
         }
-
-
         #endregion Constructors
 
         #region Functionality
-        
+
         public bool Equals(SKURemainingBalance? other) =>
             SKUNumber == other?.SKUNumber;
 
@@ -41,7 +44,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         }
 
         public override int GetHashCode() => new Guid().GetHashCode();
-        
+
         #endregion Functionality
     }
 }

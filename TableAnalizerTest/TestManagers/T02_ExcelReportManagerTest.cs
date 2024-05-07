@@ -233,7 +233,7 @@ namespace TableAnalizerTest.Managers
         {
             // input assert
             Assert.That(_skuManager.SKUs, Is.Not.Null);
-            Assert.That(_skuManager.SKUs, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
+            Assert.That(_skuManager.SKUs.Count, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
 
             // arrange
             Dictionary<int, SKURansomsBalance> testSKURansomsBalances = new()
@@ -244,9 +244,12 @@ namespace TableAnalizerTest.Managers
             };
 
             // act
-            var sku15320659RansomsBalance = _skuManager.SKUs[15320659]?.SKURansomsBalance;
-            var sku216237114RansomsBalance = _skuManager.SKUs[216237114]?.SKURansomsBalance;
-            var sku214569047RansomsBalance = _skuManager.SKUs[214569047]?.SKURansomsBalance;
+            _skuManager.SKUs.GetItem(15320659, out SKU? sku1);
+            var sku15320659RansomsBalance = sku1?.SKURansomsBalance;
+            _skuManager.SKUs.GetItem(216237114, out SKU? sku2);
+            var sku216237114RansomsBalance = sku2?.SKURansomsBalance;
+            _skuManager.SKUs.GetItem(214569047, out SKU? sku3);
+            var sku214569047RansomsBalance = sku3?.SKURansomsBalance;
 
             // assert  
             Assert.Multiple(() =>
@@ -272,15 +275,17 @@ namespace TableAnalizerTest.Managers
             DateOnly maxSku214569047RansomsDate = new(2024, 03, 21, gregorian);
 
             // act
-            // ... 
+            _skuManager.SKUs.GetItem(15320659, out SKU? sku15320659);
+            _skuManager.SKUs.GetItem(216237114, out SKU? sku216237114);
+            _skuManager.SKUs.GetItem(214569047, out SKU? sku214569047);
 
             // assert
             Assert.Multiple(() =>
             {
                 Assert.That(_skuManager.SKUs, Is.Not.Null);
-                Assert.That(maxSku15320659RansomsDate, Is.EqualTo(_skuManager.SKUs[15320659].MaxRansomsDate));
-                Assert.That(maxSku216237114RansomsDate, Is.EqualTo(_skuManager.SKUs[216237114].MaxRansomsDate));
-                Assert.That(maxSku214569047RansomsDate, Is.EqualTo(_skuManager.SKUs[214569047].MaxRansomsDate));
+                Assert.That(maxSku15320659RansomsDate, Is.EqualTo(sku15320659?.MaxRansomsDate));
+                Assert.That(maxSku216237114RansomsDate, Is.EqualTo(sku216237114?.MaxRansomsDate));
+                Assert.That(maxSku214569047RansomsDate, Is.EqualTo(sku214569047?.MaxRansomsDate));
             });
 
         }
@@ -291,7 +296,7 @@ namespace TableAnalizerTest.Managers
             // https://code-maze.com/csharp-get-a-value-of-a-property-by-using-its-name/
 
             // arrange
-            var testSku = _skuManager.SKUs.OrderBy(s => s.Value.MaxRansomsDate).Select(s => s.Value).First();
+            var testSku = _skuManager.SKUs.GetItemsList().OrderBy(s => s.MaxRansomsDate).First();
             int testSku157270554_Number = 157270554;
             Marketplace testSku157270554_Marketplace = Marketplace.WB; 
             string testSku157270554_Name = "No name";
@@ -343,7 +348,7 @@ namespace TableAnalizerTest.Managers
             Assert.That(sheet, Is.Not.Null);
 
             // act 03
-            var outputSkus = _skuManager.SKUs.Select(s => s.Value.GetSKUOutput).ToList();
+            var outputSkus = _skuManager.SKUs.GetItemsList().Select(s => s.GetSKUOutput).ToList();
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
             _excelManager.FillingСellsWithData<SKUOutput>(outputPackage, ref sheet, in outputSkus, ExcelManager.MainReportSKUInfoCells, FileManager.OutputClientReportFilePath); 
 

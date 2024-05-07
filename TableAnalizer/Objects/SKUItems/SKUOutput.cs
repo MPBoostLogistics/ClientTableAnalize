@@ -29,7 +29,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #region  Constructors
         public SKUOutput(SKU sku)
         {
-            SKUMp = sku.Marketplace.ToString();
+            SKUMp = sku.Marketplace?.ToString() ?? String.Empty;
             SKUNumber = sku.SKUNumber;
             SKUBrand = sku.SKUBrand;
             SKUName = sku.SKUName;
@@ -42,7 +42,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
             SKUAveragePrice = sku.AveragePrice;
             SKUMaxRansomsDate = sku.MaxRansomsDate;
             SKUSellmentStatus = sku.SellmentStatus.ToString()!;
-            FillColor = sku.FillColor;
+            FillColor = sku.SellmentStatus.StatusColor;
         }
         #endregion Constructors
     }

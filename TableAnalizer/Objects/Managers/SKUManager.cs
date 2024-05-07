@@ -1,5 +1,7 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using ClientTableAnalizer.Enums;
+using ClientTableAnalizer.Interfaces;
 using ClientTableAnalizer.Objects.Parsing;
 using ClientTableAnalizer.Objects.SKUItems;
 using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
@@ -11,28 +13,16 @@ namespace ClientTableAnalizer.Objects.Managers
     {
         #region Properties 
         public int DeadlineDays { get; private set; }
-        public Dictionary<int, SKU> SKUs { get; } = new();
+        public IRepository<int,SKU> SKUs { get; } = new SKUDictionaryRepo();
         public static Dictionary<int, List<SKURansomsBalanceDataUnit>> SkuRansomsBalanceUnits { get; set; } = new();
         public static Dictionary<int, List<SKURemainingBalanceDataUnit>> SkuRemainingBalanceUnits { get; set; } = new();
-
-        /// <summary>
-        /// Returns SKU by SKU number.
-        /// </summary>
-        /// <param name="skuNumber">SKU number.</param>
-        /// <returns>SKU object or null.</returns>
-        /// <remarks><i>New version, tested</i></remarks>
-        public SKU? this[int skuNumber]
-        {
-            get => (!SKUs.TryGetValue(skuNumber, out SKU? sku) && sku == null) ? sku : null;
-            set => SKUs[skuNumber] = value!;
-        }
 
         /// <summary>
         /// Returns number of SKUs in collection.
         /// </summary>
         /// <returns>Number of SKUs in collection.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public int SKUsCount() => SKUs.Count;
+        public int SKUsCount() => SKUs.Count();
 
         #endregion
 
@@ -79,10 +69,10 @@ namespace ClientTableAnalizer.Objects.Managers
             // Get ranges from source excel worksheet
             List<RangeSourceReportRows> sourceReportRowsRanges = reportFileKey switch
             {
-                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => 
+                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ =>
                     new(1) { new(ExcelManager.RansomsSourceCells) },
-                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => 
-                    new(2) { new(ExcelManager.RemainingWBSourceCells01, ExcelManager.FIRST_ROOM_NAME), 
+                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ =>
+                    new(2) { new(ExcelManager.RemainingWBSourceCells01, ExcelManager.FIRST_ROOM_NAME),
                              new(ExcelManager.RemainingWBSourceCells02, ExcelManager.SECOND_ROOM_NAME,(ExcelManager.LAST_MARKER_KEY, ExcelManager.LAST_MARKER_KEY_OFFSET))},
                 _ => new(),
             };
@@ -116,7 +106,7 @@ namespace ClientTableAnalizer.Objects.Managers
 
                 // Remaining processing:
                 case SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ:
-                    
+
                     // Save balances for sku's
                     var remainingCount = SaveSKUBalanceUnits(reportFileKey, rawRowsItems);
 
@@ -130,11 +120,6 @@ namespace ClientTableAnalizer.Objects.Managers
             // Finish
             return StopFuctionExecuting(ref stopwatch);
         }
-
-
-
-
-        //List<Dictionary<string, (string value, ParsingTypeCode parsingTypeCode)>> 
 
         /// <summary>
         /// Creates and saves SKURansomsBalanceUnit collection from a list of raw data dictionaries.
@@ -232,16 +217,20 @@ namespace ClientTableAnalizer.Objects.Managers
         /// </summary>
         /// <exception cref="ArgumentException">Manager does not contain an array of "raw data".</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public void MakeSKUsFromRansomsBalanceUnits(Marketplace marketplace)
+        public async Task MakeSKUsFromRansomsBalanceUnits(Marketplace marketplace)
         {
             if (SkuRansomsBalanceUnits == null || SkuRansomsBalanceUnits.Count == 0)
-                throw new ArgumentException("It is not possible to create SKUs objects from an empty raw data dictionary.");
+            {
+                await Task.Delay(100);
+                OnManagerReached(new("Невозможно сформировать словарь артикулов из пустого словаря 'сырых' данных.", 2000, true));
+                return;
+            }
 
             foreach (var skuRansomsBalanceUnit in SkuRansomsBalanceUnits)
             {
                 var skuNumber = skuRansomsBalanceUnit.Key;
 
-                if (!SKUs.TryGetValue(skuNumber, out SKU? sku) && sku == null)
+                if (!SKUs.GetItem(skuNumber, out SKU? sku) && sku == null)
                 {
                     SKURansomsBalance ransomsBalance = new(skuRansomsBalanceUnit.Value);
 
@@ -252,9 +241,43 @@ namespace ClientTableAnalizer.Objects.Managers
                     var averagePrice = skuRansomsBalanceUnit.Value
                         .Average(u => u.SKUCost);
 
-                    this[skuNumber] = new(marketplace, skuNumber, ransomsBalance, averagePrice, skuMaxRansomDate);
+                    SKUs.AddOrUpdateItem(skuNumber, new(marketplace, skuNumber, ransomsBalance, averagePrice, skuMaxRansomDate));
                 }
             }
+        }
+
+        public async Task UpdateSKUsFromRemainingBalanceUnits()
+        {
+            if (SkuRansomsBalanceUnits == null || SkuRansomsBalanceUnits.Count == 0)
+            {
+                await Task.Delay(100);
+                OnManagerReached(new("Нет данных по приходу и остаткам товаров.", 1000, false));
+                return;
+            }
+
+            foreach (var skuRemainingBalanceUnit in SkuRemainingBalanceUnits)
+            {
+                var skuNumber = skuRemainingBalanceUnit.Key;
+
+                SKURemainingBalance sKURemainingBalance = new(skuRemainingBalanceUnit.Value);
+
+                // if (SKUs.TryGetValue(skuNumber, out SKU? sku))
+                // {
+                //     if(sku is null) 
+                //     {
+
+                //     }
+                //     else 
+                //     {
+
+                //     }
+                // }
+
+
+
+
+            }
+
         }
 
 

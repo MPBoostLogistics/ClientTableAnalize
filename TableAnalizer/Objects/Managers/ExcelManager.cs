@@ -63,7 +63,7 @@ namespace ClientTableAnalizer.Objects.Managers
         public static List<SourceCell> RemainingWBSourceCells01 { get; } = new()
         {
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(6, "SKUName", ParsingTypeCode.StringTypeCode, true),
+            new(6, "SKUBrandAndName", ParsingTypeCode.StringTypeCode, true),
             new(15, "SKUReceipt", ParsingTypeCode.IntTypeCode, false),
             new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
         };
@@ -71,7 +71,7 @@ namespace ClientTableAnalizer.Objects.Managers
         public static List<SourceCell> RemainingWBSourceCells02 { get; } = new()
         {
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(6, "SKUName", ParsingTypeCode.StringTypeCode, true),
+            new(6, "SKUBrandAndName", ParsingTypeCode.StringTypeCode, true),
             new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
         };
 

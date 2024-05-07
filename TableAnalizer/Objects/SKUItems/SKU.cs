@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Data;
+using System.Drawing;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Interfaces;
 using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
@@ -6,19 +7,20 @@ using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
 namespace ClientTableAnalizer.Objects.SKUItems
 {
     /// <remarks><i>New version.</i></remarks>
-    public class SKU : IColorable
+    public class SKU
     {
         #region Properties
-        public Marketplace Marketplace { get; }
+        public Marketplace? Marketplace { get; private set; }
         public int SKUNumber { get; }
-        public string SKUBrand { get;}
-        public string SKUName { get; }
-        public SKURansomsBalance SKURansomsBalance { get;  }
-        public double AveragePrice {get;}
-        public DateOnly MaxRansomsDate { get; }
+        public string SKUBrand { get; private set; }
+        public string SKUName { get; private set; }
+        public SKURansomsBalance? SKURansomsBalance { get; private set;}
+        public SKURemainingBalance? SKURemainingBalance { get; private set;}
+        public double AveragePrice { get; private set;}
+        public DateOnly MaxRansomsDate { get; private set;}
         public bool IsSKUDeadline => (MaxRansomsDate.ToDateTime(new TimeOnly()) - DateTime.Now).Duration().Days > 14;
-        public SellmentStatus SellmentStatus { get; private set; }
-        public Color FillColor { get; set;} = Color.Empty;
+        public SellmentStatus SellmentStatus { get; private set; } = new(SKUSellmentStatus.Unknown);
+        //public Color FillColor { get; set; } = Color.Empty;
 
         // public SKUStorageBalance ArticleStorageBalance { get; private set; }
         // private SKUBalancesReport? _articleBalancesReport;
@@ -35,52 +37,26 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #endregion
 
         #region Constructors && destructors
-        public SKU(Marketplace marketplace, int skuNumber, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate) 
+        public SKU(Marketplace marketplace, int skuNumber, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate)
         {
-            Marketplace = marketplace;
             SKUNumber = skuNumber;
-            SKUBrand = "No name";
-            SKUName = "No name";
-            SKURansomsBalance = skuRansomsBalance;
-            AveragePrice = averagePrice;
-            MaxRansomsDate = maxRansomsDate;
-            SellmentStatus = new(SKUSellmentStatus.Unknown);
+            SKUBrand = "No name"; SKUName = "No name";
 
-            // Set fill color
-            FillColor = !IsSKUDeadline ? Color.DarkOrange : Color.DarkRed;
+            Update(marketplace, skuRansomsBalance, averagePrice, maxRansomsDate);
         }
 
-        public override string ToString() => 
+        // Обновить 2 :  
+
+        public SKU(int skuNumber, SKURemainingBalance skuRansomsBalance)
+        {
+            SKUNumber = skuNumber;
+            SKUBrand = "No name"; SKUName = "No name";
+
+            Update(skuRansomsBalance);
+        }
+
+        public override string ToString() =>
             $"{SKUNumber} ({Marketplace}): '{SKUBrand} / {SKUName}', {AveragePrice}. Date: {MaxRansomsDate}\n{SKURansomsBalance}";
-
-
-        // public SKU(Marketplace marketplace, int skuNumber, SKURowInReport articleRowInReport)
-        // {
-        //     Marketplace = marketplace;
-        //     Number = skuNumber;
-        //     Name = "No name";
-        //     //SKURedempionBalance = new(articleRowInReport);
-        //     ArticleStorageBalance = new();
-        //     MaxRedemptionDate = DateTime.Now;
-        //     IsDeadline = false;
-        //     SellmentStatus = new(ArticleSellmentStatus.Unknown);
-        //     AveragePrice = 0.00;
-        //     Comment = string.Empty;
-        // }
-
-        // public SKU(Marketplace marketplace, int skuNumber, List<SKURowInReport> skuRowsInReport) 
-        // {
-        //     Marketplace = marketplace;
-        //     Number = skuNumber;
-        //     Name = "No name";
-        //     //SKURedempionBalance = new(skuRowsInReport);
-        //     ArticleStorageBalance = new();
-        //     MaxRedemptionDate = DateTime.Now;
-        //     IsDeadline = false;
-        //     SellmentStatus = new(ArticleSellmentStatus.Unknown);
-        //     AveragePrice = 0.00;
-        //     Comment = string.Empty;
-        // }
 
         #endregion
 
@@ -88,7 +64,29 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
         public SKUOutput GetSKUOutput => new(this);
 
+        public void Update(Marketplace marketplace, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate) 
+        {
+            Marketplace = marketplace;
+            SKURansomsBalance = skuRansomsBalance;
+            AveragePrice = averagePrice;
+            MaxRansomsDate = maxRansomsDate;
+        }
 
+        public void Update(SKURemainingBalance skuRansomsBalance) 
+        {
+            SKURemainingBalance = skuRansomsBalance;
+
+            var items = skuRansomsBalance.SKUBrandAndName.Split('/').ToList();
+            if (items.Count == 1)
+            {
+                SKUName = items.First().Trim();
+            }
+            else if (items.Count == 2)
+            {
+                SKUBrand = items.First().Trim();
+                SKUName = items.Last().Trim();
+            }
+        }
 
 
         // public void SetArticleRowInReport(SKURowInReport articleRowInReport) {} // Dummy

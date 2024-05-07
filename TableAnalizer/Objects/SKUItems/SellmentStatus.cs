@@ -45,7 +45,6 @@ namespace ClientTableAnalizer.Objects.SKUItems
                     StatusLabel = "Не определен"; 
                     StatusColor = System.Drawing.ColorTranslator.FromHtml("#e6fcff");
                     break;
-
             }
         }
         #endregion

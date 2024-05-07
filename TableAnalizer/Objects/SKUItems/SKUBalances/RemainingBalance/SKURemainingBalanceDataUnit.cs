@@ -10,7 +10,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
     {
         #region Properties
         public int SKUNumber { get; private set; }
-        public string SKUName { get; private set; } = String.Empty;
+        public string SKUBrandAndName { get; private set; } = String.Empty;
         public int SKUReceipt { get; private set; }   // Приход товаров
         public int SKURemaining { get; private set; } // Остаток товаров 
         #endregion
@@ -18,7 +18,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         #region  Constructors   
         public SKURemainingBalanceDataUnit(in Dictionary<string, ParsingItem> parsingElements) :
             base(parsingElements) {}
-        override public string ToString() => $"number: {SKUNumber}, name: {SKUName}, receipt: {SKUReceipt}, remaining: {SKURemaining}";
+        override public string ToString() => $"number: {SKUNumber}, brand and name: {SKUBrandAndName}, receipt: {SKUReceipt}, remaining: {SKURemaining}";
         #endregion
     }
 }
