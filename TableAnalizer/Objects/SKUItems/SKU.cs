@@ -45,8 +45,6 @@ namespace ClientTableAnalizer.Objects.SKUItems
             Update(marketplace, skuRansomsBalance, averagePrice, maxRansomsDate);
         }
 
-        // Обновить 2 :  
-
         public SKU(int skuNumber, SKURemainingBalance skuRansomsBalance)
         {
             SKUNumber = skuNumber;
@@ -72,11 +70,11 @@ namespace ClientTableAnalizer.Objects.SKUItems
             MaxRansomsDate = maxRansomsDate;
         }
 
-        public void Update(SKURemainingBalance skuRansomsBalance) 
+        public void Update(SKURemainingBalance skuRemainingBalance) 
         {
-            SKURemainingBalance = skuRansomsBalance;
+            SKURemainingBalance = skuRemainingBalance;
 
-            var items = skuRansomsBalance.SKUBrandAndName.Split('/').ToList();
+            var items = skuRemainingBalance.SKUBrandAndName.Split('/').ToList();
             if (items.Count == 1)
             {
                 SKUName = items.First().Trim();

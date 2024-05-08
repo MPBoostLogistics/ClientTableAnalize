@@ -13,7 +13,7 @@ namespace ClientTableAnalizer.Objects.Managers
     {
         #region Properties 
         public int DeadlineDays { get; private set; }
-        public IRepository<int,SKU> SKUs { get; } = new SKUDictionaryRepo();
+        public IRepository<int,SKU> SKUs { get; } 
         public static Dictionary<int, List<SKURansomsBalanceDataUnit>> SkuRansomsBalanceUnits { get; set; } = new();
         public static Dictionary<int, List<SKURemainingBalanceDataUnit>> SkuRemainingBalanceUnits { get; set; } = new();
 
@@ -27,7 +27,10 @@ namespace ClientTableAnalizer.Objects.Managers
         #endregion
 
         #region Constructors and destructors
-        public SKUManager(ExcelManager excelReportManager) { }
+        public SKUManager(ExcelManager excelReportManager) 
+        { 
+            SKUs = new SKUDictionaryRepo();
+        }
         #endregion
 
         #region Functionality
@@ -98,10 +101,12 @@ namespace ClientTableAnalizer.Objects.Managers
                     SaveSKUBalanceUnits(reportFileKey, rawRowsItems);
 
                     // Make sku's from ransoms balance units 
-                    MakeSKUsFromRansomsBalanceUnits(reportFileKey == SourceSKUReportFileKey.RansomsWB ? Marketplace.WB : Marketplace.OZ);
+                    var makeSKUsTask = MakeSKUsFromRansomsBalanceUnits(reportFileKey == SourceSKUReportFileKey.RansomsWB ? Marketplace.WB : Marketplace.OZ);
+                    await Task.Run(async () => await makeSKUsTask);
+                    makeSKUsTask.Wait();
 
                     // Report
-                    OnManagerReached(new($"Записано артикулов из выкупов, всего: {SKUs.Count}", 1000, false));
+                    OnManagerReached(new($"Записано артикулов из выкупов, всего: {SKUs.Count()}", 1000, false));
                     break;
 
                 // Remaining processing:
@@ -230,7 +235,7 @@ namespace ClientTableAnalizer.Objects.Managers
             {
                 var skuNumber = skuRansomsBalanceUnit.Key;
 
-                if (!SKUs.GetItem(skuNumber, out SKU? sku) && sku == null)
+                if (!SKUs.GetValue(skuNumber, out SKU? sku) && sku == null)
                 {
                     SKURansomsBalance ransomsBalance = new(skuRansomsBalanceUnit.Value);
 
@@ -241,7 +246,7 @@ namespace ClientTableAnalizer.Objects.Managers
                     var averagePrice = skuRansomsBalanceUnit.Value
                         .Average(u => u.SKUCost);
 
-                    SKUs.AddOrUpdateItem(skuNumber, new(marketplace, skuNumber, ransomsBalance, averagePrice, skuMaxRansomDate));
+                    SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, ransomsBalance, averagePrice, skuMaxRansomDate));
                 }
             }
         }
