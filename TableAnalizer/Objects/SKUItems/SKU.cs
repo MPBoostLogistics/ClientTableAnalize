@@ -40,7 +40,8 @@ namespace ClientTableAnalizer.Objects.SKUItems
         public SKU(Marketplace marketplace, int skuNumber, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate)
         {
             SKUNumber = skuNumber;
-            SKUBrand = "No name"; SKUName = "No name";
+            SKUBrand = string.IsNullOrEmpty(SKUBrand) ? "No brand" : SKUBrand; 
+            SKUName = string.IsNullOrEmpty(SKUName) ? "No name" : SKUName; 
 
             Update(marketplace, skuRansomsBalance, averagePrice, maxRansomsDate);
         }
@@ -49,7 +50,8 @@ namespace ClientTableAnalizer.Objects.SKUItems
         {
             Marketplace = marketplace;
             SKUNumber = skuNumber;
-            SKUBrand = "No name"; SKUName = "No name";
+            SKUBrand = string.IsNullOrEmpty(SKUBrand) ? "No brand" : SKUBrand; 
+            SKUName = string.IsNullOrEmpty(SKUName) ? "No name" : SKUName; 
 
             Update(skuRansomsBalance);
         }

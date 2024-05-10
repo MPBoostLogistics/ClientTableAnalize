@@ -12,6 +12,8 @@ namespace ClientTableAnalizer.Objects.Repositories
         protected virtual void Dispose() => Entiies.Clear();
         
         public virtual bool GetValue(K id, out V? item) => Entiies.TryGetValue(id, out item);
+
+        public virtual int GetValueCount(Predicate<V> predicate) => Entiies.Values.ToList().FindAll(predicate).Count;
   
         public virtual bool RemoveValue(K id, out V? item) => Entiies.TryRemove(id, out item);
  

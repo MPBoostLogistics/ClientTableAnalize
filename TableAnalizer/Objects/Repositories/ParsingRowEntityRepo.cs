@@ -15,7 +15,6 @@ namespace ClientTableAnalizer.Objects.Repositories
             }
             else
             {
-                // Add new pair in collection 
                 return Entiies.TryAdd(id, item);
             }
         }

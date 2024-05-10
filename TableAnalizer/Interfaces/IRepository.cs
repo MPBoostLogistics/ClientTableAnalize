@@ -25,6 +25,13 @@ namespace ClientTableAnalizer.Interfaces
         bool GetValue(K id, out V? item);
 
         /// <summary>
+        /// Returns number of elements of a collection by predicate.
+        /// </summary>
+        /// <param name="predicate">Predicate for searching values.</param>
+        /// <returns>Number of elements in collection by predicate.</returns>.
+        int GetValueCount(Predicate<V> predicate);
+
+        /// <summary>
         /// Removing a collection element by key.
         /// </summary>
         /// <param name="id">Key of element to delete.</param>

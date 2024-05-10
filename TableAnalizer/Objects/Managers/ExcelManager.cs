@@ -60,7 +60,7 @@ namespace ClientTableAnalizer.Objects.Managers
             new(14, "SKUCost",  ParsingTypeCode.DoubleTypeCode, true)
         };
 
-        public static List<SourceCell> RemainingWBSourceCells01 { get; } = new()
+        public static List<SourceCell> RemainingSourceCells01 { get; } = new()
         {
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(6, "SKUBrandAndName", ParsingTypeCode.StringTypeCode, true),
@@ -68,11 +68,17 @@ namespace ClientTableAnalizer.Objects.Managers
             new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
         };
 
-        public static List<SourceCell> RemainingWBSourceCells02 { get; } = new()
+        public static List<SourceCell> RemainingSourceCells02 { get; } = new()
         {
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(6, "SKUBrandAndName", ParsingTypeCode.StringTypeCode, true),
             new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
+        };
+
+        public static List<SourceCell> ShippedSourceCells { get; } = new()
+        {
+            new(4, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
+            new(6, "SKUShippedCount", ParsingTypeCode.IntTypeCode, true)
         };
 
         public static TargetCell[] MainReportSKUInfoCells { get; } = new TargetCell[]

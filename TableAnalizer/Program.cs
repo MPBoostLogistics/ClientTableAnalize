@@ -94,7 +94,7 @@ internal class Program
 
             Task.WaitAll(tasks);
 
-            // Анализ 
+            // TODO: Анализ данных
         }
         else
         {
@@ -198,7 +198,8 @@ internal class Program
             if (reportFileKey == SourceSKUReportFileKey.RansomsWB ||
                 reportFileKey == SourceSKUReportFileKey.RansomsOZ ||
                 reportFileKey == SourceSKUReportFileKey.RemainingWB ||
-                reportFileKey == SourceSKUReportFileKey.RemainingOZ)
+                reportFileKey == SourceSKUReportFileKey.RemainingOZ || 
+                reportFileKey == SourceSKUReportFileKey.Shipped)
             {
                 // Make ExcelPackage
                 ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
@@ -215,7 +216,6 @@ internal class Program
             {
                 return 0;
             }
-
 
         }
         else

@@ -58,7 +58,7 @@ namespace ClientTableAnalizer.Objects.Managers
             string workSheetName = reportFileKey switch
             {
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => ExcelManager.RANSOMS_WORKSHEET_NAME,
-                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => ExcelManager.REMAINING_WORKSHEET_NAME,
+                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped => ExcelManager.REMAINING_WORKSHEET_NAME,
                 _ => String.Empty,
             };
 
@@ -77,8 +77,10 @@ namespace ClientTableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ =>
                     new(1) { new(ExcelManager.RansomsSourceCells) },
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ =>
-                    new(2) { new(ExcelManager.RemainingWBSourceCells01, ExcelManager.FIRST_ROOM_NAME),
-                             new(ExcelManager.RemainingWBSourceCells02, ExcelManager.SECOND_ROOM_NAME,(ExcelManager.LAST_MARKER_KEY, ExcelManager.LAST_MARKER_KEY_OFFSET))},
+                    new(2) { new(ExcelManager.RemainingSourceCells01, ExcelManager.FIRST_ROOM_NAME),
+                             new(ExcelManager.RemainingSourceCells02, ExcelManager.SECOND_ROOM_NAME,(ExcelManager.LAST_MARKER_KEY, ExcelManager.LAST_MARKER_KEY_OFFSET))},
+                SourceSKUReportFileKey.Shipped =>
+                    new(1) { new(ExcelManager.ShippedSourceCells)},     
                 _ => new(),
             };
             ExcelManager.GetRangeSourceReportRows(in currentWorksheet, ref sourceReportRowsRanges);
@@ -108,7 +110,10 @@ namespace ClientTableAnalizer.Objects.Managers
                     makeSKUsTask.Wait();
 
                     // Report
-                    OnManagerReached(new($"Записано артикулов из выкупов, всего: {SKUs.Count()}", 1000, false));
+                    static bool FindSkusWithRansoms(SKU sku) => sku.SKURansomsBalance != null;
+                    var skusWithRansomsCount = SKUs.GetValueCount(FindSkusWithRansoms);
+             
+                    OnManagerReached(new($"Записано артикулов из выкупов, всего: {skusWithRansomsCount}", 1000, false));
                     break;
 
                 // Remaining processing:
@@ -117,7 +122,15 @@ namespace ClientTableAnalizer.Objects.Managers
                     // Save balances for sku's
                     SaveSKUBalanceUnits(reportFileKey, rawRowsItems);
 
-                    // Console.WriteLine($"remainingUnitsCount: {remainingCount}");
+                    // Make sku's from ransoms balance units 
+                    var updateTask = UpdateSKUsFromBalanceUnits(reportFileKey);
+                    await Task.Run(async () => await updateTask);
+                    updateTask.Wait();
+
+                    // Report
+                    static bool FindSkusWithRemaining(SKU sku) => sku.SKURemainingBalance != null;
+                    var skusWithRemainingCount = SKUs.GetValueCount(FindSkusWithRemaining);
+                    OnManagerReached(new($"Записано артикулов из баланса склада, всего: {skusWithRemainingCount}", 1000, false));
 
                     break;
                 default:
