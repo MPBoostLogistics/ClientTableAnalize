@@ -20,7 +20,6 @@ namespace TableAnalizerTest.Managers
             new(TestData.RemainingWBSourceCells01, ExcelManager.FIRST_ROOM_NAME), 
             new(TestData.RemainingWBSourceCells02, ExcelManager.SECOND_ROOM_NAME,(ExcelManager.LAST_MARKER_KEY, ExcelManager.LAST_MARKER_KEY_OFFSET))
         ];
-        
         private ExcelWorksheet? _ransomsWBWorksheet;
         private ExcelWorksheet? _remainingWBWorksheet;
         
@@ -166,7 +165,7 @@ namespace TableAnalizerTest.Managers
             Assert.Multiple(() =>
             {
                 Assert.That(TestData._testRansomsRangeSourceReportRows, Has.Count.EqualTo(1));
-                Assert.That(TestData._testRansomsRangeSourceReportRows[0].RawRowItems, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
+                Assert.That(TestData._testRansomsRangeSourceReportRows[0].RowsWithRawData, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
             });
         }
 
@@ -186,24 +185,24 @@ namespace TableAnalizerTest.Managers
             Assert.Multiple(() =>
             {
                 Assert.That(_remainingWBRangeSourceReportRows, Has.Count.EqualTo(2));
-                Assert.That(_remainingWBRangeSourceReportRows[0]!.RawRowItems!, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01));
-                Assert.That(_remainingWBRangeSourceReportRows[1]!.RawRowItems!, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02));
+                Assert.That(_remainingWBRangeSourceReportRows[0]!.RowsWithRawData!, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01));
+                Assert.That(_remainingWBRangeSourceReportRows[1]!.RowsWithRawData!, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02));
             });
         }
 
         [Test, Order(7)]
-        public void SaveSKURansomsBalanceUnits_Test()
+        public void SaveSKUBalanceUnits_Test()
         {
             // input assert
             Assert.That(TestData._testRansomsRangeSourceReportRows, Is.Not.Null);
             Assert.That(TestData._testRansomsRangeSourceReportRows, Has.Count.EqualTo(1));
-            Assert.That(TestData._testRansomsRangeSourceReportRows[0].RawRowItems, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
+            Assert.That(TestData._testRansomsRangeSourceReportRows[0].RowsWithRawData, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
 
             // arrange
             //...
 
             // act
-            var keyCount = _skuManager.SaveSKUBalanceUnits(SourceSKUReportFileKey.RansomsWB,TestData._testRansomsRangeSourceReportRows[0].RawRowItems);
+            var keyCount = _skuManager.SaveSKUBalanceUnits(SourceSKUReportFileKey.RansomsWB,TestData._testRansomsRangeSourceReportRows[0].RowsWithRawData);
 
             // assert
             Assert.That(keyCount, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
@@ -213,14 +212,14 @@ namespace TableAnalizerTest.Managers
         public async Task MakeSKUs_Test()
         {
             // input assert
-            Assert.That(SKUManager.SkuRansomsBalanceUnits, Is.Not.Null);
-            Assert.That(SKUManager.SkuRansomsBalanceUnits, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
+            Assert.That(SKUManager.Equals, Is.Not.Null);
+            Assert.That(_skuManager.SkuRansomsBalanceUnits.Count, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
 
             // arrange
             // ... 
 
             // act
-            var task = _skuManager.MakeSKUsFromRansomsBalanceUnits(Marketplace.WB);
+            var task = _skuManager.UpdateSKUsFromBalanceUnits(SourceSKUReportFileKey.RansomsWB);
             await Task.Run(async () => await task);
             task.Wait();
 
@@ -296,7 +295,7 @@ namespace TableAnalizerTest.Managers
             // https://code-maze.com/csharp-get-a-value-of-a-property-by-using-its-name/
 
             // arrange
-            var testSku = _skuManager.SKUs.GetValuesList().OrderBy(s => s.MaxRansomsDate).First();
+            var testSku = _skuManager.SKUs.GetValuesList().OrderBy(s => s.value.MaxRansomsDate).First().value;
             int testSku157270554_Number = 157270554;
             Marketplace testSku157270554_Marketplace = Marketplace.WB; 
             string testSku157270554_Name = "No name";
@@ -348,7 +347,7 @@ namespace TableAnalizerTest.Managers
             Assert.That(sheet, Is.Not.Null);
 
             // act 03
-            var outputSkus = _skuManager.SKUs.GetValuesList().Select(s => s.GetSKUOutput).ToList();
+            var outputSkus = _skuManager.SKUs.GetValuesList().Select(s => s.value.GetSKUOutput).ToList();
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
             _excelManager.FillingСellsWithData<SKUOutput>(outputPackage, ref sheet, in outputSkus, ExcelManager.MainReportSKUInfoCells, FileManager.OutputClientReportFilePath); 
 

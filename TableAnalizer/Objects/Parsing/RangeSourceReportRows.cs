@@ -12,7 +12,7 @@ namespace ClientTableAnalizer.Objects.Parsing
         public (string key, int offset)? TerminatingStringValue { get; }
         public List<SourceCell> SourceCells { get; }
         public IEnumerable<int>? RowsIndexRange { get; set; }
-        public List<Dictionary<string, ParsingItem>> RawRowItems { get; private set; } = new();
+        public List<Dictionary<string, ItemForParsing>> RowsWithRawData { get; private set; } = new();
 
         public RangeSourceReportRows(List<SourceCell> sourceCells, string? key = null, (string key, int offset)? terminatingStringValue = null)
         {
@@ -24,6 +24,6 @@ namespace ClientTableAnalizer.Objects.Parsing
         public void SetRange(int startRowIndex, int endRowIndex) =>
             RowsIndexRange = Enumerable.Range(startRowIndex, endRowIndex);
 
-        public void SetValues(Dictionary<string, ParsingItem> values) => RawRowItems.Add(values);
+        public void SetValues(Dictionary<string, ItemForParsing> values) => RowsWithRawData.Add(values);
     }
 }

@@ -7,7 +7,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
     /// Data unit for forming SKURansomsBalance.
     /// </summary>
     /// <remarks><i>New version, tested</i></remarks>
-    public class SKURansomsBalanceDataUnit : ParsingEntity
+    public class SKURansomsBalanceDataUnit : ParsingRowEntity
     {
         #region Properties
         public int SKUNumber { get; private set; }
@@ -17,7 +17,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         #endregion
 
         #region  Constructors   
-        public SKURansomsBalanceDataUnit(in Dictionary<string, ParsingItem> parsingElements) :
+        public SKURansomsBalanceDataUnit(in Dictionary<string, ItemForParsing> parsingElements) :
             base(parsingElements) {}
         override public string ToString() =>
             $"number: {SKUNumber}, ransoms status: {SKURansomsStatus}, cost: {SKUCost}";

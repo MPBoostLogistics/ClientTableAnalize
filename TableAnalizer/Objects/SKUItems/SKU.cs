@@ -45,8 +45,9 @@ namespace ClientTableAnalizer.Objects.SKUItems
             Update(marketplace, skuRansomsBalance, averagePrice, maxRansomsDate);
         }
 
-        public SKU(int skuNumber, SKURemainingBalance skuRansomsBalance)
+        public SKU(Marketplace marketplace, int skuNumber, SKURemainingBalance skuRansomsBalance)
         {
+            Marketplace = marketplace;
             SKUNumber = skuNumber;
             SKUBrand = "No name"; SKUName = "No name";
 

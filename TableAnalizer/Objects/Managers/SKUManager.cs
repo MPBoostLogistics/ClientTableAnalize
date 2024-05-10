@@ -1,8 +1,8 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Interfaces;
 using ClientTableAnalizer.Objects.Parsing;
+using ClientTableAnalizer.Objects.Repositories;
 using ClientTableAnalizer.Objects.SKUItems;
 using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
 using OfficeOpenXml;
@@ -13,9 +13,9 @@ namespace ClientTableAnalizer.Objects.Managers
     {
         #region Properties 
         public int DeadlineDays { get; private set; }
-        public IRepository<int,SKU> SKUs { get; } 
-        public static Dictionary<int, List<SKURansomsBalanceDataUnit>> SkuRansomsBalanceUnits { get; set; } = new();
-        public static Dictionary<int, List<SKURemainingBalanceDataUnit>> SkuRemainingBalanceUnits { get; set; } = new();
+        public IRepository<int, SKU> SKUs { get; }
+        public IRepository<int, List<ParsingRowEntity>> SkuRansomsBalanceUnits { get; }
+        public IRepository<int, List<ParsingRowEntity>> SkuRemainingBalanceUnits { get; }
 
         /// <summary>
         /// Returns number of SKUs in collection.
@@ -27,9 +27,11 @@ namespace ClientTableAnalizer.Objects.Managers
         #endregion
 
         #region Constructors and destructors
-        public SKUManager(ExcelManager excelReportManager) 
-        { 
-            SKUs = new SKUDictionaryRepo();
+        public SKUManager(ExcelManager excelReportManager)
+        {
+            SKUs = new SKURepo();
+            SkuRansomsBalanceUnits = new ParsingRowEntityRepo();
+            SkuRemainingBalanceUnits = new ParsingRowEntityRepo();
         }
         #endregion
 
@@ -85,10 +87,10 @@ namespace ClientTableAnalizer.Objects.Managers
             ExcelManager.GetRawDataFromExcelRows(in currentWorksheet, ref sourceReportRowsRanges);
 
             // Union collections
-            List<Dictionary<string, ParsingItem>> rawRowsItems = new() { };
+            List<Dictionary<string, ItemForParsing>> rawRowsItems = new() { };
             foreach (var sourceReportRowsRange in sourceReportRowsRanges)
             {
-                sourceReportRowsRange.RawRowItems.ForEach(rawRowsItems.Add);
+                sourceReportRowsRange.RowsWithRawData.ForEach(rawRowsItems.Add);
             }
 
             // Processings:
@@ -101,7 +103,7 @@ namespace ClientTableAnalizer.Objects.Managers
                     SaveSKUBalanceUnits(reportFileKey, rawRowsItems);
 
                     // Make sku's from ransoms balance units 
-                    var makeSKUsTask = MakeSKUsFromRansomsBalanceUnits(reportFileKey == SourceSKUReportFileKey.RansomsWB ? Marketplace.WB : Marketplace.OZ);
+                    var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey);
                     await Task.Run(async () => await makeSKUsTask);
                     makeSKUsTask.Wait();
 
@@ -113,9 +115,9 @@ namespace ClientTableAnalizer.Objects.Managers
                 case SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ:
 
                     // Save balances for sku's
-                    var remainingCount = SaveSKUBalanceUnits(reportFileKey, rawRowsItems);
+                    SaveSKUBalanceUnits(reportFileKey, rawRowsItems);
 
-                    Console.WriteLine($"remainingUnitsCount: {remainingCount}");
+                    // Console.WriteLine($"remainingUnitsCount: {remainingCount}");
 
                     break;
                 default:
@@ -130,12 +132,15 @@ namespace ClientTableAnalizer.Objects.Managers
         /// Creates and saves SKURansomsBalanceUnit collection from a list of raw data dictionaries.
         /// </summary>
         /// <param name="reportFileKey">Key of source file with report.</param>
-        /// <param name="rawDataRowItems">List of raw data dictionaries.</param>
+        /// <param name="rowsWithRawData">List of raw data dictionaries.</param>
         /// <returns>Number of keys in final dictionary.</returns>
         /// <exception cref="ArgumentException">Exception when passing an empty dictionary.</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, List<Dictionary<string, ParsingItem>> rawDataRowItems)
+        public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, List<Dictionary<string, ItemForParsing>> rowsWithRawData)
         {
+            bool isRansoms = reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ;
+            bool isRemaining = reportFileKey == SourceSKUReportFileKey.RemainingWB || reportFileKey == SourceSKUReportFileKey.RemainingOZ;
+
             List<SourceSKUReportFileKey> validKeys = new()
             {
                 SourceSKUReportFileKey.RansomsWB,
@@ -150,69 +155,44 @@ namespace ClientTableAnalizer.Objects.Managers
                 return 0;
             }
 
-            foreach (var rawDataRowItem in rawDataRowItems)
+            if (isRansoms)
             {
-                if (rawDataRowItem is null)
+                var skuRansomsBalanceDataUnits = from rowWithRawData in rowsWithRawData
+                                                 let unit = new SKURansomsBalanceDataUnit(rowWithRawData)
+                                                 group unit by unit.SKUNumber 
+                                                 into unitGroup  
+                                                 select unitGroup;
+
+                foreach (var group in skuRansomsBalanceDataUnits)
                 {
-                    OnManagerReached(new ManagerReachedEventArgs("Error: It is not possible to create balance unit from an empty value.", 2000, true));
-                    return 0;
+                    var list = (((List<SKURansomsBalanceDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
+                        throw new InvalidCastException("Невозможно привести List<SKURansomsBalanceDataUnit> к List<ParsingRowEntity>");
+                    
+                    SkuRansomsBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
 
-                // Parsing && save data  
-                ParsingEntity? unit = null;
-                if (reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ)
+            }
+            else if (isRemaining)
+            {
+                var skuRemainingBalanceDataUnits = from rowWithRawData in rowsWithRawData
+                                                   let unit = new SKURemainingBalanceDataUnit(rowWithRawData)
+                                                   group unit by unit.SKUNumber 
+                                                   into unitGroup  
+                                                   select unitGroup;
+                
+                foreach (var group in skuRemainingBalanceDataUnits)
                 {
-                    try
-                    {
-                        unit = new SKURansomsBalanceDataUnit(in rawDataRowItem);
-                        var skuRansomsBalanceDataUnit = (SKURansomsBalanceDataUnit)unit;
-
-                        var key = skuRansomsBalanceDataUnit.SKUNumber;
-                        if (SkuRansomsBalanceUnits.TryGetValue(key, out List<SKURansomsBalanceDataUnit>? value))
-                        {
-                            value.Add(skuRansomsBalanceDataUnit);
-                        }
-                        else
-                        {
-                            SkuRansomsBalanceUnits.TryAdd(key: skuRansomsBalanceDataUnit.SKUNumber, value: new List<SKURansomsBalanceDataUnit> { skuRansomsBalanceDataUnit });
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        OnManagerReached(new($"Error: {ex.Message}", 2000, true));
-                        return 0;
-                    }
-
-                }
-                else if (reportFileKey == SourceSKUReportFileKey.RemainingWB || reportFileKey == SourceSKUReportFileKey.RemainingOZ)
-                {
-                    try
-                    {
-                        unit = new SKURemainingBalanceDataUnit(in rawDataRowItem);
-                        var skuRemainingBalanceDataUnit = (SKURemainingBalanceDataUnit)unit;
-
-                        var key = skuRemainingBalanceDataUnit.SKUNumber;
-                        if (SkuRemainingBalanceUnits.TryGetValue(key, out List<SKURemainingBalanceDataUnit>? value))
-                        {
-                            value.Add(skuRemainingBalanceDataUnit);
-                        }
-                        else
-                        {
-                            SkuRemainingBalanceUnits.TryAdd(key: skuRemainingBalanceDataUnit.SKUNumber, value: new List<SKURemainingBalanceDataUnit> { skuRemainingBalanceDataUnit });
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        OnManagerReached(new($"Error: {ex.Message}", 2000, true));
-                        return 0;
-                    }
+                    var list = (((List<SKURemainingBalanceDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
+                        throw new InvalidCastException("Невозможно привести List<SKURemainingBalanceDataUnit> к List<ParsingRowEntity>");
+                    
+                    SkuRemainingBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             }
 
             return reportFileKey switch
             {
-                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => SkuRansomsBalanceUnits.Count,
-                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => SkuRemainingBalanceUnits.Count,
+                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => SkuRansomsBalanceUnits.Count(),
+                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => SkuRemainingBalanceUnits.Count(),
                 _ => 0
             };
         }
@@ -222,69 +202,57 @@ namespace ClientTableAnalizer.Objects.Managers
         /// </summary>
         /// <exception cref="ArgumentException">Manager does not contain an array of "raw data".</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public async Task MakeSKUsFromRansomsBalanceUnits(Marketplace marketplace)
+        public async Task UpdateSKUsFromBalanceUnits(SourceSKUReportFileKey skuReportFileKey)
         {
-            if (SkuRansomsBalanceUnits == null || SkuRansomsBalanceUnits.Count == 0)
+            bool isWB = skuReportFileKey == SourceSKUReportFileKey.RansomsWB || skuReportFileKey == SourceSKUReportFileKey.RemainingWB;
+            bool isOZ = skuReportFileKey == SourceSKUReportFileKey.RansomsOZ || skuReportFileKey == SourceSKUReportFileKey.RemainingOZ;
+            bool isRansoms = skuReportFileKey == SourceSKUReportFileKey.RansomsWB || skuReportFileKey == SourceSKUReportFileKey.RansomsOZ;
+            bool isRemaining = skuReportFileKey == SourceSKUReportFileKey.RemainingWB || skuReportFileKey == SourceSKUReportFileKey.RemainingOZ;
+
+            // Definition of a marketplace and collection
+            Marketplace marketplace = isWB ? Marketplace.WB : Marketplace.OZ;
+            IRepository<int, List<ParsingRowEntity>>? parsingEntityCollection = isRansoms ? SkuRansomsBalanceUnits : SkuRemainingBalanceUnits;
+
+            if (parsingEntityCollection == null || parsingEntityCollection.Count() == 0)
             {
                 await Task.Delay(100);
                 OnManagerReached(new("Невозможно сформировать словарь артикулов из пустого словаря 'сырых' данных.", 2000, true));
                 return;
             }
 
-            foreach (var skuRansomsBalanceUnit in SkuRansomsBalanceUnits)
+            List<(int key, List<ParsingRowEntity> value)>? listCollection = parsingEntityCollection.GetValuesList().ToList();
+            if (listCollection is null || listCollection.Count == 0)
+                throw new Exception("Невозможно обработать пустую коллекцию типа List<(int key, List<ParsingRowEntity> value)>?.");
+
+            foreach (var (skuNumber, listEntities) in listCollection)
             {
-                var skuNumber = skuRansomsBalanceUnit.Key;
-
-                if (!SKUs.GetValue(skuNumber, out SKU? sku) && sku == null)
+                if (isRansoms)
                 {
-                    SKURansomsBalance ransomsBalance = new(skuRansomsBalanceUnit.Value);
+                    var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKURansomsBalanceDataUnit>().ToList()) ??
+                        throw new InvalidCastException("Невозможно привести коллекцию к IList<SKURansomsBalanceDataUnit>");
 
-                    var skuMaxRansomDate = skuRansomsBalanceUnit.Value
+                    SKURansomsBalance ransomsBalance = new(units.ToList());
+
+                    var skuMaxRansomDate = units
                         .Select(u => u.SKURansomDate)
                         .Max();
 
-                    var averagePrice = skuRansomsBalanceUnit.Value
+                    var averagePrice = units
                         .Average(u => u.SKUCost);
 
                     SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, ransomsBalance, averagePrice, skuMaxRansomDate));
                 }
+                else if (isRemaining)
+                {
+                    var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKURemainingBalanceDataUnit>().ToList()) ??
+                        throw new InvalidCastException("Невозможно привести коллекцию к IList<SKURemainingBalanceDataUnit>");
+
+                    SKURemainingBalance remainingBalance = new(units.ToList());
+
+                    SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));
+                }
             }
         }
-
-        public async Task UpdateSKUsFromRemainingBalanceUnits()
-        {
-            if (SkuRansomsBalanceUnits == null || SkuRansomsBalanceUnits.Count == 0)
-            {
-                await Task.Delay(100);
-                OnManagerReached(new("Нет данных по приходу и остаткам товаров.", 1000, false));
-                return;
-            }
-
-            foreach (var skuRemainingBalanceUnit in SkuRemainingBalanceUnits)
-            {
-                var skuNumber = skuRemainingBalanceUnit.Key;
-
-                SKURemainingBalance sKURemainingBalance = new(skuRemainingBalanceUnit.Value);
-
-                // if (SKUs.TryGetValue(skuNumber, out SKU? sku))
-                // {
-                //     if(sku is null) 
-                //     {
-
-                //     }
-                //     else 
-                //     {
-
-                //     }
-                // }
-
-
-
-
-            }
-
-        }
-
 
         // /// <summary>
         // /// Returns saved article by its number or null.

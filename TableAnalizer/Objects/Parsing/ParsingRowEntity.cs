@@ -1,15 +1,14 @@
 using System.Diagnostics;
 using System.Reflection;
 using ClientTableAnalizer.Enums;
-
+using ClientTableAnalizer.Interfaces;
 
 namespace ClientTableAnalizer.Objects.Parsing
 {
-
     /// <summary>
     /// An entity for parsing properties from a data dictionary.
     /// </summary>
-    public abstract class ParsingEntity
+    public abstract class ParsingRowEntity : IParsingRowEntity
     {
         #region Variables and constants
         protected const string SPACE_SEPARATOR = "\u0020";
@@ -17,12 +16,11 @@ namespace ClientTableAnalizer.Objects.Parsing
         #endregion
 
         #region Properties
-        protected PropertyInfo[] PropertyInfos { get; private set; }
-        protected readonly List<string> DateOnlyFormats = new() { "dd.MM.yyyy HH:mm", "dd.MM.yyyy HH:mm:ss" };
+        public PropertyInfo[] PropertyInfos { get; private set; }
         #endregion
 
         #region  Constructors
-        public ParsingEntity(in Dictionary<string, ParsingItem> parsingElements)
+        public ParsingRowEntity(in Dictionary<string, ItemForParsing> parsingElements)
         {
             PropertyInfos = GetType().GetProperties();
 
@@ -47,7 +45,7 @@ namespace ClientTableAnalizer.Objects.Parsing
         protected static void ThrowExceptionCast(string valueKey, string value, Type type) =>
             throw new InvalidCastException($"Element with key '{valueKey}' and value '{value}' cannot be casting to type {type}.");
 
-        protected void ParseValues(in Dictionary<string, ParsingItem> parsingElements)
+        protected void ParseValues(in Dictionary<string, ItemForParsing> parsingElements)
         {
             foreach (var parsingElement in parsingElements)
             {
@@ -68,7 +66,7 @@ namespace ClientTableAnalizer.Objects.Parsing
             }
         }
 
-        private void ParseValue(in KeyValuePair<string, ParsingItem> element, ref PropertyInfo property)
+        private void ParseValue(in KeyValuePair<string, ItemForParsing> element, ref PropertyInfo property)
         {
             Type targetType = property.PropertyType;
 
@@ -138,7 +136,7 @@ namespace ClientTableAnalizer.Objects.Parsing
                     }
                     else
                     {
-                        if (!DateOnly.TryParseExact(elementValueString, DateOnlyFormats.ToArray(), out DateOnly dateOnlyValue))
+                        if (!DateOnly.TryParseExact(elementValueString, IParsingRowEntity.DateOnlyFormats.ToArray(), out DateOnly dateOnlyValue))
                             ThrowExceptionCast(element.Key, elementValueString, targetType);
 
                         property.SetValue(this, dateOnlyValue);

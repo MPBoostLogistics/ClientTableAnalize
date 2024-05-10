@@ -6,7 +6,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
     /// Data unit for forming SKURemainingBalance.
     /// </summary>
     /// <remarks><i>New version, tested</i></remarks>
-    public class SKURemainingBalanceDataUnit : ParsingEntity
+    public class SKURemainingBalanceDataUnit : ParsingRowEntity
     {
         #region Properties
         public int SKUNumber { get; private set; }
@@ -16,7 +16,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         #endregion
 
         #region  Constructors   
-        public SKURemainingBalanceDataUnit(in Dictionary<string, ParsingItem> parsingElements) :
+        public SKURemainingBalanceDataUnit(in Dictionary<string, ItemForParsing> parsingElements) :
             base(parsingElements) {}
         override public string ToString() => $"number: {SKUNumber}, brand and name: {SKUBrandAndName}, receipt: {SKUReceipt}, remaining: {SKURemaining}";
         #endregion

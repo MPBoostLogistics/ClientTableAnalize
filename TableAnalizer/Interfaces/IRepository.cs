@@ -11,10 +11,10 @@ namespace ClientTableAnalizer.Interfaces
         bool RetrieveAndUpdateOrAddValue(K id, V item);
 
         /// <summary>
-        /// Returns elements of a collection as an enumeration.
+        /// Returns elements of a collection as an IList.
         /// </summary>
-        /// <returns>Enumerating the elements of a collection./returns>
-        IEnumerable<V> GetValuesList();
+        /// <returns>Enumerating elements of a collection./returns>
+        IList<(K key, V value)> GetValuesList();
 
         /// <summary>
         /// Getting a collection element by key.
