@@ -1,4 +1,4 @@
-using ClientTableAnalizer.Enums;
+using ClientTableAnalizer.Objects.Managers;
 using ClientTableAnalizer.Objects.Parsing;
 using ClientTableAnalizer.Objects.SKUItems;
 using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
@@ -19,22 +19,16 @@ namespace TableAnalizerTest
 
         public string TestFilesPath { get; set; }
 
-        public static List<SourceCell> RemainingWBSourceCells01 { get; } =
-        [
-            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(6, "Название товара", ParsingTypeCode.StringTypeCode, true),
-            new(15, "Приход", ParsingTypeCode.IntTypeCode, false),
-            new(17, "Остаток", ParsingTypeCode.IntTypeCode, false)
-        ];
-
-        public static List<SourceCell> RemainingWBSourceCells02 { get; } =
-        [
-            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(6, "Название товара", ParsingTypeCode.StringTypeCode, true), 
-            new(17, "Остаток", ParsingTypeCode.IntTypeCode, false)
-        ];
-
         public List<RangeSourceReportRows>? _testRansomsRangeSourceReportRows;
+
+        public List<RangeSourceReportRows>? _testRemainingWBRangeSourceReportRows =
+        [
+            new(ExcelManager.RemainingSourceCells01, ExcelManager.FIRST_ROOM_NAME),
+            new(ExcelManager.RemainingSourceCells02, ExcelManager.SECOND_ROOM_NAME,(ExcelManager.LAST_MARKER_KEY, ExcelManager.LAST_MARKER_KEY_OFFSET))
+        ];
+
+        public List<RangeSourceReportRows> _testShippedRangeSourceReportRows = [new(ExcelManager.ShippedSourceCells)];
+
         public static Dictionary<int, List<SKURansomsBalanceDataUnit>>? SkuRansomsBalanceUnits { get; set; }
         public static Dictionary<int, SKU>? Skus { get; set; }
         #endregion

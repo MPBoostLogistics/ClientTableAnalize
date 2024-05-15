@@ -1,11 +1,17 @@
 #nullable enable
 
 using System.Drawing;
+using System.Formats.Tar;
+using System.Linq.Expressions;
+using System.Net.NetworkInformation;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Interfaces;
 using ClientTableAnalizer.Objects.Parsing;
 using ClientTableAnalizer.Objects.SKUItems;
 using OfficeOpenXml;
+using OfficeOpenXml.FormulaParsing.ExcelUtilities;
 using OfficeOpenXml.Style;
 
 namespace ClientTableAnalizer.Objects.Managers
@@ -78,7 +84,7 @@ namespace ClientTableAnalizer.Objects.Managers
         public static List<SourceCell> ShippedSourceCells { get; } = new()
         {
             new(4, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(6, "SKUShippedCount", ParsingTypeCode.IntTypeCode, true)
+            new(28, "SKUShippedCount", ParsingTypeCode.IntTypeCode, true)
         };
 
         public static TargetCell[] MainReportSKUInfoCells { get; } = new TargetCell[]
@@ -285,7 +291,6 @@ namespace ClientTableAnalizer.Objects.Managers
 
             File.WriteAllBytes(path, package.GetAsByteArray());
         }
-
 
         // public double AnalizeReport<T>(SourceSKUReportFileKey reportFileKey, string workSheetName, out List<T>? items, bool isRequred = true)
         // {
@@ -620,58 +625,123 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public static bool GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells, out Dictionary<string, ItemForParsing>? values)
         {
+            values = null;
+
+            if (!CheckingPresenceAddressesInRow(in workSheet, rowIndex, in sourceCells) ||
+                !СheckingValuesInRequiredCells(in workSheet, rowIndex, in sourceCells) ||
+                !FilterMatchingCheck(in workSheet, rowIndex, in sourceCells, out int filterCellsCount) ||
+                !FindSorceCellsByType(in sourceCells, SourceCellsType.NonFiltration, out List<SourceCell>? dataСellsNonFilters) ||
+                dataСellsNonFilters is null ||
+                dataСellsNonFilters!.Count == 0)
+            {
+                return false;
+            }
+
+            // Getting values
             values = new();
-            bool isMatchFilters = true;
-
-            var filterCols = sourceCells
-                .Where(cell => !string.IsNullOrEmpty(cell.FilterString))
-                .Select(cell => (cell.ColIndex, cell.FilterString!.Trim().ToLower()))
-                .ToList();
-
-            // Есть фильтрационные колонки 
-            if (filterCols.Count > 0)
+            foreach (var dataCell in dataСellsNonFilters)
             {
-                foreach (var (colIndex, stringKey) in filterCols)
+                var value = workSheet.Cells[rowIndex, dataCell.ColIndex].Value;
+
+                if (value is null)
                 {
-                    var value = workSheet.Cells[rowIndex, colIndex].Value;
+                    if (dataCell.IsValueRequired)
+                        throw new ArgumentException($"A table cell does not contain a <b>required value</b> for name: '{dataCell.Name}'");
+                    else
+                        value = string.Empty;
+                }
 
-                    if (value is null || string.IsNullOrEmpty(value.ToString()))
-                        throw new ArgumentException($"В ячейке {rowIndex}:{colIndex} нет данных для фильтрации");
+                var valueToString = value.ToString();
+                if (valueToString is not null)
+                    values.Add(dataCell.Name, new(valueToString, dataCell.ParsingTypeCode, !dataCell.IsValueRequired));
+            }
 
-                    if (!IsFilterMatch(stringKey, value))
-                    {
-                        isMatchFilters = false;
-                        break;
-                    }
+            return Equals(values?.Count, sourceCells.Count - filterCellsCount);
+
+        }
+
+        private static bool CheckingPresenceAddressesInRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells)
+        {
+            foreach (var sourceCell in sourceCells)
+            {
+                ExcelRange? address = workSheet.Cells[rowIndex, sourceCell.ColIndex];
+                if (address is null) return false;
+
+                var addressValue = address.Value;
+                if(addressValue is not null && !string.IsNullOrEmpty(addressValue.ToString())) 
+                {
+                    return ParsingRowEntity.Parse(addressValue.ToString()!, sourceCell.ParsingTypeCode, !sourceCell.IsValueRequired, out object? value) && 
+                        value is not null; 
+                }
+                else 
+                {
+                    return false;
                 }
             }
 
-            if (isMatchFilters)
+            return true;
+        }
+
+        private static bool FilterMatchingCheck(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells, out int filterSourceCellsCount)
+        {
+            filterSourceCellsCount = 0;
+
+            if (!FindSorceCellsByType(in sourceCells, SourceCellsType.Filtration, out List<SourceCell>? filterSourceCells)) 
             {
-                var colsForGetValues = sourceCells
-                    .Where(cell => string.IsNullOrEmpty(cell.FilterString))
-                    .ToList();
-
-                foreach (var sourceCell in colsForGetValues)
+                return true;
+            } 
+            else 
+            {
+                filterSourceCellsCount = filterSourceCells!.Count;
+                foreach (var filterSourceCell in filterSourceCells)
                 {
-                    var value = workSheet.Cells[rowIndex, sourceCell.ColIndex].Value;
+                    if (!IsFilterMatch(filterSourceCell.FilterString!, workSheet.Cells[rowIndex, filterSourceCell.ColIndex].Value))
+                        return false;
+                }
+                return true;
+            }
+        }
 
-                    if (value is null)
+        private static bool СheckingValuesInRequiredCells(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells)
+        {
+            if(!FindSorceCellsByType(in sourceCells, SourceCellsType.Required, out List<SourceCell>? requiredCells) && 
+                requiredCells is null || 
+                requiredCells?.Count == 0)
+            {
+                return true;
+            }
+            else 
+            {
+                var requiredCellValues = new List<object>();
+                foreach (var sourceCell in requiredCells!)
+                {
+                    var cell = workSheet.Cells[rowIndex, sourceCell.ColIndex];
+                    var value = cell.Value;
+                    if (cell is null || value is null)
                     {
-                        if (sourceCell.IsValueRequired)
-                            throw new ArgumentException($"В ячейке не представлено обязательно значание для имени {sourceCell.Name}");
-                        else
-                            value = string.Empty;
+                        return false;
+                    } 
+                    else 
+                    {
+                        requiredCellValues.Add(value);
                     }
-
-                    var valueToString = value.ToString();
-                    if (valueToString is not null)
-                        values.Add(sourceCell.Name, new(valueToString, sourceCell.ParsingTypeCode, !sourceCell.IsValueRequired));
                 }
 
+                return requiredCellValues.All(v => v is not null);
             }
+        }
 
-            return Equals(values?.Count, sourceCells.Count - filterCols.Count);
+        private static bool FindSorceCellsByType(in List<SourceCell> sourceCells, SourceCellsType sourceCellsType, out List<SourceCell>? cells)
+        {
+            cells = sourceCellsType switch
+            {
+                SourceCellsType.Required => sourceCells.Where(sc => sc.IsValueRequired).ToList(),
+                SourceCellsType.Filtration => sourceCells.Where(sc => !string.IsNullOrEmpty(sc.FilterString)).ToList(),
+                SourceCellsType.NonFiltration => sourceCells.Where(sc => string.IsNullOrEmpty(sc.FilterString)).ToList(),
+                _ => null,
+            };
+
+            return cells is not null && cells.Any();
         }
 
         /// <summary>

@@ -16,6 +16,7 @@ namespace ClientTableAnalizer.Objects.Managers
         public IRepository<int, SKU> SKUs { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuRansomsBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuRemainingBalanceUnits { get; }
+        public IRepository<int, List<ParsingRowEntity>> SkuShippedBalanceUnits { get; }
 
         /// <summary>
         /// Returns number of SKUs in collection.
@@ -32,6 +33,7 @@ namespace ClientTableAnalizer.Objects.Managers
             SKUs = new SKURepo();
             SkuRansomsBalanceUnits = new ParsingRowEntityRepo();
             SkuRemainingBalanceUnits = new ParsingRowEntityRepo();
+            SkuShippedBalanceUnits = new ParsingRowEntityRepo();
         }
         #endregion
 
@@ -133,6 +135,14 @@ namespace ClientTableAnalizer.Objects.Managers
                     OnManagerReached(new($"Записано артикулов из баланса склада, всего: {skusWithRemainingCount}", 1000, false));
 
                     break;
+                case SourceSKUReportFileKey.Shipped:
+
+                    // Make sku's from ransoms balance units 
+                    var updateShippedTask = UpdateSKUsFromBalanceUnits(reportFileKey);
+                    await Task.Run(async () => await updateShippedTask);
+                    updateShippedTask.Wait();
+
+                    break;
                 default:
                     break;
             };
@@ -153,13 +163,15 @@ namespace ClientTableAnalizer.Objects.Managers
         {
             bool isRansoms = reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ;
             bool isRemaining = reportFileKey == SourceSKUReportFileKey.RemainingWB || reportFileKey == SourceSKUReportFileKey.RemainingOZ;
-
+            bool isShipped = reportFileKey == SourceSKUReportFileKey.Shipped;;
+    
             List<SourceSKUReportFileKey> validKeys = new()
             {
                 SourceSKUReportFileKey.RansomsWB,
                 SourceSKUReportFileKey.RansomsOZ,
                 SourceSKUReportFileKey.RemainingWB,
-                SourceSKUReportFileKey.RemainingOZ
+                SourceSKUReportFileKey.RemainingOZ,
+                SourceSKUReportFileKey.Shipped
             };
 
             if (!validKeys.Contains(reportFileKey))
@@ -200,12 +212,29 @@ namespace ClientTableAnalizer.Objects.Managers
                     
                     SkuRemainingBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
+            } 
+            else if(isShipped) 
+            {
+                var skuRShippedDataUnits = from rowWithRawData in rowsWithRawData
+                                           let unit = new SKUShippedDataUnit(rowWithRawData)
+                                           group unit by unit.SKUNumber 
+                                           into unitGroup  
+                                           select unitGroup;
+                
+                foreach (var group in skuRShippedDataUnits)
+                {
+                    var list = (((List<SKUShippedDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
+                        throw new InvalidCastException("Невозможно привести List<SKUShippedDataUnit> к List<ParsingRowEntity>");
+                    
+                    SkuShippedBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                }
             }
 
             return reportFileKey switch
             {
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => SkuRansomsBalanceUnits.Count(),
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => SkuRemainingBalanceUnits.Count(),
+                SourceSKUReportFileKey.Shipped => SkuShippedBalanceUnits.Count(),
                 _ => 0
             };
         }
@@ -221,10 +250,20 @@ namespace ClientTableAnalizer.Objects.Managers
             bool isOZ = skuReportFileKey == SourceSKUReportFileKey.RansomsOZ || skuReportFileKey == SourceSKUReportFileKey.RemainingOZ;
             bool isRansoms = skuReportFileKey == SourceSKUReportFileKey.RansomsWB || skuReportFileKey == SourceSKUReportFileKey.RansomsOZ;
             bool isRemaining = skuReportFileKey == SourceSKUReportFileKey.RemainingWB || skuReportFileKey == SourceSKUReportFileKey.RemainingOZ;
+            bool isShipped = skuReportFileKey == SourceSKUReportFileKey.Shipped;
 
             // Definition of a marketplace and collection
-            Marketplace marketplace = isWB ? Marketplace.WB : Marketplace.OZ;
-            IRepository<int, List<ParsingRowEntity>>? parsingEntityCollection = isRansoms ? SkuRansomsBalanceUnits : SkuRemainingBalanceUnits;
+            Marketplace marketplace = isWB ? Marketplace.WB : Marketplace.OZ;          
+            IRepository<int, List<ParsingRowEntity>>? parsingEntityCollection = skuReportFileKey switch
+            {
+                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ =>
+                   parsingEntityCollection = SkuRansomsBalanceUnits,
+                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ =>
+                    parsingEntityCollection = SkuRemainingBalanceUnits,
+                SourceSKUReportFileKey.Shipped =>
+                    parsingEntityCollection = SkuShippedBalanceUnits,     
+                _ => parsingEntityCollection = null,
+            };
 
             if (parsingEntityCollection == null || parsingEntityCollection.Count() == 0)
             {
@@ -260,6 +299,15 @@ namespace ClientTableAnalizer.Objects.Managers
                     var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKURemainingBalanceDataUnit>().ToList()) ??
                         throw new InvalidCastException("Невозможно привести коллекцию к IList<SKURemainingBalanceDataUnit>");
 
+                    SKURemainingBalance remainingBalance = new(units.ToList());
+
+                    SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));
+                } 
+                else if(isShipped) 
+                {
+                    var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUShippedDataUnit>().ToList()) ??
+                        throw new InvalidCastException("Невозможно привести коллекцию к IList<SKUShippedDataUnit>");
+                    
                     SKURemainingBalance remainingBalance = new(units.ToList());
 
                     SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));

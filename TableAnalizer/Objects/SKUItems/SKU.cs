@@ -1,7 +1,4 @@
-﻿using System.Data;
-using System.Drawing;
-using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Interfaces;
+﻿using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
 
 namespace ClientTableAnalizer.Objects.SKUItems
@@ -10,14 +7,14 @@ namespace ClientTableAnalizer.Objects.SKUItems
     public class SKU
     {
         #region Properties
-        public Marketplace? Marketplace { get; private set; }
+        public Marketplace Marketplace { get; private set; }
         public int SKUNumber { get; }
         public string SKUBrand { get; private set; }
         public string SKUName { get; private set; }
         public SKURansomsBalance? SKURansomsBalance { get; private set;}
         public SKURemainingBalance? SKURemainingBalance { get; private set;}
-        public double AveragePrice { get; private set;}
-        public DateOnly MaxRansomsDate { get; private set;}
+        public double AveragePrice { get; private set;} = default;
+        public DateOnly MaxRansomsDate { get; private set;} = default;
         public bool IsSKUDeadline => (MaxRansomsDate.ToDateTime(new TimeOnly()) - DateTime.Now).Duration().Days > 14;
         public SellmentStatus SellmentStatus { get; private set; } = new(SKUSellmentStatus.Unknown);
         //public Color FillColor { get; set; } = Color.Empty;

@@ -56,4 +56,11 @@ namespace ClientTableAnalizer.Enums
         SellmentStatus              // 6
     }
 
+    enum SourceCellsType 
+    {
+        Required,
+        Filtration,
+        NonFiltration
+    }
+
 }

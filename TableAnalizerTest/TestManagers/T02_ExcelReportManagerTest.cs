@@ -1,11 +1,12 @@
+using System.Diagnostics;
 using System.Globalization;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Managers;
-using ClientTableAnalizer.Objects.Parsing;
 using ClientTableAnalizer.Objects.SKUItems;
 using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
 using NUnit.Framework.Internal;
 using OfficeOpenXml;
+using OfficeOpenXml.Table;
 
 namespace TableAnalizerTest.Managers
 {
@@ -15,16 +16,13 @@ namespace TableAnalizerTest.Managers
         #region Constants && variables
         private const string Ransoms_Report_List_Name = "Выкупы";
 
-        private List<RangeSourceReportRows> _remainingWBRangeSourceReportRows  = 
-        [
-            new(TestData.RemainingWBSourceCells01, ExcelManager.FIRST_ROOM_NAME), 
-            new(TestData.RemainingWBSourceCells02, ExcelManager.SECOND_ROOM_NAME,(ExcelManager.LAST_MARKER_KEY, ExcelManager.LAST_MARKER_KEY_OFFSET))
-        ];
         private ExcelWorksheet? _ransomsWBWorksheet;
         private ExcelWorksheet? _remainingWBWorksheet;
-        
+        private ExcelWorksheet? _shippedWorksheet;
         private const int REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01 = 1222;
         private const int REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02 = 1190;
+        private const int SHIPPED_RANGE_SOURCEREPORT_ROWSCOUNT = 5188;
+        private const int SHIPPED_RANGE_SOURCEREPORT_SKUSCOUNT = 1228; 
         #endregion
 
         #region Functionality
@@ -34,35 +32,34 @@ namespace TableAnalizerTest.Managers
         {
             var testRansomsWBFilePath = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Отчет по клиенту +79164372997 (WB).xlsx";
             var testRemainingWBilePath = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Юсупов приходы и остатки 220324 (WB).xlsx";
-
+            var testShippedFilePath = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Юсупов расходы 22032024.xlsx";
 
             // act
             ExcelManager.CreateExcelPackage(SourceSKUReportFileKey.RansomsWB, new FileInfo(testRansomsWBFilePath));
             ExcelManager.CreateExcelPackage(SourceSKUReportFileKey.RemainingWB, new FileInfo(testRemainingWBilePath));
+            ExcelManager.CreateExcelPackage(SourceSKUReportFileKey.Shipped, new FileInfo(testShippedFilePath));
 
             ExcelManager.GetExcelPackageByKey(SourceSKUReportFileKey.RansomsWB, out ExcelPackage? testRansomsWBPackage);
             ExcelManager.GetExcelPackageByKey(SourceSKUReportFileKey.RemainingWB, out ExcelPackage? testRemainingWBPackage);
+            ExcelManager.GetExcelPackageByKey(SourceSKUReportFileKey.Shipped, out ExcelPackage? testShippedPackage);
 
             // assert
             Assert.Multiple(() =>
             {
                 Assert.That(testRansomsWBPackage, Is.Not.Null);
                 Assert.That(testRemainingWBPackage, Is.Not.Null);
+                Assert.That(testShippedPackage, Is.Not.Null);
             });
         }
 
         [Test, Order(2)]
-        public void GetRangesSourceReportRows_OneRange_Test()
+        public void GetRansomsRangesSourceReportRows_OneRange_Test()
         {
-            // input test assert
-            Assert.Multiple(() =>
-            {
-                //Assert.That(_testRansomsWBPackage, Is.Not.EqualTo(null));
-                Assert.That(TestData._testRansomsRangeSourceReportRows, Is.Not.Null);
-            });
+            // input assert
+            Assert.That(TestData._testRansomsRangeSourceReportRows, Is.Not.Null);
 
             // arrange
-            ExcelManager.GetExcelWorksheetByName(Ransoms_Report_List_Name, SourceSKUReportFileKey.RansomsWB, out _ransomsWBWorksheet);
+            ExcelManager.GetExcelWorksheetByName(ExcelManager.RANSOMS_WORKSHEET_NAME, SourceSKUReportFileKey.RansomsWB, out _ransomsWBWorksheet);
             ExcelManager.GetRangeSourceReportRows(in _ransomsWBWorksheet!, ref TestData._testRansomsRangeSourceReportRows);
 
             // act
@@ -77,6 +74,27 @@ namespace TableAnalizerTest.Managers
         }
 
         [Test, Order(3)]
+        public void GetShippedRangesSourceReportRows_OneRange_Test() 
+        {
+            // input test assert
+            Assert.That(TestData._testShippedRangeSourceReportRows, Is.Not.Null);
+
+            // arrage
+            ExcelManager.GetExcelWorksheetByName(ExcelManager.REMAINING_WORKSHEET_NAME, SourceSKUReportFileKey.Shipped, out _shippedWorksheet);
+            ExcelManager.GetRangeSourceReportRows(in _shippedWorksheet!, ref TestData._testShippedRangeSourceReportRows);
+
+            IEnumerable<int>? testingRange = Enumerable.Range(2, 6448 - 1);
+
+            // assert
+            Assert.Multiple(() =>
+            {
+                Assert.That(_shippedWorksheet, Is.Not.EqualTo(null));
+                Assert.That(TestData._testShippedRangeSourceReportRows, Is.Not.Null);
+                Assert.That(TestData._testShippedRangeSourceReportRows[0].RowsIndexRange, Is.EqualTo(testingRange));
+            });
+        }
+
+        [Test, Order(4)]
         public void GetRowIndexByStringKey_Test()
         {
             // input test assert
@@ -108,7 +126,7 @@ namespace TableAnalizerTest.Managers
             });
         }
 
-        [Test, Order(4)]
+        [Test, Order(5)]
         public void GetRangesSourceReportRows_ManyRange_Test()
         {
             // input assert 01
@@ -129,7 +147,7 @@ namespace TableAnalizerTest.Managers
             var testingSecondRange = Enumerable.Range(testingSecondRangeFirstIndex, 2428 - testingSecondRangeFirstIndex);  // 1238, 2428 = 1190
 
             // act 
-            ExcelManager.GetRangeSourceReportRows(in _remainingWBWorksheet, ref _remainingWBRangeSourceReportRows);
+            ExcelManager.GetRangeSourceReportRows(in _remainingWBWorksheet, ref TestData._testRemainingWBRangeSourceReportRows!);
 
             // assert 02 
             Assert.Multiple(() =>
@@ -137,15 +155,19 @@ namespace TableAnalizerTest.Managers
                 Assert.That(testingFirstRange.Count(), Is.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01));
                 Assert.That(testingSecondRange.Count(), Is.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02));
 
-                Assert.That(_remainingWBRangeSourceReportRows[0].RowsIndexRange, Is.EqualTo(testingFirstRange));
-                Assert.That(_remainingWBRangeSourceReportRows[0].RowsIndexRange!.Count, Is.EqualTo(testingFirstRange.Count()));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows, Is.Not.Null);
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows![0], Is.Not.Null);
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows![1], Is.Not.Null);
 
-                Assert.That(_remainingWBRangeSourceReportRows[1].RowsIndexRange, Is.EqualTo(testingSecondRange));
-                Assert.That(_remainingWBRangeSourceReportRows[1].RowsIndexRange!.Count, Is.EqualTo(testingSecondRange.Count()));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows[0].RowsIndexRange, Is.EqualTo(testingFirstRange));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows[0].RowsIndexRange!.Count, Is.EqualTo(testingFirstRange.Count()));
+
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows[1].RowsIndexRange, Is.EqualTo(testingSecondRange));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows[1].RowsIndexRange!.Count, Is.EqualTo(testingSecondRange.Count()));
             });
         }
 
-        [Test, Order(5)]
+        [Test, Order(6)]
         public void GetRawDataFromExcelRows_SimpleRange_Test()
         {
             // input assert
@@ -153,6 +175,8 @@ namespace TableAnalizerTest.Managers
             {
                 Assert.That(_ransomsWBWorksheet, Is.Not.Null);
                 Assert.That(TestData._testRansomsRangeSourceReportRows, Is.Not.Null);
+                Assert.That(_shippedWorksheet, Is.Not.Null);
+                Assert.That(TestData._testShippedRangeSourceReportRows, Is.Not.Null);
             });
 
             // arrange
@@ -160,16 +184,23 @@ namespace TableAnalizerTest.Managers
 
             // act
             ExcelManager.GetRawDataFromExcelRows(in _ransomsWBWorksheet, ref TestData._testRansomsRangeSourceReportRows);
+            ExcelManager.GetRawDataFromExcelRows(in _shippedWorksheet, ref TestData._testShippedRangeSourceReportRows);
 
-            // assert
-            Assert.Multiple(() =>
+            foreach (var item in TestData._testShippedRangeSourceReportRows[0].RowsWithRawData)
             {
+                Trace.WriteLine(item);
+            }
+            // assert
+           // Assert.Multiple(() =>
+           // {
                 Assert.That(TestData._testRansomsRangeSourceReportRows, Has.Count.EqualTo(1));
                 Assert.That(TestData._testRansomsRangeSourceReportRows[0].RowsWithRawData, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
-            });
+                Assert.That(TestData._testShippedRangeSourceReportRows, Has.Count.EqualTo(1));
+                Assert.That(TestData._testShippedRangeSourceReportRows[0].RowsWithRawData, Has.Count.EqualTo(SHIPPED_RANGE_SOURCEREPORT_ROWSCOUNT));
+            //});
         }
 
-        [Test, Order(6)]
+        [Test, Order(7)]
         public void GetRawDataFromExcelRows_ManyRange_Test()
         {
             // input assert
@@ -179,18 +210,19 @@ namespace TableAnalizerTest.Managers
             // ...
 
             // act
-            ExcelManager.GetRawDataFromExcelRows(in _remainingWBWorksheet, ref _remainingWBRangeSourceReportRows);
+            ExcelManager.GetRawDataFromExcelRows(in _remainingWBWorksheet, ref TestData._testRemainingWBRangeSourceReportRows!);
 
             // assert
             Assert.Multiple(() =>
             {
-                Assert.That(_remainingWBRangeSourceReportRows, Has.Count.EqualTo(2));
-                Assert.That(_remainingWBRangeSourceReportRows[0]!.RowsWithRawData!, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01));
-                Assert.That(_remainingWBRangeSourceReportRows[1]!.RowsWithRawData!, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02));
+                //TestData._testRemainingWBRangeSourceReportRows[0]
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows, Has.Count.EqualTo(2));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows![0]!.RowsWithRawData!, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows![1]!.RowsWithRawData!, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02));
             });
         }
 
-        [Test, Order(7)]
+        [Test, Order(8)]
         public void SaveSKUBalanceUnits_Test()
         {
             // input assert
@@ -208,7 +240,7 @@ namespace TableAnalizerTest.Managers
             Assert.That(keyCount, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
         }
 
-        [Test, Order(8)]
+        [Test, Order(9)]
         public async Task MakeSKUs_Test()
         {
             // input assert
@@ -227,7 +259,7 @@ namespace TableAnalizerTest.Managers
             Assert.That(_skuManager.SKUsCount, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
         }
 
-        [Test, Order(9)]
+        [Test, Order(10)]
         public void SKURansomsBalances_Test()
         {
             // input assert
@@ -264,7 +296,7 @@ namespace TableAnalizerTest.Managers
             });
         }
 
-        [Test, Order(10)]
+        [Test, Order(11)]
         public void SKUMaxRansomsDate_Test()
         {
             // arrange
@@ -289,7 +321,7 @@ namespace TableAnalizerTest.Managers
 
         }
 
-        [Test, Order(11)]
+        [Test, Order(12)]
         public void GetPropertyValue_Test() 
         {
             // https://code-maze.com/csharp-get-a-value-of-a-property-by-using-its-name/
@@ -299,14 +331,11 @@ namespace TableAnalizerTest.Managers
             int testSku157270554_Number = 157270554;
             Marketplace testSku157270554_Marketplace = Marketplace.WB; 
             string testSku157270554_Name = "No name";
-            string testSku157270554_Brand = "No name";
+            string testSku157270554_Brand = "No brand";
             double testSku157270554_Average = 2000.00;
-            DateOnly testSku157270554_Date = new(2023, 06, 23);;
+            DateOnly testSku157270554_Date = new(2023, 06, 23);
 
-            // Ransoms: total: 30, on way: 0, canceled: 0, delivered: 0, withDrawn: 30 (waiting: 30)
-            //  public SKURansomsBalance SKURansomsBalance { get;  }
 
-    
             // act
             var numberSuccess = _skuManager.TryGetPropertyValue<int,SKU>(testSku,"SKUNumber", out var number);
             var marketplaceSuccess = _skuManager.TryGetPropertyValue<Marketplace,SKU>(testSku,"Marketplace", out var marketplace);
@@ -327,7 +356,7 @@ namespace TableAnalizerTest.Managers
             });
         }
 
-        [Test, Order(12)]
+        [Test, Order(13)]
         public void CreateOutputReport() 
         {
             // input assert 01  

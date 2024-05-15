@@ -134,8 +134,11 @@ namespace ClientTableAnalizer.Objects.Managers
 
                 try
                 {
-                    var clientOutputPath = await Task.Run(DefineDirInfoForClientTargetReports);
-
+                    var clientOutputPathTask = DefineDirInfoForClientTargetReports();
+                    await Task.Run(async() => await clientOutputPathTask);
+                    clientOutputPathTask.Wait();
+                    var clientOutputPath = clientOutputPathTask.Result;
+                    
                     if (!string.IsNullOrEmpty(clientOutputPath))
                     {
                         readinessMessage = string.Concat(readinessMessage, $"Директория для работы с клиентом: {clientOutputPath}");

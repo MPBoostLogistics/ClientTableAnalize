@@ -23,26 +23,32 @@ namespace ClientTableAnalizer.Objects.SKUItems
         public double SKUAveragePrice {get;}
         public DateOnly SKUMaxRansomsDate { get; }    
         public string SKUSellmentStatus { get; }
-        public Color FillColor { get; set;}
+        public Color FillColor { get; set; }
+        public int SKUReceipt { get; }
+        public int SKUShipped { get; }
+        public int SKURemaining { get; }
         #endregion Properties
 
         #region  Constructors
         public SKUOutput(SKU sku)
         {
-            SKUMp = sku.Marketplace?.ToString() ?? String.Empty;
+            SKUMp = sku.Marketplace.ToString();
             SKUNumber = sku.SKUNumber;
             SKUBrand = sku.SKUBrand;
             SKUName = sku.SKUName;
-            SKURansomsTotal = sku.SKURansomsBalance.SKURansomsTotal;
-            SKURansomsWaiting = sku.SKURansomsBalance.SKURansomsWaiting;
-            SKURansomsOnWay = sku.SKURansomsBalance.SKURansomsOnWay;
-            SKURansomsCanceled = sku.SKURansomsBalance.SKURansomsCanceled;
-            SKURansomsDelivered = sku.SKURansomsBalance.SKURansomsDelivered;
-            SKURansomsWithDrawn = sku.SKURansomsBalance.SKURansomsWithDrawn;
+            SKURansomsTotal = sku.SKURansomsBalance is not null ?  sku.SKURansomsBalance.SKURansomsTotal : 0;
+            SKURansomsWaiting = sku.SKURansomsBalance is not null ? sku.SKURansomsBalance.SKURansomsWaiting : 0;
+            SKURansomsOnWay = sku.SKURansomsBalance is not null ? sku.SKURansomsBalance.SKURansomsOnWay : 0;
+            SKURansomsCanceled = sku.SKURansomsBalance is not null ? sku.SKURansomsBalance.SKURansomsCanceled : 0;
+            SKURansomsDelivered = sku.SKURansomsBalance is not null ? sku.SKURansomsBalance.SKURansomsDelivered : 0;
+            SKURansomsWithDrawn = sku.SKURansomsBalance is not null ? sku.SKURansomsBalance.SKURansomsWithDrawn : 0;
             SKUAveragePrice = sku.AveragePrice;
             SKUMaxRansomsDate = sku.MaxRansomsDate;
             SKUSellmentStatus = sku.SellmentStatus.ToString()!;
             FillColor = sku.SellmentStatus.StatusColor;
+            SKUReceipt = sku.SKURemainingBalance is not null ? sku.SKURemainingBalance.SKUReceipt : 0;
+            SKUShipped = sku.SKURemainingBalance is not null ? sku.SKURemainingBalance.SKUShipped : 0;
+            SKURemaining = sku.SKURemainingBalance is not null ? sku.SKURemainingBalance.SKURemaining : 0;
         }
         #endregion Constructors
     }

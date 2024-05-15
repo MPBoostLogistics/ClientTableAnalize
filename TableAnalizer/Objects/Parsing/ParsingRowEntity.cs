@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Interfaces;
+using ClientTableAnalizer.Objects.SKUItems;
 
 namespace ClientTableAnalizer.Objects.Parsing
 {
@@ -68,7 +70,6 @@ namespace ClientTableAnalizer.Objects.Parsing
 
         private void ParseValue(in KeyValuePair<string, ItemForParsing> element, ref PropertyInfo property)
         {
-            Type targetType = property.PropertyType;
 
             string? elementValueString = element.Value.Value;
             bool isMaybeNullable = element.Value.IsMaybeNullable;
@@ -85,84 +86,96 @@ namespace ClientTableAnalizer.Objects.Parsing
                 elementValueString = elementValueString.Trim();
             }
 
-
-            switch (element.Value.TypeCode)
+            if(Parse(elementValueString, element.Value.TypeCode, isMaybeNullable, out object? value) 
+                && value is not null) 
             {
-                case ParsingTypeCode.DoubleTypeCode:
+                switch (element.Value.TypeCode)
+                {
+                    case ParsingTypeCode.DoubleTypeCode:
+                        property.SetValue(this, (double)value);
+                        break;
 
-                    var elementDoubleValueString = elementValueString;
-                    if (isMaybeNullable && string.IsNullOrEmpty(elementDoubleValueString))
-                    {
-                        property.SetValue(this, 0.00);
-                    }
-                    else
-                    {
-                        if (elementValueString.Split(SPACE_SEPARATOR).Length == 2)
-                            elementDoubleValueString = elementValueString.Split(SPACE_SEPARATOR)[0];
+                    case ParsingTypeCode.IntTypeCode:
+                        property.SetValue(this, (int)value);
+                        break;
 
-                        if (!double.TryParse(elementDoubleValueString, out double doubleValue))
-                            ThrowExceptionCast(element.Key, elementDoubleValueString, targetType);
+                    //22.03.2024 14:00
+                    case ParsingTypeCode.DataOnlyTypeCode:
+                        property.SetValue(this, (DateOnly)value);
+                        break;
 
-                        property.SetValue(this, doubleValue);
-                    }
+                    case ParsingTypeCode.StringTypeCode:
+                        property.SetValue(this, (string)value);
+                        break;
 
-                    break;
+                    case ParsingTypeCode.SKURansomsStatus:
+                        property.SetValue(this, (SKURansomsStatus)value);
+                        break;
+                }
 
+            }
+        }
+
+        public static bool Parse(string valueString, ParsingTypeCode parsingTypeCode, bool isMaybeNullable,  out object? value) 
+        {
+            value = null;
+
+            switch (parsingTypeCode)
+            {
                 case ParsingTypeCode.IntTypeCode:
 
-                    var elementIntValueString = elementValueString;
-                    if (isMaybeNullable && string.IsNullOrEmpty(elementIntValueString))
+                    if (isMaybeNullable && string.IsNullOrEmpty(valueString))
                     {
-                        property.SetValue(this, 0);
+                        value = 0;
                     }
                     else
                     {
-                        if (!int.TryParse(elementIntValueString, out int intValue))
-                            ThrowExceptionCast(element.Key, elementValueString, targetType);
-
-                        property.SetValue(this, intValue);
+                        value = int.TryParse(valueString, out int intValue) ? intValue : null;
                     }
-
                     break;
 
-                //22.03.2024 14:00
-                case ParsingTypeCode.DataOnlyTypeCode:
+                case ParsingTypeCode.DoubleTypeCode:
 
-                    var elementDateValueString = elementValueString;
-
-                    if (isMaybeNullable && string.IsNullOrEmpty(elementDateValueString))
+                    if (isMaybeNullable && string.IsNullOrEmpty(valueString))
                     {
-                        property.SetValue(this, new DateOnly(0001, 01, 01));
+                        value = 0.00;
                     }
                     else
                     {
-                        if (!DateOnly.TryParseExact(elementValueString, IParsingRowEntity.DateOnlyFormats.ToArray(), out DateOnly dateOnlyValue))
-                            ThrowExceptionCast(element.Key, elementValueString, targetType);
+                        if (valueString.Split(SPACE_SEPARATOR).Length == 2)
+                            valueString = valueString.Split(SPACE_SEPARATOR)[0];
 
-                        property.SetValue(this, dateOnlyValue);
+                        value = double.TryParse(valueString, out double doubleValue) ? doubleValue : null;
                     }
+                    break;
 
+                case ParsingTypeCode.DataOnlyTypeCode:
+
+                    if (isMaybeNullable && string.IsNullOrEmpty(valueString))
+                    {
+                        value = new DateOnly(0001, 01, 01);
+                    }
+                    else
+                    {
+                        value = DateOnly.TryParseExact(valueString, IParsingRowEntity.DateOnlyFormats.ToArray(), out DateOnly dateOnlyValue) ? dateOnlyValue : null;
+                    }
                     break;
 
                 case ParsingTypeCode.StringTypeCode:
 
-                    if (isMaybeNullable && string.IsNullOrEmpty(elementValueString))
+                    if (isMaybeNullable && string.IsNullOrEmpty(valueString))
                     {
-                        property.SetValue(this, String.Empty);
+                        value = String.Empty;
                     }
                     else
                     {
-                        if (elementValueString is null)
-                            ThrowExceptionCast(element.Key, elementValueString ?? " ", targetType);
-
-                        property.SetValue(this, elementValueString);
+                        value = valueString is not null ? valueString!.Trim() : null;
                     }
-
                     break;
 
                 case ParsingTypeCode.SKURansomsStatus:
 
-                    var skuRansomsStatus = elementValueString switch
+                    value = valueString switch
                     {
                         "Доставлен на ПВЗ" => SKURansomsStatus.Delivered,
                         "Забран с ПВЗ" => SKURansomsStatus.WithDrawn,
@@ -171,10 +184,23 @@ namespace ClientTableAnalizer.Objects.Parsing
                         _ => throw new NotImplementedException()
                     };
 
-                    property.SetValue(this, skuRansomsStatus);
-
                     break;
+
+                case ParsingTypeCode.Marketplace:
+
+                    value = valueString switch
+                    {
+                        "WB" or "Wb" or "Wildberries" => Marketplace.WB,
+                        "Oz" or "OZ" or "Ozon" => Marketplace.OZ,
+                        _ => throw new NotImplementedException(),
+                    };
+                    break;
+
+                default:
+                    throw new NotImplementedException();
             }
+
+            return value is not null;
         }
 
         #endregion
