@@ -31,9 +31,8 @@ namespace ClientTableAnalizer.Enums
         RansomsOZ,          // выкупы OZ
         RemainingWB,        // приходы и остатки WB
         RemainingOZ,        // приходы и остатки OZ
-        Shortages,          // недостачи 
-        WriteOffShortages,  // списание нелдостач общее 
-        ReGrades,           // пересорты
+        WriteOffShortages,  // списание недростач общее 
+        Additional,          // недостачи, пересорты и пустышки
         Shipped             // расходы товаром 
     }
 

@@ -72,7 +72,7 @@ namespace TableAnalizerTest.Managers
             // assert
             Assert.Multiple(() =>
             {
-                Assert.That(_fileManager.ReportsPaths, Has.Count.EqualTo(8));
+                Assert.That(_fileManager.ReportsPaths, Has.Count.EqualTo(7));
                 Assert.That(succsess, Is.EqualTo(true));
                 Assert.That(_fileManager.ClientLogin, Is.EqualTo("79164372997"));
                 Assert.That(_fileManager.DefineDirInfoForClientTargetReports, Is.Not.EqualTo(null));

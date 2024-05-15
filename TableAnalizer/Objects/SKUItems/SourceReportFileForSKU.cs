@@ -7,13 +7,12 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #region Constants and variables
         const string spaceSeparator = "\u0020";
         const string comaSeparator = "\u002E";
-        const string shortagesKey = "недостачи";
         const string writeOffShortagesKey = "списание";
         const string reGradesKey = "пересорты";
         const string shippedKey = "расходы";
         const string receivedRemainingKey = "приходы";
         const string redemtionKey = "отчет";
-
+        const string additionalKey ="дополнительный";
         const string wbKey = "(wb)";
         const string ozKey = "(ozon)";
         #endregion 
@@ -37,16 +36,15 @@ namespace ClientTableAnalizer.Objects.SKUItems
             {
                 // Отчет по клиенту +79164372997 (WB).xlsx       5
                 // Отчет по клиенту +79164372997 (Ozon).xlsx     5
-                // Юсупов недостачи 170124.xlsx                // 3
-                // Общее списание 230124.xlsx                  // 3
-                // Юсупов пересорты 130324.xlsx                // 3
-                // Юсупов расходы 22032024.xlsx                // 3
+                // Общее списание 230124.xlsx                    3
+                // Юсупов расходы 22032024.xlsx                  3
+                // Юсупов дополнительный 220224.xlsx             3
 
-                // Юсупов приходы и остатки 220324 (WB).xlsx   // 6
-                // Юсупов приходы и остатки 220324 (OZ).xlsx   // 6
+                // Юсупов приходы и остатки 220324 (WB).xlsx     6
+                // Юсупов приходы и остатки 220324 (OZ).xlsx     6
 
-                // Отчет по клиенту +79164372997 (WB).xlsx     // 5
-                // Юсупов приходы и остатки 220324 (OZ).xlsx   // 5
+                // Отчет по клиенту +79164372997 (WB).xlsx       5
+                // Юсупов приходы и остатки 220324 (OZ).xlsx     5
 
                 int keyIndex = substrings.Length == 3 || substrings.Length == 6 ? 1 : 0;
                 keyString = substrings[keyIndex].TrimStart().TrimEnd().ToLower();
@@ -54,18 +52,13 @@ namespace ClientTableAnalizer.Objects.SKUItems
                 switch (keyString)
                 {
                     // недостачи
-                    case shortagesKey:
-                        ReportKey = SourceSKUReportFileKey.Shortages;
+                    case additionalKey:
+                        ReportKey = SourceSKUReportFileKey.Additional;
                         break;
 
                     // списание
                     case writeOffShortagesKey:
                         ReportKey = SourceSKUReportFileKey.WriteOffShortages;
-                        break;
-
-                    // пересорты
-                    case reGradesKey:
-                        ReportKey = SourceSKUReportFileKey.ReGrades;
                         break;
 
                     // расходы

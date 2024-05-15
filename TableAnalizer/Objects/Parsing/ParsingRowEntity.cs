@@ -1,9 +1,7 @@
 using System.Diagnostics;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Interfaces;
-using ClientTableAnalizer.Objects.SKUItems;
 
 namespace ClientTableAnalizer.Objects.Parsing
 {

@@ -258,24 +258,14 @@ namespace ClientTableAnalizer.Objects.Managers
                 existingKeys.Add(SourceSKUReportFileKey.Shipped);
             }
 
-            // ReGrades (пересорты)
-            if(!ReportsPaths.ContainsKey(SourceSKUReportFileKey.ReGrades)) 
+            // Дополнительные отчеты (недостачи, пересорты и пустышки)
+            if(!ReportsPaths.ContainsKey(SourceSKUReportFileKey.Additional)) 
             {
-                lostKeys.Add(SourceSKUReportFileKey.ReGrades);
+                lostKeys.Add(SourceSKUReportFileKey.Additional);
             } 
             else 
             {
-                existingKeys.Add(SourceSKUReportFileKey.ReGrades);
-            }
-
-            // Shortages (недостачи)
-            if(!ReportsPaths.ContainsKey(SourceSKUReportFileKey.Shortages)) 
-            {
-                lostKeys.Add(SourceSKUReportFileKey.Shortages);
-            } 
-            else 
-            {
-                existingKeys.Add(SourceSKUReportFileKey.Shortages);
+                existingKeys.Add(SourceSKUReportFileKey.Additional);
             }
 
             // WriteOffShortages (cписание недостач)

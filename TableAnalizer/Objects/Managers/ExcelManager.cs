@@ -1,17 +1,11 @@
 #nullable enable
 
 using System.Drawing;
-using System.Formats.Tar;
-using System.Linq.Expressions;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Interfaces;
 using ClientTableAnalizer.Objects.Parsing;
 using ClientTableAnalizer.Objects.SKUItems;
 using OfficeOpenXml;
-using OfficeOpenXml.FormulaParsing.ExcelUtilities;
 using OfficeOpenXml.Style;
 
 namespace ClientTableAnalizer.Objects.Managers
@@ -24,6 +18,9 @@ namespace ClientTableAnalizer.Objects.Managers
         public const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
         public const int LAST_MARKER_KEY_OFFSET = 2;
         public const string OUTPUT_REPORT_WORKSHEET01_NAME = "Отчет";
+        public const string SHORTAGES_REPORT_WORKSHEET01_NAME = "Недостачи";
+        public const string RESORTS_REPORT_WORKSHEET01_NAME = "Пересорты";
+        public const string DUMMIES_REPORT_WORKSHEET01_NAME = "Пустышки";
         public const string RANSOMS_WORKSHEET_NAME = "Выкупы";
         public const string REMAINING_WORKSHEET_NAME = "TDSheet";
         private const int DEFAULT_TABLE_ROW_HEIGHT = 18;
