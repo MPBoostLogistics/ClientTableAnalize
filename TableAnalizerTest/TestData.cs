@@ -29,7 +29,7 @@ namespace TableAnalizerTest
 
         public List<RangeSourceReportRows> _testShortagesRangeSourceReportRows = 
         [
-            new(ExcelManager.ShortagesSourceCells)
+            new(ExcelManager.CompensationSourceCells)
         ];
 
         public List<RangeSourceReportRows> _testResortRangeSourceReportRows = 

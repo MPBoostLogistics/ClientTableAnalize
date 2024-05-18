@@ -18,7 +18,7 @@ namespace ClientTableAnalizer.Objects.Managers
         public const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
         public const int LAST_MARKER_KEY_OFFSET = 2;
         public const string OUTPUT_REPORT_WORKSHEET01_NAME = "Отчет";
-        public const string SHORTAGES_REPORT_WORKSHEET_NAME = "Недостачи";
+        public const string COMPENSATION_REPORT_WORKSHEET_NAME = "Недостачи";
         public const string RESORTS_REPORT_WORKSHEET_NAME = "Пересорты";
         public const string DUMMIES_REPORT_WORKSHEET_NAME = "Пустышки";
         public const string RANSOMS_WORKSHEET_NAME = "Выкупы";
@@ -84,12 +84,12 @@ namespace ClientTableAnalizer.Objects.Managers
             new(28, "SKUShippedCount", ParsingTypeCode.IntTypeCode, true)
         };
 
-        public static List<SourceCell> ShortagesSourceCells { get; } = new()
+        public static List<SourceCell> CompensationSourceCells { get; } = new()
         {
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(2, "ShortagesCount", ParsingTypeCode.IntTypeCode, true),
-            new(3, "ShortagesSum", ParsingTypeCode.IntTypeCode, true),
-            new(4, "ShortagesComment", ParsingTypeCode.StringTypeCode, false)
+            new(2, "CompensationCount", ParsingTypeCode.IntTypeCode, true),
+            new(3, "CompensationSum", ParsingTypeCode.DoubleTypeCode, true),
+            new(4, "CompensationComment", ParsingTypeCode.StringTypeCode, false)
         };
 
         public static List<SourceCell> ResortSourceCells { get; } = new()
@@ -236,7 +236,7 @@ namespace ClientTableAnalizer.Objects.Managers
                     workSheetNames.Add(REMAINING_WORKSHEET_NAME);
                     break;
                 case SourceSKUReportFileKey.Additional:
-                    workSheetNames.Add(SHORTAGES_REPORT_WORKSHEET_NAME);
+                    workSheetNames.Add(COMPENSATION_REPORT_WORKSHEET_NAME);
                     workSheetNames.Add(RESORTS_REPORT_WORKSHEET_NAME);
                     workSheetNames.Add(DUMMIES_REPORT_WORKSHEET_NAME);
                     break;
@@ -812,7 +812,7 @@ namespace ClientTableAnalizer.Objects.Managers
                                                      new(RemainingSourceCells02, SECOND_ROOM_NAME,(LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))},
                 SourceSKUReportFileKey.Additional => workSheetName switch
                 {
-                    SHORTAGES_REPORT_WORKSHEET_NAME => new(1) { new(ShortagesSourceCells) },
+                    COMPENSATION_REPORT_WORKSHEET_NAME => new(1) { new(CompensationSourceCells) },
                     RESORTS_REPORT_WORKSHEET_NAME => new(1) { new(ResortSourceCells) },
                     DUMMIES_REPORT_WORKSHEET_NAME => new(1) { new(DummiesSourceCells) },
                     _ => new(),
@@ -824,14 +824,14 @@ namespace ClientTableAnalizer.Objects.Managers
             return rangeSourceReportRows.Any();
         }
 
-    /// <summary>
-    /// Gets row ranges in an Excel worksheet.
-    /// </summary>
-    /// <param name="worksheet">Excel worksheet.</param>
-    /// <param name="rangeSource">Range prototypes.</param>
-    /// <param name="startRangeRowIndex">Start index.</param>
-    /// <remarks><i>New version, tested</i></remarks>
-    public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSource, int startRangeRowIndex = 1)
+        /// <summary>
+        /// Gets row ranges in an Excel worksheet.
+        /// </summary>
+        /// <param name="worksheet">Excel worksheet.</param>
+        /// <param name="rangeSource">Range prototypes.</param>
+        /// <param name="startRangeRowIndex">Start index.</param>
+        /// <remarks><i>New version, tested</i></remarks>
+        public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSource, int startRangeRowIndex = 1)
         {
             Exception missingStringKeyExc = new("Указание строкового ключа для диапазона обязательно");
             Exception missingIntIndexExc = new("Индекс строки по указанному ключу не был найден.");

@@ -44,9 +44,9 @@ namespace ClientTableAnalizer.Enums
         RemainingOZ,        // приходы и остатки OZ
         Shipped,            // расходы товаром 
         WriteOffShortages,  // списание недростач общее 
-        Shortage,            // недостачи
-        Resort,              // пересорты
-        Dummies              // пустышки  
+        Compensation,       // оплаченные недостачи
+        Resort,             // пересорты
+        Dummies             // пустышки  
     }
 
     public enum SKURansomsStatus

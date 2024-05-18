@@ -13,7 +13,7 @@ namespace ClientTableAnalizer.Objects.Repositories
             {
                 SKU? newValue = null;
 
-                Marketplace skuMarketplace = retrievedValue.Marketplace;
+                Marketplace? skuMarketplace = retrievedValue.Marketplace;
                 int skuNumber = retrievedValue.SKUNumber;
                 double skuPrice = retrievedValue.AveragePrice != default ? retrievedValue.AveragePrice : item.AveragePrice != default ? item.AveragePrice : default;
                 DateOnly skuDate =  retrievedValue.MaxRansomsDate != default ? retrievedValue.MaxRansomsDate : item.MaxRansomsDate != default ? item.MaxRansomsDate : default;
@@ -23,6 +23,8 @@ namespace ClientTableAnalizer.Objects.Repositories
 
                 bool isNewRemainingBalance = item.SKURemainingBalance is not null;
                 bool isOldRemainingBalance = retrievedValue.SKURemainingBalance is not null;
+
+                bool isNewShortageBalance = item.SKUShortageBalance is not null;
 
                 // Update by SKURansomsBalance
                 if(isNewRansomsBalance && !isOldRansomsBalance && !isNewRemainingBalance) 
@@ -81,6 +83,12 @@ namespace ClientTableAnalizer.Objects.Repositories
                         }
                     }
                 }
+
+                // Update by SKUShortageBalance
+                if(isNewShortageBalance) 
+                {
+                    newValue?.Update(item.SKUShortageBalance!);
+                } 
 
                 return newValue is not null && Entiies.TryUpdate(id, newValue, retrievedValue);
             }

@@ -1,5 +1,3 @@
-using ClientTableAnalizer.Enums;
-
 namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
 {
     /// <summary>
@@ -65,13 +63,13 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
             SKURemaining = skuRemainingUnits
                 .Aggregate(0, (acc, unit) => acc + unit.SKURemaining);
         }
-
+        
         public void Update(List<SKUShippedDataUnit> skuShippedDataUnits) 
         {
             SKUShipped = skuShippedDataUnits
                 .Aggregate(0, (acc, unit) => acc + unit.SKUShippedCount);
         }
-
+        
         public bool Equals(SKURemainingBalance? other) =>
             SKUNumber == other?.SKUNumber;
 
@@ -83,7 +81,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
             return Equals((SKURansomsBalance)other);
         }
 
-        public override int GetHashCode() => new Guid().GetHashCode();
+        public override int GetHashCode() => SKUNumber.GetHashCode();
 
         #endregion Functionality
     }

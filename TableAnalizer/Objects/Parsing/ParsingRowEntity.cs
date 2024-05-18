@@ -87,30 +87,32 @@ namespace ClientTableAnalizer.Objects.Parsing
             if(Parse(elementValueString, element.Value.TypeCode, isMaybeNullable, out object? value) 
                 && value is not null) 
             {
-                switch (element.Value.TypeCode)
+                if(property.CanWrite) 
                 {
-                    case ParsingTypeCode.DoubleTypeCode:
-                        property.SetValue(this, (double)value);
-                        break;
+                    switch (element.Value.TypeCode)
+                    {
+                        case ParsingTypeCode.DoubleTypeCode:
+                            property.SetValue(this, (double)value);
+                            break;
 
-                    case ParsingTypeCode.IntTypeCode:
-                        property.SetValue(this, (int)value);
-                        break;
+                        case ParsingTypeCode.IntTypeCode:
+                            property.SetValue(this, (int)value);
+                            break;
 
-                    //22.03.2024 14:00
-                    case ParsingTypeCode.DataOnlyTypeCode:
-                        property.SetValue(this, (DateOnly)value);
-                        break;
+                        //22.03.2024 14:00
+                        case ParsingTypeCode.DataOnlyTypeCode:
+                            property.SetValue(this, (DateOnly)value);
+                            break;
 
-                    case ParsingTypeCode.StringTypeCode:
-                        property.SetValue(this, (string)value);
-                        break;
+                        case ParsingTypeCode.StringTypeCode:
+                            property.SetValue(this, (string)value);
+                            break;
 
-                    case ParsingTypeCode.SKURansomsStatus:
-                        property.SetValue(this, (SKURansomsStatus)value);
-                        break;
+                        case ParsingTypeCode.SKURansomsStatus:
+                            property.SetValue(this, (SKURansomsStatus)value);
+                            break;
+                    }
                 }
-
             }
         }
 

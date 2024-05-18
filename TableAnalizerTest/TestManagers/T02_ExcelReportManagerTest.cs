@@ -231,7 +231,7 @@ namespace TableAnalizerTest.Managers
             //...
 
             // act
-            var keyCount = _skuManager.SaveSKUBalanceUnits(SourceSKUReportFileKey.RansomsWB,TestData._testRansomsRangeSourceReportRows[0].RowsWithRawData);
+            var keyCount = _skuManager.SaveSKUBalanceUnits(SourceSKUReportFileKey.RansomsWB, ExcelManager.RANSOMS_WORKSHEET_NAME, TestData._testRansomsRangeSourceReportRows[0].RowsWithRawData);
 
             // assert
             Assert.That(keyCount, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
@@ -248,7 +248,7 @@ namespace TableAnalizerTest.Managers
             // ... 
 
             // act
-            var task = _skuManager.UpdateSKUsFromBalanceUnits(SourceSKUReportFileKey.RansomsWB);
+            var task = _skuManager.UpdateSKUsFromBalanceUnits(SourceSKUReportFileKey.RansomsWB, ExcelManager.RANSOMS_WORKSHEET_NAME);
             await Task.Run(async () => await task);
             task.Wait();
 

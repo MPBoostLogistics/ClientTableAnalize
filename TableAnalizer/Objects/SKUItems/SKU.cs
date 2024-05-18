@@ -7,12 +7,13 @@ namespace ClientTableAnalizer.Objects.SKUItems
     public class SKU
     {
         #region Properties
-        public Marketplace Marketplace { get; private set; }
+        public Marketplace? Marketplace { get; private set; }
         public int SKUNumber { get; }
-        public string SKUBrand { get; private set; }
-        public string SKUName { get; private set; }
+        public string SKUBrand { get; private set; } = string.Empty;
+        public string SKUName { get; private set; } = string.Empty;
         public SKURansomsBalance? SKURansomsBalance { get; private set;}
         public SKURemainingBalance? SKURemainingBalance { get; private set;}
+        public SKUCompensationBalance? SKUShortageBalance { get; private set; }
         public double AveragePrice { get; private set;} = default;
         public DateOnly MaxRansomsDate { get; private set;} = default;
         public bool IsSKUDeadline => (MaxRansomsDate.ToDateTime(new TimeOnly()) - DateTime.Now).Duration().Days > 14;
@@ -34,7 +35,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #endregion
 
         #region Constructors && destructors
-        public SKU(Marketplace marketplace, int skuNumber, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate)
+        public SKU(Marketplace? marketplace, int skuNumber, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate)
         {
             SKUNumber = skuNumber;
             SKUBrand = string.IsNullOrEmpty(SKUBrand) ? "No brand" : SKUBrand; 
@@ -43,7 +44,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
             Update(marketplace, skuRansomsBalance, averagePrice, maxRansomsDate);
         }
 
-        public SKU(Marketplace marketplace, int skuNumber, SKURemainingBalance skuRansomsBalance)
+        public SKU(Marketplace? marketplace, int skuNumber, SKURemainingBalance skuRansomsBalance)
         {
             Marketplace = marketplace;
             SKUNumber = skuNumber;
@@ -51,6 +52,12 @@ namespace ClientTableAnalizer.Objects.SKUItems
             SKUName = string.IsNullOrEmpty(SKUName) ? "No name" : SKUName; 
 
             Update(skuRansomsBalance);
+        }
+
+        public SKU(int skuNumber, SKUCompensationBalance skuShortageBalance) 
+        {
+            SKUNumber = skuNumber;
+            SKUShortageBalance = skuShortageBalance;
         }
 
         public override string ToString() =>
@@ -62,7 +69,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
         public SKUOutput GetSKUOutput => new(this);
 
-        public void Update(Marketplace marketplace, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate) 
+        public void Update(Marketplace? marketplace, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate) 
         {
             Marketplace = marketplace;
             SKURansomsBalance = skuRansomsBalance;
@@ -83,6 +90,18 @@ namespace ClientTableAnalizer.Objects.SKUItems
             {
                 SKUBrand = items.First().Trim();
                 SKUName = items.Last().Trim();
+            }
+        }
+
+        public void Update(SKUCompensationBalance skuShortageBalance) 
+        {
+            if(SKUShortageBalance is null) 
+            {
+                SKUShortageBalance = skuShortageBalance;
+            } 
+            else 
+            {
+                SKUShortageBalance.Update(skuShortageBalance.Count, skuShortageBalance.Sum, skuShortageBalance.Comments);
             }
         }
 
