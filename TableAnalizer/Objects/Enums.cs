@@ -36,6 +36,19 @@ namespace ClientTableAnalizer.Enums
         Shipped             // расходы товаром 
     }
 
+    public enum SourceSKUReportKey
+    {
+        RansomsWB,          // выкупы WB
+        RansomsOZ,          // выкупы OZ
+        RemainingWB,        // приходы и остатки WB
+        RemainingOZ,        // приходы и остатки OZ
+        Shipped,            // расходы товаром 
+        WriteOffShortages,  // списание недростач общее 
+        Shortage,            // недостачи
+        Resort,              // пересорты
+        Dummies              // пустышки  
+    }
+
     public enum SKURansomsStatus
     {
         Delivered,  // Доставлен на ПВЗ

@@ -6,7 +6,6 @@ using ClientTableAnalizer.Objects.SKUItems;
 using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
 using NUnit.Framework.Internal;
 using OfficeOpenXml;
-using OfficeOpenXml.Table;
 
 namespace TableAnalizerTest.Managers
 {
@@ -14,8 +13,6 @@ namespace TableAnalizerTest.Managers
     public class T02_ExcelReportManagerTest : BaseTests
     {
         #region Constants && variables
-        private const string Ransoms_Report_List_Name = "Выкупы";
-
         private ExcelWorksheet? _ransomsWBWorksheet;
         private ExcelWorksheet? _remainingWBWorksheet;
         private ExcelWorksheet? _shippedWorksheet;
@@ -357,6 +354,24 @@ namespace TableAnalizerTest.Managers
         }
 
         [Test, Order(13)]
+        public void GetShortagesSKU_Test() 
+        {
+            // Создать Package - ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
+        }
+
+        [Test, Order(14)]
+        public void GetResortSKU_Test() 
+        {
+            
+        }
+
+        [Test, Order(15)]
+        public void GetDummiesSKU_Test() 
+        {
+            
+        }
+
+        [Test, Order(16)]
         public void CreateOutputReport() 
         {
             // input assert 01  

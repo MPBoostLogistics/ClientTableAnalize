@@ -2,7 +2,6 @@ using System.Diagnostics;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Managers;
 using ClientTableAnalizer.Objects.SKUItems;
-using OfficeOpenXml;
 
 namespace TableAnalizerTest.Managers
 {
@@ -16,7 +15,6 @@ namespace TableAnalizerTest.Managers
         protected static SKUManager _skuManager;
         protected FileManager _fileManager;
         protected const string SPACE_SEPARATOR = "\u0020";
-        
         protected const int TEST_FILEINFOS_COUNT = 7;
         protected IEnumerable<FileInfo>? testFileInfos;
         protected readonly Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> testReportFilesForSKU = [];

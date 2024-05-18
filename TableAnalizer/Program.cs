@@ -199,7 +199,9 @@ internal class Program
                 reportFileKey == SourceSKUReportFileKey.RansomsOZ ||
                 reportFileKey == SourceSKUReportFileKey.RemainingWB ||
                 reportFileKey == SourceSKUReportFileKey.RemainingOZ || 
-                reportFileKey == SourceSKUReportFileKey.Shipped)
+                reportFileKey == SourceSKUReportFileKey.Shipped ||
+                reportFileKey == SourceSKUReportFileKey.Additional
+            )
             {
                 // Make ExcelPackage
                 ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);

@@ -57,95 +57,118 @@ namespace ClientTableAnalizer.Objects.Managers
             // Start
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-            string workSheetName = reportFileKey switch
+            // Get names of source excel worksheet by report file key
+            if(ExcelManager.GetExcelWorksheetsByKey(reportFileKey, out List<string> workSheetNames)) 
             {
-                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => ExcelManager.RANSOMS_WORKSHEET_NAME,
-                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped => ExcelManager.REMAINING_WORKSHEET_NAME,
-                _ => String.Empty,
-            };
+                foreach (var workSheetName in workSheetNames!)
+                {
+                    // Get source excel worksheet by name
+                    ExcelManager.GetExcelWorksheetByName(workSheetName, reportFileKey, out ExcelWorksheet? currentWorksheet);
+                    if (currentWorksheet is null)
+                    {
+                        await Task.Delay(100);
+                        OnManagerReached(new($"There is no worksheet named '{workSheetName}' in workbook file at key {reportFileKey}.", 2000, true));
+                        return StopFuctionExecuting(ref stopwatch);
+                    }
 
-            // Get source excel worksheet by name
-            ExcelManager.GetExcelWorksheetByName(workSheetName, reportFileKey, out ExcelWorksheet? currentWorksheet);
-            if (currentWorksheet is null)
-            {
-                await Task.Delay(100);
-                OnManagerReached(new($"В файле книги по ключу {reportFileKey} нет листа с именем {ExcelManager.RANSOMS_WORKSHEET_NAME}", 2000, true));
-                return StopFuctionExecuting(ref stopwatch);
+                
+                    // Get ranges from source excel worksheet
+                    if (ExcelManager.MakeRangeSourceReportRowsByKey(reportFileKey, workSheetName, out List<RangeSourceReportRows> rangeSourceReportRows)) 
+                    {
+                        // Get row ranges in source excel worksheet 
+                        ExcelManager.GetRangeSourceReportRows(in currentWorksheet, ref rangeSourceReportRows);
+
+                        // Get raw data from cells in source excel worksheet 
+                        ExcelManager.GetRawDataFromExcelRows(in currentWorksheet, ref rangeSourceReportRows);
+
+                        // Union collections
+                        List<Dictionary<string, ItemForParsing>> rawRowsItems = new() { };
+                        foreach (var sourceReportRowsRange in rangeSourceReportRows)
+                        {
+                            sourceReportRowsRange.RowsWithRawData.ForEach(rawRowsItems.Add);
+                        }
+                        
+                        // Processings:
+                        switch (reportFileKey)
+                        {
+                            // Ransoms processing:
+                            case SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ:
+
+                                // Save balances for sku's
+                                SaveSKUBalanceUnits(reportFileKey, rawRowsItems);
+
+                                // Make sku's from ransoms balance units 
+                                var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey);
+                                await Task.Run(async () => await makeSKUsTask);
+                                makeSKUsTask.Wait();
+
+                                // Report
+                                static bool FindSkusWithRansoms(SKU sku) => sku.SKURansomsBalance != null;
+                                var skusWithRansomsCount = SKUs.GetValueCount(FindSkusWithRansoms);
+
+                                OnManagerReached(new($"Записано артикулов из выкупов, всего: {skusWithRansomsCount}", 1000, false));
+                                break;
+
+                            // Remaining processing:
+                            case SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ:
+
+                                // Save balances for sku's
+                                SaveSKUBalanceUnits(reportFileKey, rawRowsItems);
+
+                                // Make sku's from ransoms balance units 
+                                var updateTask = UpdateSKUsFromBalanceUnits(reportFileKey);
+                                await Task.Run(async () => await updateTask);
+                                updateTask.Wait();
+
+                                // Report
+                                static bool FindSkusWithRemaining(SKU sku) => sku.SKURemainingBalance != null;
+                                var skusWithRemainingCount = SKUs.GetValueCount(FindSkusWithRemaining);
+                                OnManagerReached(new($"Записано артикулов из баланса склада, всего: {skusWithRemainingCount}", 1000, false));
+
+                                break;
+                            
+                            // Shipped processing
+                            case SourceSKUReportFileKey.Shipped:
+
+                                // Make sku's from ransoms balance units 
+                                var updateShippedTask = UpdateSKUsFromBalanceUnits(reportFileKey);
+                                await Task.Run(async () => await updateShippedTask);
+                                updateShippedTask.Wait();
+
+                                break;
+
+                            // Additional processing:
+                            case SourceSKUReportFileKey.Additional:
+                                switch(workSheetName) 
+                                {
+                                    // Shortages processing:
+                                    case ExcelManager.SHORTAGES_REPORT_WORKSHEET_NAME:
+                                        
+                                        // ...
+
+                                        break;
+                                    // Resort processing:
+                                    case ExcelManager.RESORTS_REPORT_WORKSHEET_NAME:
+
+                                        // ...
+
+                                        break;
+                                    // Dummies processing:
+                                    case ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME:
+
+                                        // ...
+
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                break;
+                            default:
+                                break;
+                        };
+                    } 
+                }
             }
-
-            // Get ranges from source excel worksheet
-            List<RangeSourceReportRows> sourceReportRowsRanges = reportFileKey switch
-            {
-                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ =>
-                    new(1) { new(ExcelManager.RansomsSourceCells) },
-                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ =>
-                    new(2) { new(ExcelManager.RemainingSourceCells01, ExcelManager.FIRST_ROOM_NAME),
-                             new(ExcelManager.RemainingSourceCells02, ExcelManager.SECOND_ROOM_NAME,(ExcelManager.LAST_MARKER_KEY, ExcelManager.LAST_MARKER_KEY_OFFSET))},
-                SourceSKUReportFileKey.Shipped =>
-                    new(1) { new(ExcelManager.ShippedSourceCells)},     
-                _ => new(),
-            };
-            ExcelManager.GetRangeSourceReportRows(in currentWorksheet, ref sourceReportRowsRanges);
-
-            // Get raw data from cells in source excel worksheet 
-            ExcelManager.GetRawDataFromExcelRows(in currentWorksheet, ref sourceReportRowsRanges);
-
-            // Union collections
-            List<Dictionary<string, ItemForParsing>> rawRowsItems = new() { };
-            foreach (var sourceReportRowsRange in sourceReportRowsRanges)
-            {
-                sourceReportRowsRange.RowsWithRawData.ForEach(rawRowsItems.Add);
-            }
-
-            // Processings:
-            switch (reportFileKey)
-            {
-                // Ransoms processing:
-                case SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ:
-
-                    // Save balances for sku's
-                    SaveSKUBalanceUnits(reportFileKey, rawRowsItems);
-
-                    // Make sku's from ransoms balance units 
-                    var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey);
-                    await Task.Run(async () => await makeSKUsTask);
-                    makeSKUsTask.Wait();
-
-                    // Report
-                    static bool FindSkusWithRansoms(SKU sku) => sku.SKURansomsBalance != null;
-                    var skusWithRansomsCount = SKUs.GetValueCount(FindSkusWithRansoms);
-             
-                    OnManagerReached(new($"Записано артикулов из выкупов, всего: {skusWithRansomsCount}", 1000, false));
-                    break;
-
-                // Remaining processing:
-                case SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ:
-
-                    // Save balances for sku's
-                    SaveSKUBalanceUnits(reportFileKey, rawRowsItems);
-
-                    // Make sku's from ransoms balance units 
-                    var updateTask = UpdateSKUsFromBalanceUnits(reportFileKey);
-                    await Task.Run(async () => await updateTask);
-                    updateTask.Wait();
-
-                    // Report
-                    static bool FindSkusWithRemaining(SKU sku) => sku.SKURemainingBalance != null;
-                    var skusWithRemainingCount = SKUs.GetValueCount(FindSkusWithRemaining);
-                    OnManagerReached(new($"Записано артикулов из баланса склада, всего: {skusWithRemainingCount}", 1000, false));
-
-                    break;
-                case SourceSKUReportFileKey.Shipped:
-
-                    // Make sku's from ransoms balance units 
-                    var updateShippedTask = UpdateSKUsFromBalanceUnits(reportFileKey);
-                    await Task.Run(async () => await updateShippedTask);
-                    updateShippedTask.Wait();
-
-                    break;
-                default:
-                    break;
-            };
 
             // Finish
             return StopFuctionExecuting(ref stopwatch);

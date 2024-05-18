@@ -18,9 +18,9 @@ namespace ClientTableAnalizer.Objects.Managers
         public const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
         public const int LAST_MARKER_KEY_OFFSET = 2;
         public const string OUTPUT_REPORT_WORKSHEET01_NAME = "Отчет";
-        public const string SHORTAGES_REPORT_WORKSHEET01_NAME = "Недостачи";
-        public const string RESORTS_REPORT_WORKSHEET01_NAME = "Пересорты";
-        public const string DUMMIES_REPORT_WORKSHEET01_NAME = "Пустышки";
+        public const string SHORTAGES_REPORT_WORKSHEET_NAME = "Недостачи";
+        public const string RESORTS_REPORT_WORKSHEET_NAME = "Пересорты";
+        public const string DUMMIES_REPORT_WORKSHEET_NAME = "Пустышки";
         public const string RANSOMS_WORKSHEET_NAME = "Выкупы";
         public const string REMAINING_WORKSHEET_NAME = "TDSheet";
         private const int DEFAULT_TABLE_ROW_HEIGHT = 18;
@@ -82,6 +82,29 @@ namespace ClientTableAnalizer.Objects.Managers
         {
             new(4, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(28, "SKUShippedCount", ParsingTypeCode.IntTypeCode, true)
+        };
+
+        public static List<SourceCell> ShortagesSourceCells { get; } = new()
+        {
+            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
+            new(2, "ShortagesCount", ParsingTypeCode.IntTypeCode, true),
+            new(3, "ShortagesSum", ParsingTypeCode.IntTypeCode, true),
+            new(4, "ShortagesComment", ParsingTypeCode.StringTypeCode, false)
+        };
+
+        public static List<SourceCell> ResortSourceCells { get; } = new()
+        {
+            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
+            new(2, "ResortSKUNumber", ParsingTypeCode.IntTypeCode, true),
+            new(3, "ResortSKUCount", ParsingTypeCode.IntTypeCode, true),
+            new(4, "ResortComment", ParsingTypeCode.StringTypeCode, false)
+        };
+
+        public static List<SourceCell> DummiesSourceCells { get; } = new()
+        {
+            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
+            new(2, "DummiesSKUCount", ParsingTypeCode.IntTypeCode, true),
+            new(3, "DummiesComment", ParsingTypeCode.StringTypeCode, false)
         };
 
         public static TargetCell[] MainReportSKUInfoCells { get; } = new TargetCell[]
@@ -184,11 +207,44 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="key">ExcelPackage search key.</param>
         /// <param name="package">ExcelPackage or null.</param>
         /// <returns>Boolean flag of operation.</returns>
-        // <remarks><i>New version, tested</i></remarks>
+        /// <remarks><i>New version, tested</i></remarks>
         public static bool GetExcelPackageByKey(SourceSKUReportFileKey key, out ExcelPackage? package)
         {
             ExcelPackages.TryGetValue(key, out package);
             return package is not null;
+        }
+
+        /// <summary>
+        /// Returns name of sheet in Excel workbook.
+        /// </summary>
+        /// <param name="reportFileKey">Report file key.</param>
+        /// <param name="workSheetNames">Collection of Excel workbook sheet names.</param>
+        /// <returns>Boolean operation execution flag.</returns>
+        /// <remarks><i>New version</i></remarks>
+        public static bool GetExcelWorksheetsByKey(SourceSKUReportFileKey reportFileKey, out List<string> workSheetNames)
+        {
+            workSheetNames = new();
+            switch (reportFileKey)
+            {
+                case SourceSKUReportFileKey.RansomsWB:
+                case SourceSKUReportFileKey.RansomsOZ:
+                    workSheetNames.Add(RANSOMS_WORKSHEET_NAME);
+                    break;
+                case SourceSKUReportFileKey.RemainingWB:
+                case SourceSKUReportFileKey.RemainingOZ:
+                case SourceSKUReportFileKey.Shipped:
+                    workSheetNames.Add(REMAINING_WORKSHEET_NAME);
+                    break;
+                case SourceSKUReportFileKey.Additional:
+                    workSheetNames.Add(SHORTAGES_REPORT_WORKSHEET_NAME);
+                    workSheetNames.Add(RESORTS_REPORT_WORKSHEET_NAME);
+                    workSheetNames.Add(DUMMIES_REPORT_WORKSHEET_NAME);
+                    break;
+                default:
+                    break;
+            }
+
+            return workSheetNames.Any();
         }
 
         public void FillingСellsWithData<T>(ExcelPackage package, ref ExcelWorksheet worksheet, in List<T> items, TargetCell[] targetCells, string outputPath, int recordIndex = 1)
@@ -742,13 +798,40 @@ namespace ClientTableAnalizer.Objects.Managers
         }
 
         /// <summary>
-        /// Gets row ranges in an Excel worksheet.
+        /// Creates a collection of RangeSourceReportRows objects using SourceSKUReportFileKey key.
         /// </summary>
-        /// <param name="worksheet">Excel worksheet.</param>
-        /// <param name="rangeSource">Range prototypes.</param>
-        /// <param name="startRangeRowIndex">Start index.</param>
-        /// <remarks><i>New version, tested</i></remarks>
-        public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSource, int startRangeRowIndex = 1)
+        /// <param name="reportFileKey">Source report file key.</param>
+        /// <param name="rangeSourceReportRows">Сollection of RangeSourceReportRows objects.</param>
+        /// <returns>Boolean flag for performing the operation.</returns>
+        public static bool MakeRangeSourceReportRowsByKey(SourceSKUReportFileKey reportFileKey, string workSheetName, out List<RangeSourceReportRows> rangeSourceReportRows)
+        {
+            rangeSourceReportRows = reportFileKey switch
+            {
+                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => new(1) { new(RansomsSourceCells) },
+                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => new(2) { new(RemainingSourceCells01, FIRST_ROOM_NAME),
+                                                     new(RemainingSourceCells02, SECOND_ROOM_NAME,(LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))},
+                SourceSKUReportFileKey.Additional => workSheetName switch
+                {
+                    SHORTAGES_REPORT_WORKSHEET_NAME => new(1) { new(ShortagesSourceCells) },
+                    RESORTS_REPORT_WORKSHEET_NAME => new(1) { new(ResortSourceCells) },
+                    DUMMIES_REPORT_WORKSHEET_NAME => new(1) { new(DummiesSourceCells) },
+                    _ => new(),
+                },
+                SourceSKUReportFileKey.Shipped => new(1) { new(ShippedSourceCells) },
+                _ => new(),
+            };
+
+            return rangeSourceReportRows.Any();
+        }
+
+    /// <summary>
+    /// Gets row ranges in an Excel worksheet.
+    /// </summary>
+    /// <param name="worksheet">Excel worksheet.</param>
+    /// <param name="rangeSource">Range prototypes.</param>
+    /// <param name="startRangeRowIndex">Start index.</param>
+    /// <remarks><i>New version, tested</i></remarks>
+    public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSource, int startRangeRowIndex = 1)
         {
             Exception missingStringKeyExc = new("Указание строкового ключа для диапазона обязательно");
             Exception missingIntIndexExc = new("Индекс строки по указанному ключу не был найден.");
@@ -762,7 +845,7 @@ namespace ClientTableAnalizer.Objects.Managers
                     var dim = worksheet.Dimension;
                     rangeSource[i].SetRange(startRangeRowIndex + 1, dim.End.Row - 1);
                 }
-                // Если не элемент и у низ есть ключи
+                // Если не один элемент и у низ есть ключи
                 else
                 {
                     var currentRowStringKey = rangeSource[i].Key ?? throw missingStringKeyExc;
@@ -798,6 +881,6 @@ namespace ClientTableAnalizer.Objects.Managers
             !string.IsNullOrEmpty(value.ToString()) &&
             string.Equals(filter.Trim().ToLower(), value.ToString()!.Trim().ToLower());
 
-        #endregion
-    }
+    #endregion
+}
 }

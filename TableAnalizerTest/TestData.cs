@@ -27,6 +27,21 @@ namespace TableAnalizerTest
             new(ExcelManager.RemainingSourceCells02, ExcelManager.SECOND_ROOM_NAME,(ExcelManager.LAST_MARKER_KEY, ExcelManager.LAST_MARKER_KEY_OFFSET))
         ];
 
+        public List<RangeSourceReportRows> _testShortagesRangeSourceReportRows = 
+        [
+            new(ExcelManager.ShortagesSourceCells)
+        ];
+
+        public List<RangeSourceReportRows> _testResortRangeSourceReportRows = 
+        [
+            new(ExcelManager.ResortSourceCells)
+        ];
+
+        public List<RangeSourceReportRows> _testDummiesRangeSourceReportRows = 
+        [
+            new(ExcelManager.DummiesSourceCells)
+        ];
+
         public List<RangeSourceReportRows> _testShippedRangeSourceReportRows = [new(ExcelManager.ShippedSourceCells)];
 
         public static Dictionary<int, List<SKURansomsBalanceDataUnit>>? SkuRansomsBalanceUnits { get; set; }
