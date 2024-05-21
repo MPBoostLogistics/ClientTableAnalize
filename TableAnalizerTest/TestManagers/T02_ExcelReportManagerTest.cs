@@ -429,9 +429,9 @@ namespace TableAnalizerTest.Managers
             Assert.That(sheet, Is.Not.Null);
 
             // act 03
-            var outputSkus = _skuManager.SKUs.GetValuesList().Select(s => s.value.GetSKUOutput).ToList();
+            var outputSkus = _skuManager.SKUs.GetValuesList().Select(s => s.value.GetSKUForTargetReports).ToList();
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
-            _excelManager.FillingСellsWithData<SKUOutput>(outputPackage, ref sheet, in outputSkus, ExcelManager.MainReportSKUInfoCells, FileManager.OutputClientReportFilePath); 
+            _excelManager.FillingСellsWithData<SKUForTargetReports>(outputPackage, ref sheet, in outputSkus, ExcelManager.MainReportSKUInfoCells, FileManager.OutputClientReportFilePath); 
 
             // ... 
             outputPackage.Dispose();

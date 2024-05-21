@@ -21,8 +21,10 @@ namespace ClientTableAnalizer.Objects.SKUItems
         public SKUResortBalance? SKUResortBalance { get; private set; }
         public double AveragePrice { get; private set;} = default;
         public DateOnly MaxRansomsDate { get; private set;} = default;
-        public bool IsSKUDeadline => (MaxRansomsDate.ToDateTime(new TimeOnly()) - DateTime.Now).Duration().Days > 14;
-        public SellmentStatus SellmentStatus { get; private set; } = new(SKUSellmentStatus.Unknown);
+        public int DeadLineDays { get;  set; } = 30;
+
+
+        //public SellmentStatus SellmentStatus { get; private set; } = new(SKUSellmentStatus.Unknown);
         //public Color FillColor { get; set; } = Color.Empty;
 
         // public SKUStorageBalance ArticleStorageBalance { get; private set; }
@@ -94,7 +96,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
         #region Functionality
 
-        public SKUOutput GetSKUOutput => new(this);
+        public SKUForTargetReports GetSKUForTargetReports => new(this, DeadLineDays);
 
         public void Update(Marketplace? marketplace, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate) 
         {
@@ -131,7 +133,6 @@ namespace ClientTableAnalizer.Objects.SKUItems
                 SKUCompensationBalance.Update(skuShortageBalance.Count, skuShortageBalance.Sum, skuShortageBalance.Comments);
             }
         }
-
 
         // public void SetArticleRowInReport(SKURowInReport articleRowInReport) {} // Dummy
         //SKURedempionBalance.Set(articleRowInReport);

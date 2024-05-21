@@ -92,7 +92,15 @@ internal class Program
 
             Task.WaitAll(tasks);
 
-            // TODO: Анализ данных
+            // Delete old logistic report 
+            FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
+            var outputSkus = skuManager.SKUs.GetValuesList().Select(s => s.value.GetSKUForTargetReports).ToList();
+            excelManager.MakeTargetReports(outputSkus);
+
+            // Report 
+            var completedMessage = $"Отчет логистики сохранен по пути: {FileManager.OutputClientReportFilePath}\n"; 
+            goodByMessage = string.Concat(completedMessage,goodByMessage);
+            await Report(goodByMessage, 2000, true);
         }
         else
         {
@@ -209,15 +217,6 @@ internal class Program
         Environment.Exit(0);
     }
 
-    private static string? ParseValueToString(object? obj) =>
-        obj is not null && !string.IsNullOrEmpty(obj.ToString()) ?
-        obj.ToString()!.Trim() :
-        null;
-
-    private static int? ParseValueToInt(object? obj) =>
-        obj is not null && !string.IsNullOrEmpty(obj.ToString()) ?
-        int.Parse(obj.ToString()!.Trim()) :
-        null;
 
     /// <summary>
     /// Receives data from user from console as a string.

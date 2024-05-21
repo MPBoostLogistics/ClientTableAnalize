@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Interfaces;
 using ClientTableAnalizer.Objects.Parsing;
@@ -72,8 +73,6 @@ namespace ClientTableAnalizer.Objects.Managers
                 for (int i = 0; i < workSheetNames.Count; i++)
                 {
                     var currentName = workSheetNames[i];
-
-                    Console.WriteLine($"Current name {currentName}");
     
                     Task<double> processsingTask = ProcessingData(reportFileKey, currentName);
                     await Task.Run(async () => await processsingTask);
@@ -89,8 +88,6 @@ namespace ClientTableAnalizer.Objects.Managers
 
         private async Task<double> ProcessingData(SourceSKUReportFileKey reportFileKey, string workSheetName)
         {
-            Console.WriteLine($"{reportFileKey} -> {workSheetName}");
-
             // Start
             Stopwatch stopwatch = Stopwatch.StartNew();
 
@@ -289,20 +286,20 @@ namespace ClientTableAnalizer.Objects.Managers
             }
             else if(isResort) 
             {
-                Trace.WriteLine("is resorts");
-
                 var skuResortDataUnits = from rowWithRawData in rowsWithRawData
                                          let unit = new SKUResortDataUnit(rowWithRawData)
                                          group unit by unit.SKUNumber 
                                          into unitGroup  
                                          select unitGroup;
 
-                foreach (var group in skuResortDataUnits)
+                foreach (var skuResortGroup in skuResortDataUnits)
                 {
-                    var list = (((List<SKUResortDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
+                    var skuNumber = skuResortGroup.Key;
+
+                    var list = (((List<SKUResortDataUnit>?)skuResortGroup.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
                         throw new InvalidCastException("Невозможно привести List<SKUResortDataUnit> к List<ParsingRowEntity>");
-                    
-                    SkuResortBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+
+                    SkuResortBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
                 }
             }
 
@@ -421,7 +418,6 @@ namespace ClientTableAnalizer.Objects.Managers
                     
                     SKUResortBalance skuResortBalance = new(skuNumber, units.ToList());
                     SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuResortBalance));
-
                 }
                 else if(isDummies)
                 {

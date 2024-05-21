@@ -26,7 +26,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
                     StatusColor = System.Drawing.ColorTranslator.FromHtml("#ffe7cd");
                     break;
                 case SKUSellmentStatus.OnSearchWarehouseAndPoints:
-                    StatusLabel = "На поиске склада и ПВЗ и склада";
+                    StatusLabel = "На поиске  ПВЗ и склада";
                     StatusColor =  System.Drawing.ColorTranslator.FromHtml("#ff6d6d");
                     break;
                 case SKUSellmentStatus.OnSearchWarehouse:

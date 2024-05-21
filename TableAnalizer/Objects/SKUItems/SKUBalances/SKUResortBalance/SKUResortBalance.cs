@@ -5,6 +5,8 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         #region Properties
         public int SKUNumber { get; private set; }
         public readonly Dictionary<int, (int resortSKUCount, string? resortSKUComment)> ResortSKUs = new(); // Key: resort SKUNumber
+        public string ResortComment { get; private set; } = string.Empty;
+        
         #endregion Properties
 
         #region Constructors
@@ -54,6 +56,36 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
                     var newValue = (resortCount, resortComment ?? string.Empty);
                     ResortSKUs.TryAdd(resortSKUNumber, newValue);
                 }
+        }
+
+        public void AddСommentToBalance() 
+        {
+           foreach (var resortSKU in ResortSKUs)
+           {
+                var resortSku = resortSKU.Key;
+                var resortSkuCount = resortSKU.Value.resortSKUCount;
+                var resortSKUComment = resortSKU.Value.resortSKUComment;
+
+                List<string> strings = new();
+
+                if(!string.IsNullOrEmpty(ResortComment)) 
+                    strings.Add(ResortComment);
+                
+                if(!string.IsNullOrEmpty(resortSKUComment)) 
+                {
+                    if(strings.Count > 0) 
+                        strings.Add(", ");
+
+                    strings.Add(resortSKUComment);
+                }
+
+                if(strings.Count > 0) strings.Add(", ");
+
+                strings.Add($"пересорт на {resortSku} ({resortSkuCount} шт)");
+                strings.Add(ResortSKUs.Values.Last() != resortSKU.Value ? ", " : ".");
+
+                ResortComment = string.Join("", strings.ToArray());
+           }
         }
         
         #endregion

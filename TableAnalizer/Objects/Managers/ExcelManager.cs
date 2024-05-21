@@ -1,6 +1,7 @@
 #nullable enable
 
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Interfaces;
 using ClientTableAnalizer.Objects.Parsing;
@@ -18,7 +19,7 @@ namespace ClientTableAnalizer.Objects.Managers
         public const string THIRD_ROOM_NAME = "3 - Помещение упаковки и отгрузки";
         public const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
         public const int LAST_MARKER_KEY_OFFSET = 2;
-        public const string OUTPUT_REPORT_WORKSHEET01_NAME = "Отчет";
+        public const string OUTPUT_REPORT_WORKSHEET01_NAME = "Отчет по логистике";
         public const string COMPENSATION_REPORT_WORKSHEET_NAME = "Недостачи";
         public const string RESORTS_REPORT_WORKSHEET_NAME = "Пересорты";
         public const string DUMMIES_REPORT_WORKSHEET_NAME = "Пустышки";
@@ -118,7 +119,7 @@ namespace ClientTableAnalizer.Objects.Managers
         public static TargetCell[] MainReportSKUInfoCells { get; } = new TargetCell[]
         {
             new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
-                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUMp",
+                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUmp",
                 parsingTypeCode: ParsingTypeCode.Marketplace, excelFillStyle:  ExcelFillStyle.None),
             new (colNumber: 2, colName: "Артикул", colWidth: 12, format: "0",
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUNumber",
@@ -126,37 +127,58 @@ namespace ClientTableAnalizer.Objects.Managers
             new (colNumber: 3, colName: "Бренд товара", colWidth: 10, format: "0",
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUBrand",
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None),
-            new (colNumber: 4, colName: "Название товара", colWidth: 50, format: "0",
+            new (colNumber: 4, colName: "Наименование товара", colWidth: 50, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUName",
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None),
             new (colNumber: 5, colName: "Средняя цена, руб.", colWidth: 12, format: "0.00",
-                wrapTextInHeader: true, textRotationInHeader: 0, "SKUAveragePrice",
+                wrapTextInHeader: true, textRotationInHeader: 0, "SKUPrice",
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None),
-            new (colNumber: 6, colName: "Дата последнего выкупа", colWidth: 13, format: "dd.MM.yyyy",
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUMaxRansomsDate",
+            new (colNumber: 6, colName: "Дата последнего заказа", colWidth: 13, format: "dd.MM.yyyy",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDate",
                 parsingTypeCode: ParsingTypeCode.DataOnlyTypeCode, excelFillStyle:  ExcelFillStyle.Solid),
-            new (colNumber: 7, colName: "Статус взаиморасчета", colWidth: 12, format: "0",
-                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUSellmentStatus",
-                parsingTypeCode: ParsingTypeCode.SellmentStatus, excelFillStyle:  ExcelFillStyle.None),
-            new (colNumber: 8, "Всего заказов", colWidth: 12, format: "0",
+            new (colNumber: 7, colName: "Статус взаиморасчетов", colWidth: 12, format: "0",
+                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SellmentStatusString",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None),
+            new (colNumber: 8, colName: "Заказов: всего", colWidth: 12, format: "0",
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKURansomsTotal",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
-            new (colNumber: 9, "Отменено",colWidth: 7, format: "0",
+            new (colNumber: 9, colName: "Заказов: отменено",colWidth: 7, format: "0",
                 wrapTextInHeader: false, textRotationInHeader: 90, propertyName: "SKURansomsCanceled",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
-            new (colNumber: 10, "В пути", colWidth: 7, format: "0",
+            new (colNumber: 10, colName: "Заказов: в пути", colWidth: 7, format: "0",
                 wrapTextInHeader: false, textRotationInHeader: 90, propertyName: "SKURansomsOnWay",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
-            new (colNumber: 11, "Доставлено на ПВЗ", colWidth: 7, format: "0",
+            new (colNumber: 11, colName: "Заказов: доставлено на ПВЗ", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsDelivered",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
-            new (colNumber: 12, "Забрано с ПВЗ", colWidth: 7, format: "0",
+            new (colNumber: 12, colName: "Заказов: забрано с ПВЗ", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsWithDrawn",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
-            new (colNumber: 13, "Склад: Ожидание", colWidth: 7, format: "0",
+            new (colNumber: 13, colName: "Склад: Ожидание", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsWaiting",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: true)                                             
-
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: true),                                             
+            new (colNumber: 14, colName: "Склад: Приход товаров", colWidth: 7, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUReceipt",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
+            new (colNumber: 15, colName: "Склад: Расход всего", colWidth: 7, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUTotalСonsumption",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: true),
+            new (colNumber: 16, colName: "Склад: Расход товаром", colWidth: 7, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUShipped",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
+            new (colNumber: 17, colName: "Склад: Расход компенсацией", colWidth: 7, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUPaid",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
+            new (colNumber: 18, colName: "Склад: Расход пересортом", colWidth: 7, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUResort",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
+            new (colNumber: 19, colName: "Склад: Расход пустышками", colWidth: 7, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUDummies",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
+            new (colNumber: 20, colName: "Склад: Остаток товаров", colWidth: 7, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURemaining",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
+                  
             // Info on arrival of goods at warehouse
             // new (12, "Склад: Ожидание", 11.5,"0", true, 0),
             // new (13, "Склад: Приход", 11 ,"0",true, 0),
@@ -240,6 +262,21 @@ namespace ClientTableAnalizer.Objects.Managers
             };
             return workSheetNames is not null && workSheetNames.Any();
         }
+
+        public void MakeTargetReports(List<SKUForTargetReports> skuForTargetReports) 
+        {
+            var outputPackage = new ExcelPackage(new FileInfo(FileManager.OutputClientReportFilePath)) ?? 
+                throw new Exception("ExcelPackage for output reports cannot be created");
+            
+            var mainOutputReportSheetName = OUTPUT_REPORT_WORKSHEET01_NAME;
+            CreateExcelWorkSheet(mainOutputReportSheetName, in outputPackage, out var mainOutputReportSheet, Colors[SKUSellmentStatus.FullSet]);
+
+            // Make main report
+            FillingСellsWithData<SKUForTargetReports>(outputPackage, ref mainOutputReportSheet, in skuForTargetReports, MainReportSKUInfoCells, FileManager.OutputClientReportFilePath); 
+
+            outputPackage.Dispose();
+        }
+
 
         public void FillingСellsWithData<T>(ExcelPackage package, ref ExcelWorksheet worksheet, in List<T> items, TargetCell[] targetCells, string outputPath, int recordIndex = 1)
             where T : IColorable
@@ -629,7 +666,6 @@ namespace ClientTableAnalizer.Objects.Managers
             return rowInex.HasValue;
         }
             
-
         /// <summary>
         /// Gets data from row ranges in specified Excel worksheet.
         /// </summary>

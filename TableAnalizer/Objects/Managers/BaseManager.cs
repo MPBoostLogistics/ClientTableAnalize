@@ -19,12 +19,12 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <remarks><i>New version</i></remarks>
         public Dictionary<SKUSellmentStatus, System.Drawing.Color> Colors { get; } = new()
         {
-            {SKUSellmentStatus.FullSet, System.Drawing.ColorTranslator.FromHtml("#D5F5E3")},
-            {SKUSellmentStatus.InWork, System.Drawing.ColorTranslator.FromHtml("#FDEBD0")},
-            {SKUSellmentStatus.OnSearchWarehouseAndPoints, System.Drawing.ColorTranslator.FromHtml("#F5B7B1")},
-            {SKUSellmentStatus.OnSearchWarehouse, System.Drawing.ColorTranslator.FromHtml("#EBDEF0")},
-            {SKUSellmentStatus.OnSearchPoint, System.Drawing.ColorTranslator.FromHtml("#FDEDEC")},
-            {SKUSellmentStatus.Unknown, System.Drawing.ColorTranslator.FromHtml("#E5E8E8")}
+            {SKUSellmentStatus.FullSet, System.Drawing.ColorTranslator.FromHtml("#98fb98")},
+            {SKUSellmentStatus.InWork, System.Drawing.ColorTranslator.FromHtml("#ffd700")},
+            {SKUSellmentStatus.OnSearchWarehouseAndPoints, System.Drawing.ColorTranslator.FromHtml("#f08080")},
+            {SKUSellmentStatus.OnSearchWarehouse, System.Drawing.ColorTranslator.FromHtml("#ffa07a")},
+            {SKUSellmentStatus.OnSearchPoint, System.Drawing.ColorTranslator.FromHtml("#ffc4ad")},
+            {SKUSellmentStatus.Unknown, System.Drawing.ColorTranslator.FromHtml("#add8e6")}
         };
         #endregion Properties
 
