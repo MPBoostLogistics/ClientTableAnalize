@@ -70,6 +70,13 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
                 .Aggregate(0, (acc, unit) => acc + unit.SKUShippedCount);
         }
         
+        public void Update(int skuReceipt, int skuShipped, int skuRemaining) 
+        {
+              SKUReceipt += skuReceipt;
+              SKUShipped += skuShipped;
+              SKURemaining += skuRemaining;
+        }
+
         public bool Equals(SKURemainingBalance? other) =>
             SKUNumber == other?.SKUNumber;
 

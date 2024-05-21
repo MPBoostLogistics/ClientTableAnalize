@@ -9,12 +9,12 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
     public class SKURansomsBalance : IEquatable<SKURansomsBalance>
     {
         #region Properties
-        public int SKURansomsTotal { get; private set; }
-        public int SKURansomsWaiting { get; private set; }
-        public int SKURansomsOnWay { get; }
-        public int SKURansomsCanceled { get; }
-        public int SKURansomsDelivered { get; }            // Доставлен на ПВЗ
-        public int SKURansomsWithDrawn { get; }            // Забран с ПВЗ
+        public int SKURansomsTotal { get; private set; }       // Всего
+        public int SKURansomsWaiting { get; private set; }     // Ожидание 
+        public int SKURansomsOnWay { get; private set; }       // В пути
+        public int SKURansomsCanceled { get; private set; }    // Отменен 
+        public int SKURansomsDelivered { get; private set; }   // Доставлен на ПВЗ
+        public int SKURansomsWithDrawn { get; private set; }   // Забран с ПВЗ
         #endregion
 
         #region Constructors
@@ -55,16 +55,66 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         /// </summary>
         public SKURansomsBalance(int? onWay, int? canceled, int? delivered, int? withDrawn)
         {
-            SKURansomsOnWay = onWay ?? default;
-            SKURansomsCanceled = canceled ?? default;
-            SKURansomsDelivered = delivered ?? default;
-            SKURansomsWithDrawn = withDrawn ?? default;
-
-            CalculateTotalAndWaiting();
+            Update(onWay, canceled, delivered, withDrawn);
         }
         #endregion Constructors
 
         #region Functionality
+        public void Update(int? onWay, int? canceled, int? delivered, int? withDrawn) 
+        {
+            if(onWay.HasValue) 
+            {
+                if(SKURansomsOnWay is not 0) 
+                {
+                    SKURansomsOnWay += onWay.Value;
+                } 
+                else 
+                {
+                    SKURansomsOnWay = onWay.Value;
+                }
+            }
+
+            if(canceled.HasValue) 
+            {
+                if(SKURansomsCanceled is not 0) 
+                {
+                    SKURansomsCanceled += canceled.Value;
+                } 
+                else 
+                {
+                    SKURansomsCanceled = canceled.Value;
+                }
+            }
+
+            if(delivered.HasValue) 
+            {
+                if(SKURansomsDelivered is not 0) 
+                {
+                    SKURansomsDelivered += delivered.Value;
+                } 
+                else 
+                {
+                    SKURansomsDelivered = delivered.Value;
+                }
+            }
+
+             if(withDrawn.HasValue) 
+            {
+                if(SKURansomsWithDrawn is not 0) 
+                {
+                    SKURansomsWithDrawn += withDrawn.Value;
+                } 
+                else 
+                {
+                    SKURansomsWithDrawn = withDrawn.Value;
+                }
+            }
+
+            CalculateTotalAndWaiting();
+        }
+
+
+
         public override string ToString() => $"Ransoms: total: {SKURansomsTotal}, on way: {SKURansomsOnWay}, canceled: {SKURansomsCanceled}, delivered: {SKURansomsDelivered}, withDrawn: {SKURansomsWithDrawn} (waiting: {SKURansomsWaiting})";
 
         private void CalculateTotalAndWaiting()

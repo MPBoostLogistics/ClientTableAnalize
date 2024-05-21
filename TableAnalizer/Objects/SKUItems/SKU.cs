@@ -6,6 +6,10 @@ namespace ClientTableAnalizer.Objects.SKUItems
     /// <remarks><i>New version.</i></remarks>
     public class SKU
     {
+        #region  Variables and constants 
+        public static readonly DateOnly DATEONLY_DEFAULT = new(0001,01,01);
+        #endregion Variables and constants
+
         #region Properties
         public Marketplace? Marketplace { get; private set; }
         public int SKUNumber { get; }
@@ -13,7 +17,8 @@ namespace ClientTableAnalizer.Objects.SKUItems
         public string SKUName { get; private set; } = string.Empty;
         public SKURansomsBalance? SKURansomsBalance { get; private set;}
         public SKURemainingBalance? SKURemainingBalance { get; private set;}
-        public SKUCompensationBalance? SKUShortageBalance { get; private set; }
+        public SKUCompensationBalance? SKUCompensationBalance { get; private set; }
+        public SKUResortBalance? SKUResortBalance { get; private set; }
         public double AveragePrice { get; private set;} = default;
         public DateOnly MaxRansomsDate { get; private set;} = default;
         public bool IsSKUDeadline => (MaxRansomsDate.ToDateTime(new TimeOnly()) - DateTime.Now).Duration().Days > 14;
@@ -29,8 +34,6 @@ namespace ClientTableAnalizer.Objects.SKUItems
         // 
         //  
         // public string Comment { get; private set; }
-
-        //this.IsDeadline = (this.MaxRedemptionDate - DateTime.Now).Duration().Days > DeadLineDays;
 
         #endregion
 
@@ -54,10 +57,34 @@ namespace ClientTableAnalizer.Objects.SKUItems
             Update(skuRansomsBalance);
         }
 
+        // Constructor for generating a new entity from repository
+        public SKU(Marketplace? marketplace, int skuNumber, string? skuBrand, string? 
+            skuName, SKURansomsBalance? skuRansomsBalance, SKURemainingBalance? skuRemainingBalance, 
+            SKUCompensationBalance? skuCompensationBalance, SKUResortBalance? skuResortBalance, double? averagePrice, 
+            DateOnly? maxRansomsDate) 
+       {
+            Marketplace = marketplace;
+            SKUNumber = skuNumber;
+            SKUBrand = skuBrand ?? string.Empty;
+            SKUName = skuName ?? string.Empty;
+            SKURansomsBalance = skuRansomsBalance;
+            SKURemainingBalance = skuRemainingBalance;
+            SKUCompensationBalance = skuCompensationBalance;
+            SKUResortBalance = skuResortBalance;
+            AveragePrice = averagePrice ?? default;
+            MaxRansomsDate = maxRansomsDate ?? DATEONLY_DEFAULT;
+        }
+
         public SKU(int skuNumber, SKUCompensationBalance skuShortageBalance) 
         {
             SKUNumber = skuNumber;
-            SKUShortageBalance = skuShortageBalance;
+            SKUCompensationBalance = skuShortageBalance;
+        }
+
+        public SKU(int skuNumber, SKUResortBalance skuResortBalance) 
+        {
+            SKUNumber = skuNumber;
+            SKUResortBalance = skuResortBalance;
         }
 
         public override string ToString() =>
@@ -95,13 +122,13 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
         public void Update(SKUCompensationBalance skuShortageBalance) 
         {
-            if(SKUShortageBalance is null) 
+            if(SKUCompensationBalance is null) 
             {
-                SKUShortageBalance = skuShortageBalance;
+                SKUCompensationBalance = skuShortageBalance;
             } 
             else 
             {
-                SKUShortageBalance.Update(skuShortageBalance.Count, skuShortageBalance.Sum, skuShortageBalance.Comments);
+                SKUCompensationBalance.Update(skuShortageBalance.Count, skuShortageBalance.Sum, skuShortageBalance.Comments);
             }
         }
 
