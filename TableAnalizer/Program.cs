@@ -21,9 +21,6 @@ internal class Program
 {
     #region Variables and constants
     private static readonly Version? AppVersion = Assembly.GetExecutingAssembly().GetName().Version;
-    private const string NAME_FIRST_ROOM = "1 - Помещение приемки, сортировки и упаковки";
-    private const string NAME_SECOND_ROOM = "2 - Помещение длительного хранения и отгрузки";
-    private const string NAME_FINAL_ROW = "Итого товаров в единицах хранения";
     private static List<ArticleShortage> ArticleShortages { get; set; } = new();
     private static readonly List<SKUItemForReport> ShortagesInWarehouse = new();
     private static readonly List<SKUItemForReport> ShortagesInPickupPoints = new();
@@ -83,13 +80,14 @@ internal class Program
             Task[] tasks = new Task[count];
             for (int i = 0; i < existingKeys.Count; i++)
             {
-                SourceSKUReportFileKey existingKey = existingKeys[i];
-                tasks[i] = ReceivingAndProcessingData(existingKey);
+                tasks[i] = ReceivingAndProcessingData(existingKeys[i]);
             }
 
             for (int i = 0; i < tasks.Length; i++)
             {
-                await Task.Run(async () => await tasks[i]);
+                var currentTask = tasks[i];
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
             }
 
             Task.WaitAll(tasks);
@@ -100,40 +98,6 @@ internal class Program
         {
             await Report(string.Concat("Нет отчетов, доступеых для анализа\n", goodByMessage), 2000, true);
         }
-
-        // Отчет по выкупами WB
-        // Отчет по выкупами OZ
-        // Отчет по приходу и остаткам WB
-        // Отчет по приходу и остаткам OZ
-        // Отчет по расходу
-        // Отчет по списанию недостач (общие)
-        // Отчет по недостачам
-        // Отчет по пересортам
-        // Анализ - после всех отчетов
-
-
-
-        // Task[] readRedemptionTasksArray = new Task[2];
-
-        // if (!string.IsNullOrEmpty(redemtionFilePathWB))
-        //     readRedemptionTasksArray[0] = ReadRedemptionReportFile(Marketplace.WB);
-
-        // if (!string.IsNullOrEmpty(redemtionFilePathOZ))
-        //     readRedemptionTasksArray[1] = ReadRedemptionReportFile(Marketplace.OZ);
-
-        // if (readRedemptionTasksArray.Length > 0)
-        // {
-        //     foreach (var task in readRedemptionTasksArray)
-        //     {
-        //         _ = Task.Run(async () => await task);
-        //     }
-        // }
-        // else
-        // {
-        //     // TODO: Ругаемся и выходим
-        // }
-
-        // Task.WaitAll(readRedemptionTasksArray);
 
         // //await GetUserStorageData(Marketplace.WB);
 
@@ -193,6 +157,7 @@ internal class Program
         getReportFileTask.Wait();
 
         var reportFile = getReportFileTask.Result;
+
         if (reportFile is not null)
         {
             if (reportFileKey == SourceSKUReportFileKey.RansomsWB ||
@@ -210,6 +175,12 @@ internal class Program
                 var processingRansomsDataTask = skuManager.ReceivingAndProcessingRansomsData(reportFileKey);
                 await Task.Run(async () => await processingRansomsDataTask);
                 processingRansomsDataTask.Wait();
+
+                // Dispose package
+                if(ExcelManager.GetExcelPackageByKey(reportFileKey, out ExcelPackage? existingPackage)) 
+                {
+                    existingPackage?.Dispose();
+                }
 
                 // Return time
                 return processingRansomsDataTask.Result;

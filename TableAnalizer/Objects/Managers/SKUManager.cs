@@ -63,106 +63,130 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <remarks><i>New version</i></remarks>
         public async Task<double> ReceivingAndProcessingRansomsData(SourceSKUReportFileKey reportFileKey)
         {
-            // Start
-            Stopwatch stopwatch = Stopwatch.StartNew();
-
-            // Get names of source excel worksheet by report file key
-            if(ExcelManager.GetExcelWorksheetsByKey(reportFileKey, out List<string> workSheetNames)) 
+            double time = 0.00;
+            
+            if(ExcelManager.GetExcelWorksheetStringNamesByKey(reportFileKey, out List<string>? workSheetNames) && 
+                workSheetNames is not null && 
+                workSheetNames.Count > 0) 
             {
-                foreach (var workSheetName in workSheetNames!)
+                for (int i = 0; i < workSheetNames.Count; i++)
                 {
-                    // Get source excel worksheet by name
-                    ExcelManager.GetExcelWorksheetByName(workSheetName, reportFileKey, out ExcelWorksheet? currentWorksheet);
-                    if (currentWorksheet is null)
-                    {
-                        await Task.Delay(100);
-                        OnManagerReached(new($"There is no worksheet named '{workSheetName}' in workbook file at key {reportFileKey}.", 2000, true));
-                        return StopFuctionExecuting(ref stopwatch);
-                    }
+                    var currentName = workSheetNames[i];
 
-                    // Get ranges from source excel worksheet
-                    if (ExcelManager.MakeRangeSourceReportRowsByKey(reportFileKey, workSheetName, out List<RangeSourceReportRows> rangeSourceReportRows)) 
-                    {
-                        // Get row ranges in source excel worksheet 
-                        ExcelManager.GetRangeSourceReportRows(in currentWorksheet, ref rangeSourceReportRows);
+                    Console.WriteLine($"Current name {currentName}");
+    
+                    Task<double> processsingTask = ProcessingData(reportFileKey, currentName);
+                    await Task.Run(async () => await processsingTask);
+                    processsingTask.Wait();
 
-                        // Get raw data from cells in source excel worksheet 
-                        ExcelManager.GetRawDataFromExcelRows(in currentWorksheet, ref rangeSourceReportRows);
-
-                        // Union collections
-                        List<Dictionary<string, ItemForParsing>> rawRowsItems = new() { };
-                        foreach (var sourceReportRowsRange in rangeSourceReportRows)
-                        {
-                            sourceReportRowsRange.RowsWithRawData.ForEach(rawRowsItems.Add);
-                        }
-                        // Processings:
-                        // 1. Save balances for sku's
-                        SaveSKUBalanceUnits(reportFileKey, workSheetName, rawRowsItems);
-
-                        // 2. Create or update sku's from balance units 
-                        var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName);
-                        await Task.Run(async () => await makeSKUsTask);
-                        makeSKUsTask.Wait();
-
-                        // Report
-                        static bool FindSkusWithRansoms(SKU sku) => sku.SKURansomsBalance != null;
-                        static bool FindSkusWithRemaining(SKU sku) => sku.SKURemainingBalance != null;
-                        static bool FindSkusWithShipped(SKU sku) => sku.SKURemainingBalance?.SKUShipped != null;
-                        static bool FindSkusWithCompensation(SKU sku) => sku.SKUCompensationBalance != null;
-
-                        var message = string.Empty;
-
-                        switch (reportFileKey)
-                        {
-                            case SourceSKUReportFileKey.RansomsWB:
-                                predicateHandler = FindSkusWithRansoms;
-                                message = "Артикулов из выкупов WB: ";
-                                break;
-                            case SourceSKUReportFileKey.RansomsOZ:
-                                predicateHandler = FindSkusWithRansoms;
-                                message = "Артикулов из выкупов OZ: ";
-                                break;
-                            case SourceSKUReportFileKey.RemainingWB:
-                                predicateHandler = FindSkusWithRemaining;
-                                message = "Артикулов из прихода и остатоков WB: ";
-                                break;
-                            case SourceSKUReportFileKey.RemainingOZ:
-                                predicateHandler = FindSkusWithRemaining;
-                                message = "Артикулов из прихода и остатоков OZ: ";
-                                break;
-                            case SourceSKUReportFileKey.Additional:
-                                switch(workSheetName) 
-                                {
-                                    case ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME:
-                                        predicateHandler = FindSkusWithCompensation;
-                                        message = "Артикулов из компенсации: ";
-                                        break;
-                                    case ExcelManager.RESORTS_REPORT_WORKSHEET_NAME:
-                                        // ...
-                                        break;
-                                    case ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME:
-                                        // ...
-                                        break;
-                                };
-                                break;
-                            case SourceSKUReportFileKey.Shipped:
-                                 predicateHandler = FindSkusWithShipped;
-                                 message = "Артикулов из расхода со склада: ";
-                                break;
-                            default:
-                                break;
-                        }
-
-                        // Report
-                        int skusWithPredicateCount = SKUs.GetValueCount(predicateHandler.Invoke);
-                        message = string.Concat(message, skusWithPredicateCount);
-                        OnManagerReached(new(message, 1000, false));
-                        break;
-                    }
+                    time += processsingTask.Result;
                 }
             }
 
             // Finish
+            return time;
+        }
+
+        private async Task<double> ProcessingData(SourceSKUReportFileKey reportFileKey, string workSheetName)
+        {
+            Console.WriteLine($"{reportFileKey} -> {workSheetName}");
+
+            // Start
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            // Get source excel worksheet by name
+            ExcelManager.GetExcelWorksheetByName(workSheetName, reportFileKey, out ExcelWorksheet? currentWorksheet);
+            if (currentWorksheet is null)
+            {
+                await Task.Delay(100);
+                OnManagerReached(new($"There is no worksheet named '{workSheetName}' in workbook file at key {reportFileKey}.", 2000, true));
+                return StopFuctionExecuting(ref stopwatch);
+            }
+
+            //Console.WriteLine($"{reportFileKey}, {currentWorksheet.Name}");
+
+            // Get ranges from source excel worksheet
+            if (ExcelManager.MakeRangeSourceReportRowsByKey(reportFileKey, workSheetName, out List<RangeSourceReportRows> rangeSourceReportRows))
+            {
+                // Get row ranges in source excel worksheet 
+                ExcelManager.GetRangeSourceReportRows(in currentWorksheet, ref rangeSourceReportRows);
+
+                // Get raw data from cells in source excel worksheet 
+                ExcelManager.GetRawDataFromExcelRows(in currentWorksheet, ref rangeSourceReportRows);
+
+                // Union collections
+                List<Dictionary<string, ItemForParsing>> rawRowsItems = new() { };
+                foreach (var sourceReportRowsRange in rangeSourceReportRows)
+                {
+                    sourceReportRowsRange.RowsWithRawData.ForEach(rawRowsItems.Add);
+                }
+
+                // Processing:
+                // 1. Save balances for sku's
+                SaveSKUBalanceUnits(reportFileKey, workSheetName, rawRowsItems);
+
+                // 2. Create or update sku's from balance units 
+                var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName);
+                await Task.Run(async () => await makeSKUsTask);
+                makeSKUsTask.Wait();
+
+                // 3. Report
+                static bool FindSkusWithRansoms(SKU sku) => sku.SKURansomsBalance != null;
+                static bool FindSkusWithRemaining(SKU sku) => sku.SKURemainingBalance != null;
+                static bool FindSkusWithShipped(SKU sku) => sku.SKURemainingBalance?.SKUShipped != null;
+                static bool FindSkusWithCompensation(SKU sku) => sku.SKUCompensationBalance != null;
+                static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
+
+                var message = string.Empty;
+
+                switch (reportFileKey)
+                {
+                    case SourceSKUReportFileKey.RansomsWB:
+                        predicateHandler = FindSkusWithRansoms;
+                        message = "Артикулов из выкупов WB: ";
+                        break;
+                    case SourceSKUReportFileKey.RansomsOZ:
+                        predicateHandler = FindSkusWithRansoms;
+                        message = "Артикулов из выкупов OZ: ";
+                        break;
+                    case SourceSKUReportFileKey.RemainingWB:
+                        predicateHandler = FindSkusWithRemaining;
+                        message = "Артикулов из прихода и остатоков WB: ";
+                        break;
+                    case SourceSKUReportFileKey.RemainingOZ:
+                        predicateHandler = FindSkusWithRemaining;
+                        message = "Артикулов из прихода и остатоков OZ: ";
+                        break;
+                    case SourceSKUReportFileKey.Additional:
+                        switch (workSheetName)
+                        {
+                            case ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME:
+                                predicateHandler = FindSkusWithCompensation;
+                                message = "Артикулов из компенсации недостач: ";
+                                break;
+                            case ExcelManager.RESORTS_REPORT_WORKSHEET_NAME:
+                                predicateHandler = FindSkusWithResort;
+                                message = "Артикулов из пересортов: ";
+                                break;
+                            case ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME:
+                                // ...
+                                break;
+                        };
+                        break;
+                    case SourceSKUReportFileKey.Shipped:
+                        predicateHandler = FindSkusWithShipped;
+                        message = "Артикулов из расхода со склада: ";
+                        break;
+                    default:
+                        break;
+                }
+
+                // Report
+                int skusWithPredicateCount = SKUs.GetValueCount(predicateHandler.Invoke);
+                message = string.Concat(message, skusWithPredicateCount);
+                OnManagerReached(new(message, 1000, false));
+            }
+
             return StopFuctionExecuting(ref stopwatch);
         }
 
@@ -181,7 +205,6 @@ namespace ClientTableAnalizer.Objects.Managers
             bool isShipped = reportFileKey == SourceSKUReportFileKey.Shipped;
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
-
 
             List<SourceSKUReportFileKey> validKeys = new()
             {
@@ -266,6 +289,8 @@ namespace ClientTableAnalizer.Objects.Managers
             }
             else if(isResort) 
             {
+                Trace.WriteLine("is resorts");
+
                 var skuResortDataUnits = from rowWithRawData in rowsWithRawData
                                          let unit = new SKUResortDataUnit(rowWithRawData)
                                          group unit by unit.SKUNumber 
@@ -400,9 +425,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 }
                 else if(isDummies)
                 {
-                    var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUDummiesDataUnit>().ToList()) ??
-                        throw new InvalidCastException("Cannot cast collection to IList<SKUResortDataUnit>.");
-
+                    // ... 
                 }
             }
         }
