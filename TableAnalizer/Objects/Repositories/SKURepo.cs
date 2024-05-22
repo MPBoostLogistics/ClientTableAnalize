@@ -23,137 +23,176 @@ namespace ClientTableAnalizer.Objects.Repositories
 
         private static SKU CreateNewSKU(SKU retriveValue, SKU newValue) 
         {
-            Marketplace? marketplace = retriveValue.Marketplace is not null ? 
-                retriveValue.Marketplace : 
-                newValue.Marketplace is not null ? 
-                    newValue.Marketplace : 
-                    null;
+            // Marketplace 
+            Marketplace? marketplace = null;
+            switch(retriveValue.Marketplace.HasValue, newValue.Marketplace.HasValue) 
+            {
+                case (false, true):
+                    marketplace = newValue.Marketplace;
+                    break;
+                case (true, false): case (true, true):
+                    marketplace = retriveValue.Marketplace;
+                    break;
+            };
 
+            // SKUNumber  
             int skuNumber = retriveValue.SKUNumber;
+            
+            // SKUBrand
+            bool isRetriveValueIncludesSKUBrand = !string.IsNullOrEmpty(retriveValue.SKUBrand);
+            bool isNewValueIncludesSKUBrand = !string.IsNullOrEmpty(newValue.SKUBrand);
+            string skuBrand = (isRetriveValueIncludesSKUBrand, isNewValueIncludesSKUBrand) switch
+            {
+                (false, true) => newValue.SKUBrand,
+                (true, false) or (true, true) => retriveValue.SKUBrand,
+                _ => string.Empty,
+            };
 
-            string? skuBrand = retriveValue.SKUBrand is not null ? 
-                retriveValue.SKUBrand : 
-                newValue.SKUBrand is not null ? 
-                    newValue.SKUBrand : 
-                    null;
-
-            string? skuName = retriveValue.SKUName is not null ? 
-                retriveValue.SKUName : 
-                newValue.SKUName is not null ? 
-                    newValue.SKUName : 
-                    null;
+            // SKUName
+            bool isRetriveValueIncludesSKUName = !string.IsNullOrEmpty(retriveValue.SKUName);
+            bool isNewValueIncludesSKUName = !string.IsNullOrEmpty(newValue.SKUName);
+            string skuName = (isRetriveValueIncludesSKUName, isNewValueIncludesSKUName) switch
+            {
+                (false, true) => newValue.SKUName,
+                (true, false) or (true, true) => retriveValue.SKUName,
+                _ => string.Empty,
+            };
             
             // SKURansomsBalance
-            SKURansomsBalance? skuRansomsBalance;
-            if(retriveValue.SKURansomsBalance is not null) 
+            SKURansomsBalance? skuRansomsBalance = null;
+            switch(retriveValue.SKURansomsBalance is not null, newValue.SKURansomsBalance is not null) 
             {
-                skuRansomsBalance = retriveValue.SKURansomsBalance;
-                if(newValue.SKURansomsBalance is not null) 
-                {
-                    int? onWay = newValue.SKURansomsBalance.SKURansomsOnWay;
-                    int? canceled = newValue.SKURansomsBalance.SKURansomsCanceled;
-                    int? delivered = newValue.SKURansomsBalance.SKURansomsDelivered;
-                    int? withDrawn = newValue.SKURansomsBalance.SKURansomsWithDrawn;
+                case (false,true):
+                    skuRansomsBalance = newValue.SKURansomsBalance;
+                    break;
 
-                    skuRansomsBalance.Update(onWay, canceled, delivered, withDrawn);
-                }
-            } 
-            else if(newValue.SKURansomsBalance is not null) 
-            {
-                skuRansomsBalance = newValue.SKURansomsBalance;
-            } 
-            else 
-            {
-                skuRansomsBalance = null;
+                case (true,true): case (true,false):
+
+                    skuRansomsBalance = retriveValue.SKURansomsBalance;
+
+                    if(newValue.SKURansomsBalance is not null) 
+                    {
+                        int? onWay =  retriveValue.SKURansomsBalance!.SKURansomsOnWay + newValue.SKURansomsBalance.SKURansomsOnWay;
+                        int? canceled = retriveValue.SKURansomsBalance!.SKURansomsCanceled + newValue.SKURansomsBalance.SKURansomsCanceled;
+                        int? delivered = retriveValue.SKURansomsBalance!.SKURansomsDelivered + newValue.SKURansomsBalance.SKURansomsDelivered;
+                        int? withDrawn = retriveValue.SKURansomsBalance!.SKURansomsWithDrawn + newValue.SKURansomsBalance.SKURansomsWithDrawn;
+
+                        skuRansomsBalance = new (onWay, canceled, delivered, withDrawn);
+                    }
+
+                    break;
             }
 
             // SKURemainingBalance
-            SKURemainingBalance? skuRemainingBalance;
-            if(retriveValue.SKURemainingBalance is not null) 
+            SKURemainingBalance? skuRemainingBalance = null;
+            switch(retriveValue.SKURemainingBalance is not null, newValue.SKURemainingBalance is not null) 
             {
-                skuRemainingBalance = retriveValue.SKURemainingBalance;
-                if(newValue.SKURemainingBalance is not null) 
-                {
-                    int skuReceipt = newValue.SKURemainingBalance.SKUReceipt;
-                    int skuShipped = newValue.SKURemainingBalance.SKUShipped;
-                    int skuRemaining = newValue.SKURemainingBalance.SKURemaining;
+                case (false,true):
+                    skuRemainingBalance = newValue.SKURemainingBalance;
+                    break;
 
-                    skuRemainingBalance.Update(skuReceipt, skuShipped, skuRemaining);
-                }
-            } 
-            else if(newValue.SKURemainingBalance is not null) 
-            {
-                skuRemainingBalance = newValue.SKURemainingBalance;
-            } 
-            else 
-            {
-                skuRemainingBalance = null;
+                case (true,true): case (true,false):
+
+                    skuRemainingBalance = retriveValue.SKURemainingBalance;
+
+                    if(newValue.SKURemainingBalance is not null) 
+                    {
+                        string brandAndName = !string.IsNullOrEmpty(retriveValue.SKURemainingBalance!.SKUBrandAndName) ?
+                            retriveValue.SKURemainingBalance!.SKUBrandAndName : 
+                                !string.IsNullOrEmpty(newValue.SKURemainingBalance!.SKUBrandAndName) ? 
+                                newValue.SKURemainingBalance!.SKUBrandAndName : 
+                                string.Empty;
+
+                        int skuReceipt = retriveValue.SKURemainingBalance!.SKUReceipt + newValue.SKURemainingBalance.SKUReceipt;
+                        int skuShipped = retriveValue.SKURemainingBalance!.SKUShipped + newValue.SKURemainingBalance.SKUShipped;
+                        int skuRemaining = retriveValue.SKURemainingBalance!.SKURemaining + newValue.SKURemainingBalance.SKURemaining;
+
+                        skuRemainingBalance = new SKURemainingBalance(skuNumber, brandAndName, skuReceipt,skuShipped, skuRemaining);
+                    }
+
+                    break;
             }
 
             // SKUCompensationBalance
-            SKUCompensationBalance? skuCompensationBalance;
-            if(retriveValue.SKUCompensationBalance is not null)  
+            SKUCompensationBalance? skuCompensationBalance = null;
+            switch(retriveValue.SKUCompensationBalance is not null, newValue.SKUCompensationBalance is not null) 
             {
-                skuCompensationBalance = retriveValue.SKUCompensationBalance;
-                if(newValue.SKUCompensationBalance is not null)  
-                {
-                    int count = newValue.SKUCompensationBalance.Count;
-                    double sum = newValue.SKUCompensationBalance.Sum;
-                    string? comment = newValue.SKUCompensationBalance.Comments;
+                case (false,true):
+                    skuCompensationBalance = newValue.SKUCompensationBalance;
+                    break;
 
-                    skuCompensationBalance.Update(count, sum, comment);
-                }
+                case (true,true): case (true,false):
 
-            }
-            else if(newValue.SKUCompensationBalance is not null) 
-            {
-                skuCompensationBalance = newValue.SKUCompensationBalance;
-            } 
-            else 
-            {
-                skuCompensationBalance = null;
-            }
-        
-            // SKUResortBalance
-            SKUResortBalance? skuResortBalance;
-            if(retriveValue.SKUResortBalance is not null) 
-            {
-                skuResortBalance = retriveValue.SKUResortBalance;
-                if(newValue.SKUResortBalance is not null) 
-                {
-                    var resortSKUsInNewValue = newValue.SKUResortBalance.ResortSKUs;
-                    if(resortSKUsInNewValue is not null && resortSKUsInNewValue.Count > 0) 
+                    skuCompensationBalance = retriveValue.SKUCompensationBalance;
+
+                    if(newValue.SKUCompensationBalance is not null) 
                     {
-                        skuResortBalance.Update(resortSKUsInNewValue);
+                        int count = newValue.SKUCompensationBalance.Count;
+                        double sum = newValue.SKUCompensationBalance.Sum;
+                        string? comment = newValue.SKUCompensationBalance.Comments;
+
+                        skuCompensationBalance!.Update(count, sum, comment);
                     }
-                }
-            } 
-            else if(newValue.SKUResortBalance is not null) 
-            {
-                skuResortBalance = newValue.SKUResortBalance;
+
+                    break;
             }
-            else 
+
+            // SKUResortBalance
+            SKUResortBalance? skuResortBalance = null;
+            switch(retriveValue.SKUResortBalance is not null, newValue.SKUResortBalance is not null) 
             {
-                skuResortBalance = null;
+                case (false,true):
+                    skuResortBalance = newValue.SKUResortBalance!;
+                    break;
+                case (true,true): case (true,false):
+                    skuResortBalance = retriveValue.SKUResortBalance!;
+
+                    if(newValue.SKUResortBalance is not null) 
+                    {
+                        var resortSKUsInNewValue = newValue.SKUResortBalance.ResortSKUs;
+                        if(resortSKUsInNewValue is not null && resortSKUsInNewValue.Count > 0) 
+                        {
+                            skuResortBalance!.Update(resortSKUsInNewValue);
+                        }
+                    }
+                    break;
             }
 
             // AveragePrice
-            double? averagePrice = retriveValue.AveragePrice is not (double)default ? 
-                retriveValue.AveragePrice : 
-                newValue.AveragePrice is not (double)default ? 
-                    newValue.AveragePrice : 
-                    null;
+            bool isRetriveValueIncludesPrice = !Equals(retriveValue.AveragePrice, SKU.AVERAGE_PRICE_DEFAULT);
+            bool isNewValueIncludesPrice = !Equals(newValue.AveragePrice, SKU.AVERAGE_PRICE_DEFAULT);
+            double? averagePrice = (isRetriveValueIncludesPrice, isNewValueIncludesPrice) switch
+            {
+                (false, true) => newValue.AveragePrice,
+                (true, false) => retriveValue.AveragePrice,
+                (true, true) => new List<double>(){retriveValue.AveragePrice, newValue.AveragePrice}.Min(),
+                (false, false) => null
+            };
 
             // MaxRansomsDate
-   
-            DateOnly? maxRansomsDate = retriveValue.MaxRansomsDate != SKU.DATEONLY_DEFAULT ? 
-                retriveValue.MaxRansomsDate : 
-                newValue.MaxRansomsDate  != SKU.DATEONLY_DEFAULT ? 
-                    newValue.MaxRansomsDate : 
-                    null;
+            bool isRetriveValueIncludesDate = !Equals(retriveValue.MaxRansomsDate, SKU.DATEONLY_DEFAULT);
+            bool isNewValueIncludesDate = !Equals(newValue.MaxRansomsDate, SKU.DATEONLY_DEFAULT);
+            DateOnly? maxRansomsDate = (isRetriveValueIncludesDate, isNewValueIncludesDate) switch
+            {
+                (false, true) => newValue.MaxRansomsDate,
+                (true, false) => retriveValue.MaxRansomsDate,
+                (true, true) => new List<DateOnly>(){retriveValue.MaxRansomsDate, newValue.MaxRansomsDate}.Max(),
+                (false, false) => null
+            };
+
+            // MaxRansomsDate
+            bool isRetriveValueIncludesDeadLine = !Equals(retriveValue.DeadLineDays, SKU.DEADLINE_DAYS_DEFAULT);
+            bool isNewValueIncludesDeadLine = !Equals(newValue.DeadLineDays, SKU.DEADLINE_DAYS_DEFAULT);
+            int? deadlineDays = (isRetriveValueIncludesDeadLine, isNewValueIncludesDeadLine) switch
+            {
+                (false, true) => newValue.DeadLineDays,
+                (true, false) => retriveValue.DeadLineDays,
+                (true, true) => new List<int>(){retriveValue.DeadLineDays, newValue.DeadLineDays}.Max(),
+                (false, false) => null
+            };
 
             return new SKU(marketplace, skuNumber, skuBrand, skuName, skuRansomsBalance, 
-                skuRemainingBalance, skuCompensationBalance, skuResortBalance, averagePrice, maxRansomsDate);
+                skuRemainingBalance, skuCompensationBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays);
         }
     }
 }

@@ -431,7 +431,7 @@ namespace TableAnalizerTest.Managers
             // act 03
             var outputSkus = _skuManager.SKUs.GetValuesList().Select(s => s.value.GetSKUForTargetReports).ToList();
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
-            _excelManager.FillingСellsWithData<SKUForTargetReports>(outputPackage, ref sheet, in outputSkus, ExcelManager.MainReportSKUInfoCells, FileManager.OutputClientReportFilePath); 
+            _excelManager.FillingСellsWithData<SKUForTargetReports>(outputPackage, ref sheet, in outputSkus, _excelManager.mainReportSKUInfoCells, FileManager.OutputClientReportFilePath); 
 
             // ... 
             outputPackage.Dispose();

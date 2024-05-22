@@ -76,25 +76,91 @@ internal class Program
         var existingKeys = availabilityNecessaryTask.Result;
         if (existingKeys is not null && existingKeys.Count > 0)
         {
-            var count = existingKeys.Count;
-            Task[] tasks = new Task[count];
-            for (int i = 0; i < existingKeys.Count; i++)
+            // Ransoms tasks
+            Task[] ransomsTasks = new Task[2];
+            if(existingKeys.Contains(SourceSKUReportFileKey.RansomsWB)) 
             {
-                tasks[i] = ReceivingAndProcessingData(existingKeys[i]);
+                ransomsTasks[0] =  ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsWB);
             }
 
-            for (int i = 0; i < tasks.Length; i++)
+            if(existingKeys.Contains(SourceSKUReportFileKey.RansomsOZ)) 
             {
-                var currentTask = tasks[i];
+                var index = ransomsTasks.Length > 0 ? 1 : 0;
+                ransomsTasks[index] =  ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsOZ);
+            }
+
+            if(ransomsTasks.Length > 0) 
+            {
+                for (int i = 0; i < ransomsTasks.Length; i++)
+                {
+                    var currentTask = ransomsTasks[i];
+                    await Task.Run(async () => await currentTask);
+                }
+            }
+
+            Task.WaitAll(ransomsTasks);
+            
+            // Remaining tasks
+            Task[] remainingTasks = new Task[2];
+            if(existingKeys.Contains(SourceSKUReportFileKey.RemainingWB)) 
+            {
+                remainingTasks[0] = ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingWB);
+            }
+
+            if(existingKeys.Contains(SourceSKUReportFileKey.RemainingOZ)) 
+            {
+                var index = remainingTasks.Length > 0 ? 1 : 0;
+                remainingTasks[index] =  ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingOZ);
+            }
+
+            if(remainingTasks.Length > 0) 
+            {
+                for (int i = 0; i < remainingTasks.Length; i++)
+                {
+                    var currentTask = remainingTasks[i];
+                    await Task.Run(async () => await currentTask);
+                }
+            }
+
+            Task.WaitAll(remainingTasks);
+
+            // Shipped tasks
+            if(existingKeys.Contains(SourceSKUReportFileKey.Shipped)) 
+            {
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Shipped);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
 
-            Task.WaitAll(tasks);
+            // Additional tasks
+            if(existingKeys.Contains(SourceSKUReportFileKey.Additional)) 
+            {
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Additional);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            } 
+
+
+
+            // var count = existingKeys.Count;
+            // Task[] tasks = new Task[count];
+            // for (int i = 0; i < existingKeys.Count; i++)
+            // {
+            //     tasks[i] = ReceivingAndProcessingData(existingKeys[i]);
+            // }
+
+            // for (int i = 0; i < tasks.Length; i++)
+            // {
+            //     var currentTask = tasks[i];
+            //     await Task.Run(async () => await currentTask);
+            //     currentTask.Wait();
+            // }
+
+            // Task.WaitAll(tasks);
 
             // Delete old logistic report 
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
-            var outputSkus = skuManager.SKUs.GetValuesList().Select(s => s.value.GetSKUForTargetReports).ToList();
+            var outputSkus = skuManager.SKUs.GetValuesList().Select(s => s.value.GetSKUForTargetReports).OrderByDescending(el => el.SKUDate).ToList();
             excelManager.MakeTargetReports(outputSkus);
 
             // Report 
@@ -168,36 +234,23 @@ internal class Program
 
         if (reportFile is not null)
         {
-            if (reportFileKey == SourceSKUReportFileKey.RansomsWB ||
-                reportFileKey == SourceSKUReportFileKey.RansomsOZ ||
-                reportFileKey == SourceSKUReportFileKey.RemainingWB ||
-                reportFileKey == SourceSKUReportFileKey.RemainingOZ || 
-                reportFileKey == SourceSKUReportFileKey.Shipped ||
-                reportFileKey == SourceSKUReportFileKey.Additional
-            )
+          
+            // Make ExcelPackage
+            ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
+
+            // ReceivingAndProcessing
+            var processingRansomsDataTask = skuManager.ReceivingAndProcessingRansomsData(reportFileKey);
+            await Task.Run(async () => await processingRansomsDataTask);
+            processingRansomsDataTask.Wait();
+
+            // Dispose package
+            if(ExcelManager.GetExcelPackageByKey(reportFileKey, out ExcelPackage? existingPackage)) 
             {
-                // Make ExcelPackage
-                ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
-
-                // ReceivingAndProcessing
-                var processingRansomsDataTask = skuManager.ReceivingAndProcessingRansomsData(reportFileKey);
-                await Task.Run(async () => await processingRansomsDataTask);
-                processingRansomsDataTask.Wait();
-
-                // Dispose package
-                if(ExcelManager.GetExcelPackageByKey(reportFileKey, out ExcelPackage? existingPackage)) 
-                {
-                    existingPackage?.Dispose();
-                }
-
-                // Return time
-                return processingRansomsDataTask.Result;
-            } 
-            else 
-            {
-                return 0;
+                existingPackage?.Dispose();
             }
 
+            // Return time
+            return processingRansomsDataTask.Result;
         }
         else
         {

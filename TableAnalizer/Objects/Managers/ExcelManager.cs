@@ -116,7 +116,7 @@ namespace ClientTableAnalizer.Objects.Managers
             new(3, "DummiesComment", ParsingTypeCode.StringTypeCode, false)
         };
 
-        public static TargetCell[] MainReportSKUInfoCells { get; } = new TargetCell[]
+        public TargetCell[] mainReportSKUInfoCells = new TargetCell[]
         {
             new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUmp",
@@ -124,8 +124,8 @@ namespace ClientTableAnalizer.Objects.Managers
             new (colNumber: 2, colName: "Артикул", colWidth: 12, format: "0",
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUNumber",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
-            new (colNumber: 3, colName: "Бренд товара", colWidth: 10, format: "0",
-                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUBrand",
+            new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUBrand",
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None),
             new (colNumber: 4, colName: "Наименование товара", colWidth: 50, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUName",
@@ -137,16 +137,16 @@ namespace ClientTableAnalizer.Objects.Managers
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDate",
                 parsingTypeCode: ParsingTypeCode.DataOnlyTypeCode, excelFillStyle:  ExcelFillStyle.Solid),
             new (colNumber: 7, colName: "Статус взаиморасчетов", colWidth: 12, format: "0",
-                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SellmentStatusString",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SellmentStatusString",
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None),
             new (colNumber: 8, colName: "Заказов: всего", colWidth: 12, format: "0",
-                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKURansomsTotal",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKURansomsTotal",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
             new (colNumber: 9, colName: "Заказов: отменено",colWidth: 7, format: "0",
-                wrapTextInHeader: false, textRotationInHeader: 90, propertyName: "SKURansomsCanceled",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsCanceled",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
             new (colNumber: 10, colName: "Заказов: в пути", colWidth: 7, format: "0",
-                wrapTextInHeader: false, textRotationInHeader: 90, propertyName: "SKURansomsOnWay",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsOnWay",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
             new (colNumber: 11, colName: "Заказов: доставлено на ПВЗ", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsDelivered",
@@ -178,6 +178,9 @@ namespace ClientTableAnalizer.Objects.Managers
             new (colNumber: 20, colName: "Склад: Остаток товаров", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURemaining",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
+            new (colNumber: 20, colName: "Комментарий к товару", colWidth: 20, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUComment",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
                   
             // Info on arrival of goods at warehouse
             // new (12, "Склад: Ожидание", 11.5,"0", true, 0),
@@ -272,7 +275,11 @@ namespace ClientTableAnalizer.Objects.Managers
             CreateExcelWorkSheet(mainOutputReportSheetName, in outputPackage, out var mainOutputReportSheet, Colors[SKUSellmentStatus.FullSet]);
 
             // Make main report
-            FillingСellsWithData<SKUForTargetReports>(outputPackage, ref mainOutputReportSheet, in skuForTargetReports, MainReportSKUInfoCells, FileManager.OutputClientReportFilePath); 
+            FillingСellsWithData<SKUForTargetReports>(outputPackage, ref mainOutputReportSheet, in skuForTargetReports, mainReportSKUInfoCells, FileManager.OutputClientReportFilePath); 
+            SetupTableHeader(in mainReportSKUInfoCells, ref mainOutputReportSheet);    
+            AddFilterInWorkSheet(ref mainOutputReportSheet);
+
+            SaveReceivedData(FileManager.OutputClientReportFilePath, ref outputPackage);
 
             outputPackage.Dispose();
         }
@@ -360,8 +367,6 @@ namespace ClientTableAnalizer.Objects.Managers
                 }
                 rowIndex++;
             }
-
-            SaveReceivedData(outputPath, ref package);
         }
 
         /// <summary>

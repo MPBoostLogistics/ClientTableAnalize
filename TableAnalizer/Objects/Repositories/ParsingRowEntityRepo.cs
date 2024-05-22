@@ -8,10 +8,9 @@ namespace ClientTableAnalizer.Objects.Repositories
         {
             if (Entiies.TryGetValue(id, out List<ParsingRowEntity>? retrievedValue) && retrievedValue is not null)
             {
-                List<ParsingRowEntity> newCollection = new(retrievedValue);
-                newCollection.ForEach(newCollection.Add);
-
-                return Entiies.TryUpdate(id, retrievedValue, newCollection); 
+                List<ParsingRowEntity> newValue = new(retrievedValue);
+                newValue.AddRange(item);
+                return Entiies.TryUpdate(id, retrievedValue, newValue); 
             }
             else
             {

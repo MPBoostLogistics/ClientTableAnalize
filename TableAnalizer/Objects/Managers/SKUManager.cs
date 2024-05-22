@@ -28,7 +28,6 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <returns>Number of SKUs in collection.</returns>
         /// <remarks><i>New version, tested</i></remarks>
         public int SKUsCount() => SKUs.Count();
-
         private delegate bool FindSkusWithPredicate(SKU sku);  
         private FindSkusWithPredicate predicateHandler;
 
@@ -99,8 +98,6 @@ namespace ClientTableAnalizer.Objects.Managers
                 OnManagerReached(new($"There is no worksheet named '{workSheetName}' in workbook file at key {reportFileKey}.", 2000, true));
                 return StopFuctionExecuting(ref stopwatch);
             }
-
-            //Console.WriteLine($"{reportFileKey}, {currentWorksheet.Name}");
 
             // Get ranges from source excel worksheet
             if (ExcelManager.MakeRangeSourceReportRowsByKey(reportFileKey, workSheetName, out List<RangeSourceReportRows> rangeSourceReportRows))
@@ -385,14 +382,17 @@ namespace ClientTableAnalizer.Objects.Managers
                     var averagePrice = units
                         .Average(u => u.SKUCost);
 
-                    SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, ransomsBalance, averagePrice, skuMaxRansomDate));
+                    SKU tempSKU = new(marketplace, skuNumber, ransomsBalance, averagePrice, skuMaxRansomDate, DeadlineDays);
+                    SKUs.RetrieveAndUpdateOrAddValue(skuNumber, tempSKU);
                 }
                 else if (isRemaining)
                 {
                     var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKURemainingBalanceDataUnit>().ToList()) ??
                         throw new InvalidCastException("Unable to cast collection to IList<SKURemainingBalanceDataUnit>.");
 
-                    SKURemainingBalance remainingBalance = new(units.ToList());
+                    var skuBrandName = units.First().SKUBrandAndName;
+
+                    SKURemainingBalance remainingBalance = new(skuNumber, skuBrandName, units.ToList());
                     SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));
                 } 
                 else if(isShipped) 
@@ -400,7 +400,7 @@ namespace ClientTableAnalizer.Objects.Managers
                     var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUShippedDataUnit>().ToList()) ??
                         throw new InvalidCastException("Cannot cast collection to IList<SKUShippedDataUnit>.");
                     
-                    SKURemainingBalance remainingBalance = new(units.ToList());
+                    SKURemainingBalance remainingBalance = new(skuNumber, units.ToList());
                     SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));
                 } 
                 else if(isCompensation) 

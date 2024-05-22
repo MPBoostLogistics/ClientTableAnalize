@@ -17,21 +17,32 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         #endregion
 
         #region Constructors
-        public SKURemainingBalance(List<SKURemainingBalanceDataUnit> skuRemainingUnits)
+        // For create from SKURemainingBalanceDataUnit collection.
+        public SKURemainingBalance(int skuNumber, string skuBrandName, List<SKURemainingBalanceDataUnit> skuRemainingUnits)
         {
-            Update(skuRemainingUnits);
+            SKUNumber = skuNumber;
+            SKUBrandAndName = skuBrandName;
+
+            SKUReceipt = skuRemainingUnits
+                .Aggregate(0, (acc, unit) => acc + unit.SKUReceipt);
+            SKURemaining = skuRemainingUnits
+                .Aggregate(0, (acc, unit) => acc + unit.SKURemaining);
         }
 
-        public SKURemainingBalance(List<SKUShippedDataUnit> skuShippedDataUnits)
+        // For create from SKUShippedDataUnit collection.
+        public SKURemainingBalance(int skuNumber, List<SKUShippedDataUnit> skuShippedDataUnits)
         {
+            SKUNumber = skuNumber;
             SKUShipped = skuShippedDataUnits
                 .Aggregate(0, (acc, unit) => acc + unit.SKUShippedCount);
         }
 
+        // For create new balance from repo.
          public SKURemainingBalance(int number, string brandAndName, int receipt, int shipped, int remaining) 
          {
             SKUNumber = number;
             SKUBrandAndName = brandAndName;
+
             SKUReceipt = receipt;
             SKUShipped = shipped;
             SKURemaining = remaining;
@@ -40,42 +51,6 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
         #endregion Constructors
 
         #region Functionality
-
-        public void Update(List<SKURemainingBalanceDataUnit> skuRemainingUnits) 
-        {
-            if(SKUNumber == default) 
-            {
-                SKUNumber = skuRemainingUnits
-                .Select(u => u.SKUNumber)
-                .First();
-            }
-            
-            if(string.IsNullOrEmpty(SKUBrandAndName)) 
-            {
-                SKUBrandAndName = skuRemainingUnits
-                .Select(u => u.SKUBrandAndName)
-                .First();
-            } 
-            
-            SKUReceipt = skuRemainingUnits
-                .Aggregate(0, (acc, unit) => acc + unit.SKUReceipt);
-
-            SKURemaining = skuRemainingUnits
-                .Aggregate(0, (acc, unit) => acc + unit.SKURemaining);
-        }
-        
-        public void Update(List<SKUShippedDataUnit> skuShippedDataUnits) 
-        {
-            SKUShipped = skuShippedDataUnits
-                .Aggregate(0, (acc, unit) => acc + unit.SKUShippedCount);
-        }
-        
-        public void Update(int skuReceipt, int skuShipped, int skuRemaining) 
-        {
-              SKUReceipt += skuReceipt;
-              SKUShipped += skuShipped;
-              SKURemaining += skuRemaining;
-        }
 
         public bool Equals(SKURemainingBalance? other) =>
             SKUNumber == other?.SKUNumber;

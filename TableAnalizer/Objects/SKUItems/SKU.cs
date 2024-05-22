@@ -8,6 +8,8 @@ namespace ClientTableAnalizer.Objects.SKUItems
     {
         #region  Variables and constants 
         public static readonly DateOnly DATEONLY_DEFAULT = new(0001,01,01);
+        public static readonly double AVERAGE_PRICE_DEFAULT = 0.00;
+        public static readonly int DEADLINE_DAYS_DEFAULT = 30;
         #endregion Variables and constants
 
         #region Properties
@@ -19,51 +21,57 @@ namespace ClientTableAnalizer.Objects.SKUItems
         public SKURemainingBalance? SKURemainingBalance { get; private set;}
         public SKUCompensationBalance? SKUCompensationBalance { get; private set; }
         public SKUResortBalance? SKUResortBalance { get; private set; }
-        public double AveragePrice { get; private set;} = default;
-        public DateOnly MaxRansomsDate { get; private set;} = default;
-        public int DeadLineDays { get;  set; } = 30;
-
-
-        //public SellmentStatus SellmentStatus { get; private set; } = new(SKUSellmentStatus.Unknown);
-        //public Color FillColor { get; set; } = Color.Empty;
-
-        // public SKUStorageBalance ArticleStorageBalance { get; private set; }
-        // private SKUBalancesReport? _articleBalancesReport;
-        // public ArticleShortage? ArticleShortage { get; private set; }
-        // public SKUItemForReport? Overrun { get; private set; }
-        // 
-        // public bool IsDeadline { get; private set; }
-        // 
-        //  
-        // public string Comment { get; private set; }
+        public double AveragePrice { get; private set;} = AVERAGE_PRICE_DEFAULT;
+        public DateOnly MaxRansomsDate { get; private set;} = DATEONLY_DEFAULT;
+        public int DeadLineDays { get;  set; } = DEADLINE_DAYS_DEFAULT;
 
         #endregion
 
         #region Constructors && destructors
-        public SKU(Marketplace? marketplace, int skuNumber, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate)
+
+        // Constructor for ransoms
+        public SKU(Marketplace? marketplace, int skuNumber, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate, int deadlineDays)
         {
             SKUNumber = skuNumber;
-            SKUBrand = string.IsNullOrEmpty(SKUBrand) ? "No brand" : SKUBrand; 
-            SKUName = string.IsNullOrEmpty(SKUName) ? "No name" : SKUName; 
+            SKUBrand = string.Empty; SKUName = string.Empty;
 
-            Update(marketplace, skuRansomsBalance, averagePrice, maxRansomsDate);
+            Marketplace = marketplace;
+            SKURansomsBalance = skuRansomsBalance;
+            AveragePrice = averagePrice;
+            MaxRansomsDate = maxRansomsDate;
+
+            DeadLineDays = deadlineDays;
         }
 
-        public SKU(Marketplace? marketplace, int skuNumber, SKURemainingBalance skuRansomsBalance)
+        // Constructor for remainingBalance 
+        public SKU(Marketplace? marketplace, int skuNumber, SKURemainingBalance skuRemainingBalance)
         {
             Marketplace = marketplace;
             SKUNumber = skuNumber;
-            SKUBrand = string.IsNullOrEmpty(SKUBrand) ? "No brand" : SKUBrand; 
-            SKUName = string.IsNullOrEmpty(SKUName) ? "No name" : SKUName; 
 
-            Update(skuRansomsBalance);
+            SKURemainingBalance = skuRemainingBalance;
+
+            var skuBrandAndName = skuRemainingBalance.SKUBrandAndName.Split('/');
+
+            switch(skuBrandAndName.Length) 
+            {
+                case 1:
+                    SKUName = skuBrandAndName[0].Trim();
+                    break;
+                case 2: case 3: case 4:
+                    SKUBrand = skuBrandAndName[0].Trim();
+                    SKUName = skuBrandAndName[1].Trim(); 
+                    break;
+                default:
+                    break;
+            }
         }
 
         // Constructor for generating a new entity from repository
-        public SKU(Marketplace? marketplace, int skuNumber, string? skuBrand, string? 
-            skuName, SKURansomsBalance? skuRansomsBalance, SKURemainingBalance? skuRemainingBalance, 
-            SKUCompensationBalance? skuCompensationBalance, SKUResortBalance? skuResortBalance, double? averagePrice, 
-            DateOnly? maxRansomsDate) 
+        public SKU(Marketplace? marketplace, int skuNumber, string skuBrand, string skuName, 
+            SKURansomsBalance? skuRansomsBalance, SKURemainingBalance? skuRemainingBalance, 
+            SKUCompensationBalance? skuCompensationBalance, SKUResortBalance skuResortBalance, double? averagePrice, 
+            DateOnly? maxRansomsDate, int? deadLineDays) 
        {
             Marketplace = marketplace;
             SKUNumber = skuNumber;
@@ -73,14 +81,27 @@ namespace ClientTableAnalizer.Objects.SKUItems
             SKURemainingBalance = skuRemainingBalance;
             SKUCompensationBalance = skuCompensationBalance;
             SKUResortBalance = skuResortBalance;
-            AveragePrice = averagePrice ?? default;
-            MaxRansomsDate = maxRansomsDate ?? DATEONLY_DEFAULT;
+
+            if(averagePrice.HasValue && !Equals(averagePrice, AVERAGE_PRICE_DEFAULT)) 
+            {
+                AveragePrice = averagePrice.Value;
+            }
+
+            if(maxRansomsDate.HasValue && !Equals(maxRansomsDate, DATEONLY_DEFAULT)) 
+            {
+                MaxRansomsDate = maxRansomsDate.Value;
+            }
+
+            if( deadLineDays.HasValue && !Equals(deadLineDays, DEADLINE_DAYS_DEFAULT)) 
+            {
+                DeadLineDays = deadLineDays.Value;
+            }
         }
 
-        public SKU(int skuNumber, SKUCompensationBalance skuShortageBalance) 
+        public SKU(int skuNumber, SKUCompensationBalance skuCompensationBalance) 
         {
             SKUNumber = skuNumber;
-            SKUCompensationBalance = skuShortageBalance;
+            SKUCompensationBalance = skuCompensationBalance;
         }
 
         public SKU(int skuNumber, SKUResortBalance skuResortBalance) 
@@ -97,30 +118,6 @@ namespace ClientTableAnalizer.Objects.SKUItems
         #region Functionality
 
         public SKUForTargetReports GetSKUForTargetReports => new(this, DeadLineDays);
-
-        public void Update(Marketplace? marketplace, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate) 
-        {
-            Marketplace = marketplace;
-            SKURansomsBalance = skuRansomsBalance;
-            AveragePrice = averagePrice;
-            MaxRansomsDate = maxRansomsDate;
-        }
-
-        public void Update(SKURemainingBalance skuRemainingBalance) 
-        {
-            SKURemainingBalance = skuRemainingBalance;
-
-            var items = skuRemainingBalance.SKUBrandAndName.Split('/').ToList();
-            if (items.Count == 1)
-            {
-                SKUName = items.First().Trim();
-            }
-            else if (items.Count == 2)
-            {
-                SKUBrand = items.First().Trim();
-                SKUName = items.Last().Trim();
-            }
-        }
 
         public void Update(SKUCompensationBalance skuShortageBalance) 
         {
