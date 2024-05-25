@@ -6,6 +6,8 @@
 // Внедрить Autofac
 
 // /Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles
+// /Users/dmitrijsamarcev/Library/Mobile Documents/com~apple~CloudDocs/MPBoost/Клиенты/Юсупов 79164372997 13465
+
 #nullable enable
 
 using System.Diagnostics;
@@ -15,16 +17,11 @@ using ClientTableAnalizer.Objects;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.Managers;
 using ClientTableAnalizer.Objects.SKUItems;
-using ClientTableAnalizer.Objects.Parsing;
 
 internal class Program
 {
     #region Variables and constants
     private static readonly Version? AppVersion = Assembly.GetExecutingAssembly().GetName().Version;
-    private static List<ArticleShortage> ArticleShortages { get; set; } = new();
-    private static readonly List<SKUItemForReport> ShortagesInWarehouse = new();
-    private static readonly List<SKUItemForReport> ShortagesInPickupPoints = new();
-    private static readonly List<SKUItemForReport> Overruns = new();
     private static string goodByMessage = "\nСпасибо за использование программы. Хорошего дня!";
     private static readonly string failureMessage = "Некорретные данные, попробуйте еще раз.";
     #endregion
@@ -124,6 +121,14 @@ internal class Program
 
             Task.WaitAll(remainingTasks);
 
+            // WriteOff task 
+            if(existingKeys.Contains(SourceSKUReportFileKey.WriteOffShortages)) 
+            {
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffShortages);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            } 
+
             // Shipped tasks
             if(existingKeys.Contains(SourceSKUReportFileKey.Shipped)) 
             {
@@ -140,23 +145,8 @@ internal class Program
                 currentTask.Wait();
             } 
 
-
-
-            // var count = existingKeys.Count;
-            // Task[] tasks = new Task[count];
-            // for (int i = 0; i < existingKeys.Count; i++)
-            // {
-            //     tasks[i] = ReceivingAndProcessingData(existingKeys[i]);
-            // }
-
-            // for (int i = 0; i < tasks.Length; i++)
-            // {
-            //     var currentTask = tasks[i];
-            //     await Task.Run(async () => await currentTask);
-            //     currentTask.Wait();
-            // }
-
-            // Task.WaitAll(tasks);
+            // TODO: отчет по списанию недостач
+            // ... 
 
             // Delete old logistic report 
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
@@ -170,50 +160,8 @@ internal class Program
         }
         else
         {
-            await Report(string.Concat("Нет отчетов, доступеых для анализа\n", goodByMessage), 2000, true);
+            await Report(string.Concat("Нет отчетов, доступных для анализа\n", goodByMessage), 2000, true);
         }
-
-        // //await GetUserStorageData(Marketplace.WB);
-
-        // //await GetUserStorageData(Marketplace.OZ);
-
-        // // if (!string.IsNullOrEmpty(storageFilePathWB))
-        // //   await ReadStorageReportFile(Marketplace.WB);
-
-        // // if (!string.IsNullOrEmpty(storageFilePathOZ))
-        // //   await ReadStorageReportFile(Marketplace.OZ);
-
-        // // await GetUserConsumingData();
-
-        // // if (!string.IsNullOrEmpty(consumptionPath))
-        // //     await ReadConsumptionReport(consumptionPath, ArticeStorageIndex.GoodsShipped, 4, 28);
-
-        // // await GetWriteoffShortagesData();
-
-        // // if (!string.IsNullOrEmpty(writeoffShortagesPath))
-        // //     await ReadConsumptionReport(writeoffShortagesPath, ArticeStorageIndex.WriteoffShortages, 5, 39);
-
-        // // await GetUserPayShortagesData();
-
-        // // if (!string.IsNullOrEmpty(consumptionPath))
-        // //     await ReadPayShortagesReport(payShortagesPath);
-
-        // // await GetRegrandingData();
-
-        // // if (!string.IsNullOrEmpty(regradingPath))
-        // //     await ReadRegrandingReport(regradingPath);
-
-        // // await GetDummyData();
-        // // if (!string.IsNullOrEmpty(dummyPath))
-        // //     await ReadDummyReport(dummyPath);
-
-        // Task analizeAndReportTask = readRedemptionTasksArray.Last().ContinueWith(_ =>
-        //       AnalyzeDataAndSaveReport()
-        // );
-
-        // // Task analizeAndReportTask = new(async () => await AnalyzeDataAndSaveReport());
-
-        // analizeAndReportTask.Wait();
 
         await Exit();
     }
@@ -234,7 +182,6 @@ internal class Program
 
         if (reportFile is not null)
         {
-          
             // Make ExcelPackage
             ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
 
@@ -254,7 +201,7 @@ internal class Program
         }
         else
         {
-            // TODO: Ошибка - нет отчета по ключу, выходим
+            Console.WriteLine($"Нет отчета по ключу {reportFileKey}");
             return 0;
         }
     }
@@ -269,7 +216,6 @@ internal class Program
 
         Environment.Exit(0);
     }
-
 
     /// <summary>
     /// Receives data from user from console as a string.
@@ -478,121 +424,6 @@ internal class Program
     //     // }
     // }
 
-    private static async Task ReadConsumptionReport(string? filePath, ArticeStorageIndex storeUnit, int artIndex, int countIndex)
-    {
-        // if (filePath is null && CheckFileExistence(filePath!) == null)
-        //     await Report(goodByMessage, 2000, true);
-
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        using ExcelPackage package = new(new FileInfo(filePath!));
-
-        // if (CheckSheets(in package) == null) await Report(goodByMessage, 2000, true);
-
-        ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-
-        (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
-
-        for (int row = 1; row <= rowCount; row++)
-        {
-            var articleAddress = worksheet.Cells[row, artIndex];
-            var countAddress = worksheet.Cells[row, countIndex];
-
-            if (articleAddress.Value != null && int.TryParse(articleAddress.Value.ToString(), out int article))
-            {
-                if (countAddress.Value != null && int.TryParse(countAddress.Value.ToString(), out int count))
-                {
-                    // if (articleDict.ContainsKey(article))
-                    // {
-                    //     articleDict[article].SetStoreBalance(storeUnit, count);
-                    // }
-                }
-            }
-        }
-
-        package.Dispose();
-        stopwatch.Stop();
-
-        int result = 0;
-
-        // switch (storeUnit)
-        // {
-        //     case ArticeStorageIndex.GoodsShipped:
-        //         result = articleDict.Sum(art => art.Value.StoreBalance.ShippedQuantity);
-        //         break;
-
-        //     case ArticeStorageIndex.WriteoffShortages:
-        //         result = articleDict.Sum(art => art.Value.StoreBalance.WriteoffShortages);
-        //         break;
-        //     default:
-        //         break;
-        // }
-
-        var targetMessage = storeUnit == ArticeStorageIndex.GoodsShipped ? "Общий расход по товарам клиента" : "Оприходовано и списано по недостачам от ПВЗ";
-        var reportMessage = $"{targetMessage}: {result}.\n";
-        reportMessage += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
-
-        await Report(reportMessage, 1500);
-    }
-
-    private static async Task ReadPayShortagesReport(string? filePath)
-    {
-        const int ARTICLE_INDEX = 1;
-        const int COUNT_INDEX = 2;
-        const int PRICE_INDEX = 3;
-
-
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        using ExcelPackage package = new(new FileInfo(filePath));
-
-        // if (CheckSheets(in package) == null) return;
-
-        ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-        (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
-
-        for (int row = 1; row <= rowCount; row++)
-        {
-            var articleAddress = worksheet.Cells[row, ARTICLE_INDEX];
-            var countAddress = worksheet.Cells[row, COUNT_INDEX];
-            var priceAddress = worksheet.Cells[row, PRICE_INDEX];
-
-            if (articleAddress.Value != null && int.TryParse(articleAddress.Value.ToString(), out int article) &&
-                countAddress.Value != null && int.TryParse(countAddress.Value.ToString(), out int count) &&
-                priceAddress.Value != null && double.TryParse(priceAddress.Value.ToString(), out double price))
-            {
-                // if (articleDict.ContainsKey(article))
-                // {
-                //     articleDict[article].SetStoreBalance(count, price);
-                // }
-            }
-        }
-
-        package.Dispose();
-        stopwatch.Stop();
-
-        // var paySum = articleDict
-        //     .Aggregate(0.00, (acc, el) => acc + el.Value.StoreBalance.PayShortagesSum);
-
-        string payReport;
-
-        // if (paySum > 0.00)
-        // {
-        //     payReport = string.Format("Сумма компенсации за недостачи товаров: {0:C}.\n", paySum);
-        // }
-        // else
-        // {
-        //     payReport = "Нет погашений недостач по указанным артикулам";
-        // }
-
-        //payReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
-
-        //await Report(payReport, 1500);
-
-    }
-
     private static async Task ReadRegrandingReport(string filePath)
     {
         const int ARTICLE_INDEX = 1;
@@ -663,154 +494,6 @@ internal class Program
         await Report(regReport, 1500);
     }
 
-    private static async Task ReadDummyReport(string filePath)
-    {
-        const int ARTICLE_INDEX = 1; const int COUNT_INDEX = 2;
-
-        // if (filePath is null || CheckFileExistence(filePath) == null) return;
-
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        using ExcelPackage package = new(new FileInfo(filePath));
-
-        // if (CheckSheets(in package) == null) return;
-
-        ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-        (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
-
-        int dummyCount = default;
-
-        for (int row = 1; row <= rowCount; row++)
-        {
-            var articleAddress = worksheet.Cells[row, ARTICLE_INDEX];
-            var countAddress = worksheet.Cells[row, COUNT_INDEX];
-
-            // Set article dummy 
-            // if (articleAddress.Value is not null &&
-            //     int.TryParse(articleAddress.Value.ToString(), out int article) &&
-            //     articleDict.ContainsKey(article) &&
-            //     countAddress.Value is not null &&
-            //     int.TryParse(countAddress.Value.ToString(), out int count)
-            //     )
-            // {
-            //     articleDict[article].StoreBalance.SetDummy(count);
-            //     dummyCount += count;
-            // }
-        }
-
-        package.Dispose();
-        stopwatch.Stop();
-
-        var regReport = $"Количество товаров в пустышках: {dummyCount}.\n";
-        regReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
-
-        await Report(regReport, 1500);
-    }
-
-    private static async Task AnalyzeDataAndSaveReport()
-    {
-        try
-        {
-            //skuManager.AnalyzeSKUs();
-
-            //. var outputPath = ExcelReportManager.CreateMainReportSheet("Отчет", skuManager.GetSKUs());
-            //ExcelReportManager.SaveReportFiles();
-
-            // Console.WriteLine($"Новый отчет по клиенту создан по пути: {outputPath}");
-            // Console.WriteLine();
-            // Console.WriteLine("Для завершения работы нажмите любую клавишу");
-
-            await Report(goodByMessage, 1500, true);
-
-            _ = Console.ReadKey();
-        }
-        catch (Exception ex)
-        {
-            goodByMessage = string.Concat(ex.Message, "\n", goodByMessage);
-            await Report(goodByMessage, 2000, true);
-        }
-
-
-
-
-
-
-
-        // ResultCell[] resultCellsForAddReports = new ResultCell[]
-        // {
-        //     new (1, "Артикул", 13, "0", false, 0),                         
-        //     new (2, "Название товара", 60, "0", true, 0),                 
-        //     new (3, "Кол-во, шт.",11, "0", true, 0),                 
-        //     new (4, "Средняя цена, руб.",11, "0.00", true, 0),                 
-        //     new (5, "Сумма, руб.", 11, "0.00", true, 0),                        
-        // };
-
-        // Analize ArticleShortages
-        // if (ArticleShortages.Count > 0)
-        // {
-        //     foreach (var articleShortage in ArticleShortages)
-        //     {
-        //         var articleShortagesInWarehouse = articleShortage.GetShortagesCountByPlace(ShortagesPlace.Warehouse);
-        //         if (articleShortagesInWarehouse > 0)
-        //         {
-        //             var shortageInWarehouse = new ArticleItemForReport(articleShortage.ArticleNumber, articleShortage.ArtileName, articleShortagesInWarehouse, articleShortage.AveragePrice, articleShortage.AveragePrice * articleShortagesInWarehouse);
-        //             ShortagesInWarehouse.Add(shortageInWarehouse);
-        //         }
-
-        //         var articleShortagesInPickupPoint = articleShortage.GetShortagesCountByPlace(ShortagesPlace.PickupPoint);
-        //         if (articleShortagesInPickupPoint > 0)
-        //         {
-        //             var shortageInPickupPoints = new ArticleItemForReport(articleShortage.ArticleNumber, articleShortage.ArtileName, articleShortagesInPickupPoint, articleShortage.AveragePrice, articleShortage.AveragePrice * articleShortagesInPickupPoint);
-        //             ShortagesInPickupPoints.Add(shortageInPickupPoints);
-        //         }
-        //     }
-
-        //     // Shortages in warehouse report
-        //     if (ShortagesInWarehouse.Count > 0)
-        //     {
-        //         // Create new worksheet
-        //         CreateWorkSheet(in excelPackage, "Недовозы (склад)", out ExcelWorksheet shortagesInWarehouseWorksheet, System.Drawing.Color.Orange);
-
-        //         // Make report in sheet
-        //         MakeAdditionalReport(resultCellsForAddReports, ref shortagesInWarehouseWorksheet, ShortagesInWarehouse);
-        //     }
-
-        //     // Shortages in pickup report
-        //     if (ShortagesInPickupPoints.Count > 0)  
-        //     {
-        //         // Create new worksheet
-        //         CreateWorkSheet(in excelPackage, "Недовозы (ПВЗ)", out ExcelWorksheet shortagesInPickupPointsWorksheet, System.Drawing.Color.Orange);
-
-        //         // Make report in sheet
-        //         MakeAdditionalReport(resultCellsForAddReports, ref shortagesInPickupPointsWorksheet, ShortagesInPickupPoints);
-        //     }
-        // }
-
-        // HACK: Плохо, переделать логику, двойной проход
-        // foreach (var (key, value) in articleDict)
-        // {
-        //     var regradingArt = articleDict
-        //         .Any(art => art.Value.StoreBalance.Regradings.ContainsKey(key));
-
-        //     if (articleDict[key].Overrun != null && !regradingArt)
-        //         Overruns.Add(articleDict[key].Overrun!);
-        // }
-
-        // // Analize ArticleShortages
-        // if (Overruns.Count > 0)
-        // {
-        //     // Create new worksheet
-        //     CreateWorkSheet(in excelPackage, "Перерасходы (склад)", out ExcelWorksheet overrunsWorksheet, System.Drawing.Color.ForestGreen);
-
-        //     // Fill header data 
-        //     SetupTableHeader(in resultCellsForAddReports, ref overrunsWorksheet, 55);
-
-        //     // Make report in sheet
-        //     MakeAdditionalReport(resultCellsForAddReports, ref overrunsWorksheet, Overruns);
-        //}
-    }
-
     private static void Report(object? sender, ManagerReachedEventArgs e)
     {
         Console.WriteLine();
@@ -835,97 +518,10 @@ internal class Program
             await Exit();
     }
 
-
-
-    // private static bool CheckFileExistence(string path)
-    // {
-    //     if (File.Exists(path))return true;
-
-    //     throw new FileNotFoundException($"Файл по пути\n{path}\nне найден. Проверьте правильность указания данных.");
-    // }
-
-    // private static async Task<string?> GetDirectoryPath(string message, bool necessarily, bool giveMeLogin)
-    // {
-    //     string? path = default;
-
-    //     while (string.IsNullOrEmpty(path))
-    //     {
-    //         Console.Clear();
-    //         Console.WriteLine(message);
-
-    //         var key = Console.ReadKey();
-
-    //         List<ConsoleKey> exitKeys = new(2) { ConsoleKey.D1, ConsoleKey.Escape };
-
-    //         if (exitKeys.Contains(key.Key))
-    //         {
-    //             if (key.Key == ConsoleKey.D1 && !necessarily) break;
-    //             if (key.Key == ConsoleKey.Escape) await Report(goodByMessage, 2000, true);
-    //         }
-    //         else
-    //         {
-    //             path = Console.ReadLine();
-    //         }
-    //     }
-
-    //     if (path is null) return null;
-
-    //     if (path is not null && giveMeLogin)
-    //         ExcelReportManager.SaveСlientLogin(path);
-
-    //     return FormСorrectPath(path!);
-    // }
-
     private static (int col, int row) FindNumberColsAndRowsIn(in ExcelWorksheet sheet)
     {
         return (sheet.Dimension.End.Column, sheet.Dimension.End.Row);
     }
 
-    // public static void CreateWorkSheet(in ExcelPackage excelPackage, string workSheetName, out ExcelWorksheet worksheet, System.Drawing.Color tabColor)
-    // {
-    //     // Remove existing worksheet
-    //     var existingWorksheet = excelPackage.Workbook.Worksheets.SingleOrDefault(x => x.Name == workSheetName);
-    //     if (existingWorksheet is not null)
-    //         excelPackage.Workbook.Worksheets.Delete(existingWorksheet);
-
-    //     // Create net worksheet
-    //     worksheet = excelPackage.Workbook.Worksheets.Add(workSheetName);
-
-    //     // Stilized workSheet
-    //     worksheet.TabColor = tabColor;
-    //     worksheet.DefaultRowHeight = DEFAULT_TABLE_ROW_HEIGHT;
-    //     worksheet.DefaultColWidth = TABLE_COL_WIDTH;
-    // }
-
-    private static void MakeAdditionalReport(TargetCell[] cells, ref ExcelWorksheet worksheet, List<SKUItemForReport> items)
-    {
-        // // Fill header data 
-        // SetupTableHeader(cells, ref worksheet, 55);
-
-        // // Fill table data 
-        // int recordIndex = FIRST_ROW_INDEX + 1;
-        // foreach (var item in items)
-        // {
-        //     worksheet.Cells[recordIndex, 1].Value = item.ArticleNumber;
-        //     worksheet.Cells[recordIndex, 2].Value = item.Name;
-        //     worksheet.Cells[recordIndex, 3].Value = item.Count;
-        //     worksheet.Cells[recordIndex, 4].Value = item.Cost;
-        //     worksheet.Cells[recordIndex, 5].Value = item.Sum;
-
-        //     recordIndex++;
-        // }
-
-        // // Fill total sum
-        // worksheet.Cells[recordIndex, 5].Value = items.Aggregate(0.00, (acc, i) => acc + i.Sum);
-
-        // // Stilized table - fit text
-        // worksheet.Column(2).Width = 60;
-        // for (int i = 1; i < cells.Length + 1; i++)
-        // {
-        //     worksheet.Column(i).Style.WrapText = true;
-        // }
-
-        // AddFilterInWorkSheet(ref worksheet);
-    }
     #endregion
 }

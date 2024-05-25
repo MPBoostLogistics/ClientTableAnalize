@@ -31,6 +31,7 @@ namespace ClientTableAnalizer.Objects.Managers
         private const int DEFAULT_TABLE_COL_WIDTH = 18;
         private const int RECORD_INDEX = 1;
         private const int HEADER_TABLE_ROW_HEIGHT = 120;
+        private const int HEADER_FONT_SIZE = 14;
         private const string LOGISTIC_FLAG = "Да";
         #endregion
 
@@ -118,6 +119,12 @@ namespace ClientTableAnalizer.Objects.Managers
             new(3, "DummiesComment", ParsingTypeCode.StringTypeCode, false)
         };
         
+        public static List<SourceColumn> WriteOffShortagesSourceCells { get; } = new() 
+        {
+            new(5, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
+            new(39, "SKUWriteOffCount", ParsingTypeCode.IntTypeCode, true)
+        };     
+
         public TargetCell[] mainReportSKUInfoCells = new TargetCell[]
         {
             new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
@@ -287,7 +294,7 @@ namespace ClientTableAnalizer.Objects.Managers
             workSheetNames = reportFileKey switch
             {
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => new(1) { RANSOMS_WORKSHEET_NAME },
-                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped => new(1) { REMAINING_OR_SHIPPED_WORKSHEET_NAME },
+                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.WriteOffShortages => new(1) { REMAINING_OR_SHIPPED_WORKSHEET_NAME },
                 SourceSKUReportFileKey.Additional => new(2) { COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME },
                 _ => null,
             };
@@ -648,7 +655,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 firstRow.Style.HorizontalAlignment = ExcelHorizontalAlignment.Center;
                 firstRow.Style.VerticalAlignment = ExcelVerticalAlignment.Center;
                 firstRow.Style.Font.Bold = true;
-                firstRow.Style.Font.Size = 14;
+                firstRow.Style.Font.Size = HEADER_FONT_SIZE;
             }
 
             for (int i = 0; i < resultCells.Length; i++)
@@ -684,6 +691,20 @@ namespace ClientTableAnalizer.Objects.Managers
             string endColLet = ExcelCellAddress.GetColumnLetter(endCol);
 
             excelWorksheet.Cells[$"{firstColLet}{firstRow}:{endColLet}{endRow}"].AutoFilter = true;
+
+
+            //Column Group
+            excelWorksheet.OutLineSummaryBelow = false;
+
+            var range01 = Enumerable.Range(9, 4).ToList();
+            var range02 = Enumerable.Range(16, 4).ToList();
+            var range03 = Enumerable.Range(22, 4).ToList();
+
+            excelWorksheet.Columns[range01.First(), range01.Last()].Group();
+            excelWorksheet.Columns[range02.First(), range02.Last()].Group();
+            excelWorksheet.Columns[range03.First(), range03.Last()].Group();
+
+            excelWorksheet.View.FreezePanes(2, 4);
         }
 
         /// <summary>
@@ -888,6 +909,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => new(1) { new(RansomsSourceCells) },
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => new(3) { new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
                                                      new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME), new(RemainingThirdRoomSourceCells, THIRD_ROOM_NAME, (LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))},
+                SourceSKUReportFileKey.WriteOffShortages => new(1) {new (WriteOffShortagesSourceCells)},
                 SourceSKUReportFileKey.Additional => workSheetName switch
                 {
                     COMPENSATION_REPORT_WORKSHEET_NAME => new(1) { new(CompensationSourceCells) },
@@ -911,8 +933,6 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSourceReportRows, int startRangeRowIndex = 1)
         {
-            Trace.WriteLine("--------------------");
-
             const int DEFAULT_STEP = 1;
 
             IEnumerable<RangeSourceReportRows>? rangesWithKeys = rangeSourceReportRows.Where(rs => !string.IsNullOrEmpty(rs.Key));

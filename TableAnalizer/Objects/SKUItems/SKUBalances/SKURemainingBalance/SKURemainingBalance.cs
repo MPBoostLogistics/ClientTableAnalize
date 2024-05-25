@@ -60,7 +60,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
             if (other is null) return false;
             if (ReferenceEquals(this, other)) return true;
             if (other.GetType() != GetType()) return false;
-            return Equals((SKURansomsBalance)other);
+            return Equals((SKURemainingBalance)other);
         }
 
         public override int GetHashCode() => SKUNumber.GetHashCode();

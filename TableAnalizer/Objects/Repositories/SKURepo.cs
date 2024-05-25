@@ -113,6 +113,26 @@ namespace ClientTableAnalizer.Objects.Repositories
                     break;
             }
 
+            SKUWriteOffBalance? skuWriteOffBalance = null;
+            switch(retriveValue.SKUWriteOffBalance is not null, newValue.SKUWriteOffBalance is not null) 
+            {
+                case (false,true):
+                    skuWriteOffBalance = newValue.SKUWriteOffBalance;
+                    break;
+
+                case (true,true): case (true,false):
+
+                    skuWriteOffBalance = retriveValue.SKUWriteOffBalance;
+
+                    if(newValue.SKUWriteOffBalance is not null) 
+                    {
+                        int skuWriteOff = retriveValue.SKUWriteOffBalance!.SKUWriteOff + newValue.SKUWriteOffBalance.SKUWriteOff;
+                        skuWriteOffBalance = new SKUWriteOffBalance(skuNumber, skuWriteOff);
+                    }
+
+                    break;
+            }
+
             // SKUCompensationBalance
             SKUCompensationBalance? skuCompensationBalance = null;
             switch(retriveValue.SKUCompensationBalance is not null, newValue.SKUCompensationBalance is not null) 
@@ -192,7 +212,7 @@ namespace ClientTableAnalizer.Objects.Repositories
             };
 
             return new SKU(marketplace, skuNumber, skuBrand, skuName, skuRansomsBalance, 
-                skuRemainingBalance, skuCompensationBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays);
+                skuRemainingBalance, skuWriteOffBalance, skuCompensationBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays);
         }
     }
 }

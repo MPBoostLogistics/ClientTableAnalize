@@ -19,6 +19,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
         public string SKUName { get; private set; } = string.Empty;
         public SKURansomsBalance? SKURansomsBalance { get; private set;}
         public SKURemainingBalance? SKURemainingBalance { get; private set;}
+        public SKUWriteOffBalance? SKUWriteOffBalance { get; private set;}
         public SKUCompensationBalance? SKUCompensationBalance { get; private set; }
         public SKUResortBalance? SKUResortBalance { get; private set; }
         public double AveragePrice { get; private set;} = AVERAGE_PRICE_DEFAULT;
@@ -70,7 +71,8 @@ namespace ClientTableAnalizer.Objects.SKUItems
         // Constructor for generating a new entity from repository
         public SKU(Marketplace? marketplace, int skuNumber, string skuBrand, string skuName, 
             SKURansomsBalance? skuRansomsBalance, SKURemainingBalance? skuRemainingBalance, 
-            SKUCompensationBalance? skuCompensationBalance, SKUResortBalance skuResortBalance, double? averagePrice, 
+            SKUWriteOffBalance? skuWriteOffBalance, SKUCompensationBalance? skuCompensationBalance, 
+            SKUResortBalance skuResortBalance, double? averagePrice, 
             DateOnly? maxRansomsDate, int? deadLineDays) 
        {
             Marketplace = marketplace;
@@ -79,6 +81,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
             SKUName = skuName ?? string.Empty;
             SKURansomsBalance = skuRansomsBalance;
             SKURemainingBalance = skuRemainingBalance;
+            SKUWriteOffBalance = skuWriteOffBalance;
             SKUCompensationBalance = skuCompensationBalance;
             SKUResortBalance = skuResortBalance;
 
@@ -98,12 +101,22 @@ namespace ClientTableAnalizer.Objects.SKUItems
             }
         }
 
+        // Constructor for compensationBalance 
         public SKU(int skuNumber, SKUCompensationBalance skuCompensationBalance) 
         {
             SKUNumber = skuNumber;
             SKUCompensationBalance = skuCompensationBalance;
         }
 
+        // Constructor for writeOffBalance 
+        public SKU(int skuNumber, Marketplace marketplace, SKUWriteOffBalance writeOffBalance) 
+        {
+            SKUNumber = skuNumber;
+            Marketplace = marketplace;
+            SKUWriteOffBalance = writeOffBalance;
+        }
+
+        // Constructor for resortBalance 
         public SKU(int skuNumber, SKUResortBalance skuResortBalance) 
         {
             SKUNumber = skuNumber;
@@ -117,7 +130,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
         #region Functionality
 
-        public SKUForTargetReports GetSKUForTargetReports => new(this, DeadLineDays);
+        public SKUForTargetReports GetSKUForTargetReports => new(this);
 
         public void Update(SKUCompensationBalance skuShortageBalance) 
         {

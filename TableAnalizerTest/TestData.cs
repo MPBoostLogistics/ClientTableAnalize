@@ -46,6 +46,11 @@ namespace TableAnalizerTest
             new(ExcelManager.ResortSourceCells)
         ];
 
+        public List<RangeSourceReportRows> _testWriteOffRangeSourceReportRows = 
+        [
+            new(ExcelManager.WriteOffShortagesSourceCells)
+        ];
+
         public List<RangeSourceReportRows> _testDummiesRangeSourceReportRows = 
         [
             new(ExcelManager.DummiesSourceCells)

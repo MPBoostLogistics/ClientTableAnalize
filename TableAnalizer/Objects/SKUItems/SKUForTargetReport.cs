@@ -25,6 +25,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
         public int SKURansomsWaiting { get; set; }          // Склад: ожидание
         public int SKUReceipt { get; set; }                 // Склад: приход
+        public int SKUWriteOff { get; set; }                // Склад: списание недостач
         public int SKUTotalСonsumption { get; set;}         // Склад: общий расход (товаром, компенсацией, пересортом, пустшками)    
         public int SKUShipped { get; set; }                 // Склад: Расход товаром 
         public int SKUPaid { get; set; }                    // Склад: Расход компенсацией 
@@ -43,7 +44,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
         public Color FillColor { get; set; }
 
         #region Constructors
-        public SKUForTargetReports(SKU sku, int deadLineDays)
+        public SKUForTargetReports(SKU sku)
         {
             SKUmp = sku.Marketplace;
             SKUNumber = sku.SKUNumber;
@@ -52,13 +53,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
             SKUPrice = sku.AveragePrice;
 
             SKUDate = sku.MaxRansomsDate;
-            isDeadline = (SKUDate.ToDateTime(new TimeOnly()) - DateTime.Now).Duration().Days > deadLineDays;
-
-            // TODO: Переделать 
-            SellmentStatus = !isDeadline ? new SellmentStatus(SKUSellmentStatus.InWork) : new SellmentStatus(SKUSellmentStatus.Unknown);
-            SellmentStatusString = !isDeadline ? new SellmentStatus(SKUSellmentStatus.InWork).StatusLabel : new SellmentStatus(SKUSellmentStatus.Unknown).StatusLabel;
-            FillColor = SellmentStatus.StatusColor;
-
+            isDeadline = (SKUDate.ToDateTime(new TimeOnly()) - DateTime.Now).Duration().Days > sku.DeadLineDays;
 
             // Fill SKURansomsBalance
             if (sku.SKURansomsBalance is not null)
@@ -74,7 +69,10 @@ namespace ClientTableAnalizer.Objects.SKUItems
             // Fill SKURemainingBalance
             if (sku.SKURemainingBalance is not null)
             {
-                SKUReceipt = sku.SKURemainingBalance.SKUReceipt;
+                var receipt = sku.SKURemainingBalance.SKUReceipt;
+                var writeOff = sku.SKUWriteOffBalance?.SKUWriteOff;
+                
+                SKUReceipt = writeOff.HasValue ? receipt - writeOff.Value : receipt;
                 SKUShipped = sku.SKURemainingBalance.SKUShipped;
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
             }
@@ -102,6 +100,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
             SKUTotalСonsumption = SKUShipped + SKUPaid + SKUResort + SKUDummies;
 
             CalculateDeliveryDelay();
+            DeterminingSellmentStatus();
         }
 
         private void CalculateDeliveryDelay()
@@ -118,6 +117,40 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
             SKUDeliveryDelayPointsSum = isDeadline ? SKUDeliveryDelayPoints * SKUPrice : 0.00;
             SKUDeliveryDelayStorageSum = isDeadline ? SKUDeliveryDelayStorage  * SKUPrice : 0.00;
+        }
+
+        private void DeterminingSellmentStatus() 
+        {
+            // Если дедлайн не прошел - в работе
+            if(!isDeadline) 
+            {
+                SellmentStatus = new SellmentStatus(SKUSellmentStatus.InWork);
+            } 
+            else 
+            {
+                if(SKUTotalСonsumption >= SKURansomsWaiting) 
+                {
+                    SellmentStatus = new SellmentStatus(SKUSellmentStatus.FullSet);
+                } 
+                else 
+                {
+                    switch(SKUDeliveryDelayPoints > 0, SKUDeliveryDelayStorage > 0) 
+                    {
+                        case (true, true):
+                            SellmentStatus = new SellmentStatus(SKUSellmentStatus.OnSearchWarehouseAndPoints);
+                            break;
+                        case (true, false):
+                            SellmentStatus = new SellmentStatus(SKUSellmentStatus.OnSearchPoint);
+                            break;
+                        case (false, true):
+                            SellmentStatus = new SellmentStatus(SKUSellmentStatus.OnSearchWarehouse);
+                            break;
+                    }
+                }
+            }
+
+            SellmentStatusString = SellmentStatus.StatusLabel;
+            FillColor = SellmentStatus.StatusColor;
         }
 
         #endregion Constructors

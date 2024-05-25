@@ -18,6 +18,7 @@ namespace ClientTableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuRansomsBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuRemainingBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuShippedBalanceUnits { get; }
+        public IRepository<int, List<ParsingRowEntity>> SkuWriteOffBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuDummiesBalanceUnits { get; }
@@ -29,7 +30,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public int SKUsCount() => SKUs.Count();
         private delegate bool FindSkusWithPredicate(SKU sku);  
-        private FindSkusWithPredicate predicateHandler;
+        private FindSkusWithPredicate? predicateHandler;
 
         #endregion
 
@@ -40,6 +41,7 @@ namespace ClientTableAnalizer.Objects.Managers
             SkuRansomsBalanceUnits = new ParsingRowEntityRepo();
             SkuRemainingBalanceUnits = new ParsingRowEntityRepo();
             SkuShippedBalanceUnits = new ParsingRowEntityRepo();
+            SkuWriteOffBalanceUnits = new ParsingRowEntityRepo();
             SkuCompensationBalanceUnits = new ParsingRowEntityRepo();
             SkuResortBalanceUnits = new ParsingRowEntityRepo();
             SkuDummiesBalanceUnits = new ParsingRowEntityRepo();
@@ -128,6 +130,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 static bool FindSkusWithRansoms(SKU sku) => sku.SKURansomsBalance != null;
                 static bool FindSkusWithRemaining(SKU sku) => sku.SKURemainingBalance != null;
                 static bool FindSkusWithShipped(SKU sku) => sku.SKURemainingBalance?.SKUShipped != null;
+                static bool FindSkusWithWriteOff(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOff > 0;
                 static bool FindSkusWithCompensation(SKU sku) => sku.SKUCompensationBalance != null;
                 static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
 
@@ -135,21 +138,13 @@ namespace ClientTableAnalizer.Objects.Managers
 
                 switch (reportFileKey)
                 {
-                    case SourceSKUReportFileKey.RansomsWB:
+                    case SourceSKUReportFileKey.RansomsWB: case SourceSKUReportFileKey.RansomsOZ:
                         predicateHandler = FindSkusWithRansoms;
-                        message = "Артикулов из выкупов WB: ";
+                        message = "Артикулов в выкупах: ";
                         break;
-                    case SourceSKUReportFileKey.RansomsOZ:
-                        predicateHandler = FindSkusWithRansoms;
-                        message = "Артикулов из выкупов OZ: ";
-                        break;
-                    case SourceSKUReportFileKey.RemainingWB:
+                    case SourceSKUReportFileKey.RemainingWB: case SourceSKUReportFileKey.RemainingOZ:
                         predicateHandler = FindSkusWithRemaining;
-                        message = "Артикулов из прихода и остатоков WB: ";
-                        break;
-                    case SourceSKUReportFileKey.RemainingOZ:
-                        predicateHandler = FindSkusWithRemaining;
-                        message = "Артикулов из прихода и остатоков OZ: ";
+                        message = "Артикулов в приходе и остатоках склада: ";
                         break;
                     case SourceSKUReportFileKey.Additional:
                         switch (workSheetName)
@@ -169,16 +164,23 @@ namespace ClientTableAnalizer.Objects.Managers
                         break;
                     case SourceSKUReportFileKey.Shipped:
                         predicateHandler = FindSkusWithShipped;
-                        message = "Артикулов из расхода со склада: ";
+                        message = "Артикулов в расходе со склада: ";
+                        break;
+                    case SourceSKUReportFileKey.WriteOffShortages:
+                        predicateHandler = FindSkusWithWriteOff;
+                        message = "Артикулов в списании недостач: ";
                         break;
                     default:
                         break;
                 }
 
                 // Report
-                int skusWithPredicateCount = SKUs.GetValueCount(predicateHandler.Invoke);
-                message = string.Concat(message, skusWithPredicateCount);
-                OnManagerReached(new(message, 1000, false));
+                if(predicateHandler is not null) 
+                {
+                    int skusWithPredicateCount = SKUs.GetValueCount(predicateHandler.Invoke);
+                    message = string.Concat(message, skusWithPredicateCount);
+                    OnManagerReached(new(message, 1000, false));
+                }
             }
 
             return StopFuctionExecuting(ref stopwatch);
@@ -194,27 +196,14 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData)
         {
+
             bool isRansoms = reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ;
             bool isRemaining = reportFileKey == SourceSKUReportFileKey.RemainingWB || reportFileKey == SourceSKUReportFileKey.RemainingOZ;
             bool isShipped = reportFileKey == SourceSKUReportFileKey.Shipped;
+            bool isWriteOff = reportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
 
-            List<SourceSKUReportFileKey> validKeys = new()
-            {
-                SourceSKUReportFileKey.RansomsWB,
-                SourceSKUReportFileKey.RansomsOZ,
-                SourceSKUReportFileKey.RemainingWB,
-                SourceSKUReportFileKey.RemainingOZ,
-                SourceSKUReportFileKey.Shipped,
-                SourceSKUReportFileKey.Additional
-            };
-
-            if (!validKeys.Contains(reportFileKey))
-            {
-                OnManagerReached(new ManagerReachedEventArgs($"An incorrect key ({reportFileKey}) was passed to save balance units", 2000, true));
-                return 0;
-            }
 
             if (isRansoms)
             {
@@ -265,6 +254,22 @@ namespace ClientTableAnalizer.Objects.Managers
                     SkuShippedBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             } 
+            else if(isWriteOff) 
+            {
+                var skuWriteOffDataUnits = from rowWithRawData in rowsWithRawData
+                                           let unit = new SKUWriteOffDataUnit(rowWithRawData)
+                                           group unit by unit.SKUNumber 
+                                           into unitGroup  
+                                           select unitGroup;
+                
+                foreach (var group in skuWriteOffDataUnits)
+                {
+                    var list = (((List<SKUWriteOffDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
+                        throw new InvalidCastException("Невозможно привести List<SKUWriteOffDataUnit> к List<ParsingRowEntity>");
+                    
+                    SkuWriteOffBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                }
+            }    
             else if(isCompensation) 
             {
                 var skuCompensationDataUnits = from rowWithRawData in rowsWithRawData
@@ -305,6 +310,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => SkuRansomsBalanceUnits.Count(),
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => SkuRemainingBalanceUnits.Count(),
                 SourceSKUReportFileKey.Shipped => SkuShippedBalanceUnits.Count(),
+                SourceSKUReportFileKey.WriteOffShortages => SkuWriteOffBalanceUnits.Count(),
                 SourceSKUReportFileKey.Additional => workSheetName switch 
                 {
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => SkuCompensationBalanceUnits.Count(),
@@ -328,6 +334,7 @@ namespace ClientTableAnalizer.Objects.Managers
             bool isRansoms = skuReportFileKey == SourceSKUReportFileKey.RansomsWB || skuReportFileKey == SourceSKUReportFileKey.RansomsOZ;
             bool isRemaining = skuReportFileKey == SourceSKUReportFileKey.RemainingWB || skuReportFileKey == SourceSKUReportFileKey.RemainingOZ;
             bool isShipped = skuReportFileKey == SourceSKUReportFileKey.Shipped;
+            bool isWriteOff = skuReportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResorts = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isDummies = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME;
@@ -342,6 +349,8 @@ namespace ClientTableAnalizer.Objects.Managers
                     parsingEntityCollection = SkuRemainingBalanceUnits,
                 SourceSKUReportFileKey.Shipped =>
                     parsingEntityCollection = SkuShippedBalanceUnits,  
+                SourceSKUReportFileKey.WriteOffShortages =>
+                    parsingEntityCollection = SkuWriteOffBalanceUnits, 
                 SourceSKUReportFileKey.Additional => workSheetName switch 
                 {
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => 
@@ -403,6 +412,14 @@ namespace ClientTableAnalizer.Objects.Managers
                     SKURemainingBalance remainingBalance = new(skuNumber, units.ToList());
                     SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));
                 } 
+                else if(isWriteOff) 
+                {
+                    var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUWriteOffDataUnit>().ToList()) ??
+                        throw new InvalidCastException("Cannot cast collection to IList<SKUWriteOffDataUnit>.");
+                    
+                    SKUWriteOffBalance writeOffBalance = new(skuNumber, units.ToList());
+                    SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, marketplace, writeOffBalance));
+                }
                 else if(isCompensation) 
                 {
                     var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUCompensationDataUnit>().ToList()) ??

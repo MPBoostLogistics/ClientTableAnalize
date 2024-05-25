@@ -431,9 +431,17 @@ namespace TableAnalizerTest.Managers
         }
 
         [Test, Order(14)]
-        public void GetCompensationSKU_Test() 
+        public void GetWriteOffSKU_Test() 
         {
-            
+            // input assert / arrage
+            Assert.That(TestData._testWriteOffRangeSourceReportRows, Is.Not.Null);
+
+            // Create ExcelPackage
+            var writeOffReportPath = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Общее списание 23.01.24.xlsx";
+            var writeOffReportPackage = ExcelManager.CreateExcelPackage(SourceSKUReportFileKey.Additional, new FileInfo(writeOffReportPath));
+            ExcelManager.GetExcelWorksheetByName(ExcelManager.RESORTS_REPORT_WORKSHEET_NAME, SourceSKUReportFileKey.Additional, out var _resortWorksheet);
+            ExcelManager.GetRangeSourceReportRows(in _resortWorksheet!, ref TestData._testResortRangeSourceReportRows);
+            ExcelManager.GetRawDataFromExcelRows(in _resortWorksheet!, ref TestData._testResortRangeSourceReportRows);
         }
 
         [Test, Order(15)]
