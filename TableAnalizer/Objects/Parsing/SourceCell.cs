@@ -3,9 +3,10 @@ using ClientTableAnalizer.Enums;
 namespace ClientTableAnalizer.Objects.Parsing
 {
     /// <summary>
-    /// Represents source cell of an Excel table.
+    /// Represents source column of an Excel table.
     /// </summary>
-    public readonly struct SourceCell 
+    /// <remarks><i>New version</i></remarks>
+    public readonly struct SourceColumn 
     {
         #region Properties
         public int ColIndex { get; }
@@ -16,7 +17,7 @@ namespace ClientTableAnalizer.Objects.Parsing
         #endregion
 
         #region Constructors
-        public SourceCell(int colIndex, string name, ParsingTypeCode parsingTypeCode,  bool isValueRequired, string? filterString = null)
+        public SourceColumn(int colIndex, string name, ParsingTypeCode parsingTypeCode,  bool isValueRequired, string? filterString = null)
         {
             ColIndex = colIndex;
             Name = name;

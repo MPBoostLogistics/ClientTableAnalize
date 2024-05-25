@@ -112,7 +112,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 List<Dictionary<string, ItemForParsing>> rawRowsItems = new() { };
                 foreach (var sourceReportRowsRange in rangeSourceReportRows)
                 {
-                    sourceReportRowsRange.RowsWithRawData.ForEach(rawRowsItems.Add);
+                    sourceReportRowsRange.CollectionDataOnReadRows.ForEach(rawRowsItems.Add);
                 }
 
                 // Processing:

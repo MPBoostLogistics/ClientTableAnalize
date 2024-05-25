@@ -1,5 +1,6 @@
 #nullable enable
 
+using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using ClientTableAnalizer.Enums;
@@ -7,6 +8,7 @@ using ClientTableAnalizer.Interfaces;
 using ClientTableAnalizer.Objects.Parsing;
 using ClientTableAnalizer.Objects.SKUItems;
 using OfficeOpenXml;
+using OfficeOpenXml.Drawing.Slicer.Style;
 using OfficeOpenXml.Style;
 
 namespace ClientTableAnalizer.Objects.Managers
@@ -56,7 +58,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <summary>
         /// Collection of descriptions of source table cells (client ransoms).
         /// </summary>
-        public static List<SourceCell> RansomsSourceCells { get; } = new()
+        public static List<SourceColumn> RansomsSourceCells { get; } = new()
         {
             new(2, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(7, "SKURansomDate", ParsingTypeCode.DataOnlyTypeCode,true),
@@ -65,7 +67,7 @@ namespace ClientTableAnalizer.Objects.Managers
             new(14, "SKUCost",  ParsingTypeCode.DoubleTypeCode, true)
         };
 
-        public static List<SourceCell> RemainingFirstRoomSourceCells { get; } = new()
+        public static List<SourceColumn> RemainingFirstRoomSourceCells { get; } = new()
         {
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(6, "SKUBrandAndName", ParsingTypeCode.StringTypeCode, true),
@@ -73,27 +75,27 @@ namespace ClientTableAnalizer.Objects.Managers
             new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
         };
 
-        public static List<SourceCell> RemainingSecondRoomSourceCells { get; } = new()
+        public static List<SourceColumn> RemainingSecondRoomSourceCells { get; } = new()
         {
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(6, "SKUBrandAndName", ParsingTypeCode.StringTypeCode, true),
             new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
         };
 
-        public static List<SourceCell> RemainingThirdRoomSourceCells { get; } = new()
+        public static List<SourceColumn> RemainingThirdRoomSourceCells { get; } = new()
         {
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(6, "SKUBrandAndName", ParsingTypeCode.StringTypeCode, true),
             new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
         };
 
-        public static List<SourceCell> ShippedSourceCells { get; } = new()
+        public static List<SourceColumn> ShippedSourceCells { get; } = new()
         {
             new(4, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(28, "SKUShippedCount", ParsingTypeCode.IntTypeCode, true)
         };
 
-        public static List<SourceCell> CompensationSourceCells { get; } = new()
+        public static List<SourceColumn> CompensationSourceCells { get; } = new()
         {
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(2, "CompensationCount", ParsingTypeCode.IntTypeCode, true),
@@ -101,7 +103,7 @@ namespace ClientTableAnalizer.Objects.Managers
             new(4, "CompensationComment", ParsingTypeCode.StringTypeCode, false)
         };
 
-        public static List<SourceCell> ResortSourceCells { get; } = new()
+        public static List<SourceColumn> ResortSourceCells { get; } = new()
         {
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(2, "ResortSKUNumber", ParsingTypeCode.IntTypeCode, true),
@@ -109,93 +111,119 @@ namespace ClientTableAnalizer.Objects.Managers
             new(4, "ResortComment", ParsingTypeCode.StringTypeCode, false)
         };
 
-        public static List<SourceCell> DummiesSourceCells { get; } = new()
+        public static List<SourceColumn> DummiesSourceCells { get; } = new()
         {
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(2, "DummiesSKUCount", ParsingTypeCode.IntTypeCode, true),
             new(3, "DummiesComment", ParsingTypeCode.StringTypeCode, false)
         };
-
+        
         public TargetCell[] mainReportSKUInfoCells = new TargetCell[]
         {
             new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUmp",
-                parsingTypeCode: ParsingTypeCode.Marketplace, excelFillStyle:  ExcelFillStyle.None),
+                parsingTypeCode: ParsingTypeCode.Marketplace, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
             new (colNumber: 2, colName: "Артикул", colWidth: 12, format: "0",
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUNumber",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
             new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUBrand",
-                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None),
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
             new (colNumber: 4, colName: "Наименование товара", colWidth: 50, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUName",
-                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None),
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None, 
+                valueСheckingPredicate: null),
             new (colNumber: 5, colName: "Средняя цена, руб.", colWidth: 12, format: "0.00",
                 wrapTextInHeader: true, textRotationInHeader: 0, "SKUPrice",
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None),
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x > 0),
             new (colNumber: 6, colName: "Дата последнего заказа", colWidth: 13, format: "dd.MM.yyyy",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDate",
-                parsingTypeCode: ParsingTypeCode.DataOnlyTypeCode, excelFillStyle:  ExcelFillStyle.Solid),
+                parsingTypeCode: ParsingTypeCode.DataOnlyTypeCode, excelFillStyle:  ExcelFillStyle.Solid,
+                valueСheckingPredicate: null),
             new (colNumber: 7, colName: "Статус взаиморасчетов", colWidth: 12, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SellmentStatusString",
-                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None),
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
             new (colNumber: 8, colName: "Заказов: всего", colWidth: 12, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKURansomsTotal",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x > 0),
             new (colNumber: 9, colName: "Заказов: отменено",colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsCanceled",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
             new (colNumber: 10, colName: "Заказов: в пути", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsOnWay",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
             new (colNumber: 11, colName: "Заказов: доставлено на ПВЗ", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsDelivered",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
             new (colNumber: 12, colName: "Заказов: забрано с ПВЗ", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsWithDrawn",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
             new (colNumber: 13, colName: "Склад: Ожидание", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsWaiting",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: true),                                             
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
+                valueСheckingPredicate: null, isBoldFont: true),                                             
             new (colNumber: 14, colName: "Склад: Приход товаров", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUReceipt",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
+                valueСheckingPredicate: null, isBoldFont: false),
             new (colNumber: 15, colName: "Склад: Расход всего", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUTotalСonsumption",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: true),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
+                valueСheckingPredicate: null, isBoldFont: true),
             new (colNumber: 16, colName: "Склад: Расход товаром", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUShipped",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
+                valueСheckingPredicate: null, isBoldFont: false),
             new (colNumber: 17, colName: "Склад: Расход компенсацией", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUPaid",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
+                valueСheckingPredicate: null, isBoldFont: false),
             new (colNumber: 18, colName: "Склад: Расход пересортом", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUResort",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
+                valueСheckingPredicate: null, isBoldFont: false),
             new (colNumber: 19, colName: "Склад: Расход пустышками", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUDummies",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
+                valueСheckingPredicate: null, isBoldFont: false),
             new (colNumber: 20, colName: "Склад: Остаток товаров", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURemaining",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
-            new (colNumber: 20, colName: "Комментарий к товару", colWidth: 20, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
+                valueСheckingPredicate: null, isBoldFont: false),
+            new (colNumber: 21, colName: "Задержка довоза, всего", colWidth: 12, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayTotal",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle: ExcelFillStyle.None, 
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: true),
+            new (colNumber: 22, colName: "Задержка довоза от точек, товароа", colWidth: 12, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPoints",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
+            new (colNumber: 23, colName: "Задержка довоза от точек, сумма", colWidth: 12, format: "0.00",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPointsSum",
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
+            new (colNumber: 24, colName: "Задержка довоза от склада, товаров", colWidth: 12, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorage",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
+            new (colNumber: 25, colName: "Задержка довоза от склада, сумма", colWidth: 12, format: "0.00",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorageSum",
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
+            new (colNumber: 26, colName: "Комментарий к артикулу", colWidth: 50, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUComment",
-                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None, isBoldFont: false),
-                  
-            // Info on arrival of goods at warehouse
-            // new (12, "Склад: Ожидание", 11.5,"0", true, 0),
-            // new (13, "Склад: Приход", 11 ,"0",true, 0),
-            // new (14, "Склад: Недовоз от ПВЗ",11, "0", true, 0),          
-
-            // // Info on shipment of goods from warehouse
-            // new (15, "Склад: Расход всего",12, "0", true, 0),
-            // new (16, "Склад: Расход товаром",7, "0", true, 90),
-            // new (17, "Склад: Расход пересортом",7, "0", true, 90),
-            // new (18, "Склад: Расход компенсацией",7, "0", true, 90),
-            // new (19, "Склад: Учтено 'пустышками'",7, "0", true, 90),
-            // new (20, "Склад: Остаток", 9, "0", true, 0),
-
-            // new (21, "Комментарий", 60, "0", true, 0)
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None, 
+                valueСheckingPredicate: null, isBoldFont: false),
         };
         #endregion
 
@@ -284,7 +312,6 @@ namespace ClientTableAnalizer.Objects.Managers
             outputPackage.Dispose();
         }
 
-
         public void FillingСellsWithData<T>(ExcelPackage package, ref ExcelWorksheet worksheet, in List<T> items, TargetCell[] targetCells, string outputPath, int recordIndex = 1)
             where T : IColorable
         {
@@ -360,6 +387,19 @@ namespace ClientTableAnalizer.Objects.Managers
                         {
                             cell.Style.Fill.BackgroundColor.SetColor(item.FillColor);
                         }
+
+                        // Checking predicate condition ()
+                        if(targetCell.ValueСheckingPredicate is not null) 
+                        {
+                            int? cheking = value is double ? Convert.ToInt32(value) : value is int v ? v : null;
+
+                            if(cheking.HasValue && !targetCell.ValueСheckingPredicate(cheking.Value)) 
+                            {
+                                cell.Style.Font.Color.SetColor(targetCell.HighlightTextСolor);
+                            }
+                        }
+
+                        //
 
                         // Bold font for cell
                         cell.Style.Font.Bold = targetCell.IsBoldFont;
@@ -667,7 +707,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public static bool GetRowIndexBy(string key, in ExcelWorksheet worksheet, out int? rowInex) 
         {
-            rowInex =  worksheet.Cells.FirstOrDefault(c => c.Value != null && c.Value.ToString()?.Trim() == key)?.Start.Row;
+            rowInex =  worksheet.Cells.FirstOrDefault(c => c.Value != null && c.Value.ToString()?.Trim().ToLower() == key.Trim().ToLower())?.Start.Row;
             return rowInex.HasValue;
         }
             
@@ -685,10 +725,10 @@ namespace ClientTableAnalizer.Objects.Managers
             {
                 RangeSourceReportRows? reportRowsRange = reportRowsRanges[i];
 
-                if (reportRowsRange is null || reportRowsRange.RowsIndexRange is null) continue;
+                if (reportRowsRange is null || reportRowsRange.СollectionRangeRowIndexes is null) continue;
 
                 // Iterating Rows 
-                var rowsIndexRange = reportRowsRange.RowsIndexRange.ToList();
+                var rowsIndexRange = reportRowsRange.СollectionRangeRowIndexes.ToList();
                 var currentSourceCells = reportRowsRange.SourceCells;
 
                 for (int j = 0; j < rowsIndexRange.Count; j++)
@@ -714,14 +754,14 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <param name="values">Dictionary of retrieved values by row.</param>
         /// <returns>Boolean flag for success of completed operation.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public static bool GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells, out Dictionary<string, ItemForParsing>? values)
+        public static bool GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceColumn> sourceCells, out Dictionary<string, ItemForParsing>? values)
         {
             values = null;
 
             if (!CheckingPresenceAddressesInRow(in workSheet, rowIndex, in sourceCells) ||
                 !СheckingValuesInRequiredCells(in workSheet, rowIndex, in sourceCells) ||
                 !FilterMatchingCheck(in workSheet, rowIndex, in sourceCells, out int filterCellsCount) ||
-                !FindSorceCellsByType(in sourceCells, SourceCellsType.NonFiltration, out List<SourceCell>? dataСellsNonFilters) ||
+                !FindSorceCellsByType(in sourceCells, SourceCellsType.NonFiltration, out List<SourceColumn>? dataСellsNonFilters) ||
                 dataСellsNonFilters is null ||
                 dataСellsNonFilters!.Count == 0)
             {
@@ -751,7 +791,7 @@ namespace ClientTableAnalizer.Objects.Managers
 
         }
 
-        private static bool CheckingPresenceAddressesInRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells)
+        private static bool CheckingPresenceAddressesInRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceColumn> sourceCells)
         {
             foreach (var sourceCell in sourceCells)
             {
@@ -773,11 +813,11 @@ namespace ClientTableAnalizer.Objects.Managers
             return true;
         }
 
-        private static bool FilterMatchingCheck(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells, out int filterSourceCellsCount)
+        private static bool FilterMatchingCheck(in ExcelWorksheet workSheet, int rowIndex, in List<SourceColumn> sourceCells, out int filterSourceCellsCount)
         {
             filterSourceCellsCount = 0;
 
-            if (!FindSorceCellsByType(in sourceCells, SourceCellsType.Filtration, out List<SourceCell>? filterSourceCells)) 
+            if (!FindSorceCellsByType(in sourceCells, SourceCellsType.Filtration, out List<SourceColumn>? filterSourceCells)) 
             {
                 return true;
             } 
@@ -793,9 +833,9 @@ namespace ClientTableAnalizer.Objects.Managers
             }
         }
 
-        private static bool СheckingValuesInRequiredCells(in ExcelWorksheet workSheet, int rowIndex, in List<SourceCell> sourceCells)
+        private static bool СheckingValuesInRequiredCells(in ExcelWorksheet workSheet, int rowIndex, in List<SourceColumn> sourceCells)
         {
-            if(!FindSorceCellsByType(in sourceCells, SourceCellsType.Required, out List<SourceCell>? requiredCells) && 
+            if(!FindSorceCellsByType(in sourceCells, SourceCellsType.Required, out List<SourceColumn>? requiredCells) && 
                 requiredCells is null || 
                 requiredCells?.Count == 0)
             {
@@ -822,7 +862,7 @@ namespace ClientTableAnalizer.Objects.Managers
             }
         }
 
-        private static bool FindSorceCellsByType(in List<SourceCell> sourceCells, SourceCellsType sourceCellsType, out List<SourceCell>? cells)
+        private static bool FindSorceCellsByType(in List<SourceColumn> sourceCells, SourceCellsType sourceCellsType, out List<SourceColumn>? cells)
         {
             cells = sourceCellsType switch
             {
@@ -846,7 +886,7 @@ namespace ClientTableAnalizer.Objects.Managers
             rangeSourceReportRows = reportFileKey switch
             {
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => new(1) { new(RansomsSourceCells) },
-                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => new(2) { new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
+                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => new(3) { new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
                                                      new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME), new(RemainingThirdRoomSourceCells, THIRD_ROOM_NAME, (LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))},
                 SourceSKUReportFileKey.Additional => workSheetName switch
                 {
@@ -866,56 +906,123 @@ namespace ClientTableAnalizer.Objects.Managers
         /// Gets row ranges in an Excel worksheet.
         /// </summary>
         /// <param name="worksheet">Excel worksheet.</param>
-        /// <param name="rangeSource">Range prototypes.</param>
+        /// <param name="rangeSourceReportRows">Range prototypes.</param>
         /// <param name="startRangeRowIndex">Start index.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSource, int startRangeRowIndex = 1)
+        public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSourceReportRows, int startRangeRowIndex = 1)
         {
-            Exception missingStringKeyExc = new("Указание строкового ключа для диапазона обязательно");
-            Exception terminatingStringExc = new("В последнем диапазоне обязательно использование завершающего маркера.");
+            Trace.WriteLine("--------------------");
 
-            for (int i = 0; i < rangeSource.Count; i++)
+            const int DEFAULT_STEP = 1;
+
+            IEnumerable<RangeSourceReportRows>? rangesWithKeys = rangeSourceReportRows.Where(rs => !string.IsNullOrEmpty(rs.Key));
+            RangeSourceReportRows? rangeWithTermination = rangeSourceReportRows.SingleOrDefault(rs => rs.TerminatingStringValue.HasValue);
+
+            bool isOneRangeWithoutKeysAndTerminations = rangeSourceReportRows.Count == 1 && 
+                (rangesWithKeys is null || !rangesWithKeys.Any()) && 
+                rangeWithTermination is null;
+            
+            // Range is one, no key and no termination value (e.g. Ransoms, Shipped, Compenaton, Resorts etc)
+            if(isOneRangeWithoutKeysAndTerminations)
+            { 
+                var start = startRangeRowIndex + DEFAULT_STEP;
+                var count = worksheet.Dimension.End.Row - DEFAULT_STEP;
+                rangeSourceReportRows.First().SetRange(start,count);
+            } 
+            // There is more than one range (e.g. Remainig)
+            else if(rangeSourceReportRows.Count > 1)
             {
-                // Если один элемент и у него нет ключа
-                if (rangeSource.Count == 1 && rangeSource[i].Key == null)
+                CreataRowRange(in worksheet, ref rangeSourceReportRows, DEFAULT_STEP, rangeWithTermination?.TerminatingStringValue);
+            }
+        }
+
+        private static void CreataRowRange(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSourceReportRows, int DEFAULT_STEP, (string rowStringKey, int offset)? termination)
+        {
+            List<RangeSourceReportRows> outputRanges = new();
+
+            // Get existing keys from templates 
+            List<string>? keysInTemplateList = rangeSourceReportRows
+                .Where(el => !string.IsNullOrEmpty(el.Key))
+                .Select(el => el.Key!)
+                .ToList();
+
+            // Get existing elements in table by key
+            List<(string key, int index)> existingElements = new();
+            for (int i = 0; i < keysInTemplateList.Count; i++)
+            {
+                var key = keysInTemplateList[i];
+                if(!string.IsNullOrEmpty(key) && 
+                    GetRowIndexBy(key, in worksheet, out int? rowIndex) && 
+                    rowIndex.HasValue)
                 {
-                    var dim = worksheet.Dimension;
-                    rangeSource[i].SetRange(startRangeRowIndex + 1, dim.End.Row - 1);
-                }
-                // Если не один элемент и есть ключи
-                else
-                {
-                    int? lastRowIndex;
-                    int? start;
-
-                    var currentRowStringKey = rangeSource[i].Key ?? throw missingStringKeyExc;
-                    if(GetRowIndexBy(currentRowStringKey, in worksheet, out int? startRowIndex) && startRowIndex.HasValue) 
-                    {
-                        start = startRowIndex.Value + 1;
-
-                         // If this is last element
-                        if (i == rangeSource.Count - 1)
-                        {
-                            var (key, offset) = rangeSource[i].TerminatingStringValue ?? throw terminatingStringExc;
-                            if(GetRowIndexBy(key, in worksheet, out lastRowIndex) && start.HasValue && lastRowIndex.HasValue) 
-                            {
-                                rangeSource[i].SetRange(start.Value, lastRowIndex.Value - start.Value - offset);
-                            }
-                        }
-                        // If this is not last element
-                        else
-                        {
-                            var lastRowStringKey = rangeSource[i + 1].Key;
-                            if(!string.IsNullOrEmpty(lastRowStringKey) && 
-                                start.HasValue && GetRowIndexBy(lastRowStringKey, in worksheet, out lastRowIndex) && 
-                                lastRowIndex.HasValue )
-
-                     
-                            rangeSource[i].SetRange(start.Value, lastRowIndex.Value - start.Value);
-                        }
-                    }
+                    existingElements.Add((key, rowIndex.Value));
                 }
             }
+
+            // Make LinkedList from existing elements in table  
+            LinkedList<(string key, int index)> existingElementsLinkedList = new(existingElements);
+
+            int? count = null, start = null;
+
+            // Iterate linked list
+            var currentNode = existingElementsLinkedList.First;
+
+            while(currentNode != null)
+            {
+                (string key, int index) = currentNode.Value;
+
+                start = index + DEFAULT_STEP;
+
+                if(currentNode.Next != null) 
+                {
+                    (string nextKey, int nextIndex) = currentNode.Next!.Value;
+                    count = nextIndex - start.Value;
+                } 
+                else
+                {
+                    if(termination is not null) 
+                    {
+                        var terminationKey = termination.Value.rowStringKey;
+                        var terminationOffset = termination.Value.offset;
+
+                        if(!string.IsNullOrEmpty(terminationKey) && 
+                           GetRowIndexBy(terminationKey, in worksheet, out int? terminationIndex) && 
+                           terminationIndex.HasValue)
+                        {
+                            count = terminationIndex - start.Value - terminationOffset;
+                        } 
+                        else 
+                        {
+                            throw new ArgumentException("Cannot get index of termination row.");
+                        }
+                    } 
+                    else 
+                    {
+                        throw new ArgumentException("Multiple ranges must contain a termination row.");
+                    } 
+                }
+
+                // Set range
+                var targetTemplate = rangeSourceReportRows
+                    .SingleOrDefault(el => string.Equals(el.Key, key));
+
+                if(targetTemplate is not null && 
+                   start.HasValue && 
+                   count.HasValue) 
+                {
+                    Trace.WriteLine($"{start.Value} {count.Value}");
+
+
+                    targetTemplate.SetRange(start.Value, count.Value);
+                    outputRanges.Add(targetTemplate);
+                }
+
+                // Next step
+                currentNode = currentNode!.Next;
+            }
+
+            // Return
+            rangeSourceReportRows = outputRanges;
         }
 
         private static bool IsFilterMatch(string filter, object value) =>

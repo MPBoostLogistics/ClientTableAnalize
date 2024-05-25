@@ -11,8 +11,8 @@ namespace TableAnalizerTest
     public sealed class TestData
     {
         #region Variables and constants
-        public const int RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT = 61138;
-        public const int RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT = 1299;
+        public const int RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT = 74181;
+        public const int RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT = 1785;
         public const int RESORT_RANGE_SOURCE_REPORT_ROWS_COUNT = 105;
         #endregion
 
@@ -23,6 +23,13 @@ namespace TableAnalizerTest
         public List<RangeSourceReportRows>? _testRansomsRangeSourceReportRows;
 
         public List<RangeSourceReportRows>? _testRemainingWBRangeSourceReportRows =
+        [
+            new(ExcelManager.RemainingFirstRoomSourceCells, ExcelManager.FIRST_ROOM_NAME),
+            new(ExcelManager.RemainingSecondRoomSourceCells, ExcelManager.SECOND_ROOM_NAME),
+            new(ExcelManager.RemainingThirdRoomSourceCells, ExcelManager.THIRD_ROOM_NAME, (ExcelManager.LAST_MARKER_KEY, ExcelManager.LAST_MARKER_KEY_OFFSET))
+        ];
+
+        public List<RangeSourceReportRows>? _testRemainingOZRangeSourceReportRows =
         [
             new(ExcelManager.RemainingFirstRoomSourceCells, ExcelManager.FIRST_ROOM_NAME),
             new(ExcelManager.RemainingSecondRoomSourceCells, ExcelManager.SECOND_ROOM_NAME),

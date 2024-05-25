@@ -32,9 +32,15 @@ namespace ClientTableAnalizer.Objects.SKUItems
         public int SKUDummies { get; set; }                 // Склад: Расход пустышками 
         public int SKURemaining { get; set; }               // Склад: остаток товаров
 
+        // Delivery delay
+        public int SKUDeliveryDelayTotal { get; set; }
+        public int SKUDeliveryDelayPoints { get; set; }
+        public double SKUDeliveryDelayPointsSum { get;set;}
+        public int SKUDeliveryDelayStorage { get; set; }
+        public double SKUDeliveryDelayStorageSum { get; set; }
+
         public string SKUComment { get; set;} = string.Empty;
         public Color FillColor { get; set; }
-
 
         #region Constructors
         public SKUForTargetReports(SKU sku, int deadLineDays)
@@ -44,18 +50,18 @@ namespace ClientTableAnalizer.Objects.SKUItems
             SKUBrand = sku.SKUBrand;
             SKUName = sku.SKUName;
             SKUPrice = sku.AveragePrice;
-            
+
             SKUDate = sku.MaxRansomsDate;
             isDeadline = (SKUDate.ToDateTime(new TimeOnly()) - DateTime.Now).Duration().Days > deadLineDays;
 
             // TODO: Переделать 
-            SellmentStatus = !isDeadline ? new SellmentStatus(SKUSellmentStatus.InWork) : new SellmentStatus (SKUSellmentStatus.Unknown);
-            SellmentStatusString = !isDeadline ? new SellmentStatus(SKUSellmentStatus.InWork).StatusLabel : new SellmentStatus (SKUSellmentStatus.Unknown).StatusLabel;
+            SellmentStatus = !isDeadline ? new SellmentStatus(SKUSellmentStatus.InWork) : new SellmentStatus(SKUSellmentStatus.Unknown);
+            SellmentStatusString = !isDeadline ? new SellmentStatus(SKUSellmentStatus.InWork).StatusLabel : new SellmentStatus(SKUSellmentStatus.Unknown).StatusLabel;
             FillColor = SellmentStatus.StatusColor;
 
 
             // Fill SKURansomsBalance
-            if(sku.SKURansomsBalance is not null) 
+            if (sku.SKURansomsBalance is not null)
             {
                 SKURansomsTotal = sku.SKURansomsBalance.SKURansomsTotal;
                 SKURansomsOnWay = sku.SKURansomsBalance.SKURansomsOnWay;
@@ -66,21 +72,21 @@ namespace ClientTableAnalizer.Objects.SKUItems
             }
 
             // Fill SKURemainingBalance
-            if(sku.SKURemainingBalance is not null) 
+            if (sku.SKURemainingBalance is not null)
             {
                 SKUReceipt = sku.SKURemainingBalance.SKUReceipt;
                 SKUShipped = sku.SKURemainingBalance.SKUShipped;
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
             }
-            
+
             // Fill SKUCompensationBalance 
-            if(sku.SKUCompensationBalance is not null) 
+            if (sku.SKUCompensationBalance is not null)
             {
                 SKUPaid = sku.SKUCompensationBalance.Count;
             }
 
             // Fill SKUResortBalance 
-            if(sku.SKUResortBalance is not null)  
+            if (sku.SKUResortBalance is not null)
             {
                 sku.SKUResortBalance.AddСommentToBalance();
 
@@ -94,6 +100,24 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
             // Calculate total Сonsumption
             SKUTotalСonsumption = SKUShipped + SKUPaid + SKUResort + SKUDummies;
+
+            CalculateDeliveryDelay();
+        }
+
+        private void CalculateDeliveryDelay()
+        {
+            // Недовоз от ПВЗ = Ожидание - Приход на склад
+            SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceipt;
+            if (SKUDeliveryDelayPoints < 0) SKUDeliveryDelayPoints = 0;
+
+            // Недовоз от склада = Ожидание - Общий расход 
+            SKUDeliveryDelayStorage = SKURansomsWaiting - SKUTotalСonsumption - SKUDeliveryDelayPoints;
+            if (SKUDeliveryDelayStorage < 0) SKUDeliveryDelayStorage = 0;
+
+            SKUDeliveryDelayTotal =  isDeadline ? SKUDeliveryDelayPoints + SKUDeliveryDelayStorage : 0;
+
+            SKUDeliveryDelayPointsSum = isDeadline ? SKUDeliveryDelayPoints * SKUPrice : 0.00;
+            SKUDeliveryDelayStorageSum = isDeadline ? SKUDeliveryDelayStorage  * SKUPrice : 0.00;
         }
 
         #endregion Constructors

@@ -19,7 +19,9 @@ namespace ClientTableAnalizer.Objects.Parsing
         public int TextRotationInHeader { get; }
         public string PropertyName { get;}
         public ParsingTypeCode ParsingTypeCode { get; }
-        public ExcelFillStyle ExcelFillStyle { get;}
+        public ExcelFillStyle ExcelFillStyle { get; }
+        public readonly Predicate<int>? ValueСheckingPredicate; 
+        public Color HighlightTextСolor { get; } = ColorTranslator.FromHtml("#72bcd4");
         public bool IsBoldFont { get; }
 
         #endregion
@@ -27,7 +29,7 @@ namespace ClientTableAnalizer.Objects.Parsing
         #region Constructors
         public TargetCell(int colNumber, string colName, double colWidth, string format, 
             bool wrapTextInHeader, int textRotationInHeader, string propertyName, ParsingTypeCode parsingTypeCode, 
-            ExcelFillStyle excelFillStyle, bool isBoldFont = false)
+            ExcelFillStyle excelFillStyle, Predicate<int>? valueСheckingPredicate, bool isBoldFont = false)
         {
             ColNumber = colNumber;
             ColName = colName;
@@ -38,6 +40,7 @@ namespace ClientTableAnalizer.Objects.Parsing
             PropertyName = propertyName;
             ParsingTypeCode = parsingTypeCode;
             ExcelFillStyle = excelFillStyle;
+            ValueСheckingPredicate = valueСheckingPredicate;
             IsBoldFont = isBoldFont;
         }
         #endregion
