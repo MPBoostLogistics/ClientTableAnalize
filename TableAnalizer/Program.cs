@@ -74,52 +74,69 @@ internal class Program
         if (existingKeys is not null && existingKeys.Count > 0)
         {
             // Ransoms tasks
-            Task[] ransomsTasks = new Task[2];
+            List<Task> ransomsTasksList = new();
+            Task[] ransomsTasks = Array.Empty<Task>();
             if(existingKeys.Contains(SourceSKUReportFileKey.RansomsWB)) 
             {
-                ransomsTasks[0] =  ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsWB);
+                ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsWB));
             }
 
             if(existingKeys.Contains(SourceSKUReportFileKey.RansomsOZ)) 
             {
-                var index = ransomsTasks.Length > 0 ? 1 : 0;
-                ransomsTasks[index] =  ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsOZ);
+                ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsOZ));
             }
 
-            if(ransomsTasks.Length > 0) 
+            if(ransomsTasksList.Any()) 
             {
+                ransomsTasks = ransomsTasksList.ToArray();
+           
                 for (int i = 0; i < ransomsTasks.Length; i++)
                 {
                     var currentTask = ransomsTasks[i];
-                    await Task.Run(async () => await currentTask);
+                    if(currentTask is not null) 
+                    {
+                        await Task.Run(async () => await currentTask);
+                    }
                 }
             }
+            if(ransomsTasks.Any()) 
+            {
+                Task.WaitAll(ransomsTasks);
+            }
 
-            Task.WaitAll(ransomsTasks);
-            
+
             // Remaining tasks
-            Task[] remainingTasks = new Task[2];
+            List<Task> remainingTasksList = new();
+            Task[] remainingTasks = Array.Empty<Task>();
             if(existingKeys.Contains(SourceSKUReportFileKey.RemainingWB)) 
             {
-                remainingTasks[0] = ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingWB);
+                remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingWB));
             }
 
             if(existingKeys.Contains(SourceSKUReportFileKey.RemainingOZ)) 
             {
-                var index = remainingTasks.Length > 0 ? 1 : 0;
-                remainingTasks[index] =  ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingOZ);
+                remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingOZ));
             }
 
-            if(remainingTasks.Length > 0) 
+            if(remainingTasksList.Any()) 
             {
+                remainingTasks = remainingTasksList.ToArray();
                 for (int i = 0; i < remainingTasks.Length; i++)
                 {
                     var currentTask = remainingTasks[i];
-                    await Task.Run(async () => await currentTask);
+                    if(currentTask is not null) 
+                    {
+                        await Task.Run(async () => await currentTask);
+                    }
                 }
+
+                Task.WaitAll(remainingTasks);
             }
 
-            Task.WaitAll(remainingTasks);
+            if(remainingTasks.Any()) 
+            {
+                Task.WaitAll(remainingTasks);
+            }
 
             // WriteOff task 
             if(existingKeys.Contains(SourceSKUReportFileKey.WriteOffShortages)) 
@@ -187,9 +204,13 @@ internal class Program
 
             // ReceivingAndProcessing
             var processingRansomsDataTask = skuManager.ReceivingAndProcessingRansomsData(reportFileKey);
-            await Task.Run(async () => await processingRansomsDataTask);
-            processingRansomsDataTask.Wait();
-
+            
+            if(processingRansomsDataTask is not null) 
+            {
+                await Task.Run(async () => await processingRansomsDataTask);
+                processingRansomsDataTask.Wait();
+            }
+  
             // Dispose package
             if(ExcelManager.GetExcelPackageByKey(reportFileKey, out ExcelPackage? existingPackage)) 
             {
@@ -197,7 +218,7 @@ internal class Program
             }
 
             // Return time
-            return processingRansomsDataTask.Result;
+            return processingRansomsDataTask?.Result ?? 0.00;
         }
         else
         {

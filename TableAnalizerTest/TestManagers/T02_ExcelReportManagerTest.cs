@@ -235,7 +235,6 @@ namespace TableAnalizerTest.Managers
             });
         }
 
-
         [Test, Order(7)]
         public void GetRawDataFromExcelRows_SimpleRange_Test()
         {
@@ -526,11 +525,3 @@ namespace TableAnalizerTest.Managers
     }
 }
 
-
-/*
-    Указание листа
-    Указание соответствия SorceCells и TargetCells
-    Проход по книге и заполнение 
-    Настройки хидера и тп
-    Сохранение
-*/

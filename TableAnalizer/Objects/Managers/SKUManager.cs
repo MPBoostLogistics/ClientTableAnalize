@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using System.Security.Cryptography;
+
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Interfaces;
 using ClientTableAnalizer.Objects.Parsing;
@@ -29,7 +29,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <returns>Number of SKUs in collection.</returns>
         /// <remarks><i>New version, tested</i></remarks>
         public int SKUsCount() => SKUs.Count();
-        private delegate bool FindSkusWithPredicate(SKU sku);  
+        private delegate bool FindSkusWithPredicate(SKU sku);
         private FindSkusWithPredicate? predicateHandler;
 
         #endregion
@@ -66,15 +66,15 @@ namespace ClientTableAnalizer.Objects.Managers
         public async Task<double> ReceivingAndProcessingRansomsData(SourceSKUReportFileKey reportFileKey)
         {
             double time = 0.00;
-            
-            if(ExcelManager.GetExcelWorksheetStringNamesByKey(reportFileKey, out List<string>? workSheetNames) && 
-                workSheetNames is not null && 
-                workSheetNames.Count > 0) 
+
+            if (ExcelManager.GetExcelWorksheetStringNamesByKey(reportFileKey, out List<string>? workSheetNames) &&
+                workSheetNames is not null &&
+                workSheetNames.Count > 0)
             {
                 for (int i = 0; i < workSheetNames.Count; i++)
                 {
                     var currentName = workSheetNames[i];
-    
+
                     Task<double> processsingTask = ProcessingData(reportFileKey, currentName);
                     await Task.Run(async () => await processsingTask);
                     processsingTask.Wait();
@@ -134,47 +134,49 @@ namespace ClientTableAnalizer.Objects.Managers
                 static bool FindSkusWithCompensation(SKU sku) => sku.SKUCompensationBalance != null;
                 static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
 
-                var message = string.Empty;
+                    var message = string.Empty;
 
-                switch (reportFileKey)
-                {
-                    case SourceSKUReportFileKey.RansomsWB: case SourceSKUReportFileKey.RansomsOZ:
-                        predicateHandler = FindSkusWithRansoms;
-                        message = "Артикулов в выкупах: ";
-                        break;
-                    case SourceSKUReportFileKey.RemainingWB: case SourceSKUReportFileKey.RemainingOZ:
-                        predicateHandler = FindSkusWithRemaining;
-                        message = "Артикулов в приходе и остатоках склада: ";
-                        break;
-                    case SourceSKUReportFileKey.Additional:
-                        switch (workSheetName)
-                        {
-                            case ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME:
-                                predicateHandler = FindSkusWithCompensation;
-                                message = "Артикулов из компенсации недостач: ";
-                                break;
-                            case ExcelManager.RESORTS_REPORT_WORKSHEET_NAME:
-                                predicateHandler = FindSkusWithResort;
-                                message = "Артикулов из пересортов: ";
-                                break;
-                            case ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME:
-                                // ...
-                                break;
-                        };
-                        break;
-                    case SourceSKUReportFileKey.Shipped:
-                        predicateHandler = FindSkusWithShipped;
-                        message = "Артикулов в расходе со склада: ";
-                        break;
-                    case SourceSKUReportFileKey.WriteOffShortages:
-                        predicateHandler = FindSkusWithWriteOff;
-                        message = "Артикулов в списании недостач: ";
-                        break;
-                    default:
-                        break;
-                }
+                    switch (reportFileKey)
+                    {
+                        case SourceSKUReportFileKey.RansomsWB:
+                        case SourceSKUReportFileKey.RansomsOZ:
+                            predicateHandler = FindSkusWithRansoms;
+                            message = "Артикулов в выкупах: ";
+                            break;
+                        case SourceSKUReportFileKey.RemainingWB:
+                        case SourceSKUReportFileKey.RemainingOZ:
+                            predicateHandler = FindSkusWithRemaining;
+                            message = "Артикулов в приходе и остатоках склада: ";
+                            break;
+                        case SourceSKUReportFileKey.Additional:
+                            switch (workSheetName)
+                            {
+                                case ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME:
+                                    predicateHandler = FindSkusWithCompensation;
+                                    message = "Артикулов из компенсации недостач: ";
+                                    break;
+                                case ExcelManager.RESORTS_REPORT_WORKSHEET_NAME:
+                                    predicateHandler = FindSkusWithResort;
+                                    message = "Артикулов из пересортов: ";
+                                    break;
+                                case ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME:
+                                    // ...
+                                    break;
+                            };
+                            break;
+                        case SourceSKUReportFileKey.Shipped:
+                            predicateHandler = FindSkusWithShipped;
+                            message = "Артикулов в расходе со склада: ";
+                            break;
+                        case SourceSKUReportFileKey.WriteOffShortages:
+                            predicateHandler = FindSkusWithWriteOff;
+                            message = "Артикулов в списании недостач: ";
+                            break;
+                        default:
+                            break;
+                    }
 
-                // Report
+                    // Report
                 if(predicateHandler is not null) 
                 {
                     int skusWithPredicateCount = SKUs.GetValueCount(predicateHandler.Invoke);
@@ -217,7 +219,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 {
                     var list = (((List<SKURansomsBalanceDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
                         throw new InvalidCastException("Невозможно привести List<SKURansomsBalanceDataUnit> к List<ParsingRowEntity>");
-                    
+
                     SkuRansomsBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
 
@@ -404,7 +406,7 @@ namespace ClientTableAnalizer.Objects.Managers
                     SKURemainingBalance remainingBalance = new(skuNumber, skuBrandName, units.ToList());
                     SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));
                 } 
-                else if(isShipped) 
+                else if (isShipped)
                 {
                     var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUShippedDataUnit>().ToList()) ??
                         throw new InvalidCastException("Cannot cast collection to IList<SKUShippedDataUnit>.");
@@ -416,9 +418,12 @@ namespace ClientTableAnalizer.Objects.Managers
                 {
                     var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUWriteOffDataUnit>().ToList()) ??
                         throw new InvalidCastException("Cannot cast collection to IList<SKUWriteOffDataUnit>.");
-                    
-                    SKUWriteOffBalance writeOffBalance = new(skuNumber, units.ToList());
-                    SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, marketplace, writeOffBalance));
+
+                    if(SKUs.GetValue(skuNumber, out SKU? sKU)) 
+                    {
+                        SKUWriteOffBalance writeOffBalance = new(skuNumber, units.ToList());
+                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, marketplace, writeOffBalance));
+                    }
                 }
                 else if(isCompensation) 
                 {

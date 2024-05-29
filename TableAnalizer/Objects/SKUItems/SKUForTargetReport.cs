@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Drawing;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Interfaces;
@@ -39,6 +40,10 @@ namespace ClientTableAnalizer.Objects.SKUItems
         public double SKUDeliveryDelayPointsSum { get;set;}
         public int SKUDeliveryDelayStorage { get; set; }
         public double SKUDeliveryDelayStorageSum { get; set; }
+
+        // Overruns 
+        public int SKUOverrunsCount { get; set; }
+        public double SKUOverrunsSum { get; set; }
 
         public string SKUComment { get; set;} = string.Empty;
         public Color FillColor { get; set; }
@@ -101,22 +106,29 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
             CalculateDeliveryDelay();
             DeterminingSellmentStatus();
+
+            SKUOverrunsCount = SKUTotalСonsumption > SKURansomsWaiting && isDeadline ? SKUTotalСonsumption - SKURansomsWaiting : 0; 
+            SKUOverrunsSum = SKUOverrunsCount > 0 && isDeadline ? SKUOverrunsCount * SKUPrice : 0.00;
         }
 
         private void CalculateDeliveryDelay()
         {
+            var isConsumptionLessWaiting = SKUTotalСonsumption < SKURansomsWaiting;
+      
             // Недовоз от ПВЗ = Ожидание - Приход на склад
-            SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceipt;
+            SKUDeliveryDelayPoints = isConsumptionLessWaiting ? SKURansomsWaiting - SKUReceipt : 0;
             if (SKUDeliveryDelayPoints < 0) SKUDeliveryDelayPoints = 0;
 
-            // Недовоз от склада = Ожидание - Общий расход 
-            SKUDeliveryDelayStorage = SKURansomsWaiting - SKUTotalСonsumption - SKUDeliveryDelayPoints;
+            // Недовоз от склада = Ожидание - Общий расход - Недовоз от ПВЗ
+            SKUDeliveryDelayStorage = isConsumptionLessWaiting ? SKURansomsWaiting - SKUTotalСonsumption - SKUDeliveryDelayPoints : 0;
             if (SKUDeliveryDelayStorage < 0) SKUDeliveryDelayStorage = 0;
 
-            SKUDeliveryDelayTotal =  isDeadline ? SKUDeliveryDelayPoints + SKUDeliveryDelayStorage : 0;
+            // Общий недовоз
+            SKUDeliveryDelayTotal =  isDeadline && isConsumptionLessWaiting ? SKUDeliveryDelayPoints + SKUDeliveryDelayStorage : 0;
 
-            SKUDeliveryDelayPointsSum = isDeadline ? SKUDeliveryDelayPoints * SKUPrice : 0.00;
-            SKUDeliveryDelayStorageSum = isDeadline ? SKUDeliveryDelayStorage  * SKUPrice : 0.00;
+            // Суммы недовоза 
+            SKUDeliveryDelayPointsSum = isDeadline && isConsumptionLessWaiting ? SKUDeliveryDelayPoints * SKUPrice : 0.00;
+            SKUDeliveryDelayStorageSum = isDeadline && isConsumptionLessWaiting ? SKUDeliveryDelayStorage  * SKUPrice : 0.00;
         }
 
         private void DeterminingSellmentStatus() 

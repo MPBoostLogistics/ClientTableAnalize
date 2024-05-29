@@ -214,71 +214,66 @@ namespace ClientTableAnalizer.Objects.Managers
             existingKeys = new(Array.Empty<SourceSKUReportFileKey>());
             lostKeys = new(Array.Empty<SourceSKUReportFileKey>());
 
+            // Обязательны хотя бы один по выкупам, хотя бы один по приходу и остаткам 
+
+        
             var isContainsKeyRansomsWB = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RansomsWB);
             var isContainsKeyRansomsOZ = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RansomsOZ);
+            bool isRansomsExisting = isContainsKeyRansomsWB || isContainsKeyRansomsOZ;
 
             var isContainsKeyStorageWB = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RemainingWB);
             var isContainsKeyStorageOZ = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RemainingOZ);
+            bool isRemainingExisting = isContainsKeyStorageWB || isContainsKeyStorageOZ;
 
             var isContainsKeyShipped = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Shipped);
 
-            // WB
-            var isWBSuccess = isContainsKeyRansomsWB && isContainsKeyStorageWB && isContainsKeyShipped;
-            if (!isWBSuccess)
-            {
-                if (!isContainsKeyRansomsWB) lostKeys.Add(SourceSKUReportFileKey.RansomsWB);
-                if (!isContainsKeyStorageWB) lostKeys.Add(SourceSKUReportFileKey.RemainingWB);
-            } 
-            else 
-            {
-                if (isContainsKeyRansomsWB) existingKeys.Add(SourceSKUReportFileKey.RansomsWB);
-                if (isContainsKeyStorageWB) existingKeys.Add(SourceSKUReportFileKey.RemainingWB);
-            }
+            var isContainsWriteOffShortages = ReportsPaths.ContainsKey(SourceSKUReportFileKey.WriteOffShortages);
 
-            // OZ
-            var isOZSuccess = isContainsKeyRansomsOZ && isContainsKeyStorageOZ && isContainsKeyShipped;
-            if (!isOZSuccess)
-            {
-                if (!isContainsKeyRansomsOZ) lostKeys.Add(SourceSKUReportFileKey.RansomsOZ);
-                if (!isContainsKeyStorageOZ) lostKeys.Add(SourceSKUReportFileKey.RemainingOZ);
-            } 
-            else 
-            {
-                if (isContainsKeyRansomsOZ) existingKeys.Add(SourceSKUReportFileKey.RansomsOZ);
-                if (isContainsKeyStorageOZ) existingKeys.Add(SourceSKUReportFileKey.RemainingOZ);
-            }
+            var isContainsAdditionalShortages = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Additional);
 
-            // Shipped 
-            if (!isContainsKeyShipped) 
+            var success = isRansomsExisting && isRemainingExisting && isContainsKeyShipped && isContainsWriteOffShortages;
+            if(success) 
             {
-                lostKeys.Add(SourceSKUReportFileKey.Shipped);
-            } 
-            else 
-            {
+                if(isContainsKeyRansomsWB)
+                    existingKeys.Add(SourceSKUReportFileKey.RansomsWB);
+                
+                if(isContainsKeyRansomsOZ)
+                    existingKeys.Add(SourceSKUReportFileKey.RansomsOZ);
+
+                if(isContainsKeyStorageWB)
+                   existingKeys.Add(SourceSKUReportFileKey.RemainingWB);
+                
+                if(isContainsKeyStorageOZ)
+                    existingKeys.Add(SourceSKUReportFileKey.RemainingOZ);
+                
                 existingKeys.Add(SourceSKUReportFileKey.Shipped);
-            }
 
-            // Дополнительные отчеты (недостачи, пересорты и пустышки)
-            if(!ReportsPaths.ContainsKey(SourceSKUReportFileKey.Additional)) 
-            {
-                lostKeys.Add(SourceSKUReportFileKey.Additional);
-            } 
-            else 
-            {
-                existingKeys.Add(SourceSKUReportFileKey.Additional);
-            }
-
-            // WriteOffShortages (cписание недостач)
-            if(!ReportsPaths.ContainsKey(SourceSKUReportFileKey.WriteOffShortages)) 
-            {
-                lostKeys.Add(SourceSKUReportFileKey.WriteOffShortages);
-            } 
-            else 
-            {
                 existingKeys.Add(SourceSKUReportFileKey.WriteOffShortages);
+
+                if(isContainsAdditionalShortages)
+                    existingKeys.Add(SourceSKUReportFileKey.Additional);
+            } 
+            else 
+            {
+                if(!isContainsKeyRansomsWB)
+                    lostKeys.Add(SourceSKUReportFileKey.RansomsWB);
+                
+                if(!isContainsKeyRansomsOZ)
+                    lostKeys.Add(SourceSKUReportFileKey.RansomsOZ);
+
+                if(!isContainsKeyStorageWB)
+                   lostKeys.Add(SourceSKUReportFileKey.RemainingWB);
+                
+                if(!isContainsKeyStorageOZ)
+                    lostKeys.Add(SourceSKUReportFileKey.RemainingOZ);
+
+                if(!isContainsKeyShipped)
+                    lostKeys.Add(SourceSKUReportFileKey.Shipped);
+                
+                if(!isContainsWriteOffShortages)
+                    lostKeys.Add(SourceSKUReportFileKey.WriteOffShortages);
             }
 
-            var success = isWBSuccess == true || isOZSuccess == true;
             return success;
         }
 

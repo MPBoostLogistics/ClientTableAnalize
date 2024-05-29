@@ -72,10 +72,21 @@ namespace ClientTableAnalizer.Objects.Repositories
 
                     if(newValue.SKURansomsBalance is not null) 
                     {
-                        int? onWay =  retriveValue.SKURansomsBalance!.SKURansomsOnWay + newValue.SKURansomsBalance.SKURansomsOnWay;
-                        int? canceled = retriveValue.SKURansomsBalance!.SKURansomsCanceled + newValue.SKURansomsBalance.SKURansomsCanceled;
-                        int? delivered = retriveValue.SKURansomsBalance!.SKURansomsDelivered + newValue.SKURansomsBalance.SKURansomsDelivered;
-                        int? withDrawn = retriveValue.SKURansomsBalance!.SKURansomsWithDrawn + newValue.SKURansomsBalance.SKURansomsWithDrawn;
+                        var retrieveOnWay = retriveValue.SKURansomsBalance!.SKURansomsOnWay; 
+                        var newValueOnWay = newValue.SKURansomsBalance!.SKURansomsOnWay; 
+                        int? onWay =  !Equals(retrieveOnWay, newValueOnWay) ? retrieveOnWay + newValueOnWay : retrieveOnWay;
+                        
+                        var retrieveCancelled = retriveValue.SKURansomsBalance!.SKURansomsCanceled; 
+                        var newValueCancelled = newValue.SKURansomsBalance!.SKURansomsCanceled; 
+                        int? canceled = !Equals(retrieveCancelled, newValueCancelled) ? retrieveCancelled + newValueCancelled : retrieveCancelled;
+                        
+                        var retrieveDelivered = retriveValue.SKURansomsBalance!.SKURansomsDelivered; 
+                        var newValueDelivered = newValue.SKURansomsBalance!.SKURansomsDelivered; 
+                        int? delivered = !Equals(retrieveDelivered, newValueDelivered) ? retrieveDelivered + newValueDelivered : retrieveDelivered;
+                        
+                        var retrieveWithDrawn = retriveValue.SKURansomsBalance!.SKURansomsWithDrawn; 
+                        var newValueWithDrawn = newValue.SKURansomsBalance!.SKURansomsWithDrawn; 
+                        int? withDrawn = !Equals(retrieveWithDrawn, newValueWithDrawn) ? retrieveWithDrawn + newValueWithDrawn : retrieveWithDrawn;
 
                         skuRansomsBalance = new (onWay, canceled, delivered, withDrawn);
                     }
@@ -103,9 +114,17 @@ namespace ClientTableAnalizer.Objects.Repositories
                                 newValue.SKURemainingBalance!.SKUBrandAndName : 
                                 string.Empty;
 
-                        int skuReceipt = retriveValue.SKURemainingBalance!.SKUReceipt + newValue.SKURemainingBalance.SKUReceipt;
-                        int skuShipped = retriveValue.SKURemainingBalance!.SKUShipped + newValue.SKURemainingBalance.SKUShipped;
-                        int skuRemaining = retriveValue.SKURemainingBalance!.SKURemaining + newValue.SKURemainingBalance.SKURemaining;
+                        var retriveReceipt = retriveValue.SKURemainingBalance!.SKUReceipt; 
+                        var newReceipt = newValue.SKURemainingBalance!.SKUReceipt; 
+                        int skuReceipt = !Equals(retriveReceipt, newReceipt) ? retriveReceipt + newReceipt : retriveReceipt; 
+
+                        var retriveShipped = retriveValue.SKURemainingBalance!.SKUShipped; 
+                        var newShipped = newValue.SKURemainingBalance!.SKUShipped;   
+                        int skuShipped = !Equals(retriveShipped, newShipped) ? retriveShipped + newShipped : retriveShipped;
+
+                        var retriveRemaining = retriveValue.SKURemainingBalance!.SKURemaining; 
+                        var newRemaining = newValue.SKURemainingBalance!.SKURemaining;  
+                        int skuRemaining = !Equals(retriveRemaining, newRemaining) ? retriveRemaining + newRemaining : retriveRemaining;
 
                         skuRemainingBalance = new SKURemainingBalance(skuNumber, brandAndName, skuReceipt,skuShipped, skuRemaining);
                     }

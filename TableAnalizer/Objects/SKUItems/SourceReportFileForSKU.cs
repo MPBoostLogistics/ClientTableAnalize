@@ -8,7 +8,6 @@ namespace ClientTableAnalizer.Objects.SKUItems
         const string spaceSeparator = "\u0020";
         const string comaSeparator = "\u002E";
         const string writeOffShortagesKey = "списание";
-        const string reGradesKey = "пересорты";
         const string shippedKey = "расходы";
         const string receivedRemainingKey = "приходы";
         const string redemtionKey = "отчет";
