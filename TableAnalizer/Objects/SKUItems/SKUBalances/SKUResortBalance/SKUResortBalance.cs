@@ -88,6 +88,13 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
            }
         }
         
+        public IEnumerable<(int Key, int resortSKUCount, string resortSKUComment)>? GetRevercedBalance() 
+        {
+            return  from resortSku in ResortSKUs
+                    let item = (resortSku.Key, resortSku.Value.resortSKUCount, resortSku.Value.resortSKUComment)
+                    select item;
+        }
+        
         #endregion
     }
 }

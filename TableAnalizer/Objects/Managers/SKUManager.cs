@@ -1,5 +1,5 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
-
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Interfaces;
 using ClientTableAnalizer.Objects.Parsing;
@@ -22,6 +22,8 @@ namespace ClientTableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuDummiesBalanceUnits { get; }
+        // арткул на который пересорт (артикул с которого пересорт, количество)
+        private ConcurrentDictionary <int, ConcurrentDictionary<int, int>> ResortSKUs {get; set;} = new();
 
         /// <summary>
         /// Returns number of SKUs in collection.
@@ -179,7 +181,7 @@ namespace ClientTableAnalizer.Objects.Managers
                     // Report
                 if(predicateHandler is not null) 
                 {
-                    int skusWithPredicateCount = SKUs.GetValueCount(predicateHandler.Invoke);
+                    int skusWithPredicateCount = SKUs.GetValuesCount(predicateHandler.Invoke);
                     message = string.Concat(message, skusWithPredicateCount);
                     OnManagerReached(new(message, 1000, false));
                 }
@@ -205,7 +207,6 @@ namespace ClientTableAnalizer.Objects.Managers
             bool isWriteOff = reportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
-
 
             if (isRansoms)
             {
@@ -341,6 +342,9 @@ namespace ClientTableAnalizer.Objects.Managers
             bool isResorts = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isDummies = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME;
 
+            // Dummy
+            await Task.Delay(1);
+
             // Definition of a marketplace and collection
             Marketplace marketplace = isWB ? Marketplace.WB : Marketplace.OZ;          
             IRepository<int, List<ParsingRowEntity>>? parsingEntityCollection = skuReportFileKey switch
@@ -366,146 +370,129 @@ namespace ClientTableAnalizer.Objects.Managers
                 _ => parsingEntityCollection = null,
             };
 
-            if (parsingEntityCollection == null || parsingEntityCollection.Count() == 0)
+            bool isCollectionValid = parsingEntityCollection is not null && parsingEntityCollection.Count() > 0;
+
+            if(isCollectionValid) 
             {
-                await Task.Delay(100);
-                OnManagerReached(new("It is impossible to form a dict of articles from an empty dictionary of 'raw' data.", 2000, true));
-                return;
-            }
+                List<(int key, List<ParsingRowEntity> value)>? listCollection = parsingEntityCollection!.GetValuesList().ToList();
+                if (listCollection is null || listCollection.Count == 0)
+                    throw new Exception("It is not possible to process an empty collection of type List<(int key, List<ParsingRowEntity> value)>.");
 
-            List<(int key, List<ParsingRowEntity> value)>? listCollection = parsingEntityCollection.GetValuesList().ToList();
-            if (listCollection is null || listCollection.Count == 0)
-                throw new Exception("It is not possible to process an empty collection of type List<(int key, List<ParsingRowEntity> value)>.");
-
-            foreach (var (skuNumber, listEntities) in listCollection)
-            {
-                if (isRansoms)
+                foreach (var (skuNumber, listEntities) in listCollection)
                 {
-                    var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKURansomsBalanceDataUnit>().ToList()) ??
-                        throw new InvalidCastException("Cannot cast collection to IList<SKURansomsBalanceDataUnit>.");
-
-                    SKURansomsBalance ransomsBalance = new(units.ToList());
-
-                    var skuMaxRansomDate = units
-                        .Select(u => u.SKURansomDate)
-                        .Max();
-
-                    var averagePrice = units
-                        .Average(u => u.SKUCost);
-
-                    SKU tempSKU = new(marketplace, skuNumber, ransomsBalance, averagePrice, skuMaxRansomDate, DeadlineDays);
-                    SKUs.RetrieveAndUpdateOrAddValue(skuNumber, tempSKU);
-                }
-                else if (isRemaining)
-                {
-                    var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKURemainingBalanceDataUnit>().ToList()) ??
-                        throw new InvalidCastException("Unable to cast collection to IList<SKURemainingBalanceDataUnit>.");
-
-                    var skuBrandName = units.First().SKUBrandAndName;
-
-                    SKURemainingBalance remainingBalance = new(skuNumber, skuBrandName, units.ToList());
-                    SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));
-                } 
-                else if (isShipped)
-                {
-                    var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUShippedDataUnit>().ToList()) ??
-                        throw new InvalidCastException("Cannot cast collection to IList<SKUShippedDataUnit>.");
-                    
-                    SKURemainingBalance remainingBalance = new(skuNumber, units.ToList());
-                    SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));
-                } 
-                else if(isWriteOff) 
-                {
-                    var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUWriteOffDataUnit>().ToList()) ??
-                        throw new InvalidCastException("Cannot cast collection to IList<SKUWriteOffDataUnit>.");
-
-                    if(SKUs.GetValue(skuNumber, out SKU? sKU)) 
+                    if (isRansoms)
                     {
-                        SKUWriteOffBalance writeOffBalance = new(skuNumber, units.ToList());
-                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, marketplace, writeOffBalance));
-                    }
-                }
-                else if(isCompensation) 
-                {
-                    var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUCompensationDataUnit>().ToList()) ??
-                        throw new InvalidCastException("Cannot cast collection to IList<SKUCompensationDataUnit>.");
+                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKURansomsBalanceDataUnit>().ToList()) ??
+                            throw new InvalidCastException("Cannot cast collection to IList<SKURansomsBalanceDataUnit>.");
 
-                    SKUCompensationBalance skuCompensationBalance = new(skuNumber, units.ToList());
-                    SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuCompensationBalance));
-                }
-                else if(isResorts) 
-                {
-                    var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUResortDataUnit>().ToList()) ??
-                        throw new InvalidCastException("Cannot cast collection to IList<SKUResortDataUnit>.");
-                    
-                    SKUResortBalance skuResortBalance = new(skuNumber, units.ToList());
-                    SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuResortBalance));
-                }
-                else if(isDummies)
-                {
-                    // ... 
+                        SKURansomsBalance ransomsBalance = new(units.ToList());
+
+                        var skuMaxRansomDate = units
+                            .Select(u => u.SKURansomDate)
+                            .Max();
+
+                        var averagePrice = units
+                            .Average(u => u.SKUCost);
+
+                        SKU tempSKU = new(marketplace, skuNumber, ransomsBalance, averagePrice, skuMaxRansomDate, DeadlineDays);
+                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, tempSKU);
+                    }
+                    else if (isRemaining)
+                    {
+                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKURemainingBalanceDataUnit>().ToList()) ??
+                            throw new InvalidCastException("Unable to cast collection to IList<SKURemainingBalanceDataUnit>.");
+
+                        var skuBrandName = units.First().SKUBrandAndName;
+
+                        SKURemainingBalance remainingBalance = new(skuNumber, skuBrandName, units.ToList());
+                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));
+                    } 
+                    else if (isShipped)
+                    {
+                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUShippedDataUnit>().ToList()) ??
+                            throw new InvalidCastException("Cannot cast collection to IList<SKUShippedDataUnit>.");
+                        
+                        SKURemainingBalance remainingBalance = new(skuNumber, units.ToList());
+                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));
+                    } 
+                    else if(isWriteOff) 
+                    {
+                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUWriteOffDataUnit>().ToList()) ??
+                            throw new InvalidCastException("Cannot cast collection to IList<SKUWriteOffDataUnit>.");
+
+                        if(SKUs.GetValue(skuNumber, out SKU? sKU)) 
+                        {
+                            SKUWriteOffBalance writeOffBalance = new(skuNumber, units.ToList());
+                            SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, marketplace, writeOffBalance));
+                        }
+                    }
+                    else if(isCompensation) 
+                    {
+                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUCompensationDataUnit>().ToList()) ??
+                            throw new InvalidCastException("Cannot cast collection to IList<SKUCompensationDataUnit>.");
+
+                        SKUCompensationBalance skuCompensationBalance = new(skuNumber, units.ToList());
+                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuCompensationBalance));
+                    }
+                    else if(isResorts) 
+                    {
+                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUResortDataUnit>().ToList()) ??
+                            throw new InvalidCastException("Cannot cast collection to IList<SKUResortDataUnit>.");
+                        
+                        SKUResortBalance skuResortBalance = new(skuNumber, units.ToList());
+                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuResortBalance));
+
+                        foreach (KeyValuePair<int, (int resortSKUCount, string? resortSKUComment)> item in skuResortBalance.ResortSKUs)
+                        {
+                            var skuFromResort = skuNumber;
+                            var skuForResort = item.Key;
+                            var skuForResortCount = item.Value.resortSKUCount;
+
+                            if(ResortSKUs.TryGetValue(skuForResort, out ConcurrentDictionary<int, int>? value)) 
+                            {
+                                if(value.TryGetValue(skuFromResort, out int comparisonValue)) 
+                                {
+                                    var newValue = comparisonValue += skuForResortCount;
+                                    value.TryUpdate(skuFromResort, newValue, comparisonValue);
+                                }
+                                else 
+                                {
+                                    value.TryAdd(skuFromResort, skuForResortCount);
+                                }
+                            } 
+                            else 
+                            {
+                                var newDict = new ConcurrentDictionary<int, int>();
+                                newDict.TryAdd(skuFromResort, skuForResortCount);
+                                ResortSKUs.TryAdd(skuForResort, newDict);
+                            }
+                        }
+                        
+                    }
+                    else if(isDummies)
+                    {
+                        // ... 
+                    }
                 }
             }
         }
-
-        // /// <summary>
-        // /// Returns saved article by its number or null.
-        // /// </summary>
-        // /// <param name="articleNumber">Article number to look up in  dict.</param>
-        // /// <param name="article">Link to a copy of article.</param>
-        // /// <returns>Logical flag for performing an operation.</returns>
-        // /// <remarks><i>New version, tested</i></remarks>
-        // public bool GetSKUByNumber(int articleNumber, out SKU? article)
-        // {
-        //     article = _skus.TryGetValue(articleNumber, out SKU? value) ? value : null;
-        //     return article != null;
-        // }
-
-        // /// <summary>
-        // /// Saves ArticleRowInReport in corresponding article. 
-        // /// </summary>
-        // /// <param name="skuRowsInReport">Link to ArticleRowInReport.</param>
-        // /// <param name="marketplace">Marketplace products.</param>
-        // /// <returns>Time it takes to complete operation in seconds.</returns>
-        // /// <remarks><i>New version, tested</i></remarks>
-        // public double SaveSKURowsInReport(List<SKURowInReport> skuRowsInReport, Marketplace marketplace)
-        // {
-        //     var stopwatch = new Stopwatch();
-        //     stopwatch.Start();
-
-        //     foreach (var skuRowInReport in skuRowsInReport)
-        //     {
-        //         var skuNumber = skuRowInReport.SKUNumber;
-
-        //         if (GetSKUByNumber(skuNumber, out SKU? sku) && sku != null)
-        //         {
-        //             sku.SetArticleRowInReport(skuRowInReport);
-        //         }
-        //         else
-        //         {
-        //             _skus.Add(skuNumber, new SKU(marketplace, skuNumber, skuRowInReport));
-        //         }
-        //     }
-
-        //     stopwatch.Stop();
-
-        //     return stopwatch.ElapsedMilliseconds / 1000;
-        // }
-
-        // /// <summary>
-        // /// Performs analysis of elements in article collection.
-        // /// </summary>
-        // /// <exception cref="Exception">An exception occurred when trying to parse an empty collection.</exception>
-        // /// <remarks><i>New version, tested</i></remarks>
-        // public void AnalyzeSKUs()
-        // {
-        //     if (Equals(_skus.Count, 0))
-        //         throw new Exception("An attempt to parse a dict with a number of elements - 0");
-
-        //     foreach (var (key, value) in _skus)
-        //         value.AnalyzeSKU(DeadlineDays);
-        // }
-
+        
+        public List<SKUForTargetReports> MakeSkusForTargetReport() 
+        {
+            List<SKUForTargetReports> sKUForTargetReports = new();
+            foreach (var (key, sku) in SKUs.GetValuesList())
+            {
+                SKUForTargetReports newValue = ResortSKUs.TryGetValue(key, out var value) && value is not null ? 
+                    new(sku, value) : 
+                    new(sku);
+                    
+                sKUForTargetReports.Add(newValue);
+            }
+            return sKUForTargetReports
+                .OrderByDescending(el => el.SKUDate)
+                .ToList();
+        }
+        
         #endregion
     }
 }

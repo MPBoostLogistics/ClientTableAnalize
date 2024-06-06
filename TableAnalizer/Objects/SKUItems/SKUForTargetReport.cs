@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Drawing;
 using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Interfaces;
@@ -41,15 +42,19 @@ namespace ClientTableAnalizer.Objects.SKUItems
         public int SKUDeliveryDelayStorage { get; set; }
         public double SKUDeliveryDelayStorageSum { get; set; }
 
-        // Overruns 
-        public int SKUOverrunsCount { get; set; }
-        public double SKUOverrunsSum { get; set; }
+       
+        public int SKUAccountingByResortsCount { get; set; } = 0;
+        public string SKUAccountingByResortsComment { get; set; } = string.Empty;
+
+         // Overruns 
+        public int SKUOverrunsCount { get; set; } = 0;
+        public double SKUOverrunsSum { get; set; } = 0.00;
 
         public string SKUComment { get; set;} = string.Empty;
         public Color FillColor { get; set; }
 
         #region Constructors
-        public SKUForTargetReports(SKU sku)
+        public SKUForTargetReports(SKU sku, ConcurrentDictionary<int, int>? resortSKUs = null)
         {
             SKUmp = sku.Marketplace;
             SKUNumber = sku.SKUNumber;
@@ -106,9 +111,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
             CalculateDeliveryDelay();
             DeterminingSellmentStatus();
-
-            SKUOverrunsCount = SKUTotalСonsumption > SKURansomsWaiting && isDeadline ? SKUTotalСonsumption - SKURansomsWaiting : 0; 
-            SKUOverrunsSum = SKUOverrunsCount > 0 && isDeadline ? SKUOverrunsCount * SKUPrice : 0.00;
+            CalculateOverruns(resortSKUs);
         }
 
         private void CalculateDeliveryDelay()
@@ -163,6 +166,54 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
             SellmentStatusString = SellmentStatus.StatusLabel;
             FillColor = SellmentStatus.StatusColor;
+        }
+
+        private void CalculateOverruns(ConcurrentDictionary<int, int>? resortSKUs) 
+        {
+            SKUOverrunsCount = SKUTotalСonsumption > SKURansomsWaiting && isDeadline ? SKUTotalСonsumption - SKURansomsWaiting : 0; 
+
+            // There can be no negative overruns
+
+            switch(SKUOverrunsCount) 
+            {
+                case <= 0:
+                    SKUOverrunsCount = 0;
+                    SKUOverrunsSum = 0.00;
+                    break;
+                case > 0:
+                    if(resortSKUs == null) 
+                    {
+                        if(isDeadline) SKUOverrunsSum = SKUOverrunsCount * SKUPrice;
+                    } 
+                    else 
+                    {
+                        foreach (KeyValuePair<int, int> item in resortSKUs)
+                        {
+                            var skuFromResort = item.Key;
+                            SKUAccountingByResortsCount += item.Value;
+
+                            SKUAccountingByResortsComment = string.IsNullOrEmpty(SKUAccountingByResortsComment) ?  
+                                $"{skuFromResort} - {item.Value}, " :
+                                string.Concat(SKUAccountingByResortsComment, $"{skuFromResort} - {item.Value}, ");
+                        }
+
+                        SKUOverrunsCount -= SKUAccountingByResortsCount;
+                        SKUOverrunsSum = isDeadline ? SKUOverrunsCount * SKUPrice : 0.00;
+
+                        if(SKUOverrunsCount < 0) 
+                        {
+                            SKUOverrunsCount = 0;
+                        }
+
+                        if(SKUOverrunsSum < 0.00) 
+                        {
+                            SKUOverrunsSum = 0.00;
+                        }
+
+
+                    }   
+                    break;
+            }
         }
 
         #endregion Constructors

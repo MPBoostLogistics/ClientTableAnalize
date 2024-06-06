@@ -17,6 +17,7 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
 
         #region Constructors
         public SKUResortDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : base(parsingElements){}
+        
         #endregion Constructors
     }
 }

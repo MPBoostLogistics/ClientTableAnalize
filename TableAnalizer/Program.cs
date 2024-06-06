@@ -162,13 +162,10 @@ internal class Program
                 currentTask.Wait();
             } 
 
-            // TODO: отчет по списанию недостач
-            // ... 
-
             // Delete old logistic report 
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
-            var outputSkus = skuManager.SKUs.GetValuesList().Select(s => s.value.GetSKUForTargetReports).OrderByDescending(el => el.SKUDate).ToList();
-            excelManager.MakeTargetReports(outputSkus);
+            var skusForTargetReport = skuManager.MakeSkusForTargetReport();
+            excelManager.MakeTargetReports(skusForTargetReport);
 
             // Report 
             var completedMessage = $"Отчет логистики сохранен по пути: {FileManager.OutputClientReportFilePath}\n"; 

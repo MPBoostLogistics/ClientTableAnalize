@@ -1,4 +1,5 @@
-﻿using ClientTableAnalizer.Enums;
+﻿using System.Collections.Concurrent;
+using ClientTableAnalizer.Enums;
 using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
 
 namespace ClientTableAnalizer.Objects.SKUItems
@@ -130,7 +131,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
         #region Functionality
 
-        public SKUForTargetReports GetSKUForTargetReports => new(this);
+        public SKUForTargetReports GetSKUForTargetReports(ConcurrentDictionary<int, int> resortSKUs) => new(this, resortSKUs);
 
         public void Update(SKUCompensationBalance skuShortageBalance) 
         {
