@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Drawing;
 using ClientTableAnalizer.Enums;
@@ -81,7 +80,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
             {
                 var receipt = sku.SKURemainingBalance.SKUReceipt;
                 var writeOff = sku.SKUWriteOffBalance?.SKUWriteOff;
-                
+
                 SKUReceipt = writeOff.HasValue ? receipt - writeOff.Value : receipt;
                 SKUShipped = sku.SKURemainingBalance.SKUShipped;
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
@@ -98,20 +97,33 @@ namespace ClientTableAnalizer.Objects.SKUItems
             {
                 sku.SKUResortBalance.AddСommentToBalance();
 
-                SKUResort = sku.SKUResortBalance.ResortSKUs.Aggregate(0, (acc, i) => acc + i.Value.resortSKUCount);
-                string comment = sku.SKUResortBalance.ResortSKUs.Aggregate(string.Empty, (acc, i) => acc + i.Value.resortSKUComment + " ");
-                SKUComment = !string.IsNullOrEmpty(SKUComment) ? string.Concat(SKUComment, comment) : comment;
+                foreach (var resortSKU in sku.SKUResortBalance.ResortSKUs)
+                {
+                    SKUResort += resortSKU.Value.resortSKUCount;
+
+                    if(!string.IsNullOrEmpty(SKUComment)) 
+                    {
+                        SKUComment = string.IsNullOrEmpty(SKUComment) ? 
+                            resortSKU.Value.resortSKUComment! : 
+                            string.Concat(SKUComment, ", ", resortSKU.Value.resortSKUComment);
+                    }
+
+                }
             }
 
             // TODO: Дорабоать вопрос по пустышкам
             SKUDummies = 0;
 
-            // Calculate total Сonsumption
-            SKUTotalСonsumption = SKUShipped + SKUPaid + SKUResort + SKUDummies;
-
-            CalculateDeliveryDelay();
-            DeterminingSellmentStatus();
+            CalculateSKUTotalСonsumption();
             CalculateOverruns(resortSKUs);
+            CalculateDeliveryDelay();
+            CalculateSKUTotalСonsumption();
+            DeterminingSellmentStatus();
+        }
+
+        private void CalculateSKUTotalСonsumption()
+        {
+            SKUTotalСonsumption = SKUShipped + SKUPaid + SKUResort + SKUDummies;
         }
 
         private void CalculateDeliveryDelay()
@@ -149,18 +161,13 @@ namespace ClientTableAnalizer.Objects.SKUItems
                 } 
                 else 
                 {
-                    switch(SKUDeliveryDelayPoints > 0, SKUDeliveryDelayStorage > 0) 
+                    SellmentStatus = (SKUDeliveryDelayPoints > 0, SKUDeliveryDelayStorage > 0) switch
                     {
-                        case (true, true):
-                            SellmentStatus = new SellmentStatus(SKUSellmentStatus.OnSearchWarehouseAndPoints);
-                            break;
-                        case (true, false):
-                            SellmentStatus = new SellmentStatus(SKUSellmentStatus.OnSearchPoint);
-                            break;
-                        case (false, true):
-                            SellmentStatus = new SellmentStatus(SKUSellmentStatus.OnSearchWarehouse);
-                            break;
-                    }
+                        (true, true) => new SellmentStatus(SKUSellmentStatus.OnSearchWarehouseAndPoints),
+                        (true, false) => new SellmentStatus(SKUSellmentStatus.OnSearchPoint),
+                        (false, true) => new SellmentStatus(SKUSellmentStatus.OnSearchWarehouse),
+                        (false, false) => new SellmentStatus(SKUSellmentStatus.FullSet),
+                    };
                 }
             }
 
@@ -193,8 +200,15 @@ namespace ClientTableAnalizer.Objects.SKUItems
                             SKUAccountingByResortsCount += item.Value;
 
                             SKUAccountingByResortsComment = string.IsNullOrEmpty(SKUAccountingByResortsComment) ?  
-                                $"{skuFromResort} - {item.Value}, " :
+                                $"Пересорты с артикулов (вычтены с расхода товаром): {skuFromResort} - {item.Value}, " :
                                 string.Concat(SKUAccountingByResortsComment, $"{skuFromResort} - {item.Value}, ");
+                        }
+
+                        // Total sum of consumption of a sku is reduced by count of re-sorts for this item
+                        if(SKUAccountingByResortsCount > 0) 
+                        {
+                            SKUShipped -= SKUAccountingByResortsCount;
+                            CalculateSKUTotalСonsumption();
                         }
 
                         SKUOverrunsCount -= SKUAccountingByResortsCount;
@@ -209,8 +223,6 @@ namespace ClientTableAnalizer.Objects.SKUItems
                         {
                             SKUOverrunsSum = 0.00;
                         }
-
-
                     }   
                     break;
             }

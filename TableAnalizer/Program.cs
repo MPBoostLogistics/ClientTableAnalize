@@ -165,7 +165,7 @@ internal class Program
             // Delete old logistic report 
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
             var skusForTargetReport = skuManager.MakeSkusForTargetReport();
-            excelManager.MakeTargetReports(skusForTargetReport);
+            excelManager.MakeReports(skusForTargetReport);
 
             // Report 
             var completedMessage = $"Отчет логистики сохранен по пути: {FileManager.OutputClientReportFilePath}\n"; 

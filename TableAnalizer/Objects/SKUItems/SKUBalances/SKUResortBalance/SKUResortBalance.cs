@@ -64,27 +64,15 @@ namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
            {
                 var resortSku = resortSKU.Key;
                 var resortSkuCount = resortSKU.Value.resortSKUCount;
-                var resortSKUComment = resortSKU.Value.resortSKUComment;
 
-                List<string> strings = new();
+                var comment = $"пересорт на {resortSku} ({resortSkuCount})";
+                comment = ResortSKUs.Values.Last() != resortSKU.Value ? 
+                    string.Concat(comment, ", ") : 
+                    string.Concat(comment, ".");
 
-                if(!string.IsNullOrEmpty(ResortComment)) 
-                    strings.Add(ResortComment);
-                
-                if(!string.IsNullOrEmpty(resortSKUComment)) 
-                {
-                    if(strings.Count > 0) 
-                        strings.Add(", ");
-
-                    strings.Add(resortSKUComment);
-                }
-
-                if(strings.Count > 0) strings.Add(", ");
-
-                strings.Add($"пересорт на {resortSku} ({resortSkuCount} шт)");
-                strings.Add(ResortSKUs.Values.Last() != resortSKU.Value ? ", " : ".");
-
-                ResortComment = string.Join("", strings.ToArray());
+                ResortComment = string.IsNullOrEmpty(ResortComment) ? 
+                    comment :
+                    string.Concat(ResortComment, comment);
            }
         }
         

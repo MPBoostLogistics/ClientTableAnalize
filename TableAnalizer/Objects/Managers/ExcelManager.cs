@@ -22,6 +22,8 @@ namespace ClientTableAnalizer.Objects.Managers
         public const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
         public const int LAST_MARKER_KEY_OFFSET = 2;
         public const string OUTPUT_REPORT_WORKSHEET01_NAME = "Отчет по логистике";
+        public const string OUTPUT_REPORT_WORKSHEET02_NAME = "Отчет по задержкам";
+        public const string OUTPUT_REPORT_WORKSHEET03_NAME = "Отчет по перерасходам";
         public const string COMPENSATION_REPORT_WORKSHEET_NAME = "Недостачи";
         public const string RESORTS_REPORT_WORKSHEET_NAME = "Пересорты";
         public const string DUMMIES_REPORT_WORKSHEET_NAME = "Пустышки";
@@ -125,7 +127,7 @@ namespace ClientTableAnalizer.Objects.Managers
             new(39, "SKUWriteOffCount", ParsingTypeCode.IntTypeCode, true)
         };     
 
-        public TargetCell[] mainReportSKUInfoCells = new TargetCell[]
+        public TargetCell[] cellsReportingMain = new TargetCell[]
         {
             new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUmp",
@@ -211,7 +213,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayTotal",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle: ExcelFillStyle.None, 
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: true),
-            new (colNumber: 22, colName: "Задержка довоза от точек, товароd", colWidth: 12, format: "0",
+            new (colNumber: 22, colName: "Задержка довоза от точек, товаров", colWidth: 12, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPoints",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
@@ -227,7 +229,7 @@ namespace ClientTableAnalizer.Objects.Managers
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorageSum",
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 26, colName: "Учтено пересортами, товаров", colWidth: 14, format: "0",
+            new (colNumber: 26, colName: "Учтено пересортами, товаров", colWidth: 15, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUAccountingByResortsCount",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
@@ -248,6 +250,71 @@ namespace ClientTableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None, 
                 valueСheckingPredicate: null, isBoldFont: false),
         };
+        
+        public TargetCell[] cellsReportingDelays = new TargetCell[] 
+        {
+            new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
+                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUmp",
+                parsingTypeCode: ParsingTypeCode.Marketplace, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
+            new (colNumber: 2, colName: "Артикул", colWidth: 12, format: "0",
+                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUNumber",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
+            new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUBrand",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
+            new (colNumber: 4, colName: "Наименование товара", colWidth: 50, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUName",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None, 
+                valueСheckingPredicate: null),
+            new (colNumber: 5, colName: "Задержка довоза от точек, товаров", colWidth: 12, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPoints",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
+            new (colNumber: 6, colName: "Задержка довоза от точек, сумма", colWidth: 12, format: "0.00",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPointsSum",
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
+            new (colNumber: 7, colName: "Задержка довоза от склада, товаров", colWidth: 12, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorage",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
+            new (colNumber: 8, colName: "Задержка довоза от склада, сумма", colWidth: 12, format: "0.00",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorageSum",
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false)
+        };
+
+        public TargetCell[] cellsReportingOverruns = new TargetCell[] 
+        {
+             new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
+                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUmp",
+                parsingTypeCode: ParsingTypeCode.Marketplace, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
+            new (colNumber: 2, colName: "Артикул", colWidth: 12, format: "0",
+                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUNumber",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
+            new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUBrand",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null),
+            new (colNumber: 4, colName: "Наименование товара", colWidth: 50, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUName",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None, 
+                valueСheckingPredicate: null),
+             new (colNumber: 5, colName: "Перерасход, товаров", colWidth: 14, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUOverrunsCount",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: true),
+            new (colNumber: 6, colName: "Перерасход, сумма", colWidth: 14, format: "0.00",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUOverrunsSum",
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false)
+        };
+        
         #endregion
 
         #region Constructors && destructors
@@ -317,21 +384,48 @@ namespace ClientTableAnalizer.Objects.Managers
             return workSheetNames is not null && workSheetNames.Any();
         }
 
-        public void MakeTargetReports(List<SKUForTargetReports> skuForTargetReports) 
+        public void MakeReports(List<SKUForTargetReports> skuForTargetReports) 
         {
             var outputPackage = new ExcelPackage(new FileInfo(FileManager.OutputClientReportFilePath)) ?? 
                 throw new Exception("ExcelPackage for output reports cannot be created");
             
-            var mainOutputReportSheetName = OUTPUT_REPORT_WORKSHEET01_NAME;
-            CreateExcelWorkSheet(mainOutputReportSheetName, in outputPackage, out var mainOutputReportSheet, Colors[SKUSellmentStatus.FullSet]);
+            var sheetName = string.Empty;
+            TargetCell[] targetCells = Array.Empty<TargetCell>();
+            List<SKUForTargetReports> actualData = new();
 
             // Make main report
-            FillingСellsWithData<SKUForTargetReports>(outputPackage, ref mainOutputReportSheet, in skuForTargetReports, mainReportSKUInfoCells, FileManager.OutputClientReportFilePath); 
-            SetupTableHeader(in mainReportSKUInfoCells, ref mainOutputReportSheet);    
+            sheetName = OUTPUT_REPORT_WORKSHEET01_NAME;
+            targetCells = cellsReportingMain;
+            actualData = skuForTargetReports;
+            CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? mainOutputReportSheet, Colors[SKUSellmentStatus.FullSet]);
+            FillingСellsWithData<SKUForTargetReports>(outputPackage, ref mainOutputReportSheet, in actualData, targetCells, FileManager.OutputClientReportFilePath); 
+            SetupTableHeader(in targetCells, ref mainOutputReportSheet);    
             AddFilterInWorkSheet(ref mainOutputReportSheet);
 
-            SaveReceivedData(FileManager.OutputClientReportFilePath, ref outputPackage);
+            // Make delay report
+            actualData = skuForTargetReports
+                .Where(el => el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.OnSearchPoint || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouseAndPoints))
+                .ToList();
+            sheetName = OUTPUT_REPORT_WORKSHEET02_NAME;
+            targetCells = cellsReportingDelays;
+            CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? delayOutputReportSheet, Colors[SKUSellmentStatus.OnSearchWarehouse]);
+            FillingСellsWithData<SKUForTargetReports>(outputPackage, ref delayOutputReportSheet, in actualData, targetCells, FileManager.OutputClientReportFilePath); 
+            SetupTableHeader(in targetCells, ref delayOutputReportSheet); 
+            AddFilterInWorkSheet(ref delayOutputReportSheet); 
 
+            // Make overruns report
+            actualData = skuForTargetReports
+                .Where(el => el.SKUOverrunsSum > 0.00)
+                .ToList();
+            sheetName = OUTPUT_REPORT_WORKSHEET03_NAME;
+            targetCells = cellsReportingOverruns;
+            CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? overrunsOutputReportSheet, Colors[SKUSellmentStatus.Unknown]);
+            FillingСellsWithData<SKUForTargetReports>(outputPackage, ref overrunsOutputReportSheet, in actualData, targetCells, FileManager.OutputClientReportFilePath); 
+            SetupTableHeader(in targetCells, ref overrunsOutputReportSheet); 
+            AddFilterInWorkSheet(ref overrunsOutputReportSheet); 
+
+            // Save work
+            SaveReceivedData(FileManager.OutputClientReportFilePath, ref outputPackage);
             outputPackage.Dispose();
         }
 
@@ -968,11 +1062,11 @@ namespace ClientTableAnalizer.Objects.Managers
             // There is more than one range (e.g. Remainig)
             else if(rangeSourceReportRows.Count > 1)
             {
-                CreataRowRange(in worksheet, ref rangeSourceReportRows, DEFAULT_STEP, rangeWithTermination?.TerminatingStringValue);
+                CreateRowRange(in worksheet, ref rangeSourceReportRows, DEFAULT_STEP, rangeWithTermination?.TerminatingStringValue);
             }
         }
 
-        private static void CreataRowRange(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSourceReportRows, int DEFAULT_STEP, (string rowStringKey, int offset)? termination)
+        private static void CreateRowRange(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSourceReportRows, int DEFAULT_STEP, (string rowStringKey, int offset)? termination)
         {
             List<RangeSourceReportRows> outputRanges = new();
 
