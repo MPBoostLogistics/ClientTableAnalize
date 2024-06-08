@@ -5,6 +5,8 @@ VisualStudioVersion = 25.0.1704.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TableAnalizer", "TableAnalizer\TableAnalizer.csproj", "{BC98D5C8-C18E-422D-B63F-5E7F8CDCF571}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TableAnalizerTest", "TableAnalizerTest\TableAnalizerTest.csproj", "{442A6859-51D7-4884-B34E-B0E27DFB7318}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{BC98D5C8-C18E-422D-B63F-5E7F8CDCF571}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BC98D5C8-C18E-422D-B63F-5E7F8CDCF571}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BC98D5C8-C18E-422D-B63F-5E7F8CDCF571}.Release|Any CPU.Build.0 = Release|Any CPU
+		{442A6859-51D7-4884-B34E-B0E27DFB7318}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{442A6859-51D7-4884-B34E-B0E27DFB7318}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{442A6859-51D7-4884-B34E-B0E27DFB7318}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{442A6859-51D7-4884-B34E-B0E27DFB7318}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
