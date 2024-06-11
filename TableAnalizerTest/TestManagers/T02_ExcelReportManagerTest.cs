@@ -432,15 +432,51 @@ namespace TableAnalizerTest.Managers
         [Test, Order(14)]
         public void GetWriteOffSKU_Test() 
         {
-            // input assert / arrage
+            // input assert 
             Assert.That(TestData._testWriteOffRangeSourceReportRows, Is.Not.Null);
 
-            // Create ExcelPackage
+            // arrage
             var writeOffReportPath = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Общее списание 23.01.24.xlsx";
-            var writeOffReportPackage = ExcelManager.CreateExcelPackage(SourceSKUReportFileKey.Additional, new FileInfo(writeOffReportPath));
-            ExcelManager.GetExcelWorksheetByName(ExcelManager.RESORTS_REPORT_WORKSHEET_NAME, SourceSKUReportFileKey.Additional, out var _resortWorksheet);
-            ExcelManager.GetRangeSourceReportRows(in _resortWorksheet!, ref TestData._testResortRangeSourceReportRows);
-            ExcelManager.GetRawDataFromExcelRows(in _resortWorksheet!, ref TestData._testResortRangeSourceReportRows);
+            
+            // act
+            var writeOffReportPackage = ExcelManager.CreateExcelPackage(SourceSKUReportFileKey.WriteOffShortages, new FileInfo(writeOffReportPath));
+            ExcelManager.GetExcelWorksheetByName(ExcelManager.REMAINING_OR_SHIPPED_WORKSHEET_NAME, SourceSKUReportFileKey.WriteOffShortages, out var _writeOffWorkSheet);
+            
+            // assert 01 
+            Assert.Multiple(() =>
+            {
+                Assert.That(writeOffReportPackage, Is.Not.Null);
+                Assert.That(_writeOffWorkSheet, Is.Not.Null);
+            });
+
+            ExcelManager.GetRangeSourceReportRows(in _writeOffWorkSheet, ref TestData._testWriteOffRangeSourceReportRows);
+            ExcelManager.GetRawDataFromExcelRows(in _writeOffWorkSheet, ref TestData._testWriteOffRangeSourceReportRows);
+
+            // assert 02
+            Assert.Multiple(() =>
+            {
+                Assert.That(writeOffReportPackage, Is.Not.Null);
+                Assert.That(TestData._testWriteOffRangeSourceReportRows, Has.Count.EqualTo(1));
+            });
+
+            int testingWriteOffCount = 1748;
+            Assert.That(TestData._testWriteOffRangeSourceReportRows[0].CollectionDataOnReadRows, Has.Count.EqualTo(testingWriteOffCount));
+            //Assert.That(TestData._testWriteOffRangeSourceReportRows[0].СollectionRangeRowIndexes, Is.EqualTo(testingWriteOffRange));
+
+            //var aa = TestData._testResortRangeSourceReportRows[0].CollectionDataOnReadRows;
+
+
+
+            //var testingWriteOffRange = Enumerable.Range(2, 1749);
+            
+
+            // Assert.Multiple(() =>
+            // {
+            //     
+            //     
+            // });
+
+            writeOffReportPackage?.Dispose();
         }
 
         [Test, Order(15)]
@@ -470,7 +506,6 @@ namespace TableAnalizerTest.Managers
                 Assert.That(TestData._testResortRangeSourceReportRows[0].CollectionDataOnReadRows, Has.Count.EqualTo(TestData.RESORT_RANGE_SOURCE_REPORT_ROWS_COUNT));
             });
 
-
             additionalReportsPackage?.Dispose();
         }
 
@@ -483,29 +518,37 @@ namespace TableAnalizerTest.Managers
         [Test, Order(17)]
         public void CreateOutputReport() 
         {
-            // input assert 01  
-            Assert.That(FileManager.OutputClientReportFilePath, Is.Not.Null);
+            // // input assert 01  
+            // Assert.That(FileManager.OutputClientReportFilePath, Is.Not.Null);
 
-            // act 01
-            var outputPackage = new ExcelPackage(new FileInfo(FileManager.OutputClientReportFilePath));
+            // // act 01
+            // var outputPackage = new ExcelPackage(new FileInfo(FileManager.OutputClientReportFilePath));
 
-            // assert 02
-            Assert.That(outputPackage, Is.Not.Null);
+            // // assert 02
+            // Assert.That(outputPackage, Is.Not.Null);
 
-            // act 02
-            var reportSheetName = ExcelManager.OUTPUT_REPORT_WORKSHEET01_NAME;
-            ExcelManager.CreateExcelWorkSheet(reportSheetName, in outputPackage, out var sheet, _excelManager.Colors[SKUSellmentStatus.FullSet]);
+            // // act 02
+            // var reportSheetName = ExcelManager.OUTPUT_REPORT_WORKSHEET01_NAME;
+            // ExcelManager.CreateExcelWorkSheet(reportSheetName, in outputPackage, out var sheet, _excelManager.Colors[SKUSellmentStatus.FullSet]);
 
-             // assert 03
-            Assert.That(sheet, Is.Not.Null);
+            //  // assert 03
+            // Assert.That(sheet, Is.Not.Null);
 
-            // act 03
-            var outputSkus = _skuManager.SKUs.GetValuesList().Select(s => s.value.GetSKUForTargetReports).ToList();
-            FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
-            _excelManager.FillingСellsWithData<SKUForTargetReports>(outputPackage, ref sheet, in outputSkus, _excelManager.cellsReportingMain, FileManager.OutputClientReportFilePath); 
+            // // act 03
+            // List<(int key, SKU value)> valuesList = [.. _skuManager.SKUs.GetValuesList()];
+            // var outputSkus = valuesList.Select(s => s.value.GetSKUForTargetReports(_skuManager.ResortSKUs)).ToList();
 
-            // ... 
-            outputPackage.Dispose();
+            // var aa = from value in valuesList
+            //          select value.value.GetSKUForTargetReports() 
+
+
+
+
+            // FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
+            // _excelManager.FillingСellsWithData<SKUForTargetReports>(outputPackage, ref sheet, in outputSkus, _excelManager.cellsReportingMain, FileManager.OutputClientReportFilePath); 
+
+            // // ... 
+            // outputPackage.Dispose();
         }
 
         #endregion

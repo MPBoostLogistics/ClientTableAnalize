@@ -7,7 +7,7 @@ namespace ClientTableAnalizer.Objects.Managers
     public class BaseManager 
     {
         #region Variables and constants 
-        protected const string REPORT_EXCEL_FILE_EXTENSION = ".xlsx";
+        public const string EXCEL_FILE_EXTENSION = ".xlsx";
         #endregion Variables and constant
 
         #region Properties 

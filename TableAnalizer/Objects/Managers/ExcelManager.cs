@@ -1055,6 +1055,8 @@ namespace ClientTableAnalizer.Objects.Managers
             // Range is one, no key and no termination value (e.g. Ransoms, Shipped, Compenaton, Resorts etc)
             if(isOneRangeWithoutKeysAndTerminations)
             { 
+                Trace.WriteLine($"start index {startRangeRowIndex}\n end row index: {worksheet.Dimension.End.Row}");
+
                 var start = startRangeRowIndex + DEFAULT_STEP;
                 var count = worksheet.Dimension.End.Row - DEFAULT_STEP;
                 rangeSourceReportRows.First().SetRange(start,count);
@@ -1161,5 +1163,5 @@ namespace ClientTableAnalizer.Objects.Managers
             string.Equals(filter.Trim().ToLower(), value.ToString()!.Trim().ToLower());
 
     #endregion
-}
+    }
 }

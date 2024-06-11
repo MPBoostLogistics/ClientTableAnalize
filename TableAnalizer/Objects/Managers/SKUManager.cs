@@ -23,7 +23,7 @@ namespace ClientTableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuDummiesBalanceUnits { get; }
         // арткул на который пересорт (артикул с которого пересорт, количество)
-        private ConcurrentDictionary <int, ConcurrentDictionary<int, int>> ResortSKUs {get; set;} = new();
+        public ConcurrentDictionary <int, ConcurrentDictionary<int, int>> ResortSKUs {get; set;} = new();
 
         /// <summary>
         /// Returns number of SKUs in collection.

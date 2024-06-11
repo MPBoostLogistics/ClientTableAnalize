@@ -97,11 +97,11 @@ namespace ClientTableAnalizer.Objects.Managers
         {
             ManagerReachedEventArgs? args = default;
 
-            var files = GetFilesFromDirectory(dirPathString, REPORT_EXCEL_FILE_EXTENSION);
+            var files = GetFilesFromDirectory(dirPathString, EXCEL_FILE_EXTENSION);
 
             if (files is null || !files.Any())
             {
-                args = new ManagerReachedEventArgs("Директория с файлами для обработки не сущесвтует или пустая, проверьте ее.", 1000, false);
+                args = new ManagerReachedEventArgs("Directory with files for processing does not exist or is empty, check it.", 1000, false);
             }
             else
             {
@@ -214,9 +214,6 @@ namespace ClientTableAnalizer.Objects.Managers
             existingKeys = new(Array.Empty<SourceSKUReportFileKey>());
             lostKeys = new(Array.Empty<SourceSKUReportFileKey>());
 
-            // Обязательны хотя бы один по выкупам, хотя бы один по приходу и остаткам 
-
-        
             var isContainsKeyRansomsWB = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RansomsWB);
             var isContainsKeyRansomsOZ = ReportsPaths.ContainsKey(SourceSKUReportFileKey.RansomsOZ);
             bool isRansomsExisting = isContainsKeyRansomsWB || isContainsKeyRansomsOZ;
@@ -286,7 +283,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <exception cref="DirectoryNotFoundException">Exception: Directory at spec path was not found.</exception>
         /// <exception cref="Exception">Exception: Cannot create DirectoryInfo for directory specified in path.</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        protected static IEnumerable<FileInfo>? GetFilesFromDirectory(string dirPathString, string? ext = null)
+        public static IEnumerable<FileInfo>? GetFilesFromDirectory(string dirPathString, string? ext = null)
         {
             if (!Directory.Exists(dirPathString))
                 throw new DirectoryNotFoundException($"Directory at path {dirPathString} was not found");
@@ -300,7 +297,7 @@ namespace ClientTableAnalizer.Objects.Managers
             else
             {
                 return from fileInfo in dirInfo.GetFiles()
-                       where fileInfo.Name.EndsWith(REPORT_EXCEL_FILE_EXTENSION)
+                       where fileInfo.Name.EndsWith(EXCEL_FILE_EXTENSION)
                        select fileInfo;
             }
         }
