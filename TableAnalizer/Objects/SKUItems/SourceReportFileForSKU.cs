@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ClientTableAnalizer.Enums;
 
 namespace ClientTableAnalizer.Objects.SKUItems
@@ -5,13 +6,13 @@ namespace ClientTableAnalizer.Objects.SKUItems
     public class SourceReportFileForSKU
     {
         #region Constants and variables
-        const string spaceSeparator = "\u0020";
+        public const string SPACE_SEPARATOR = "\u0020";
         const string comaSeparator = "\u002E";
+        const string ransomsKey = "отчет";
         const string writeOffShortagesKey = "списание";
         const string shippedKey = "расходы";
         const string receivedRemainingKey = "приходы";
-        const string redemtionKey = "отчет";
-        const string additionalKey ="дополнительный";
+        const string additionalKey = "дополнительный";
         const string wbKey = "(wb)";
         const string ozKey = "(ozon)";
         #endregion 
@@ -28,29 +29,31 @@ namespace ClientTableAnalizer.Objects.SKUItems
             FileInfo = fileInfo;
 
             var fileName = Path.GetFileName(fileInfo.Name);
-            string keyString = string.Empty;
 
-            if (SplitStringIntoSubstrings(fileName, new string[] { spaceSeparator }, out string[]? substrings) &&
+            if (SplitStringIntoSubstrings(fileName, new string[] { SPACE_SEPARATOR }, out string[]? substrings) &&
                 substrings is not null)
             {
+                // Юсупов расходы 22052024.xlsx                  3
+                // Юсупов дополнительный 220224.xlsx             3
+                // Общее списание 230124.xlsx                    3
+
                 // Отчет по клиенту +79164372997 (WB).xlsx       5
                 // Отчет по клиенту +79164372997 (Ozon).xlsx     5
-                // Общее списание 230124.xlsx                    3
-                // Юсупов расходы 22032024.xlsx                  3
-                // Юсупов дополнительный 220224.xlsx             3
 
-                // Юсупов приходы и остатки 220324 (WB).xlsx     6
-                // Юсупов приходы и остатки 220324 (OZ).xlsx     6
+                // Юсупов приходы и остатки 220524 (WB).xlsx     6
+                // Юсупов приходы и остатки 220524 (Ozon).xlsx   6
 
-                // Отчет по клиенту +79164372997 (WB).xlsx       5
-                // Юсупов приходы и остатки 220324 (OZ).xlsx     5
+                var keyIndex = substrings.Length switch
+                {
+                    3 or 6 => 1,
+                    _ => 0,
+                };
 
-                int keyIndex = substrings.Length == 3 || substrings.Length == 6 ? 1 : 0;
-                keyString = substrings[keyIndex].TrimStart().TrimEnd().ToLower();
+                string keyString  = substrings[keyIndex].TrimStart().TrimEnd().ToLower();
 
                 switch (keyString)
                 {
-                    // недостачи
+                    // дополнительный
                     case additionalKey:
                         ReportKey = SourceSKUReportFileKey.Additional;
                         break;
@@ -88,7 +91,7 @@ namespace ClientTableAnalizer.Objects.SKUItems
                         break;
 
                     // отчет 
-                    case redemtionKey:
+                    case ransomsKey:
                         if (SplitStringIntoSubstrings(substrings.Last(), new string [] {comaSeparator}, out string[]? mpStrings) &&
                             mpStrings != null)
                         {
@@ -110,16 +113,15 @@ namespace ClientTableAnalizer.Objects.SKUItems
 
                         if (Login is null && substrings[3] != null) 
                             SaveСlientLogin(substrings[3]);
-
                         break;
 
                     default:
                         break;
                 }
-            }
 
-            if (!ReportKey.HasValue)
-                throw new Exception($"Cannot determine match key for report file at path\n{fileName} for keystring {keyString}");
+                if (!ReportKey.HasValue)
+                    throw new Exception($"Cannot determine match key for report file at path\n{fileName} for keystring {keyString}");
+            }
         }
 
         /// <summary>
