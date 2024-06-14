@@ -1,14 +1,14 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Interfaces;
-using ClientTableAnalizer.Objects.Parsing;
-using ClientTableAnalizer.Objects.Repositories;
-using ClientTableAnalizer.Objects.SKUItems;
-using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Enums;
+using TableAnalizer.Interfaces;
+using TableAnalizer.Objects.Parsing;
+using TableAnalizer.Objects.Repositories;
+using TableAnalizer.Objects.SKUItems;
+using TableAnalizer.Objects.SKUItems.SKUBalances;
 using OfficeOpenXml;
 
-namespace ClientTableAnalizer.Objects.Managers
+namespace TableAnalizer.Objects.Managers
 {
     public class SKUManager : BaseManager
     {

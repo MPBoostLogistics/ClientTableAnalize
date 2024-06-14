@@ -1,7 +1,6 @@
-using System.Diagnostics;
-using ClientTableAnalizer.Enums;
+using TableAnalizer.Enums;
 
-namespace ClientTableAnalizer.Objects.SKUItems
+namespace TableAnalizer.Objects.SKUItems
 {
     public class SourceReportFileForSKU
     {
@@ -29,6 +28,11 @@ namespace ClientTableAnalizer.Objects.SKUItems
             FileInfo = fileInfo;
 
             var fileName = Path.GetFileName(fileInfo.Name);
+
+            if(fileName.StartsWith("~$")) 
+            {
+                fileName = fileName.TrimStart('~','$');
+            }
 
             if (SplitStringIntoSubstrings(fileName, new string[] { SPACE_SEPARATOR }, out string[]? substrings) &&
                 substrings is not null)

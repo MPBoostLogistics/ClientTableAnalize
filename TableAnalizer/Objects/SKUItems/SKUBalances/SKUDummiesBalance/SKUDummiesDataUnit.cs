@@ -1,6 +1,6 @@
-using ClientTableAnalizer.Objects.Parsing;
+using TableAnalizer.Objects.Parsing;
 
-namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
+namespace TableAnalizer.Objects.SKUItems.SKUBalances
 {
     class SKUDummiesDataUnit : ParsingRowEntity
     {

@@ -1,4 +1,4 @@
-namespace ClientTableAnalizer.Objects.Parsing
+namespace TableAnalizer.Objects.Parsing
 {
     /// <summary>
     /// Represents a range of source report rows.

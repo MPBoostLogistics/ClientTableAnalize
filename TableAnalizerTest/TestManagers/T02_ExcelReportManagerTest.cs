@@ -1,13 +1,12 @@
-using System.Diagnostics;
 using System.Globalization;
-using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Objects.Managers;
-using ClientTableAnalizer.Objects.SKUItems;
-using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Enums;
+using TableAnalizer.Objects.Managers;
+using TableAnalizer.Objects.SKUItems;
+using TableAnalizer.Objects.SKUItems.SKUBalances;
 using NUnit.Framework.Internal;
 using OfficeOpenXml;
 
-namespace TableAnalizerTest.Managers
+namespace TableAnalizerTest.TestManagers
 {
     [TestFixture, Order(2)]
     public class T02_ExcelReportManagerTest : BaseTests

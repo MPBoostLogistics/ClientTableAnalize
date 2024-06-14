@@ -1,4 +1,4 @@
-namespace ClientTableAnalizer.Enums
+namespace TableAnalizer.Enums
 {
     public enum Marketplace { WB, OZ }
 

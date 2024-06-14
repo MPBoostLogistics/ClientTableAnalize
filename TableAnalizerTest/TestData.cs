@@ -1,7 +1,7 @@
-using ClientTableAnalizer.Objects.Managers;
-using ClientTableAnalizer.Objects.Parsing;
-using ClientTableAnalizer.Objects.SKUItems;
-using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Objects.Managers;
+using TableAnalizer.Objects.Parsing;
+using TableAnalizer.Objects.SKUItems;
+using TableAnalizer.Objects.SKUItems.SKUBalances;
 
 namespace TableAnalizerTest
 {

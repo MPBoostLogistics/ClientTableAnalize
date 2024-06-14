@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using System.Reflection;
-using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Interfaces;
+using TableAnalizer.Enums;
+using TableAnalizer.Interfaces;
 
-namespace ClientTableAnalizer.Objects.Parsing
+namespace TableAnalizer.Objects.Parsing
 {
     /// <summary>
     /// An entity for parsing properties from a data dictionary.

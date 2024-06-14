@@ -1,7 +1,7 @@
-using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Objects.Parsing;
+using TableAnalizer.Enums;
+using TableAnalizer.Objects.Parsing;
 
-namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
+namespace TableAnalizer.Objects.SKUItems.SKUBalances
 {
     /// <summary>
     /// Data unit for forming SKURansomsBalance.

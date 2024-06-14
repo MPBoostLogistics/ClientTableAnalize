@@ -1,6 +1,6 @@
-using ClientTableAnalizer.Enums;
+using TableAnalizer.Enums;
 
-namespace ClientTableAnalizer.Objects.SKUItems
+namespace TableAnalizer.Objects.SKUItems
 {
      public class SellmentStatus 
     {

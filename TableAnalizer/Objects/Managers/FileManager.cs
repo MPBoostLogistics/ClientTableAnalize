@@ -1,7 +1,8 @@
-﻿using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Objects.SKUItems;
+﻿
+using TableAnalizer.Enums;
+using TableAnalizer.Objects.SKUItems;
 
-namespace ClientTableAnalizer.Objects.Managers
+namespace TableAnalizer.Objects.Managers
 {
     public class FileManager : BaseManager
     {
@@ -95,6 +96,7 @@ namespace ClientTableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public async Task<int> GetReportFiles(string dirPathString)
         {
+
             ManagerReachedEventArgs? args = default;
 
             var files = GetFilesFromDirectory(dirPathString, EXCEL_FILE_EXTENSION);
