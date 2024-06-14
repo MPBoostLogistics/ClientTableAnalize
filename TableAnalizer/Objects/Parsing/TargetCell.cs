@@ -1,8 +1,8 @@
 ﻿using System.Drawing;
-using ClientTableAnalizer.Enums;
+using TableAnalizer.Enums;
 using OfficeOpenXml.Style;
 
-namespace ClientTableAnalizer.Objects.Parsing
+namespace TableAnalizer.Objects.Parsing
 {
     /// <summary>
     /// Represents the result cell for an Excel table.

@@ -13,10 +13,8 @@
 using System.Diagnostics;
 using System.Reflection;
 using OfficeOpenXml;
-using ClientTableAnalizer.Objects;
-using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Objects.Managers;
-using ClientTableAnalizer.Objects.SKUItems;
+using TableAnalizer.Enums;
+using TableAnalizer.Objects.Managers;
 
 internal class Program
 {

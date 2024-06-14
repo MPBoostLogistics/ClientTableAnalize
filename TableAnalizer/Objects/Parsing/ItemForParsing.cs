@@ -1,6 +1,6 @@
-using ClientTableAnalizer.Enums;
+using TableAnalizer.Enums;
 
-namespace ClientTableAnalizer.Objects.Parsing
+namespace TableAnalizer.Objects.Parsing
 {
     public class ItemForParsing 
     {

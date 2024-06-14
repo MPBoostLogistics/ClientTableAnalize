@@ -2,16 +2,14 @@
 
 using System.Diagnostics;
 using System.Drawing;
-using System.Runtime.CompilerServices;
-using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Interfaces;
-using ClientTableAnalizer.Objects.Parsing;
-using ClientTableAnalizer.Objects.SKUItems;
+using TableAnalizer.Enums;
+using TableAnalizer.Interfaces;
+using TableAnalizer.Objects.Parsing;
+using TableAnalizer.Objects.SKUItems;
 using OfficeOpenXml;
-using OfficeOpenXml.Drawing.Slicer.Style;
 using OfficeOpenXml.Style;
 
-namespace ClientTableAnalizer.Objects.Managers
+namespace TableAnalizer.Objects.Managers
 {
     public class ExcelManager : BaseManager
     {

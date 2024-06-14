@@ -1,4 +1,4 @@
-namespace TableAnalizerTest.Managers
+namespace TableAnalizerTest.TestManagers
 {
     [TestFixture, Order(3)]
     public class T03_SKUManager_Test : BaseTests

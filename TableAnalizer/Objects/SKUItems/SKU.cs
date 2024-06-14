@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
-using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Enums;
+using TableAnalizer.Objects.SKUItems.SKUBalances;
 
-namespace ClientTableAnalizer.Objects.SKUItems
+namespace TableAnalizer.Objects.SKUItems
 {
     /// <remarks><i>New version.</i></remarks>
     public class SKU

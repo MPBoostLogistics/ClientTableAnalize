@@ -1,4 +1,4 @@
-namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
+namespace TableAnalizer.Objects.SKUItems.SKUBalances
 {
     /// <summary>
     ///  Client's compensation balance.

@@ -1,4 +1,4 @@
-namespace ClientTableAnalizer.Interfaces
+namespace TableAnalizer.Interfaces
 {
     public interface IRepository<K,V> : IDisposable
     {

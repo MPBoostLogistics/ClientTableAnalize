@@ -1,6 +1,6 @@
-using ClientTableAnalizer.Objects.Parsing;
+using TableAnalizer.Objects.Parsing;
 
-namespace ClientTableAnalizer.Objects.Repositories
+namespace TableAnalizer.Objects.Repositories
 {
     public class ParsingRowEntityRepo : BaseRepo<int, List<ParsingRowEntity>>
     {

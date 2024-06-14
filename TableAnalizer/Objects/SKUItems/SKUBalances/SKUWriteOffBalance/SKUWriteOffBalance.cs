@@ -1,4 +1,4 @@
-namespace ClientTableAnalizer.Objects.SKUItems.SKUBalances
+namespace TableAnalizer.Objects.SKUItems.SKUBalances
 {
     public class SKUWriteOffBalance : IEquatable<SKUWriteOffBalance>
     {

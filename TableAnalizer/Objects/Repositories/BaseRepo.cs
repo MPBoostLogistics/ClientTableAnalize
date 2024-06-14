@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
-using ClientTableAnalizer.Interfaces;
+using TableAnalizer.Interfaces;
 
-namespace ClientTableAnalizer.Objects.Repositories 
+namespace TableAnalizer.Objects.Repositories 
 {
     public abstract class BaseRepo<K,V> : IRepository<K,V> 
     {

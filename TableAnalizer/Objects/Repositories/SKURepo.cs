@@ -1,8 +1,8 @@
-using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Objects.SKUItems;
-using ClientTableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Enums;
+using TableAnalizer.Objects.SKUItems;
+using TableAnalizer.Objects.SKUItems.SKUBalances;
 
-namespace ClientTableAnalizer.Objects.Repositories
+namespace TableAnalizer.Objects.Repositories
 //https://learn.microsoft.com/en-us/dotnet/standard/collections/thread-safe/how-to-add-and-remove-items
 {
     public class SKURepo : BaseRepo<int, SKU>

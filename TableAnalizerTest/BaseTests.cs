@@ -1,9 +1,9 @@
 using System.Diagnostics;
-using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Objects.Managers;
-using ClientTableAnalizer.Objects.SKUItems;
+using TableAnalizer.Enums;
+using TableAnalizer.Objects.Managers;
+using TableAnalizer.Objects.SKUItems;
 
-namespace TableAnalizerTest.Managers
+namespace TableAnalizerTest
 {
     [TestFixture, Order(0)]
     public class BaseTests

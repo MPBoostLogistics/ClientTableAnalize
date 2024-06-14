@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace ClientTableAnalizer.Interfaces
+namespace TableAnalizer.Interfaces
 {
     public interface IParsingRowEntity 
     {

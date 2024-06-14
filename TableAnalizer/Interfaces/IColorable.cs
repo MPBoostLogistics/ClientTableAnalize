@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace ClientTableAnalizer.Interfaces
+namespace TableAnalizer.Interfaces
 {
     public interface IColorable 
     {

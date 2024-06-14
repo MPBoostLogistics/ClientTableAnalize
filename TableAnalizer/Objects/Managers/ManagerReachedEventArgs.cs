@@ -1,4 +1,4 @@
-namespace ClientTableAnalizer.Objects.Managers
+namespace TableAnalizer.Objects.Managers
 {
     /// <summary>
     /// Arguments for publishing manager event.

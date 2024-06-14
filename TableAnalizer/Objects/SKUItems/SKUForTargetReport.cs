@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using System.Drawing;
-using ClientTableAnalizer.Enums;
-using ClientTableAnalizer.Interfaces;
+using TableAnalizer.Enums;
+using TableAnalizer.Interfaces;
 
-namespace ClientTableAnalizer.Objects.SKUItems
+namespace TableAnalizer.Objects.SKUItems
 {
     public class SKUForTargetReports : IColorable
     {
