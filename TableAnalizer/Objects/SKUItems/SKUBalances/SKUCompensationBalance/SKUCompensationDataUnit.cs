@@ -9,7 +9,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     public class SKUCompensationDataUnit : ParsingRowEntity
     {
         #region Properties
-        public int SKUNumber { get; set;}
+        public int SKUNumber { get; set;}                  // Артикул товара
         public int CompensationCount { get; set;}          // Количество товаров в недостаче  
         public double CompensationSum { get; set;}         // Сумма недостачи  
         public string? CompensationComment { get; set;}    // Комментарий (опционально)

@@ -6,6 +6,7 @@ using TableAnalizer.Objects.SKUItems.SKUBalances;
 using NUnit.Framework.Internal;
 using OfficeOpenXml;
 using TableAnalizer.Objects.Parsing;
+using System.Diagnostics;
 
 namespace TableAnalizerTest.TestManagers
 {
@@ -36,6 +37,7 @@ namespace TableAnalizerTest.TestManagers
         private const string RANSOMS_WB_TESTFILE_PATH = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Отчет по клиенту +79164372997 (WB).xlsx";
         private const string REMAINING_WB_TESTFILE_PATH = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Юсупов приходы и остатки 220524 (WB).xlsx";
         private const string REMAINING_OZ_TESTFILE_PATH = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Юсупов приходы и остатки 220524 (Ozon).xlsx";
+        private const string ADDITIONAL_TESTFILE_PATH = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Юсупов дополнительный 220224.xlsx";
 
         private const int SHIPPED_RANGE_SOURCEREPORT_ROWSCOUNT = 7339;
         private const int SHIPPED_RANGE_SOURCEREPORT_SKUSCOUNT = 1228; 
@@ -86,7 +88,7 @@ namespace TableAnalizerTest.TestManagers
             Assert.Multiple(() =>
             {
                 Assert.That(_ransomsWBWorksheet, Is.Not.EqualTo(null));
-                Assert.That(TestData._testRansomsRangeSourceReportRows[0].СollectionRangeRowIndexes, Is.EqualTo(testingRange));
+                Assert.That(TestData._testRansomsRangeSourceReportRows[0].RangeRowIndexesСollection, Is.EqualTo(testingRange));
             });
         }
 
@@ -111,7 +113,7 @@ namespace TableAnalizerTest.TestManagers
             {
                 Assert.That(_shippedWorksheet, Is.Not.EqualTo(null));
                 Assert.That(TestData._testShippedRangeSourceReportRows, Is.Not.Null);
-                Assert.That(TestData._testShippedRangeSourceReportRows[0].СollectionRangeRowIndexes, Is.EqualTo(testingRange));
+                Assert.That(TestData._testShippedRangeSourceReportRows[0].RangeRowIndexesСollection, Is.EqualTo(testingRange));
             });
         }
 
@@ -181,14 +183,14 @@ namespace TableAnalizerTest.TestManagers
                 Assert.That(TestData._testRemainingWBRangeSourceReportRows![1], Is.Not.Null);
                 Assert.That(TestData._testRemainingWBRangeSourceReportRows![2], Is.Not.Null);
 
-                Assert.That(TestData._testRemainingWBRangeSourceReportRows[0].СollectionRangeRowIndexes, Is.EqualTo(testingFirstRange));
-                Assert.That(TestData._testRemainingWBRangeSourceReportRows[0].СollectionRangeRowIndexes!.Count, Is.EqualTo(testingFirstRange.Count()));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows[0].RangeRowIndexesСollection, Is.EqualTo(testingFirstRange));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows[0].RangeRowIndexesСollection!.Count, Is.EqualTo(testingFirstRange.Count()));
 
-                Assert.That(TestData._testRemainingWBRangeSourceReportRows[1].СollectionRangeRowIndexes, Is.EqualTo(testingSecondRange));
-                Assert.That(TestData._testRemainingWBRangeSourceReportRows[1].СollectionRangeRowIndexes!.Count, Is.EqualTo(testingSecondRange.Count()));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows[1].RangeRowIndexesСollection, Is.EqualTo(testingSecondRange));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows[1].RangeRowIndexesСollection!.Count, Is.EqualTo(testingSecondRange.Count()));
 
-                Assert.That(TestData._testRemainingWBRangeSourceReportRows[2].СollectionRangeRowIndexes, Is.EqualTo(testingThirdRange));
-                Assert.That(TestData._testRemainingWBRangeSourceReportRows[2].СollectionRangeRowIndexes!.Count, Is.EqualTo(testingThirdRange.Count()));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows[2].RangeRowIndexesСollection, Is.EqualTo(testingThirdRange));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows[2].RangeRowIndexesСollection!.Count, Is.EqualTo(testingThirdRange.Count()));
             });
         }
         [Test, Order(6)] 
@@ -225,13 +227,13 @@ namespace TableAnalizerTest.TestManagers
                 Assert.That(TestData._testRemainingOZRangeSourceReportRows![0], Is.Not.Null);
                 Assert.That(TestData._testRemainingOZRangeSourceReportRows![1], Is.Not.Null);
 
-                Assert.That(TestData._testRemainingOZRangeSourceReportRows[0].СollectionRangeRowIndexes, Is.Not.Null);
-                Assert.That(TestData._testRemainingOZRangeSourceReportRows[0].СollectionRangeRowIndexes, Is.EqualTo(testingFirstRange));
-                Assert.That(TestData._testRemainingOZRangeSourceReportRows[0].СollectionRangeRowIndexes!.Count, Is.EqualTo(testingFirstRange.Count()));
+                Assert.That(TestData._testRemainingOZRangeSourceReportRows[0].RangeRowIndexesСollection, Is.Not.Null);
+                Assert.That(TestData._testRemainingOZRangeSourceReportRows[0].RangeRowIndexesСollection, Is.EqualTo(testingFirstRange));
+                Assert.That(TestData._testRemainingOZRangeSourceReportRows[0].RangeRowIndexesСollection!.Count, Is.EqualTo(testingFirstRange.Count()));
 
-                Assert.That(TestData._testRemainingOZRangeSourceReportRows[1].СollectionRangeRowIndexes, Is.Not.Null);
-                Assert.That(TestData._testRemainingOZRangeSourceReportRows[1].СollectionRangeRowIndexes, Is.EqualTo(testingSecondRange));
-                Assert.That(TestData._testRemainingOZRangeSourceReportRows[1].СollectionRangeRowIndexes!.Count, Is.EqualTo(testingSecondRange.Count()));
+                Assert.That(TestData._testRemainingOZRangeSourceReportRows[1].RangeRowIndexesСollection, Is.Not.Null);
+                Assert.That(TestData._testRemainingOZRangeSourceReportRows[1].RangeRowIndexesСollection, Is.EqualTo(testingSecondRange));
+                Assert.That(TestData._testRemainingOZRangeSourceReportRows[1].RangeRowIndexesСollection!.Count, Is.EqualTo(testingSecondRange.Count()));
             });
         }
 
@@ -258,9 +260,9 @@ namespace TableAnalizerTest.TestManagers
            Assert.Multiple(() =>
            {
                 Assert.That(TestData._testRansomsRangeSourceReportRows, Has.Count.EqualTo(1));
-                Assert.That(TestData._testRansomsRangeSourceReportRows[0].CollectionDataOnReadRows, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
+                Assert.That(TestData._testRansomsRangeSourceReportRows[0].DataOnReadRowsCollection, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
                 Assert.That(TestData._testShippedRangeSourceReportRows, Has.Count.EqualTo(1));
-                Assert.That(TestData._testShippedRangeSourceReportRows[0].CollectionDataOnReadRows, Has.Count.EqualTo(SHIPPED_RANGE_SOURCEREPORT_ROWSCOUNT));
+                Assert.That(TestData._testShippedRangeSourceReportRows[0].DataOnReadRowsCollection, Has.Count.EqualTo(SHIPPED_RANGE_SOURCEREPORT_ROWSCOUNT));
             });
         }
 
@@ -285,13 +287,13 @@ namespace TableAnalizerTest.TestManagers
             Assert.Multiple(() =>
             {
                 Assert.That(TestData._testRemainingWBRangeSourceReportRows, Has.Count.EqualTo(3));
-                Assert.That(TestData._testRemainingWBRangeSourceReportRows[0].CollectionDataOnReadRows, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01));
-                Assert.That(TestData._testRemainingWBRangeSourceReportRows[1].CollectionDataOnReadRows, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02));
-                Assert.That(TestData._testRemainingWBRangeSourceReportRows[2].CollectionDataOnReadRows, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_03));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows[0].DataOnReadRowsCollection, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_01));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows[1].DataOnReadRowsCollection, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_02));
+                Assert.That(TestData._testRemainingWBRangeSourceReportRows[2].DataOnReadRowsCollection, Has.Count.EqualTo(REMAINING_WB_RANGE_SOURCEREPORT_ROWSCOUNT_03));
 
                 Assert.That(TestData._testRemainingOZRangeSourceReportRows, Has.Count.EqualTo(2));
-                Assert.That(TestData._testRemainingOZRangeSourceReportRows[0].CollectionDataOnReadRows, Has.Count.EqualTo(REMAINING_OZ_RANGE_SOURCEREPORT_ROWSCOUNT_01));
-                Assert.That(TestData._testRemainingOZRangeSourceReportRows[1].CollectionDataOnReadRows, Has.Count.EqualTo(REMAINING_OZ_RANGE_SOURCEREPORT_ROWSCOUNT_02));
+                Assert.That(TestData._testRemainingOZRangeSourceReportRows[0].DataOnReadRowsCollection, Has.Count.EqualTo(REMAINING_OZ_RANGE_SOURCEREPORT_ROWSCOUNT_01));
+                Assert.That(TestData._testRemainingOZRangeSourceReportRows[1].DataOnReadRowsCollection, Has.Count.EqualTo(REMAINING_OZ_RANGE_SOURCEREPORT_ROWSCOUNT_02));
             });
         }
 
@@ -301,13 +303,13 @@ namespace TableAnalizerTest.TestManagers
             // input assert
             Assert.That(TestData._testRansomsRangeSourceReportRows, Is.Not.Null);
             Assert.That(TestData._testRansomsRangeSourceReportRows, Has.Count.EqualTo(1));
-            Assert.That(TestData._testRansomsRangeSourceReportRows[0].CollectionDataOnReadRows, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
+            Assert.That(TestData._testRansomsRangeSourceReportRows[0].DataOnReadRowsCollection, Has.Count.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT));
 
             // arrange
             //...
 
             // act
-            var keyCount = _skuManager.SaveSKUBalanceUnits(SourceSKUReportFileKey.RansomsWB, ExcelManager.RANSOMS_WORKSHEET_NAME, TestData._testRansomsRangeSourceReportRows[0].CollectionDataOnReadRows);
+            var keyCount = _skuManager.SaveSKUBalanceUnits(SourceSKUReportFileKey.RansomsWB, ExcelManager.RANSOMS_WORKSHEET_NAME, TestData._testRansomsRangeSourceReportRows[0].DataOnReadRowsCollection);
 
             // assert
             Assert.That(keyCount, Is.EqualTo(TestData.RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT));
@@ -460,7 +462,7 @@ namespace TableAnalizerTest.TestManagers
             });
 
             int testingWriteOffCount = 1748;
-            Assert.That(TestData._testWriteOffRangeSourceReportRows[0].CollectionDataOnReadRows, Has.Count.EqualTo(testingWriteOffCount));
+            Assert.That(TestData._testWriteOffRangeSourceReportRows[0].DataOnReadRowsCollection, Has.Count.EqualTo(testingWriteOffCount));
             //Assert.That(TestData._testWriteOffRangeSourceReportRows[0].СollectionRangeRowIndexes, Is.EqualTo(testingWriteOffRange));
 
             //var aa = TestData._testResortRangeSourceReportRows[0].CollectionDataOnReadRows;
@@ -486,8 +488,7 @@ namespace TableAnalizerTest.TestManagers
             Assert.That(TestData._testResortRangeSourceReportRows, Is.Not.Null);
 
             // Create ExcelPackage
-            var additionalReportsPath = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Юсупов дополнительный 220224.xlsx";
-            var additionalReportsPackage = ExcelManager.CreateExcelPackage(SourceSKUReportFileKey.Additional, new FileInfo(additionalReportsPath));
+            var additionalReportsPackage = ExcelManager.CreateExcelPackage(SourceSKUReportFileKey.Additional, new FileInfo(ADDITIONAL_TESTFILE_PATH));
             ExcelManager.GetExcelWorksheetByName(ExcelManager.RESORTS_REPORT_WORKSHEET_NAME, SourceSKUReportFileKey.Additional, out var _resortWorksheet);
             ExcelManager.GetRangeSourceReportRows(in _resortWorksheet!, ref TestData._testResortRangeSourceReportRows);
             ExcelManager.GetRawDataFromExcelRows(in _resortWorksheet!, ref TestData._testResortRangeSourceReportRows);
@@ -502,8 +503,8 @@ namespace TableAnalizerTest.TestManagers
 
             Assert.Multiple(() =>
             {
-                Assert.That(TestData._testResortRangeSourceReportRows[0].СollectionRangeRowIndexes, Is.EqualTo(testingResortRange));
-                Assert.That(TestData._testResortRangeSourceReportRows[0].CollectionDataOnReadRows, Has.Count.EqualTo(TestData.RESORT_RANGE_SOURCE_REPORT_ROWS_COUNT));
+                Assert.That(TestData._testResortRangeSourceReportRows[0].RangeRowIndexesСollection, Is.EqualTo(testingResortRange));
+                Assert.That(TestData._testResortRangeSourceReportRows[0].DataOnReadRowsCollection, Has.Count.EqualTo(TestData.RESORT_RANGE_SOURCE_REPORT_ROWS_COUNT));
             });
 
             //additionalReportsPackage?.Dispose();
@@ -515,38 +516,33 @@ namespace TableAnalizerTest.TestManagers
             // input assert / arrage
             Assert.That(TestData._testDummiesRangeSourceReportRows, Is.Not.Null);
 
-            // act 01
-            var additionalReportsPath = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Юсупов дополнительный 220224.xlsx";
-            var additionalReportsPackage = ExcelManager.CreateExcelPackage(SourceSKUReportFileKey.Additional, new FileInfo(additionalReportsPath));
+            // action 01
+            var additionalReportsPackage = ExcelManager.CreateExcelPackage(SourceSKUReportFileKey.Additional, new FileInfo(ADDITIONAL_TESTFILE_PATH));
             ExcelManager.GetExcelWorksheetByName(ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME, SourceSKUReportFileKey.Additional, out var _dummiesWorksheet);
-            ExcelManager.GetRangeSourceReportRows(in _dummiesWorksheet!, ref TestData._testDummiesRangeSourceReportRows);
-            ExcelManager.GetRawDataFromExcelRows(in _dummiesWorksheet!, ref TestData._testDummiesRangeSourceReportRows);
-
-            var testingDummiesRange = Enumerable.Range(2, 12);
-
+            
             // assert 01
             Assert.Multiple(() =>
             {
                 Assert.That(additionalReportsPackage, Is.Not.Null);
-                Assert.That(TestData._testDummiesRangeSourceReportRows, Has.Count.EqualTo(1));
-                Assert.That(TestData._testDummiesRangeSourceReportRows[0].СollectionRangeRowIndexes, Is.EqualTo(testingDummiesRange));
-                Assert.That(TestData._testDummiesRangeSourceReportRows[0].CollectionDataOnReadRows, Has.Count.EqualTo(TestData.DUMMIES_RANGE_SOURCE_REPORT_ROWS_COUNT));
+                Assert.That(_dummiesWorksheet, Is.Not.Null);
             });
 
-            // act 02
-            List<Dictionary<string, ItemForParsing>> rawRowsItems = [];
-            foreach (var sourceReportRowsRange in TestData._testDummiesRangeSourceReportRows)
+            // action 02
+            ExcelManager.GetRangeSourceReportRows(in _dummiesWorksheet, ref TestData._testDummiesRangeSourceReportRows);
+            ExcelManager.GetRawDataFromExcelRows(in _dummiesWorksheet, ref TestData._testDummiesRangeSourceReportRows);
+
+            var testingDummiesRange = Enumerable.Range(2, 12);
+
+            Assert.Multiple(() =>
             {
-                sourceReportRowsRange.CollectionDataOnReadRows.ForEach(rawRowsItems.Add);
-            }
-
-            int keysCount = _skuManager.SaveSKUBalanceUnits(SourceSKUReportFileKey.Additional, ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME, rawRowsItems);
-
-            // assert 02
-            Assert.That(keysCount, Is.EqualTo(TestData.DUMMIES_RANGE_SOURCE_REPORT_ROWS_COUNT));
+                Assert.That(TestData._testDummiesRangeSourceReportRows, Has.Count.EqualTo(1));
+                Assert.That(TestData._testDummiesRangeSourceReportRows[0].RangeRowIndexesСollection, Is.EqualTo(testingDummiesRange));
+                Assert.That(TestData._testDummiesRangeSourceReportRows[0].DataOnReadRowsCollection, Has.Count.EqualTo(TestData.DUMMIES_RANGE_SOURCE_REPORT_ROWS_COUNT));
+            });
 
             additionalReportsPackage?.Dispose();
         }
+
         #endregion
 
         // arrange

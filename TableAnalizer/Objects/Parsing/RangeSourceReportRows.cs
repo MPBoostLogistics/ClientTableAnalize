@@ -24,12 +24,12 @@ namespace TableAnalizer.Objects.Parsing
         /// <summary>
         /// A collection of range row indexes.
         /// </summary>
-        public IEnumerable<int>? СollectionRangeRowIndexes { get; set; }
+        public IEnumerable<int>? RangeRowIndexesСollection { get; set; }
 
         /// <summary>
         /// A collection of data on read rows (each row is a dictionary of values).
         /// </summary>
-        public List<Dictionary<string, ItemForParsing>> CollectionDataOnReadRows { get; private set; } = new();
+        public List<Dictionary<string, ItemForParsing>> DataOnReadRowsCollection { get; private set; } = new();
         #endregion Properties
 
         #region  Constructors
@@ -43,9 +43,9 @@ namespace TableAnalizer.Objects.Parsing
 
         #region Functionality
         public void SetRange(int startRowIndex, int count) =>
-            СollectionRangeRowIndexes = Enumerable.Range(startRowIndex, count);
+            RangeRowIndexesСollection = Enumerable.Range(startRowIndex, count);
 
-        public void SetValues(Dictionary<string, ItemForParsing> values) => CollectionDataOnReadRows.Add(values);
+        public void SetValues(Dictionary<string, ItemForParsing> values) => DataOnReadRowsCollection.Add(values);
         #endregion Functionality
     }
 }
