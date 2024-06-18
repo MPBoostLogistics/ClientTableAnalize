@@ -1,6 +1,5 @@
 #nullable enable
 
-using System.Diagnostics;
 using System.Drawing;
 using TableAnalizer.Enums;
 using TableAnalizer.Interfaces;
@@ -659,10 +658,10 @@ namespace TableAnalizer.Objects.Managers
             {
                 RangeSourceReportRows? reportRowsRange = reportRowsRanges[i];
 
-                if (reportRowsRange is null || reportRowsRange.СollectionRangeRowIndexes is null) continue;
+                if (reportRowsRange is null || reportRowsRange.RangeRowIndexesСollection is null) continue;
 
                 // Iterating Rows 
-                var rowsIndexRange = reportRowsRange.СollectionRangeRowIndexes.ToList();
+                var rowsIndexRange = reportRowsRange.RangeRowIndexesСollection.ToList();
                 var currentSourceCells = reportRowsRange.SourceCells;
 
                 for (int j = 0; j < rowsIndexRange.Count; j++)
@@ -722,7 +721,6 @@ namespace TableAnalizer.Objects.Managers
             }
 
             return Equals(values?.Count, sourceCells.Count - filterCellsCount);
-
         }
 
         private static bool CheckingPresenceAddressesInRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceColumn> sourceCells)
@@ -858,8 +856,6 @@ namespace TableAnalizer.Objects.Managers
             // Range is one, no key and no termination value (e.g. Ransoms, Shipped, Compenaton, Resorts etc)
             if(isOneRangeWithoutKeysAndTerminations)
             { 
-                Trace.WriteLine($"start index {startRangeRowIndex}\n end row index: {worksheet.Dimension.End.Row}");
-
                 var start = startRangeRowIndex + DEFAULT_STEP;
                 var count = worksheet.Dimension.End.Row - DEFAULT_STEP;
                 rangeSourceReportRows.First().SetRange(start,count);
@@ -945,9 +941,6 @@ namespace TableAnalizer.Objects.Managers
                    start.HasValue && 
                    count.HasValue) 
                 {
-                    Trace.WriteLine($"{start.Value} {count.Value}");
-
-
                     targetTemplate.SetRange(start.Value, count.Value);
                     outputRanges.Add(targetTemplate);
                 }

@@ -5,9 +5,9 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     public class SKUDummiesDataUnit : ParsingRowEntity
     {
         #region Properties
-        public int SKUNumber { get; }
-        public int DummiesSKUCount { get; }
-        public string? DummiesComment { get; }
+        public int SKUNumber { get; }               // Артикул товара
+        public int DummiesSKUCount { get; }         // Количество товаров в пустышках
+        public string? DummiesComment { get; }      // Комментарий
         #endregion Properties
 
         #region Constructors

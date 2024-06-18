@@ -19,7 +19,7 @@ namespace TableAnalizerTest
 
         #region Properties
 
-        public string TestFilesPath { get; set; }
+        public string? TestFilesPath { get; set; }
 
         public List<RangeSourceReportRows>? _testRansomsRangeSourceReportRows;
 
@@ -57,7 +57,10 @@ namespace TableAnalizerTest
             new(ExcelManager.DummiesSourceCells)
         ];
 
-        public List<RangeSourceReportRows> _testShippedRangeSourceReportRows = [new(ExcelManager.ShippedSourceCells)];
+        public List<RangeSourceReportRows> _testShippedRangeSourceReportRows = 
+        [
+            new(ExcelManager.ShippedSourceCells)
+        ];
 
         public static Dictionary<int, List<SKURansomsBalanceDataUnit>>? SkuRansomsBalanceUnits { get; set; }
         public static Dictionary<int, SKU>? Skus { get; set; }

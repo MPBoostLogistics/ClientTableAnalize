@@ -52,6 +52,7 @@ namespace TableAnalizer.Objects.Parsing
                 // Get target property
                 var targetProperty = PropertyInfos
                     .FirstOrDefault(p => p.Name == parsingElement.Key);
+                    
                 if (targetProperty is null)
                     ThrowExceptionOnArgument(parsingElement.Key);
 
@@ -69,7 +70,6 @@ namespace TableAnalizer.Objects.Parsing
 
         private void ParseValue(in KeyValuePair<string, ItemForParsing> element, ref PropertyInfo property)
         {
-
             string? elementValueString = element.Value.Value;
             bool isMaybeNullable = element.Value.IsMaybeNullable;
 
@@ -78,7 +78,7 @@ namespace TableAnalizer.Objects.Parsing
                 if (!isMaybeNullable)
                     throw new Exception($"Parsing value with key '{element.Key}' cannot be null.");
 
-                elementValueString = String.Empty;
+                elementValueString = string.Empty;
             }
             else
             {

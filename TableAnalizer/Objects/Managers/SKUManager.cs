@@ -74,15 +74,26 @@ namespace TableAnalizer.Objects.Managers
                 workSheetNames is not null &&
                 workSheetNames.Count > 0)
             {
+                List<Task<double>> processingTasksList = new();
                 for (int i = 0; i < workSheetNames.Count; i++)
                 {
-                    var currentName = workSheetNames[i];
+                    processingTasksList.Add(ProcessingData(reportFileKey, workSheetNames[i]));
+                }
 
-                    Task<double> processsingTask = ProcessingData(reportFileKey, currentName);
-                    await Task.Run(async () => await processsingTask);
-                    processsingTask.Wait();
+                if(processingTasksList.Any()) 
+                {
+                    Task<double> [] processingTasksArray = processingTasksList.ToArray();
+                    for (int i = 0; i < processingTasksArray.Length; i++)
+                    {
+                        Task<double>? currentTask = processingTasksArray[i];
 
-                    time += processsingTask.Result;
+                        if(currentTask is not null) 
+                            await Task.Run(async () => await currentTask);
+                        
+                        time += currentTask is not null ? currentTask.Result : 0.00;
+                    }
+
+                    Task.WaitAll(processingTasksArray);
                 }
             }
 
@@ -117,7 +128,7 @@ namespace TableAnalizer.Objects.Managers
                 List<Dictionary<string, ItemForParsing>> rawRowsItems = new() { };
                 foreach (var sourceReportRowsRange in rangeSourceReportRows)
                 {
-                    sourceReportRowsRange.CollectionDataOnReadRows.ForEach(rawRowsItems.Add);
+                    sourceReportRowsRange.DataOnReadRowsCollection.ForEach(rawRowsItems.Add);
                 }
 
                 // Processing:
@@ -312,21 +323,28 @@ namespace TableAnalizer.Objects.Managers
             } 
             else if(isDummies) 
             {
-                var skuDummiesDataUnits = from rowWithRawData in rowsWithRawData
-                                          let unit = new SKUDummiesDataUnit(rowWithRawData)
-                                          group unit by unit.SKUNumber 
-                                          into unitGroup  
-                                          select unitGroup;
-
-                Console.WriteLine(skuDummiesDataUnits.Count());    
-
-                foreach (var group in skuDummiesDataUnits)
+                foreach (var rowWithRawData in rowsWithRawData)
                 {
-                    var list = (((List<SKUDummiesDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
-                        throw new InvalidCastException("Невозможно привести List<SKUDummiesDataUnit> к List<ParsingRowEntity>");
-                    
-                    SkuDummiesBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                    var unit = new SKUDummiesDataUnit(rowWithRawData);
+                    Console.WriteLine(unit);
                 }
+
+
+                // var skuDummiesDataUnits = from rowWithRawData in rowsWithRawData
+                //                           let unit = new SKUDummiesDataUnit(rowWithRawData)
+                //                           group unit by unit.SKUNumber 
+                //                           into unitGroup  
+                //                           select unitGroup;
+
+                //Console.WriteLine(skuDummiesDataUnits.Count());    
+
+                // foreach (var group in skuDummiesDataUnits)
+                // {
+                //     var list = (((List<SKUDummiesDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
+                //         throw new InvalidCastException("Невозможно привести List<SKUDummiesDataUnit> к List<ParsingRowEntity>");
+                    
+                //     SkuDummiesBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                // }
             }
 
             return reportFileKey switch

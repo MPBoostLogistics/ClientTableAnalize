@@ -10,7 +10,6 @@
 
 #nullable enable
 
-using System.Diagnostics;
 using System.Reflection;
 using OfficeOpenXml;
 using TableAnalizer.Enums;
@@ -198,7 +197,7 @@ internal class Program
             ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
 
             // ReceivingAndProcessing
-            var processingRansomsDataTask = skuManager.ReceivingAndProcessingData(reportFileKey);
+            Task<double>? processingRansomsDataTask = skuManager.ReceivingAndProcessingData(reportFileKey);
             
             if(processingRansomsDataTask is not null) 
             {

@@ -313,8 +313,6 @@ namespace TableAnalizer.Objects.Managers
             return !File.Exists(path);
         }
 
-
-
         #endregion
 
         /// ???        
