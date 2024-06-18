@@ -197,6 +197,25 @@ namespace TableAnalizer.Objects.Repositories
                     break;
             }
 
+            // SKUDummiesBalance
+            SKUDummiesBalance? skuDummiesBalance = null;
+            switch(retriveValue.SKUDummiesBalance is not null, newValue.SKUDummiesBalance is not null) 
+            {
+                case (false,true):
+                    skuDummiesBalance = newValue.SKUDummiesBalance;
+                    break;
+
+                case (true,true): case (true,false):
+
+                    skuDummiesBalance = retriveValue.SKUDummiesBalance;
+
+                    if(newValue.SKUDummiesBalance is not null) 
+                    {
+                        skuDummiesBalance!.Update(newValue.SKUDummiesBalance.Count);
+                    }
+                    break;
+            }
+
             // AveragePrice
             bool isRetriveValueIncludesPrice = !Equals(retriveValue.AveragePrice, SKU.AVERAGE_PRICE_DEFAULT);
             bool isNewValueIncludesPrice = !Equals(newValue.AveragePrice, SKU.AVERAGE_PRICE_DEFAULT);
@@ -231,7 +250,7 @@ namespace TableAnalizer.Objects.Repositories
             };
 
             return new SKU(marketplace, skuNumber, skuBrand, skuName, skuRansomsBalance, 
-                skuRemainingBalance, skuWriteOffBalance, skuCompensationBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays);
+                skuRemainingBalance, skuWriteOffBalance, skuCompensationBalance, skuResortBalance!, skuDummiesBalance, averagePrice, maxRansomsDate, deadlineDays);
         }
     }
 }

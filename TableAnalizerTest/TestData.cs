@@ -14,6 +14,7 @@ namespace TableAnalizerTest
         public const int RANSOMS_WB_RANGE_SOURCE_REPORT_ROWS_COUNT = 74181;
         public const int RANSOMS_WB_RANGE_SOURCE_REPORT_SKUNUMBERS_COUNT = 1785;
         public const int RESORT_RANGE_SOURCE_REPORT_ROWS_COUNT = 105;
+        public const int DUMMIES_RANGE_SOURCE_REPORT_ROWS_COUNT = 12;
         #endregion
 
         #region Properties

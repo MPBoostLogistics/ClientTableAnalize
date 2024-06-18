@@ -97,11 +97,11 @@ internal class Program
                     }
                 }
             }
+
             if(ransomsTasks.Any()) 
             {
                 Task.WaitAll(ransomsTasks);
             }
-
 
             // Remaining tasks
             List<Task> remainingTasksList = new();
@@ -198,7 +198,7 @@ internal class Program
             ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
 
             // ReceivingAndProcessing
-            var processingRansomsDataTask = skuManager.ReceivingAndProcessingRansomsData(reportFileKey);
+            var processingRansomsDataTask = skuManager.ReceivingAndProcessingData(reportFileKey);
             
             if(processingRansomsDataTask is not null) 
             {
@@ -292,224 +292,6 @@ internal class Program
         return resultValue;
     }
 
-    // private static async Task ReadRedemptionReportFile(Marketplace marketplace)
-    // {
-    //     await Report($"Анализирую отчет клиента {login} по выкупам {marketplace}...");
-
-    //     var filePath = marketplace == Marketplace.WB ?
-    //         redemtionFilePathWB :
-    //         redemtionFilePathOZ;
-
-    //     if (filePath is null) await Report(goodByMessage, 2000, true);
-
-    //     (double time, List<SKURowInReport> rowInReports) = ExcelReportManager.AnalyzeRedemptionReport(filePath!, "Выкупы", skuManager.RedemptionTableIndexes);
-    //     var saveTime = skuManager.SaveSKURowsInReport(rowInReports, marketplace);
-    //     var redemtionReport = $"Артикулов {marketplace} с логистикой, шт.: {skuManager.SKUsCount}\n";
-    //     redemtionReport += $"Анализ отчета занял {time + saveTime} секунд.";
-
-    //     await Report(redemtionReport, 1500);
-    // }
-
-    // private static async Task ReadStorageReportFile(Marketplace marketplace)
-    // {
-    //     bool isFileExists = default;
-
-    //     // string? filePath = marketplace == Marketplace.WB ?
-    //     //     storageFilePathWB :
-    //     //     storageFilePathOZ;
-
-    //     // try
-    //     // {
-    //     //     isFileExists = filePath != null && CheckFileExistence(filePath);
-    //     // }
-    //     // catch (Exception ex)
-    //     // {
-    //     //     goodByMessage = string.Concat(goodByMessage,"\n",ex.Message);   
-    //     //     await Report(goodByMessage, 2000, true);
-    //     // }
-
-    //     if (!isFileExists) return;
-
-    //     var existingFile = new FileInfo(filePath!);
-
-    //     using ExcelPackage package = new(existingFile);
-
-    //     // if (CheckSheets(in package) == null) await Report(goodByMessage, 2000, true);
-
-    //     var stopwatch = new Stopwatch();
-    //     stopwatch.Start();
-
-    //     await Report($"Анализирую отчет клиента {login} по приходу и остаткам {marketplace}...");
-
-    //     int rowFirstRoomAddress = default;
-    //     int rowSecondRoomAddress = default;
-    //     int rowFinalRoomAddress = default;
-
-    //     ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-
-    //     int firstRowIndex = 1, firstColIndex = 1;
-
-    //     // Find addresses of special rows
-    //     for (int row = firstRowIndex; row <= worksheet.Dimension.End.Row; row++)
-    //     {
-    //         for (int col = firstColIndex; col <= worksheet.Dimension.End.Column; col++)
-    //         {
-    //             var cellValue = worksheet.Cells[row, col].Value;
-    //             if (cellValue is not null && !string.IsNullOrEmpty(cellValue.ToString()))
-    //             {
-    //                 switch (cellValue!.ToString()!.Trim())
-    //                 {
-    //                     case NAME_FIRST_ROOM: rowFirstRoomAddress = row; break;
-    //                     case NAME_SECOND_ROOM: rowSecondRoomAddress = row; break;
-    //                     case NAME_FINAL_ROW: rowFinalRoomAddress = row; break;
-    //                     default: break;
-    //                 }
-    //             }
-    //         }
-
-    //         if (rowFirstRoomAddress != default &&
-    //             rowSecondRoomAddress != default &&
-    //             rowFinalRoomAddress != default) { break; }
-    //     }
-
-    //     // make row ranges
-    //     var firstRoomRowRange = Enumerable.Range(rowFirstRoomAddress + 1, rowSecondRoomAddress - 1).ToList();
-    //     var secondRoomRowRange = Enumerable.Range(rowSecondRoomAddress + 1, rowFinalRoomAddress).ToList();
-
-    //     string? goodstName;         // название товара
-    //     int? goodsReceivedCount;    // приход на склад
-    //     int? goodsRemainingCount;   // остаток на складе 
-
-    //     // Get coming && finalBalance++ (firstRoom)
-    //     for (int row = firstRoomRowRange.First(); row <= firstRoomRowRange.Count; row++)
-    //     {
-    //         // article
-    //         if (skuManager.GetSKUByObjectValue(worksheet.Cells[row, skuManager.StorageTableIndexes.skuIndex].Value, out SKU? existingArticle) &&
-    //             existingArticle is not null)
-    //         {
-    //             // name
-    //             goodstName = ParseValueToString(worksheet.Cells[row, skuManager.StorageTableIndexes.nameIndex].Value);
-    //             if (!string.IsNullOrEmpty(goodstName))
-    //                 existingArticle.SetName(goodstName!.Split(",")[0].Trim());
-
-    //             // goods received
-    //             goodsReceivedCount = ParseValueToInt(worksheet.Cells[row, skuManager.StorageTableIndexes.goodsReceivedIndex].Value); ;
-    //             if (goodsReceivedCount.HasValue)
-    //                 existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsReceived, goodsReceivedCount.Value);
-
-    //             // goods remaining
-    //             goodsRemainingCount = ParseValueToInt(worksheet.Cells[row, skuManager.StorageTableIndexes.finBalanceIndex].Value);
-    //             if (goodsRemainingCount.HasValue)
-    //                 existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsRemaining, goodsRemainingCount.Value);
-    //         }
-    //     }
-
-    //     // Get finalBalance++ (secondRoom)
-    //     for (int row = secondRoomRowRange.First(); row < rowFinalRoomAddress - 2; row++)
-    //     {
-    //         // article
-    //         if (skuManager.GetSKUByObjectValue(worksheet.Cells[row, skuManager.StorageTableIndexes.skuIndex].Value, out SKU? existingArticle) &&
-    //             existingArticle is not null)
-    //         {
-    //             // finalBalance
-    //             goodsRemainingCount = ParseValueToInt(worksheet.Cells[row, skuManager.StorageTableIndexes.finBalanceIndex].Value);
-
-    //             if (goodsRemainingCount.HasValue)
-    //                 existingArticle.ArticleStorageBalance.SetStorageBalance(ArticeStorageIndex.GoodsRemaining, goodsRemainingCount.Value);
-    //         }
-    //     }
-
-    //     package.Dispose();
-    //     stopwatch.Stop();
-
-    //     // Analize goods shipped && goods remaining, report
-    //     // if(ArticleManager.GetArticleGroupsStorageIndex(out IOrderedEnumerable<IGrouping<ArticeStorageIndex, ArticleStorageBalanceUnit>>? storageBalanceGroups) && 
-    //     //     storageBalanceGroups is not null) 
-    //     // {
-    //     //     var goodsRemainingCount = ArticleManager.GetArticleStorgeBalanceCountByIndex(ArticeStorageIndex.GoodsRemaining);
-
-    //     //     var goodsRemainingSum = storageBalanceGroups!
-    //     //         .First(g => g.Key == ArticeStorageIndex.GoodsRemaining)
-    //     //         .Select(g => g.Count)
-    //     //         .Sum();
-
-    //     //     var balanceReport = $"Общий приход товаров: {goodsShippedSum}, общий остаток: {goodsRemainingSum}\n";
-    //     //     balanceReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
-
-    //     //     await Report(balanceReport, 1500);
-    //     // }
-    // }
-
-    private static async Task ReadRegrandingReport(string filePath)
-    {
-        const int ARTICLE_INDEX = 1;
-        const int REGRANDING_INDEX = 2;
-        const int COUNT_INDEX = 3;
-        const int COMMENT_INDEX = 4;
-
-        // if (filePath is null || CheckFileExistence(filePath) == null) return;
-
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-
-        using ExcelPackage package = new(new FileInfo(filePath));
-
-        // if (CheckSheets(in package) == null) return;
-
-        ExcelWorksheet worksheet = package.Workbook.Worksheets[0];
-        (int colCount, int rowCount) = FindNumberColsAndRowsIn(in worksheet);
-
-        int regrandingCount = default;
-
-        for (int row = 1; row <= rowCount; row++)
-        {
-            var articleAddress = worksheet.Cells[row, ARTICLE_INDEX];
-            var regrandingAddress = worksheet.Cells[row, REGRANDING_INDEX];
-            var countAddress = worksheet.Cells[row, COUNT_INDEX];
-            var commentAddress = worksheet.Cells[row, COMMENT_INDEX];
-
-            string? commentForArticle = default;
-            string? commentForRegranding = default;
-
-            // Set article regranding 
-            // if (articleAddress.Value is not null &&
-            //     int.TryParse(articleAddress.Value.ToString(), out int article) &&
-            //     articleDict.ContainsKey(article) &&
-            //     regrandingAddress.Value is not null &&
-            //     int.TryParse(regrandingAddress.Value.ToString(), out int regranding) &&
-            //     articleDict.ContainsKey(regranding) &&
-            //     countAddress.Value is not null &&
-            //     int.TryParse(countAddress.Value.ToString(), out int count)
-            //     )
-            // {
-            //     // Для текущего арта указываем артикул пересорта (regranding)
-            //     articleDict[article].StoreBalance.SetRegrading(regranding, count);
-
-            //     commentForArticle = $"пересорт на арт {regranding} ({count} шт) ";
-            //     commentForRegranding = $"пересорт от арт {article} ({count} шт) ";
-
-            //     if (commentAddress.Value is not null &&
-            //         !string.IsNullOrEmpty(commentAddress.Value.ToString()))
-            //     {
-            //         commentForArticle = string.Concat(commentForArticle, commentAddress.Value!.ToString()!.Trim());
-            //     }
-
-            //     articleDict[article].SetComment(commentForArticle);
-            //     articleDict[regranding].SetComment(commentForRegranding);
-
-            //     regrandingCount += count;
-            // }
-        }
-
-        package.Dispose();
-        stopwatch.Stop();
-
-        var regReport = $"Количество товаров в пересорте: {regrandingCount}.\n";
-        regReport += $"Анализ отчета занял {stopwatch.ElapsedMilliseconds / 1000} секунд.";
-
-        await Report(regReport, 1500);
-    }
-
     private static void Report(object? sender, ManagerReachedEventArgs e)
     {
         Console.WriteLine();
@@ -532,11 +314,6 @@ internal class Program
 
         if (exit)
             await Exit();
-    }
-
-    private static (int col, int row) FindNumberColsAndRowsIn(in ExcelWorksheet sheet)
-    {
-        return (sheet.Dimension.End.Column, sheet.Dimension.End.Row);
     }
 
     #endregion

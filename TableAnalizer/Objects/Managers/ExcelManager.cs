@@ -376,7 +376,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => new(1) { RANSOMS_WORKSHEET_NAME },
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.WriteOffShortages => new(1) { REMAINING_OR_SHIPPED_WORKSHEET_NAME },
-                SourceSKUReportFileKey.Additional => new(2) { COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME },
+                SourceSKUReportFileKey.Additional => new(3) { COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, DUMMIES_REPORT_WORKSHEET_NAME },
                 _ => null,
             };
             return workSheetNames is not null && workSheetNames.Any();
@@ -471,7 +471,7 @@ namespace TableAnalizer.Objects.Managers
                             }
                             break;
                         case ParsingTypeCode.Marketplace:
-                            if (TryGetPropertyValue(item, targetCell.PropertyName, out Marketplace marketplaceValue))
+                            if (TryGetPropertyValue(item, targetCell.PropertyName, out Marketplace? marketplaceValue))
                             {
                                 value = marketplaceValue;
                             }
@@ -535,201 +535,6 @@ namespace TableAnalizer.Objects.Managers
 
             File.WriteAllBytes(path, package.GetAsByteArray());
         }
-
-        // public double AnalizeReport<T>(SourceSKUReportFileKey reportFileKey, string workSheetName, out List<T>? items, bool isRequred = true)
-        // {
-        //     var stopwatch = new Stopwatch();
-
-        //     double StopMethod()
-        //     {
-        //         stopwatch.Stop();
-        //         return stopwatch.ElapsedMilliseconds / 1000;
-        //     }
-
-        //     stopwatch.Start();
-
-        //     // Get report file 
-        //     SourceReportFileForSKU? sourceReportFile = GetReportFile(reportFileKey, isRequred);
-        //     if (sourceReportFile == null && !isRequred)
-        //     {
-        //         items = null;
-        //         return StopMethod();
-        //     }
-
-        //     items = new List<T>();
-
-        //     using ExcelPackage package = new(sourceReportFile!.FileInfo);
-
-        //     var worksheet = package.Workbook.Worksheets.FirstOrDefault(sh => sh.Name == workSheetName) ??
-        //         throw new Exception($"В книге Excel нет листа с именем '{workSheetName}'.");
-
-        //     // пройти по массиву диапазонов
-
-        //     package.Dispose();
-
-
-        //     items = null; // Dummy
-        //     return StopMethod();
-        // }
-
-
-        // public static (double time, List<SKURowInReport> articleRows) AnalyzeRedemptionReport(string path, string sheetName,
-        //     (int articleIndex, int dateIndex, int statusIndex, int logisticFlagIndex, int priceIndex) indices)
-        // {
-        //     List<SKURowInReport> articleRows = new();
-        //     var stopwatch = new Stopwatch();
-        //     stopwatch.Start();
-
-        //     if (IsDataPathExists(path, out FileInfo fileInfo))
-        //     {
-        //         using ExcelPackage package = new(fileInfo);
-
-        //         var worksheet = package.Workbook.Worksheets.FirstOrDefault(sh => sh.Name == sheetName) ??
-        //             throw new Exception($"In found workbook there is no sheet with name '{sheetName}'.");
-
-        //         var dimention = worksheet.Dimension;
-        //         var endRowIndex = dimention.End.Row;
-
-
-        //         // Идем по диапазонам 
-        //         for (int row = 1; row <= dimention.End.Row; row++)
-        //         {
-        //             var logisticFlagValue = worksheet.Cells[row, indices.logisticFlagIndex].Value.ToString();
-
-        //             if (!string.IsNullOrEmpty(logisticFlagValue))
-        //             {
-        //                 var logisticFlag = logisticFlagValue.Replace(" ", "");
-
-        //                 if (logisticFlag == LOGISTIC_FLAG)
-        //                 {
-        //                     var articleNumber = ParseValueToInt(worksheet.Cells[row, indices.articleIndex].Value);
-
-        //                     if (!articleNumber.HasValue) continue;
-
-        //                     var redemptionDateString = worksheet.Cells[row, indices.dateIndex].Value.ToString();
-        //                     var goodStatusString = worksheet.Cells[row, indices.statusIndex].Value.ToString();
-        //                     var priceSting = worksheet.Cells[row, indices.priceIndex].Value.ToString();
-
-        //                     if (!string.IsNullOrEmpty(redemptionDateString) &&
-        //                         !string.IsNullOrEmpty(goodStatusString) &&
-        //                         !string.IsNullOrEmpty(priceSting))
-        //                     {
-        //                         var articleRow = new SKURowInReport(articleNumber.Value, redemptionDateString.Trim(), goodStatusString.Trim(), priceSting.Trim());
-        //                         articleRows.Add(articleRow);
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-
-        //     stopwatch.Stop();
-        //     return (stopwatch.ElapsedMilliseconds / 1000, articleRows);
-        // }
-
-        // public static string CreateMainReportSheet(string workSheetName, in Dictionary<int, SKU> articles)
-        // {
-        //     //if(IsDataPathExists(OutputReportFilePath, out FileInfo fileInfo)) 
-        //     //{
-        //     using ExcelPackage excelPackage = new(new FileInfo(OutputReportFilePath));
-
-        //     // Create ExcelWorksheet  
-        //     CreateWorkSheet(workSheetName, in excelPackage, out ExcelWorksheet mainReportWorksheet, System.Drawing.Color.GreenYellow);
-
-        //     // Filling table with data
-        //     int recordIndex = 1;
-
-        //     foreach (var (key, value) in articles)
-        //     {
-        //         // Fill Redemptions data
-        //         mainReportWorksheet.Cells[recordIndex, 1].Value = value.Marketplace;
-        //         mainReportWorksheet.Cells[recordIndex, 2].Value = key;
-        //         mainReportWorksheet.Cells[recordIndex, 3].Value = value.Name;
-        //         mainReportWorksheet.Cells[recordIndex, 4].Value = value.AveragePrice;
-
-        //         // RedemptionDate
-        //         mainReportWorksheet.Cells[recordIndex, 5].Value = value.MaxRedemptionDate;
-        //         mainReportWorksheet.Cells[recordIndex, 5].Style.Fill.PatternType = ExcelFillStyle.Solid;
-        //         mainReportWorksheet.Cells[recordIndex, 5].Style.Fill.BackgroundColor.SetColor(value.SellmentStatus.StatusColor);
-
-        //         mainReportWorksheet.Cells[recordIndex, 6].Value = value.SellmentStatus.StatusLabel;
-
-        //         // Redemtion balance data 
-        //         // var arb = value.GetArticleBalancesReport();
-        //         // if (arb != null)
-        //         // {
-        //         //     mainReportWorksheet.Cells[recordIndex, 7].Value = arb.RedemtionSum;
-        //         //     mainReportWorksheet.Cells[recordIndex, 8].Value = arb.RedemtionCanceled;
-        //         //     mainReportWorksheet.Cells[recordIndex, 9].Value = arb.RedemtionOnWay;
-        //         //     mainReportWorksheet.Cells[recordIndex, 10].Value = arb.RedemtionDelivered;
-        //         //     mainReportWorksheet.Cells[recordIndex, 11].Value = arb.RedemtionWithDrawn;
-        //         // }
-
-        //         // // Storage balance data
-        //         // var articleStoreBalance = value.ArticleStorageBalance;
-        //         // var asb = articleStoreBalance.AnalizeBalance();
-
-        //         // if (asb.HasValue)
-        //         // {
-        //         //     //Console.WriteLine($"asb: {asb.Value.expected} {asb.Value.received} {asb.Value.undelivery} {asb.Value.shipped} {asb.Value.remaining}");
-
-        //         //     mainReportWorksheet.Cells[recordIndex, 12].Value = asb.Value.expected;
-        //         //     mainReportWorksheet.Cells[recordIndex, 12].Style.Font.Bold = true;
-
-        //         //     mainReportWorksheet.Cells[recordIndex, 13].Value = asb.Value.received;
-
-        //         //     var undelivery = asb.Value.undelivery;
-        //         //     mainReportWorksheet.Cells[recordIndex, 14].Value = undelivery;
-        //         //     if(undelivery > 0) 
-        //         //         mainReportWorksheet.Cells[recordIndex, 14].Style.Font.Color.SetColor(DangerColor); 
-
-        //         //     mainReportWorksheet.Cells[recordIndex, 16].Value = asb.Value.shipped;
-        //         //     mainReportWorksheet.Cells[recordIndex, 20].Value = asb.Value.remaining;
-        //         // }
-
-        //         //     // Consumption
-        //         //     mainReportWorksheet.Cells[recordIndex, 15].Value = articleDict[key].StoreBalance.TotalConsumption;
-
-        //         //     mainReportWorksheet.Cells[recordIndex, 17].Value = articleDict[key].StoreBalance.Regradings.Sum(re => re.Value);
-        //         //     mainReportWorksheet.Cells[recordIndex, 18].Value = articleDict[key].StoreBalance.PayShortagesCount;
-        //         //     mainReportWorksheet.Cells[recordIndex, 19].Value = articleDict[key].StoreBalance.DummiesCount;
-
-        //         //     // Comment
-        //         //     mainReportWorksheet.Cells[recordIndex, 21].Value = articleDict[key].Comment;
-
-        //         recordIndex++;
-        //     }
-
-        //     // Setup header 
-        //     SetupTableHeader(MainReportCells, ref mainReportWorksheet);
-        //     AddFilterInWorkSheet(ref mainReportWorksheet);
-
-        //     //Freeze row && columns
-        //     mainReportWorksheet.View.FreezePanes(2, 4);
-
-        //     // HACK: Переделать !!!
-        //     // Group column
-        //     for (var i = 8; i <= 11; i++)
-        //     {
-        //         mainReportWorksheet.Column(i).OutlineLevel = 1;
-        //         mainReportWorksheet.Column(i).Collapsed = true;
-        //     }
-
-        //     for (var i = 16; i <= 19; i++)
-        //     {
-        //         mainReportWorksheet.Column(i).OutlineLevel = 1;
-        //         mainReportWorksheet.Column(i).Collapsed = true;
-        //     }
-
-        //     // Save work (temp)
-        //     if (File.Exists(OutputReportFilePath)) File.Delete(OutputReportFilePath);
-
-        //     FileStream? objFileStrm = File.Create(OutputReportFilePath);
-        //     objFileStrm.Close();
-
-        //     File.WriteAllBytes(OutputReportFilePath, excelPackage.GetAsByteArray());
-
-        //     return OutputReportFilePath;
-        // }
 
         /// <summary>
         /// Creates an Excel worksheet in specified Excel workbook.

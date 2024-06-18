@@ -50,7 +50,8 @@ namespace TableAnalizer.Objects.Parsing
             foreach (var parsingElement in parsingElements)
             {
                 // Get target property
-                var targetProperty = PropertyInfos.FirstOrDefault(p => p.Name == parsingElement.Key);
+                var targetProperty = PropertyInfos
+                    .FirstOrDefault(p => p.Name == parsingElement.Key);
                 if (targetProperty is null)
                     ThrowExceptionOnArgument(parsingElement.Key);
 
@@ -110,6 +111,10 @@ namespace TableAnalizer.Objects.Parsing
 
                         case ParsingTypeCode.SKURansomsStatus:
                             property.SetValue(this, (SKURansomsStatus)value);
+                            break;
+
+                        case ParsingTypeCode.Marketplace:
+                            property.SetValue(this, (Marketplace)value);
                             break;
                     }
                 }
@@ -190,8 +195,8 @@ namespace TableAnalizer.Objects.Parsing
 
                     value = valueString switch
                     {
-                        "WB" or "Wb" or "Wildberries" => Marketplace.WB,
-                        "Oz" or "OZ" or "Ozon" => Marketplace.OZ,
+                        "wb" or "WB" or "Wb" or "Wildberries" => Marketplace.WB,
+                        "oz" or "Oz" or "OZ" or "Ozon" => Marketplace.OZ,
                         _ => throw new NotImplementedException(),
                     };
                     break;

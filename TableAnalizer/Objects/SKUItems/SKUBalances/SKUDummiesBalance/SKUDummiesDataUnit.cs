@@ -2,7 +2,7 @@ using TableAnalizer.Objects.Parsing;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances
 {
-    class SKUDummiesDataUnit : ParsingRowEntity
+    public class SKUDummiesDataUnit : ParsingRowEntity
     {
         #region Properties
         public int SKUNumber { get; }
@@ -13,5 +13,12 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         #region Constructors
         public SKUDummiesDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : base(parsingElements){}
         #endregion Constructors
+
+        #region Functionality
+        public override string ToString()
+        {
+            return $"{SKUNumber}, {DummiesSKUCount}, {DummiesComment}";
+        }
+        #endregion
     }
 }
