@@ -111,8 +111,11 @@ namespace TableAnalizer.Objects.SKUItems
                 }
             }
 
-            // TODO: Дорабоать вопрос по пустышкам
-            SKUDummies = 0;
+            // Fill SKUDummiesBalance 
+            if (sku.SKUDummiesBalance is not null)  
+            {
+                SKUDummies = sku.SKUDummiesBalance.Count;
+            }
 
             CalculateSKUTotalСonsumption();
             CalculateOverruns(resortSKUs);

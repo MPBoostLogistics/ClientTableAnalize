@@ -22,6 +22,7 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuDummiesBalanceUnits { get; }
+
         // арткул на который пересорт (артикул с которого пересорт, количество)
         public ConcurrentDictionary <int, ConcurrentDictionary<int, int>> ResortSKUs {get; set;} = new();
 
@@ -65,7 +66,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="reportFileKey">Key of source file with report.</param>
         /// <returns>Function execution time in seconds.</returns>
         /// <remarks><i>New version</i></remarks>
-        public async Task<double> ReceivingAndProcessingRansomsData(SourceSKUReportFileKey reportFileKey)
+        public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey)
         {
             double time = 0.00;
 
@@ -135,6 +136,7 @@ namespace TableAnalizer.Objects.Managers
                 static bool FindSkusWithWriteOff(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOff > 0;
                 static bool FindSkusWithCompensation(SKU sku) => sku.SKUCompensationBalance != null;
                 static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
+                static bool FindSkusWithDummies(SKU sku) => sku.SKUDummiesBalance != null;
 
                     var message = string.Empty;
 
@@ -162,7 +164,8 @@ namespace TableAnalizer.Objects.Managers
                                     message = "Артикулов из пересортов: ";
                                     break;
                                 case ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME:
-                                    // ...
+                                    predicateHandler = FindSkusWithDummies;
+                                    message = "Артикулов из пустышек: ";
                                     break;
                             };
                             break;
@@ -200,13 +203,13 @@ namespace TableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData)
         {
-
             bool isRansoms = reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ;
             bool isRemaining = reportFileKey == SourceSKUReportFileKey.RemainingWB || reportFileKey == SourceSKUReportFileKey.RemainingOZ;
             bool isShipped = reportFileKey == SourceSKUReportFileKey.Shipped;
             bool isWriteOff = reportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
+            bool isDummies = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME;
 
             if (isRansoms)
             {
@@ -305,6 +308,24 @@ namespace TableAnalizer.Objects.Managers
                         throw new InvalidCastException("Невозможно привести List<SKUResortDataUnit> к List<ParsingRowEntity>");
 
                     SkuResortBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
+                }
+            } 
+            else if(isDummies) 
+            {
+                var skuDummiesDataUnits = from rowWithRawData in rowsWithRawData
+                                          let unit = new SKUDummiesDataUnit(rowWithRawData)
+                                          group unit by unit.SKUNumber 
+                                          into unitGroup  
+                                          select unitGroup;
+
+                Console.WriteLine(skuDummiesDataUnits.Count());    
+
+                foreach (var group in skuDummiesDataUnits)
+                {
+                    var list = (((List<SKUDummiesDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
+                        throw new InvalidCastException("Невозможно привести List<SKUDummiesDataUnit> к List<ParsingRowEntity>");
+                    
+                    SkuDummiesBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             }
 
@@ -471,7 +492,11 @@ namespace TableAnalizer.Objects.Managers
                     }
                     else if(isDummies)
                     {
-                        // ... 
+                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUDummiesDataUnit>().ToList()) ??
+                            throw new InvalidCastException("Cannot cast collection to IList<SKUDummiesDataUnit>.");
+
+                        SKUDummiesBalance skuDummiesBalance = new(skuNumber, units.ToList());
+                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuDummiesBalance));
                     }
                 }
             }

@@ -5,6 +5,7 @@ using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
 using NUnit.Framework.Internal;
 using OfficeOpenXml;
+using TableAnalizer.Objects.Parsing;
 
 namespace TableAnalizerTest.TestManagers
 {
@@ -505,51 +506,47 @@ namespace TableAnalizerTest.TestManagers
                 Assert.That(TestData._testResortRangeSourceReportRows[0].CollectionDataOnReadRows, Has.Count.EqualTo(TestData.RESORT_RANGE_SOURCE_REPORT_ROWS_COUNT));
             });
 
-            additionalReportsPackage?.Dispose();
+            //additionalReportsPackage?.Dispose();
         }
 
         [Test, Order(16)]
         public void GetDummiesSKU_Test() 
         {
-            
+            // input assert / arrage
+            Assert.That(TestData._testDummiesRangeSourceReportRows, Is.Not.Null);
+
+            // act 01
+            var additionalReportsPath = "/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles/Юсупов дополнительный 220224.xlsx";
+            var additionalReportsPackage = ExcelManager.CreateExcelPackage(SourceSKUReportFileKey.Additional, new FileInfo(additionalReportsPath));
+            ExcelManager.GetExcelWorksheetByName(ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME, SourceSKUReportFileKey.Additional, out var _dummiesWorksheet);
+            ExcelManager.GetRangeSourceReportRows(in _dummiesWorksheet!, ref TestData._testDummiesRangeSourceReportRows);
+            ExcelManager.GetRawDataFromExcelRows(in _dummiesWorksheet!, ref TestData._testDummiesRangeSourceReportRows);
+
+            var testingDummiesRange = Enumerable.Range(2, 12);
+
+            // assert 01
+            Assert.Multiple(() =>
+            {
+                Assert.That(additionalReportsPackage, Is.Not.Null);
+                Assert.That(TestData._testDummiesRangeSourceReportRows, Has.Count.EqualTo(1));
+                Assert.That(TestData._testDummiesRangeSourceReportRows[0].СollectionRangeRowIndexes, Is.EqualTo(testingDummiesRange));
+                Assert.That(TestData._testDummiesRangeSourceReportRows[0].CollectionDataOnReadRows, Has.Count.EqualTo(TestData.DUMMIES_RANGE_SOURCE_REPORT_ROWS_COUNT));
+            });
+
+            // act 02
+            List<Dictionary<string, ItemForParsing>> rawRowsItems = [];
+            foreach (var sourceReportRowsRange in TestData._testDummiesRangeSourceReportRows)
+            {
+                sourceReportRowsRange.CollectionDataOnReadRows.ForEach(rawRowsItems.Add);
+            }
+
+            int keysCount = _skuManager.SaveSKUBalanceUnits(SourceSKUReportFileKey.Additional, ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME, rawRowsItems);
+
+            // assert 02
+            Assert.That(keysCount, Is.EqualTo(TestData.DUMMIES_RANGE_SOURCE_REPORT_ROWS_COUNT));
+
+            additionalReportsPackage?.Dispose();
         }
-
-        [Test, Order(17)]
-        public void CreateOutputReport() 
-        {
-            // // input assert 01  
-            // Assert.That(FileManager.OutputClientReportFilePath, Is.Not.Null);
-
-            // // act 01
-            // var outputPackage = new ExcelPackage(new FileInfo(FileManager.OutputClientReportFilePath));
-
-            // // assert 02
-            // Assert.That(outputPackage, Is.Not.Null);
-
-            // // act 02
-            // var reportSheetName = ExcelManager.OUTPUT_REPORT_WORKSHEET01_NAME;
-            // ExcelManager.CreateExcelWorkSheet(reportSheetName, in outputPackage, out var sheet, _excelManager.Colors[SKUSellmentStatus.FullSet]);
-
-            //  // assert 03
-            // Assert.That(sheet, Is.Not.Null);
-
-            // // act 03
-            // List<(int key, SKU value)> valuesList = [.. _skuManager.SKUs.GetValuesList()];
-            // var outputSkus = valuesList.Select(s => s.value.GetSKUForTargetReports(_skuManager.ResortSKUs)).ToList();
-
-            // var aa = from value in valuesList
-            //          select value.value.GetSKUForTargetReports() 
-
-
-
-
-            // FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
-            // _excelManager.FillingСellsWithData<SKUForTargetReports>(outputPackage, ref sheet, in outputSkus, _excelManager.cellsReportingMain, FileManager.OutputClientReportFilePath); 
-
-            // // ... 
-            // outputPackage.Dispose();
-        }
-
         #endregion
 
         // arrange
@@ -566,4 +563,3 @@ namespace TableAnalizerTest.TestManagers
         // Оз 1 пом 70 2 пом 68 
     }
 }
-
