@@ -540,6 +540,17 @@ namespace TableAnalizerTest.TestManagers
                 Assert.That(TestData._testDummiesRangeSourceReportRows[0].DataOnReadRowsCollection, Has.Count.EqualTo(TestData.DUMMIES_RANGE_SOURCE_REPORT_ROWS_COUNT));
             });
 
+            // action 03 - Union collections
+            List<Dictionary<string, ItemForParsing>> rawRowsItems = [];
+            foreach (var sourceReportRowsRange in TestData._testDummiesRangeSourceReportRows)
+            {
+                sourceReportRowsRange.DataOnReadRowsCollection.ForEach(rawRowsItems.Add);
+            }
+
+            var count = _skuManager.SaveSKUBalanceUnits(SourceSKUReportFileKey.Additional, ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME, rawRowsItems);
+
+            Assert.That(count, Is.EqualTo(12));
+
             additionalReportsPackage?.Dispose();
         }
 
