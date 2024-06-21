@@ -86,7 +86,6 @@ namespace TableAnalizer.Objects.Managers
                     for (int i = 0; i < processingTasksArray.Length; i++)
                     {
                         Task<double>? currentTask = processingTasksArray[i];
-
                         if(currentTask is not null) 
                             await Task.Run(async () => await currentTask);
                         
@@ -125,15 +124,14 @@ namespace TableAnalizer.Objects.Managers
                 ExcelManager.GetRawDataFromExcelRows(in currentWorksheet, ref rangeSourceReportRows);
 
                 // Union collections
-                List<Dictionary<string, ItemForParsing>> rawRowsItems = new() { };
-                foreach (var sourceReportRowsRange in rangeSourceReportRows)
-                {
-                    sourceReportRowsRange.DataOnReadRowsCollection.ForEach(rawRowsItems.Add);
-                }
+                IEnumerable<Dictionary<string, ItemForParsing>> rawRowsItems = 
+                    from sourceReportRowsRange in rangeSourceReportRows
+                    from item in sourceReportRowsRange.DataOnReadRowsCollection
+                    select item;
 
                 // Processing:
                 // 1. Save balances for sku's
-                SaveSKUBalanceUnits(reportFileKey, workSheetName, rawRowsItems);
+                SaveSKUBalanceUnits(reportFileKey, workSheetName, rawRowsItems.ToList());
 
                 // 2. Create or update sku's from balance units 
                 var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName);
@@ -323,20 +321,14 @@ namespace TableAnalizer.Objects.Managers
             } 
             else if(isDummies) 
             {
-                foreach (var rowWithRawData in rowsWithRawData)
-                {
-                    var unit = new SKUDummiesDataUnit(rowWithRawData);
-                    Console.WriteLine(unit);
-                }
 
+                var skuDummiesDataUnits = from rowWithRawData in rowsWithRawData
+                                          let unit = new SKUDummiesDataUnit(rowWithRawData)
+                                          group unit by unit.SKUNumber 
+                                          into unitGroup  
+                                          select unitGroup;
 
-                // var skuDummiesDataUnits = from rowWithRawData in rowsWithRawData
-                //                           let unit = new SKUDummiesDataUnit(rowWithRawData)
-                //                           group unit by unit.SKUNumber 
-                //                           into unitGroup  
-                //                           select unitGroup;
-
-                //Console.WriteLine(skuDummiesDataUnits.Count());    
+                Console.WriteLine(skuDummiesDataUnits.Count());    
 
                 // foreach (var group in skuDummiesDataUnits)
                 // {

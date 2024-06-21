@@ -154,9 +154,9 @@ internal class Program
             // Additional tasks
             if(existingKeys.Contains(SourceSKUReportFileKey.Additional)) 
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Additional);
-                await Task.Run(async () => await currentTask);
-                currentTask.Wait();
+                var additionalTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Additional);
+                await Task.Run(async () => await additionalTask);
+                additionalTask.Wait();
             } 
 
             // Delete old logistic report 
@@ -198,7 +198,6 @@ internal class Program
 
             // ReceivingAndProcessing
             Task<double>? processingRansomsDataTask = skuManager.ReceivingAndProcessingData(reportFileKey);
-            
             if(processingRansomsDataTask is not null) 
             {
                 await Task.Run(async () => await processingRansomsDataTask);
