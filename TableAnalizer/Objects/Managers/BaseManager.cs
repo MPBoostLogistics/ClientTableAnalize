@@ -23,7 +23,7 @@ namespace TableAnalizer.Objects.Managers
             {SKUSellmentStatus.InWork, System.Drawing.ColorTranslator.FromHtml("#ffd700")},
             {SKUSellmentStatus.OnSearchWarehouseAndPoints, System.Drawing.ColorTranslator.FromHtml("#f08080")},
             {SKUSellmentStatus.OnSearchWarehouse, System.Drawing.ColorTranslator.FromHtml("#ffa07a")},
-            {SKUSellmentStatus.OnSearchPoint, System.Drawing.ColorTranslator.FromHtml("#ffc4ad")},
+            {SKUSellmentStatus.OnSearchPoints, System.Drawing.ColorTranslator.FromHtml("#ffc4ad")},
             {SKUSellmentStatus.Unknown, System.Drawing.ColorTranslator.FromHtml("#add8e6")}
         };
         #endregion Properties

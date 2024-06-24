@@ -401,7 +401,7 @@ namespace TableAnalizer.Objects.Managers
 
             // Make delay report
             actualData = skuForTargetReports
-                .Where(el => el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.OnSearchPoint || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouseAndPoints))
+                .Where(el => el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.OnSearchPoints || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouseAndPoints))
                 .ToList();
             sheetName = OUTPUT_REPORT_WORKSHEET02_NAME;
             targetCells = cellsReportingDelays;

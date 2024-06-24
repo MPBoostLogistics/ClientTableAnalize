@@ -118,7 +118,6 @@ namespace TableAnalizer.Objects.SKUItems
             SKUDummiesBalance = skuDummiesBalance;
         }
 
-
         // Constructor for writeOffBalance 
         public SKU(int skuNumber, Marketplace marketplace, SKUWriteOffBalance writeOffBalance) 
         {
@@ -141,17 +140,15 @@ namespace TableAnalizer.Objects.SKUItems
 
         #region Functionality
 
-        public SKUForTargetReports GetSKUForTargetReports(ConcurrentDictionary<int, int> resortSKUs) => new(this, resortSKUs);
-
-        public void Update(SKUCompensationBalance skuShortageBalance) 
+        public void Update(SKUCompensationBalance skuCompensationBalance) 
         {
-            if(SKUCompensationBalance is null) 
+            if(skuCompensationBalance is null) 
             {
-                SKUCompensationBalance = skuShortageBalance;
+                SKUCompensationBalance = skuCompensationBalance;
             } 
             else 
             {
-                SKUCompensationBalance.Update(skuShortageBalance.Count, skuShortageBalance.Sum, skuShortageBalance.Comments);
+                skuCompensationBalance.Update(skuCompensationBalance.Count, skuCompensationBalance.Sum, skuCompensationBalance.Comments);
             }
         }
 
