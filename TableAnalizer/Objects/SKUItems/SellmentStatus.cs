@@ -33,7 +33,7 @@ namespace TableAnalizer.Objects.SKUItems
                     StatusLabel = "На поиске склада"; 
                     StatusColor = System.Drawing.ColorTranslator.FromHtml("#ffd3d3");
                     break;
-                case SKUSellmentStatus.OnSearchPoint:
+                case SKUSellmentStatus.OnSearchPoints:
                     StatusLabel = "На поиске ПВЗ";
                     StatusColor =  System.Drawing.ColorTranslator.FromHtml("#ffa0a0");
                     break;
