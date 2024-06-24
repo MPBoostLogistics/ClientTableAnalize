@@ -846,8 +846,11 @@ namespace TableAnalizer.Objects.Managers
         {
             const int DEFAULT_STEP = 1;
 
-            IEnumerable<RangeSourceReportRows>? rangesWithKeys = rangeSourceReportRows.Where(rs => !string.IsNullOrEmpty(rs.Key));
-            RangeSourceReportRows? rangeWithTermination = rangeSourceReportRows.SingleOrDefault(rs => rs.TerminatingStringValue.HasValue);
+            IEnumerable<RangeSourceReportRows>? rangesWithKeys = rangeSourceReportRows
+                .Where(rs => !string.IsNullOrEmpty(rs.Key));
+
+            RangeSourceReportRows? rangeWithTermination = rangeSourceReportRows
+                .SingleOrDefault(rs => rs.TerminatingStringValue.HasValue);
 
             bool isOneRangeWithoutKeysAndTerminations = rangeSourceReportRows.Count == 1 && 
                 (rangesWithKeys is null || !rangesWithKeys.Any()) && 

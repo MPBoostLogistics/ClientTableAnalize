@@ -6,6 +6,7 @@ using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.Repositories;
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUDummiesBalance;
 using OfficeOpenXml;
 
 namespace TableAnalizer.Objects.Managers
@@ -321,22 +322,19 @@ namespace TableAnalizer.Objects.Managers
             } 
             else if(isDummies) 
             {
-
                 var skuDummiesDataUnits = from rowWithRawData in rowsWithRawData
                                           let unit = new SKUDummiesDataUnit(rowWithRawData)
                                           group unit by unit.SKUNumber 
                                           into unitGroup  
                                           select unitGroup;
 
-                Console.WriteLine(skuDummiesDataUnits.Count());    
-
-                // foreach (var group in skuDummiesDataUnits)
-                // {
-                //     var list = (((List<SKUDummiesDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
-                //         throw new InvalidCastException("Невозможно привести List<SKUDummiesDataUnit> к List<ParsingRowEntity>");
+                foreach (var group in skuDummiesDataUnits)
+                {
+                    var list = (((List<SKUDummiesDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
+                        throw new InvalidCastException("Невозможно привести List<SKUDummiesDataUnit> к List<ParsingRowEntity>");
                     
-                //     SkuDummiesBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
-                // }
+                    SkuDummiesBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                }
             }
 
             return reportFileKey switch
