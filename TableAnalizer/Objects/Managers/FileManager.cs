@@ -228,7 +228,7 @@ namespace TableAnalizer.Objects.Managers
 
             var isContainsWriteOffShortages = ReportsPaths.ContainsKey(SourceSKUReportFileKey.WriteOffShortages);
 
-            var isContainsAdditionalShortages = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Additional);
+            var isContainsAdditional = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Additional);
 
             var success = isRansomsExisting && isRemainingExisting && isContainsKeyShipped && isContainsWriteOffShortages;
             if(success) 
@@ -249,7 +249,7 @@ namespace TableAnalizer.Objects.Managers
 
                 existingKeys.Add(SourceSKUReportFileKey.WriteOffShortages);
 
-                if(isContainsAdditionalShortages)
+                if(isContainsAdditional)
                     existingKeys.Add(SourceSKUReportFileKey.Additional);
             } 
             else 

@@ -1,6 +1,6 @@
-﻿using System.Collections.Concurrent;
-using TableAnalizer.Enums;
+﻿using TableAnalizer.Enums;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUDummiesBalance;
 
 namespace TableAnalizer.Objects.SKUItems
 {

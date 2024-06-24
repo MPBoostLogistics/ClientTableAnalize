@@ -33,7 +33,6 @@ namespace TableAnalizer.Objects.Parsing
                 Trace.WriteLine(ex.Message);
                 throw;
             }
-
         }
         #endregion
 
@@ -88,7 +87,7 @@ namespace TableAnalizer.Objects.Parsing
             if(Parse(elementValueString, element.Value.TypeCode, isMaybeNullable, out object? value) 
                 && value is not null) 
             {
-                if(property.CanWrite) 
+               if(property.CanWrite) 
                 {
                     switch (element.Value.TypeCode)
                     {
@@ -117,7 +116,7 @@ namespace TableAnalizer.Objects.Parsing
                             property.SetValue(this, (Marketplace)value);
                             break;
                     }
-                }
+               }
             }
         }
 
@@ -137,6 +136,7 @@ namespace TableAnalizer.Objects.Parsing
                     {
                         value = int.TryParse(valueString, out int intValue) ? intValue : null;
                     }
+
                     break;
 
                 case ParsingTypeCode.DoubleTypeCode:

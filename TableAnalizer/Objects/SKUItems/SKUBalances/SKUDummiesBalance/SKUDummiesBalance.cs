@@ -1,4 +1,4 @@
-namespace TableAnalizer.Objects.SKUItems.SKUBalances  
+namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUDummiesBalance 
 {
     /// <summary>
     ///  Client's dummies balance.
