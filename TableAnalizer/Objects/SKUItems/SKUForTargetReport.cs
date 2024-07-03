@@ -96,20 +96,16 @@ namespace TableAnalizer.Objects.SKUItems
             // Fill SKUResortBalance 
             if (sku.SKUResortBalance is not null)
             {
-                sku.SKUResortBalance.AddСommentToBalance();
-
                 foreach (var resortSKU in sku.SKUResortBalance.ResortSKUs)
                 {
-                    SKUResort += resortSKU.Value.resortSKUCount;
-
-                    if(!string.IsNullOrEmpty(SKUComment)) 
-                    {
-                        SKUComment = string.IsNullOrEmpty(SKUComment) ? 
-                            resortSKU.Value.resortSKUComment! : 
-                            string.Concat(SKUComment, ", ", resortSKU.Value.resortSKUComment);
-                    }
-
+                    SKUResort += resortSKU.Value;
                 }
+
+                sku.SKUResortBalance.AddСommentToBalance();
+
+                SKUAccountingByResortsComment = string.IsNullOrEmpty(SKUAccountingByResortsComment) ?  
+                    sku.SKUResortBalance.ResortComment :
+                    string.Concat(SKUAccountingByResortsComment, sku.SKUResortBalance.ResortComment);
             }
 
             // Fill SKUDummiesBalance 
@@ -123,12 +119,6 @@ namespace TableAnalizer.Objects.SKUItems
             FillColor = SellmentStatus.StatusColor;
 
             Analize(resortSKUs);
-
-            // CalculateSKUTotalСonsumption();
-            // CalculateOverruns(resortSKUs);
-            // CalculateDeliveryDelay();
-            // CalculateSKUTotalСonsumption();
-            // DeterminingSellmentStatus();
         }
 
         private void Analize(ConcurrentDictionary<int, int>? resortSKUs) 
@@ -166,7 +156,10 @@ namespace TableAnalizer.Objects.SKUItems
                 CalculateOverruns(resortSKUs: resortSKUs);
             }
 
-            // 4. Строка статуса и цвет заливки
+            // 4. Повторный расчет общего расхода
+            CalculateTotalСonsumption();
+
+            // 5. Строка статуса и цвет заливки
             SellmentStatusString = SellmentStatus.StatusLabel;
             FillColor = SellmentStatus.StatusColor;
         }
@@ -272,6 +265,7 @@ namespace TableAnalizer.Objects.SKUItems
             }
         }
 
-        #endregion Constructors
+        #endregion 
+
     }
 }
