@@ -471,11 +471,11 @@ namespace TableAnalizer.Objects.Managers
                         SKUResortBalance skuResortBalance = new(skuNumber, units.ToList());
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuResortBalance));
 
-                        foreach (KeyValuePair<int, (int resortSKUCount, string? resortSKUComment)> item in skuResortBalance.ResortSKUs)
+                        foreach (KeyValuePair<int, int> item in skuResortBalance.ResortSKUs)
                         {
                             var skuFromResort = skuNumber;
                             var skuForResort = item.Key;
-                            var skuForResortCount = item.Value.resortSKUCount;
+                            var skuForResortCount = item.Value;
 
                             if(ResortSKUs.TryGetValue(skuForResort, out ConcurrentDictionary<int, int>? value)) 
                             {

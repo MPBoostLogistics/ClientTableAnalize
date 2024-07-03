@@ -230,7 +230,7 @@ namespace TableAnalizer.Objects.Managers
 
             var isContainsAdditional = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Additional);
 
-            var success = isRansomsExisting && isRemainingExisting && isContainsKeyShipped && isContainsWriteOffShortages;
+            var success = isRansomsExisting && isRemainingExisting && isContainsWriteOffShortages;
             if(success) 
             {
                 if(isContainsKeyRansomsWB)
@@ -245,7 +245,8 @@ namespace TableAnalizer.Objects.Managers
                 if(isContainsKeyStorageOZ)
                     existingKeys.Add(SourceSKUReportFileKey.RemainingOZ);
                 
-                existingKeys.Add(SourceSKUReportFileKey.Shipped);
+                if(isContainsKeyShipped)
+                    existingKeys.Add(SourceSKUReportFileKey.Shipped);
 
                 existingKeys.Add(SourceSKUReportFileKey.WriteOffShortages);
 
