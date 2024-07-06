@@ -33,6 +33,11 @@ internal class Program
     #region Functionality
     private static async Task Main(string[] args)
     {
+        await AnalyzeСlientReports();
+    }
+
+    private static async Task AnalyzeСlientReports()
+    {
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
         fileManager.ManagerReached += Report;
@@ -73,31 +78,31 @@ internal class Program
             // Ransoms tasks
             List<Task> ransomsTasksList = new();
             Task[] ransomsTasks = Array.Empty<Task>();
-            if(existingKeys.Contains(SourceSKUReportFileKey.RansomsWB)) 
+            if (existingKeys.Contains(SourceSKUReportFileKey.RansomsWB))
             {
                 ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsWB));
             }
 
-            if(existingKeys.Contains(SourceSKUReportFileKey.RansomsOZ)) 
+            if (existingKeys.Contains(SourceSKUReportFileKey.RansomsOZ))
             {
                 ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsOZ));
             }
 
-            if(ransomsTasksList.Any()) 
+            if (ransomsTasksList.Any())
             {
                 ransomsTasks = ransomsTasksList.ToArray();
-           
+
                 for (int i = 0; i < ransomsTasks.Length; i++)
                 {
                     var currentTask = ransomsTasks[i];
-                    if(currentTask is not null) 
+                    if (currentTask is not null)
                     {
                         await Task.Run(async () => await currentTask);
                     }
                 }
             }
 
-            if(ransomsTasks.Any()) 
+            if (ransomsTasks.Any())
             {
                 Task.WaitAll(ransomsTasks);
             }
@@ -105,23 +110,23 @@ internal class Program
             // Remaining tasks
             List<Task> remainingTasksList = new();
             Task[] remainingTasks = Array.Empty<Task>();
-            if(existingKeys.Contains(SourceSKUReportFileKey.RemainingWB)) 
+            if (existingKeys.Contains(SourceSKUReportFileKey.RemainingWB))
             {
                 remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingWB));
             }
 
-            if(existingKeys.Contains(SourceSKUReportFileKey.RemainingOZ)) 
+            if (existingKeys.Contains(SourceSKUReportFileKey.RemainingOZ))
             {
                 remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingOZ));
             }
 
-            if(remainingTasksList.Any()) 
+            if (remainingTasksList.Any())
             {
                 remainingTasks = remainingTasksList.ToArray();
                 for (int i = 0; i < remainingTasks.Length; i++)
                 {
                     var currentTask = remainingTasks[i];
-                    if(currentTask is not null) 
+                    if (currentTask is not null)
                     {
                         await Task.Run(async () => await currentTask);
                     }
@@ -130,21 +135,21 @@ internal class Program
                 Task.WaitAll(remainingTasks);
             }
 
-            if(remainingTasks.Any()) 
+            if (remainingTasks.Any())
             {
                 Task.WaitAll(remainingTasks);
             }
 
             // WriteOff task 
-            if(existingKeys.Contains(SourceSKUReportFileKey.WriteOffShortages)) 
+            if (existingKeys.Contains(SourceSKUReportFileKey.WriteOffShortages))
             {
                 var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffShortages);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
-            } 
+            }
 
             // Shipped tasks
-            if(existingKeys.Contains(SourceSKUReportFileKey.Shipped)) 
+            if (existingKeys.Contains(SourceSKUReportFileKey.Shipped))
             {
                 var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Shipped);
                 await Task.Run(async () => await currentTask);
@@ -152,12 +157,12 @@ internal class Program
             }
 
             // Additional tasks
-            if(existingKeys.Contains(SourceSKUReportFileKey.Additional)) 
+            if (existingKeys.Contains(SourceSKUReportFileKey.Additional))
             {
                 var additionalTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Additional);
                 await Task.Run(async () => await additionalTask);
                 additionalTask.Wait();
-            } 
+            }
 
             // Delete old logistic report 
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
@@ -165,8 +170,8 @@ internal class Program
             excelManager.MakeReports(skusForTargetReport);
 
             // Report 
-            var completedMessage = $"Отчет логистики сохранен по пути: {FileManager.OutputClientReportFilePath}\n"; 
-            goodByMessage = string.Concat(completedMessage,goodByMessage);
+            var completedMessage = $"Отчет логистики сохранен по пути: {FileManager.OutputClientReportFilePath}\n";
+            goodByMessage = string.Concat(completedMessage, goodByMessage);
             await Report(goodByMessage, 2000, true);
         }
         else
