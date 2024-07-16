@@ -14,6 +14,7 @@ using System.Reflection;
 using OfficeOpenXml;
 using TableAnalizer.Enums;
 using TableAnalizer.Objects.Managers;
+using static Tensorflow.Binding;
 
 internal class Program
 {
@@ -33,6 +34,12 @@ internal class Program
     #region Functionality
     private static async Task Main(string[] args)
     {
+        //await Task.Delay(100);
+
+        // var hello = tf.constant("Hello, TensorFlow!");
+        // Console.WriteLine(hello);
+        // Console.ReadKey();
+
         await AnalyzeСlientReports();
     }
 

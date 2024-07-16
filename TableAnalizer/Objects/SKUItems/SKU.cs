@@ -27,6 +27,7 @@ namespace TableAnalizer.Objects.SKUItems
         public double AveragePrice { get; private set;} = AVERAGE_PRICE_DEFAULT;
         public DateOnly MaxRansomsDate { get; private set;} = DATEONLY_DEFAULT;
         public int DeadLineDays { get;  set; } = DEADLINE_DAYS_DEFAULT;
+        public bool IsParallelSKU {get;set;} = false;
 
         #endregion
 
@@ -75,7 +76,7 @@ namespace TableAnalizer.Objects.SKUItems
             SKURansomsBalance? skuRansomsBalance, SKURemainingBalance? skuRemainingBalance, 
             SKUWriteOffBalance? skuWriteOffBalance, SKUCompensationBalance? skuCompensationBalance, 
             SKUResortBalance skuResortBalance, SKUDummiesBalance? skuDummiesBalance, double? averagePrice, 
-            DateOnly? maxRansomsDate, int? deadLineDays) 
+            DateOnly? maxRansomsDate, int? deadLineDays, bool isParallel) 
        {
             Marketplace = marketplace;
             SKUNumber = skuNumber;
@@ -102,6 +103,8 @@ namespace TableAnalizer.Objects.SKUItems
             {
                 DeadLineDays = deadLineDays.Value;
             }
+
+            IsParallelSKU = isParallel;
         }
 
         // Constructor for compensationBalance 
@@ -132,6 +135,14 @@ namespace TableAnalizer.Objects.SKUItems
             SKUNumber = skuNumber;
             SKUResortBalance = skuResortBalance;
         }
+
+        // Constructor for parralel sku
+        public SKU(int skuNumber, bool isParallelSKU) 
+        {
+            SKUNumber = skuNumber;
+            IsParallelSKU = isParallelSKU;
+        }
+
 
         public override string ToString() =>
             $"{SKUNumber} ({Marketplace}): '{SKUBrand} / {SKUName}', {AveragePrice}. Date: {MaxRansomsDate}\n{SKURansomsBalance}";

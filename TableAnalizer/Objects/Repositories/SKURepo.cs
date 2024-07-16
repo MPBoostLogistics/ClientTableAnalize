@@ -250,8 +250,11 @@ namespace TableAnalizer.Objects.Repositories
                 (false, false) => null
             };
 
+            // isParallel
+            bool isParallel = retriveValue.IsParallelSKU || newValue.IsParallelSKU;
+
             return new SKU(marketplace, skuNumber, skuBrand, skuName, skuRansomsBalance, 
-                skuRemainingBalance, skuWriteOffBalance, skuCompensationBalance, skuResortBalance!, skuDummiesBalance, averagePrice, maxRansomsDate, deadlineDays);
+                skuRemainingBalance, skuWriteOffBalance, skuCompensationBalance, skuResortBalance!, skuDummiesBalance, averagePrice, maxRansomsDate, deadlineDays, isParallel);
         }
     }
 }

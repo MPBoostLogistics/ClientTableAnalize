@@ -48,8 +48,12 @@ namespace TableAnalizer.Objects.SKUItems
         public int SKUOverrunsCount { get; set; } = 0;
         public double SKUOverrunsSum { get; set; } = 0.00;
 
+        // Is Parrales sku
+        private bool IsParralesSku {get ;set;}
+
         public string SKUComment { get; set;} = string.Empty;
         public Color FillColor { get; set; }
+
 
         #region Constructors
         public SKUForTargetReports(SKU sku, ConcurrentDictionary<int, int>? resortSKUs = null)
@@ -62,6 +66,8 @@ namespace TableAnalizer.Objects.SKUItems
 
             SKUDate = sku.MaxRansomsDate;
             isDeadline = (SKUDate.ToDateTime(new TimeOnly()) - DateTime.Now).Duration().Days > sku.DeadLineDays;
+
+            IsParralesSku = sku.IsParallelSKU;
 
             // Fill SKURansomsBalance
             if (sku.SKURansomsBalance is not null)
@@ -164,7 +170,6 @@ namespace TableAnalizer.Objects.SKUItems
             FillColor = SellmentStatus.StatusColor;
         }
 
-        
         /// <summary>
         /// Calculation of delivery delays to client.
         /// </summary>
@@ -258,10 +263,16 @@ namespace TableAnalizer.Objects.SKUItems
 
                         if(SKUOverrunsCount < 0)  SKUOverrunsCount = 0;
                         if(SKUOverrunsSum < 0.00)  SKUOverrunsSum = 0.00;
-
                         if(int.IsNegative(SKURemaining)) SKURemaining = 0;
                     }   
                     break;
+            }
+
+            // If sku is parallel with another client, overruns is not considered
+            if(IsParralesSku) 
+            {
+                SKUOverrunsCount = 0;
+                SKUOverrunsSum = 0.00;
             }
         }
 

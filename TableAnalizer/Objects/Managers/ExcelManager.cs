@@ -24,6 +24,7 @@ namespace TableAnalizer.Objects.Managers
         public const string COMPENSATION_REPORT_WORKSHEET_NAME = "Недостачи";
         public const string RESORTS_REPORT_WORKSHEET_NAME = "Пересорты";
         public const string DUMMIES_REPORT_WORKSHEET_NAME = "Пустышки";
+        public const string PARALLEL_SKUS_WORKSHEET_NAME = "Параллельные";
         public const string RANSOMS_WORKSHEET_NAME = "Выкупы";
         public const string REMAINING_OR_SHIPPED_WORKSHEET_NAME = "TDSheet";
         private const int DEFAULT_TABLE_ROW_HEIGHT = 18;
@@ -117,7 +118,14 @@ namespace TableAnalizer.Objects.Managers
             new(2, "DummiesSKUCount", ParsingTypeCode.IntTypeCode, true),
             new(3, "DummiesComment", ParsingTypeCode.StringTypeCode, false)
         };
+
+        public static List<SourceColumn> ParellelSkusSourceCells { get; } = new()
+        {
+            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true)
+        };
         
+
+
         public static List<SourceColumn> WriteOffShortagesSourceCells { get; } = new() 
         {
             new(5, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
@@ -375,7 +383,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => new(1) { RANSOMS_WORKSHEET_NAME },
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.WriteOffShortages => new(1) { REMAINING_OR_SHIPPED_WORKSHEET_NAME },
-                SourceSKUReportFileKey.Additional => new(3) { COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, DUMMIES_REPORT_WORKSHEET_NAME },
+                SourceSKUReportFileKey.Additional => new(3) { COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, DUMMIES_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME },
                 _ => null,
             };
             return workSheetNames is not null && workSheetNames.Any();
@@ -826,6 +834,7 @@ namespace TableAnalizer.Objects.Managers
                     COMPENSATION_REPORT_WORKSHEET_NAME => new(1) { new(CompensationSourceCells) },
                     RESORTS_REPORT_WORKSHEET_NAME => new(1) { new(ResortSourceCells) },
                     DUMMIES_REPORT_WORKSHEET_NAME => new(1) { new(DummiesSourceCells) },
+                    PARALLEL_SKUS_WORKSHEET_NAME => new (1) { new (ParellelSkusSourceCells)},
                     _ => new(),
                 },
                 SourceSKUReportFileKey.Shipped => new(1) { new(ShippedSourceCells) },

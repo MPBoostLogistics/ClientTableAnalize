@@ -27,6 +27,8 @@ namespace TableAnalizer.Objects.Managers
         // арткул на который пересорт (артикул с которого пересорт, количество)
         public ConcurrentDictionary <int, ConcurrentDictionary<int, int>> ResortSKUs {get; set;} = new();
 
+        private List<SKUParallelUnit> SKUParallelUnits {get;set;} = new();
+
         /// <summary>
         /// Returns number of SKUs in collection.
         /// </summary>
@@ -220,6 +222,7 @@ namespace TableAnalizer.Objects.Managers
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isDummies = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME;
+            bool isParellel = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
 
             if (isRansoms)
             {
@@ -336,6 +339,17 @@ namespace TableAnalizer.Objects.Managers
                     SkuDummiesBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             }
+            else if(isParellel) 
+            {
+                foreach (var rowWithRawData in rowsWithRawData)
+                {
+                    var unit = new SKUParallelUnit(rowWithRawData);
+                    if(SKUParallelUnits.Contains(unit)) 
+                    {
+                        SKUParallelUnits.Add(unit);
+                    }
+                }
+            }
 
             return reportFileKey switch
             {
@@ -348,6 +362,7 @@ namespace TableAnalizer.Objects.Managers
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => SkuCompensationBalanceUnits.Count(),
                     ExcelManager.RESORTS_REPORT_WORKSHEET_NAME => SkuResortBalanceUnits.Count(),
                     ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME => SkuDummiesBalanceUnits.Count(),
+                    ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME => SKUParallelUnits.Count,
                     _ => 0
                 },
                 _ => 0
@@ -370,6 +385,7 @@ namespace TableAnalizer.Objects.Managers
             bool isCompensation = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResorts = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isDummies = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME;
+            bool isParellel = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
 
             // Dummy
             await Task.Delay(1);
@@ -506,6 +522,15 @@ namespace TableAnalizer.Objects.Managers
                         SKUDummiesBalance skuDummiesBalance = new(skuNumber, units.ToList());
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuDummiesBalance));
                     }
+                }
+            }
+
+            if(isParellel && SKUParallelUnits.Any()) 
+            {
+                foreach (var skuParallelUnit in SKUParallelUnits)
+                {
+                    SKU tempSKU = new(skuParallelUnit.SKUNumber, true);
+                    SKUs.RetrieveAndUpdateOrAddValue(skuParallelUnit.SKUNumber, tempSKU);
                 }
             }
         }

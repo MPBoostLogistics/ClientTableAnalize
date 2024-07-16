@@ -14,6 +14,9 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="EPPlus" Version="6.2.8" />
+    <PackageReference Include="SciSharp.TensorFlow.Redist" Version="2.16.0" />
+    <PackageReference Include="SciSharp.TensorFlow.Redist-OSX" Version="2.15.0" />
+    <PackageReference Include="SciSharp.TensorFlow.Redist-Windows-GPU" Version="2.10.3" />
     <PackageReference Include="TensorFlow.Keras" Version="0.15.0" />
     <PackageReference Include="TensorFlow.NET" Version="0.150.0" />
   </ItemGroup>
