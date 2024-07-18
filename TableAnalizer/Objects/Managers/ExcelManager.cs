@@ -829,6 +829,7 @@ namespace TableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => new(3) { new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
                                                      new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME), new(RemainingThirdRoomSourceCells, THIRD_ROOM_NAME, (LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))},
                 SourceSKUReportFileKey.WriteOffShortages => new(1) {new (WriteOffShortagesSourceCells)},
+                SourceSKUReportFileKey.Shipped => new(1) { new(ShippedSourceCells) },
                 SourceSKUReportFileKey.Additional => workSheetName switch
                 {
                     COMPENSATION_REPORT_WORKSHEET_NAME => new(1) { new(CompensationSourceCells) },
@@ -837,7 +838,6 @@ namespace TableAnalizer.Objects.Managers
                     PARALLEL_SKUS_WORKSHEET_NAME => new (1) { new (ParellelSkusSourceCells)},
                     _ => new(),
                 },
-                SourceSKUReportFileKey.Shipped => new(1) { new(ShippedSourceCells) },
                 _ => new(),
             };
 

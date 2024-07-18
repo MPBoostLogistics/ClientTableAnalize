@@ -27,7 +27,7 @@ namespace TableAnalizer.Objects.Managers
         // арткул на который пересорт (артикул с которого пересорт, количество)
         public ConcurrentDictionary <int, ConcurrentDictionary<int, int>> ResortSKUs {get; set;} = new();
 
-        private List<SKUParallelUnit> SKUParallelUnits {get;set;} = new();
+        private static List<SKUParallelUnit> SKUParallelUnits {get;set;} = new();
 
         /// <summary>
         /// Returns number of SKUs in collection.
@@ -149,6 +149,7 @@ namespace TableAnalizer.Objects.Managers
                 static bool FindSkusWithCompensation(SKU sku) => sku.SKUCompensationBalance != null;
                 static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
                 static bool FindSkusWithDummies(SKU sku) => sku.SKUDummiesBalance != null;
+                static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
 
                     var message = string.Empty;
 
@@ -178,6 +179,10 @@ namespace TableAnalizer.Objects.Managers
                                 case ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME:
                                     predicateHandler = FindSkusWithDummies;
                                     message = "Артикулов из пустышек: ";
+                                    break;
+                                case ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME:
+                                    predicateHandler = FindSkusWithParallel;
+                                    message = "Артикулов из параллельных клиентов: ";
                                     break;
                             };
                             break;
@@ -344,7 +349,7 @@ namespace TableAnalizer.Objects.Managers
                 foreach (var rowWithRawData in rowsWithRawData)
                 {
                     var unit = new SKUParallelUnit(rowWithRawData);
-                    if(SKUParallelUnits.Contains(unit)) 
+                    if(!SKUParallelUnits.Contains(unit)) 
                     {
                         SKUParallelUnits.Add(unit);
                     }
