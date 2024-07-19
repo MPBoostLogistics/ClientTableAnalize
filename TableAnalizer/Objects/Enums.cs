@@ -33,7 +33,8 @@ namespace TableAnalizer.Enums
         RemainingOZ,        // приходы и остатки OZ
         WriteOffShortages,  // списание недростач общее 
         Additional,          // недостачи, пересорты и пустышки
-        Shipped             // расходы товаром 
+        Shipped,             // расходы товаром 
+        Transfer             // перемещение (на фулфилмент) 
     }
 
     public enum SourceSKUReportKey

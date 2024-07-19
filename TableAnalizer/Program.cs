@@ -163,6 +163,14 @@ internal class Program
                 currentTask.Wait();
             }
 
+            // Transfer task
+             if (existingKeys.Contains(SourceSKUReportFileKey.Transfer))
+            {
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Transfer);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            }
+
             // Additional tasks
             if (existingKeys.Contains(SourceSKUReportFileKey.Additional))
             {

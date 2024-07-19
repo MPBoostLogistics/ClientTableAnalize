@@ -96,6 +96,12 @@ namespace TableAnalizer.Objects.Managers
             new(28, "SKUShippedCount", ParsingTypeCode.IntTypeCode, true)
         };
 
+          public static List<SourceColumn> TransferSourceCells { get; } = new()
+        {
+            new(4, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
+            new(34, "SKUShippedCount", ParsingTypeCode.IntTypeCode, true)
+        };
+
         public static List<SourceColumn> CompensationSourceCells { get; } = new()
         {
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
@@ -382,7 +388,7 @@ namespace TableAnalizer.Objects.Managers
             workSheetNames = reportFileKey switch
             {
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => new(1) { RANSOMS_WORKSHEET_NAME },
-                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.WriteOffShortages => new(1) { REMAINING_OR_SHIPPED_WORKSHEET_NAME },
+                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer or SourceSKUReportFileKey.WriteOffShortages => new(1) { REMAINING_OR_SHIPPED_WORKSHEET_NAME },
                 SourceSKUReportFileKey.Additional => new(3) { COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, DUMMIES_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME },
                 _ => null,
             };
@@ -830,6 +836,7 @@ namespace TableAnalizer.Objects.Managers
                                                      new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME), new(RemainingThirdRoomSourceCells, THIRD_ROOM_NAME, (LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))},
                 SourceSKUReportFileKey.WriteOffShortages => new(1) {new (WriteOffShortagesSourceCells)},
                 SourceSKUReportFileKey.Shipped => new(1) { new(ShippedSourceCells) },
+                SourceSKUReportFileKey.Transfer => new(1) { new(TransferSourceCells) },
                 SourceSKUReportFileKey.Additional => workSheetName switch
                 {
                     COMPENSATION_REPORT_WORKSHEET_NAME => new(1) { new(CompensationSourceCells) },

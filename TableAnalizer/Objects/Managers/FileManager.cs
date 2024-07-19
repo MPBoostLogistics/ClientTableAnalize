@@ -226,6 +226,8 @@ namespace TableAnalizer.Objects.Managers
 
             var isContainsKeyShipped = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Shipped);
 
+            var isContainsKeyTransfer = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Transfer);
+
             var isContainsWriteOffShortages = ReportsPaths.ContainsKey(SourceSKUReportFileKey.WriteOffShortages);
 
             var isContainsAdditional = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Additional);
@@ -247,6 +249,9 @@ namespace TableAnalizer.Objects.Managers
                 
                 if(isContainsKeyShipped)
                     existingKeys.Add(SourceSKUReportFileKey.Shipped);
+
+                if(isContainsKeyTransfer)
+                    existingKeys.Add(SourceSKUReportFileKey.Transfer);
 
                 existingKeys.Add(SourceSKUReportFileKey.WriteOffShortages);
 

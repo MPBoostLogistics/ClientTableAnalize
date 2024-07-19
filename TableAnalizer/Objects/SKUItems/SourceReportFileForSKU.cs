@@ -10,6 +10,7 @@ namespace TableAnalizer.Objects.SKUItems
         const string ransomsKey = "отчет";
         const string writeOffShortagesKey = "списание";
         const string shippedKey = "расходы";
+        const string transferKey = "перемещение";
         const string receivedRemainingKey = "приходы";
         const string additionalKey = "дополнительный";
         const string wbKey = "(wb)";
@@ -40,9 +41,13 @@ namespace TableAnalizer.Objects.SKUItems
                 // Юсупов расходы 22052024.xlsx                  3
                 // Юсупов дополнительный 220224.xlsx             3
                 // Общее списание 230124.xlsx                    3
+                // Башорин перемещение 190724.xlsx               3
+
+                
 
                 // Отчет по клиенту +79164372997 (WB).xlsx       5
                 // Отчет по клиенту +79164372997 (Ozon).xlsx     5
+                
 
                 // Юсупов приходы и остатки 220524 (WB).xlsx     6
                 // Юсупов приходы и остатки 220524 (Ozon).xlsx   6
@@ -118,6 +123,11 @@ namespace TableAnalizer.Objects.SKUItems
                         if (Login is null && substrings[3] != null) 
                             SaveСlientLogin(substrings[3]);
                         break;
+
+                    // перемещение на фулфилмент
+                    case transferKey:
+                        ReportKey = SourceSKUReportFileKey.Transfer;
+                        break; 
 
                     default:
                         break;

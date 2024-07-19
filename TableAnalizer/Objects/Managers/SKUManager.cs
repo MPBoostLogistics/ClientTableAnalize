@@ -186,10 +186,11 @@ namespace TableAnalizer.Objects.Managers
                                     break;
                             };
                             break;
-                        case SourceSKUReportFileKey.Shipped:
+                        case SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer:
                             predicateHandler = FindSkusWithShipped;
                             message = "Артикулов в расходе со склада: ";
                             break;
+
                         case SourceSKUReportFileKey.WriteOffShortages:
                             predicateHandler = FindSkusWithWriteOff;
                             message = "Артикулов в списании недостач: ";
@@ -223,6 +224,7 @@ namespace TableAnalizer.Objects.Managers
             bool isRansoms = reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ;
             bool isRemaining = reportFileKey == SourceSKUReportFileKey.RemainingWB || reportFileKey == SourceSKUReportFileKey.RemainingOZ;
             bool isShipped = reportFileKey == SourceSKUReportFileKey.Shipped;
+            bool isTransfer = reportFileKey == SourceSKUReportFileKey.Transfer;
             bool isWriteOff = reportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
@@ -262,15 +264,15 @@ namespace TableAnalizer.Objects.Managers
                     SkuRemainingBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             } 
-            else if(isShipped) 
+            else if(isShipped || isTransfer) 
             {
-                var skuRShippedDataUnits = from rowWithRawData in rowsWithRawData
-                                           let unit = new SKUShippedDataUnit(rowWithRawData)
-                                           group unit by unit.SKUNumber 
-                                           into unitGroup  
-                                           select unitGroup;
+                var skuShippedDataUnits = from rowWithRawData in rowsWithRawData
+                                            let unit = new SKUShippedDataUnit(rowWithRawData)
+                                            group unit by unit.SKUNumber 
+                                            into unitGroup  
+                                            select unitGroup;
                 
-                foreach (var group in skuRShippedDataUnits)
+                foreach (var group in skuShippedDataUnits)
                 {
                     var list = (((List<SKUShippedDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
                         throw new InvalidCastException("Невозможно привести List<SKUShippedDataUnit> к List<ParsingRowEntity>");
@@ -360,7 +362,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => SkuRansomsBalanceUnits.Count(),
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => SkuRemainingBalanceUnits.Count(),
-                SourceSKUReportFileKey.Shipped => SkuShippedBalanceUnits.Count(),
+                SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer => SkuShippedBalanceUnits.Count(),
                 SourceSKUReportFileKey.WriteOffShortages => SkuWriteOffBalanceUnits.Count(),
                 SourceSKUReportFileKey.Additional => workSheetName switch 
                 {
@@ -386,6 +388,7 @@ namespace TableAnalizer.Objects.Managers
             bool isRansoms = skuReportFileKey == SourceSKUReportFileKey.RansomsWB || skuReportFileKey == SourceSKUReportFileKey.RansomsOZ;
             bool isRemaining = skuReportFileKey == SourceSKUReportFileKey.RemainingWB || skuReportFileKey == SourceSKUReportFileKey.RemainingOZ;
             bool isShipped = skuReportFileKey == SourceSKUReportFileKey.Shipped;
+            bool isTransfer = skuReportFileKey == SourceSKUReportFileKey.Transfer;
             bool isWriteOff = skuReportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResorts = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
@@ -403,7 +406,7 @@ namespace TableAnalizer.Objects.Managers
                    parsingEntityCollection = SkuRansomsBalanceUnits,
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ =>
                     parsingEntityCollection = SkuRemainingBalanceUnits,
-                SourceSKUReportFileKey.Shipped =>
+                SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer =>
                     parsingEntityCollection = SkuShippedBalanceUnits,  
                 SourceSKUReportFileKey.WriteOffShortages =>
                     parsingEntityCollection = SkuWriteOffBalanceUnits, 
@@ -457,7 +460,7 @@ namespace TableAnalizer.Objects.Managers
                         SKURemainingBalance remainingBalance = new(skuNumber, skuBrandName, units.ToList());
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));
                     } 
-                    else if (isShipped)
+                    else if (isShipped || isTransfer)
                     {
                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUShippedDataUnit>().ToList()) ??
                             throw new InvalidCastException("Cannot cast collection to IList<SKUShippedDataUnit>.");
