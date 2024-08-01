@@ -96,7 +96,6 @@ namespace TableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public async Task<int> GetReportFiles(string dirPathString)
         {
-
             ManagerReachedEventArgs? args = default;
 
             var files = GetFilesFromDirectory(dirPathString, EXCEL_FILE_EXTENSION);
@@ -144,6 +143,9 @@ namespace TableAnalizer.Objects.Managers
                     if (!string.IsNullOrEmpty(clientOutputPath))
                     {
                         readinessMessage = string.Concat(readinessMessage, $"Директория для работы с клиентом: {clientOutputPath}");
+                    } else 
+                    {
+                        throw new Exception("Путь к диретории для работы с клиентом не может быть пустой строкой!");
                     }
                 }
                 catch (System.Exception ex)
@@ -191,7 +193,7 @@ namespace TableAnalizer.Objects.Managers
             if (DirInfoForClientTargetReports == null)
             {
                 await Task.Delay(100);
-                args = new("Clint's login is not defined, so it is impossible to create a directory.", 2000, false);
+                args = new("Clint's login is not defined, so it is impossible to create a directory.", 500, true);
                 OnManagerReached(args);
                 return null;
             }

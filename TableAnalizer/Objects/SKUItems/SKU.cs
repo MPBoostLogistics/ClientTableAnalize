@@ -48,26 +48,34 @@ namespace TableAnalizer.Objects.SKUItems
         }
 
         // Constructor for remainingBalance 
-        public SKU(Marketplace? marketplace, int skuNumber, SKURemainingBalance skuRemainingBalance)
+        public SKU(Marketplace? marketplace, int skuNumber, SKURemainingBalance skuRemainingBalance, bool isRemoveBrandFromName)
         {
             Marketplace = marketplace;
             SKUNumber = skuNumber;
 
             SKURemainingBalance = skuRemainingBalance;
 
-            var skuBrandAndName = skuRemainingBalance.SKUBrandAndName.Split('/');
+            string[]? skuBrandAndName = skuRemainingBalance.SKUBrandAndName.Split('/');
 
             switch(skuBrandAndName.Length) 
             {
                 case 1:
-                    SKUName = skuBrandAndName[0].Trim();
+                    SKUName = isRemoveBrandFromName ? skuBrandAndName[0].Trim() : skuRemainingBalance.SKUBrandAndName.Trim();
                     break;
                 case 2: case 3: case 4:
                     SKUBrand = skuBrandAndName[0].Trim();
-                    SKUName = skuBrandAndName[1].Trim(); 
+                    SKUName = isRemoveBrandFromName ? skuBrandAndName[1].Trim() : skuRemainingBalance.SKUBrandAndName.Trim(); 
                     break;
                 default:
                     break;
+            }
+
+            // Remove ", Общая характеристика товара"
+            string[]? SKUNameWithOtherInfо = SKUName.Split(',');
+            if(SKUNameWithOtherInfо.Last() == " Общая характеристика товара") 
+            {
+                SKUNameWithOtherInfо = SKUNameWithOtherInfо.Take(SKUNameWithOtherInfо.Length - 1).ToArray();
+                SKUName = string.Join("", SKUNameWithOtherInfо);
             }
         }
 
@@ -143,7 +151,6 @@ namespace TableAnalizer.Objects.SKUItems
             IsParallelSKU = isParallelSKU;
         }
 
-
         public override string ToString() =>
             $"{SKUNumber} ({Marketplace}): '{SKUBrand} / {SKUName}', {AveragePrice}. Date: {MaxRansomsDate}\n{SKURansomsBalance}";
 
@@ -162,7 +169,6 @@ namespace TableAnalizer.Objects.SKUItems
                 skuCompensationBalance.Update(skuCompensationBalance.Count, skuCompensationBalance.Sum, skuCompensationBalance.Comments);
             }
         }
-
 
         #endregion
     }

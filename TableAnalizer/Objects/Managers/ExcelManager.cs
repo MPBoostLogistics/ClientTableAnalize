@@ -33,6 +33,7 @@ namespace TableAnalizer.Objects.Managers
         private const int HEADER_TABLE_ROW_HEIGHT = 120;
         private const int HEADER_FONT_SIZE = 14;
         private const string LOGISTIC_FLAG = "Да";
+
         #endregion
 
         #region Properties
@@ -130,8 +131,6 @@ namespace TableAnalizer.Objects.Managers
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true)
         };
         
-
-
         public static List<SourceColumn> WriteOffShortagesSourceCells { get; } = new() 
         {
             new(5, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
@@ -397,6 +396,10 @@ namespace TableAnalizer.Objects.Managers
 
         public void MakeReports(List<SKUForTargetReports> skuForTargetReports) 
         {
+            if(string.IsNullOrEmpty(FileManager.OutputClientReportFilePath)) 
+                throw new Exception("Output client report file path cannot be empty!");
+
+            var fileInfo = new FileInfo(FileManager.OutputClientReportFilePath) ?? throw new Exception("Fileinfo cannot be empty");
             var outputPackage = new ExcelPackage(new FileInfo(FileManager.OutputClientReportFilePath)) ?? 
                 throw new Exception("ExcelPackage for output reports cannot be created");
             

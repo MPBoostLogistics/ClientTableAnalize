@@ -13,6 +13,10 @@ namespace TableAnalizer.Objects.Managers
 {
     public class SKUManager : BaseManager
     {
+        #region Variables and constants 
+        private const bool IS_REMOVE_BRAND_FROM_NAME = false;
+        #endregion
+
         #region Properties 
         public int DeadlineDays { get; private set; }
         public IRepository<int, SKU> SKUs { get; }
@@ -458,7 +462,7 @@ namespace TableAnalizer.Objects.Managers
                         var skuBrandName = units.First().SKUBrandAndName;
 
                         SKURemainingBalance remainingBalance = new(skuNumber, skuBrandName, units.ToList());
-                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));
+                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance, IS_REMOVE_BRAND_FROM_NAME));
                     } 
                     else if (isShipped || isTransfer)
                     {
@@ -466,7 +470,7 @@ namespace TableAnalizer.Objects.Managers
                             throw new InvalidCastException("Cannot cast collection to IList<SKUShippedDataUnit>.");
                         
                         SKURemainingBalance remainingBalance = new(skuNumber, units.ToList());
-                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance));
+                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance, IS_REMOVE_BRAND_FROM_NAME));
                     } 
                     else if(isWriteOff) 
                     {
