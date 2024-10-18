@@ -371,8 +371,20 @@ namespace TableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public static bool GetExcelPackageByKey(SourceSKUReportFileKey key, out ExcelPackage? package)
         {
-            ExcelPackages.TryGetValue(key, out package);
-            return package is not null;
+            package = null;
+
+            try
+            {
+                ExcelPackages.TryGetValue(key, out package);
+                return package is not null;
+                
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+
         }
 
         /// <summary>
@@ -643,10 +655,13 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="key">Key for searching ExcelPackage in internal dictionary.</param>
         /// <param name="worksheet">Found Excel worksheet or null.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public static void GetExcelWorksheetByName(string name, SourceSKUReportFileKey key, out ExcelWorksheet? worksheet) =>
-             worksheet = (GetExcelPackageByKey(key, out ExcelPackage? package) && package is not null) ?
+        public static void GetExcelWorksheetByName(string name, SourceSKUReportFileKey key, out ExcelWorksheet? worksheet)  
+        {
+            Console.WriteLine(key);
+            worksheet = (GetExcelPackageByKey(key, out ExcelPackage? package) && package is not null) ?
                 package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == name) :
                 null;
+        }
 
         /// <summary>
         /// Returns index of row from an Excel workbook by string value (key).

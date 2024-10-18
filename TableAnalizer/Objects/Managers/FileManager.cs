@@ -55,6 +55,9 @@ namespace TableAnalizer.Objects.Managers
             try
             {
                 var fileCount = GetReportFiles(reportsPath);
+
+                Console.WriteLine(fileCount.Result);
+
                 var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys);
 
                 if (!success || lostKeys.Count > 0)
@@ -108,6 +111,9 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var fileInfo in files!)
                 {
+                    Console.WriteLine(fileInfo.Name);
+
+
                     try
                     {
                         var sorceReportFile = new SourceReportFileForSKU(fileInfo);
@@ -302,7 +308,15 @@ namespace TableAnalizer.Objects.Managers
 
             if (ext == null)
             {
-                return dirInfo.GetFiles();
+                var files = dirInfo.GetFiles();
+
+                foreach (var file in files)
+                {
+                    Console.WriteLine(file.Name);
+                }
+
+
+                return files;
             }
             else
             {

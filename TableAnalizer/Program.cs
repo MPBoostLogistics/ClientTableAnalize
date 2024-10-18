@@ -14,7 +14,6 @@ using System.Reflection;
 using OfficeOpenXml;
 using TableAnalizer.Enums;
 using TableAnalizer.Objects.Managers;
-using static Tensorflow.Binding;
 
 internal class Program
 {
