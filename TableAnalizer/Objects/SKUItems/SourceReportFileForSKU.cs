@@ -43,8 +43,6 @@ namespace TableAnalizer.Objects.SKUItems
                 // Общее списание 230124.xlsx                    3
                 // Башорин перемещение 190724.xlsx               3
 
-                
-
                 // Отчет по клиенту +79164372997 (WB).xlsx       5
                 // Отчет по клиенту +79164372997 (Ozon).xlsx     5
                 

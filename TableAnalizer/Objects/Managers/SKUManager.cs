@@ -84,7 +84,8 @@ namespace TableAnalizer.Objects.Managers
                 List<Task<double>> processingTasksList = new();
                 for (int i = 0; i < workSheetNames.Count; i++)
                 {
-                    processingTasksList.Add(ProcessingData(reportFileKey, workSheetNames[i]));
+                    var processingData = ProcessingData(reportFileKey, workSheetNames[i]);
+                    processingTasksList.Add(processingData);
                 }
 
                 if(processingTasksList.Any()) 

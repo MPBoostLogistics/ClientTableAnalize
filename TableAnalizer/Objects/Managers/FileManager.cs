@@ -113,7 +113,6 @@ namespace TableAnalizer.Objects.Managers
                 {
                     Console.WriteLine(fileInfo.Name);
 
-
                     try
                     {
                         var sorceReportFile = new SourceReportFileForSKU(fileInfo);
@@ -314,7 +313,6 @@ namespace TableAnalizer.Objects.Managers
                 {
                     Console.WriteLine(file.Name);
                 }
-
 
                 return files;
             }
