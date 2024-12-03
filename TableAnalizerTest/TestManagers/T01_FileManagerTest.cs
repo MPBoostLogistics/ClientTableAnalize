@@ -94,7 +94,7 @@ namespace TableAnalizerTest.TestManagers
         public void MakeSourceReportFileForSKUs_Test()
         {
             // arrange
-            _fileManager.ReportsPaths.Clear();
+            _fileManager.ReportsPathsSingleReport.Clear();
             IEnumerable<FileInfo>? fileInfos = FileManager.GetFilesFromDirectory(TestData.TestFilesPath, BaseManager.EXCEL_FILE_EXTENSION);
 
             Assert.That(fileInfos, Is.Not.Null);
@@ -114,7 +114,7 @@ namespace TableAnalizerTest.TestManagers
                         Assert.That(key.HasValue, Is.True);
                     });
 
-                    _fileManager.ReportsPaths[key.Value] = sorceReportFile;
+                    _fileManager.ReportsPathsSingleReport[key.Value] = sorceReportFile;
 
                 }
                 catch (Exception ex)
@@ -125,7 +125,7 @@ namespace TableAnalizerTest.TestManagers
             }
 
             // assert
-            Assert.That(_fileManager.ReportsPaths, Has.Count.EqualTo(TEST_FILEINFOS_COUNT));
+            Assert.That(_fileManager.ReportsPathsSingleReport, Has.Count.EqualTo(TEST_FILEINFOS_COUNT));
             
 
 

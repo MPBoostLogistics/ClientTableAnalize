@@ -34,7 +34,8 @@ namespace TableAnalizer.Enums
         WriteOffShortages,  // списание недростач общее 
         Additional,          // недостачи, пересорты и пустышки
         Shipped,             // расходы товаром 
-        Transfer             // перемещение (на фулфилмент) 
+        Transfer,            // перемещение (на фулфилмент) 
+        Client               // клиентский отчет
     }
 
     public enum SourceSKUReportKey

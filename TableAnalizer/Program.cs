@@ -88,16 +88,15 @@ internal class Program
         Task deadLineDaysTask = Task.Run(() => GetDeadlineDays());
         deadLineDaysTask.Wait();
 
-        await Task.Delay(500);
         Console.WriteLine();
 
         // Set source reports path
         string reportsPathTitleMessage = "Укажите путь к директории c исходными отчетами клиента и нажмите 'Enter':\n ";
-        string reportsPathSuccessMessage = "Директория c отчетами клиента:\n";
+        string reportsPathSuccessMessage = "Директория исходными отчетами клиента:\n";
         string reportsPath = await GetUserStringInfo(reportsPathTitleMessage, reportsPathSuccessMessage, failureMessage);
 
         // Availability necessary reports
-        Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(reportsPath);
+        Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(reportsPath, false);
         await Task.Run(async () => await availabilityNecessaryTask);
         availabilityNecessaryTask.Wait();
 
@@ -226,10 +225,17 @@ internal class Program
         Task deadLineDaysTask = Task.Run(() => GetDeadlineDays());
         deadLineDaysTask.Wait();
 
+        Console.WriteLine();
+
         // Set source reports path
         string reportsPathTitleMessage = "Укажите путь к директории c исходными отчетами нескольких клиентов и нажмите 'Enter':\n ";
-        string reportsPathSuccessMessage = "Директория c отчетами клиента:\n";
-        string reportsPath = await GetUserStringInfo(reportsPathTitleMessage, reportsPathSuccessMessage, failureMessage);
+        string reportsPath = await GetUserStringInfo(reportsPathTitleMessage, string.Empty, failureMessage);
+
+        // Availability necessary reports
+        Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(reportsPath, true);
+        await Task.Run(async () => await availabilityNecessaryTask);
+        availabilityNecessaryTask.Wait();
+
 
         await Exit();
     }
@@ -298,7 +304,7 @@ internal class Program
     /// <param name="failureMessage">Message to user in case of failure.</param>
     /// <returns>Received data as a string.</returns>
     /// <remarks><i>New version ok</i></remarks>
-    private static async Task<string> GetUserStringInfo(string titleMessage, string successMessage, string failureMessage)
+    private static async Task<string> GetUserStringInfo(string titleMessage, string? successMessage, string failureMessage)
     {
         string? resultString = string.Empty;
         while (resultString == string.Empty)
@@ -309,7 +315,11 @@ internal class Program
 
             if (!string.Equals(string.Empty, resultString))
             {
-                await Report($"{successMessage}: {resultString}");
+                if(!string.IsNullOrEmpty(successMessage)) 
+                {
+                    await Report($"{successMessage}: {resultString}");
+                }
+
                 break;
             }
             else

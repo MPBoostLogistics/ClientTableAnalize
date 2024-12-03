@@ -6,6 +6,7 @@ namespace TableAnalizer.Objects.SKUItems
     {
         #region Constants and variables
         public const string SPACE_SEPARATOR = "\u0020";
+        public const string LOW_LINE_SEPARATOR = "_";
         const string comaSeparator = "\u002E";
         const string ransomsKey = "отчет";
         const string writeOffShortagesKey = "списание";
@@ -13,6 +14,7 @@ namespace TableAnalizer.Objects.SKUItems
         const string transferKey = "перемещение";
         const string receivedRemainingKey = "приходы";
         const string additionalKey = "дополнительный";
+        const string clientReportlKey = "clientreport";
         const string wbKey = "(wb)";
         const string ozKey = "(ozon)";
         #endregion 
@@ -24,7 +26,7 @@ namespace TableAnalizer.Objects.SKUItems
         #endregion
 
         #region Constructors
-        public SourceReportFileForSKU(FileInfo fileInfo)
+        public SourceReportFileForSKU(FileInfo fileInfo, bool isMulty = false)
         {
             FileInfo = fileInfo;
 
@@ -35,13 +37,14 @@ namespace TableAnalizer.Objects.SKUItems
                 fileName = fileName.TrimStart('~','$');
             }
 
-            if (SplitStringIntoSubstrings(fileName, new string[] { SPACE_SEPARATOR }, out string[]? substrings) &&
+            if (SplitStringIntoSubstrings(fileName, new string[] { SPACE_SEPARATOR, LOW_LINE_SEPARATOR }, out string[]? substrings) &&
                 substrings is not null)
             {
                 // Юсупов расходы 22052024.xlsx                  3
                 // Юсупов дополнительный 220224.xlsx             3
                 // Общее списание 230124.xlsx                    3
                 // Башорин перемещение 190724.xlsx               3
+                // ClientReport 79687978888 03-12-2024           3
 
                 // Отчет по клиенту +79164372997 (WB).xlsx       5
                 // Отчет по клиенту +79164372997 (Ozon).xlsx     5
@@ -50,14 +53,26 @@ namespace TableAnalizer.Objects.SKUItems
                 // Юсупов приходы и остатки 220524 (WB).xlsx     6
                 // Юсупов приходы и остатки 220524 (Ozon).xlsx   6
 
-                var keyIndex = substrings.Length switch
+                int keyIndex;
+                switch (substrings.Length)
                 {
-                    3 or 6 => 1,
-                    _ => 0,
-                };
+                    case 3: case 6:
+                        switch(isMulty) 
+                        {
+                            case true:
+                                 keyIndex = 0;
+                                 break;
+                            case false:
+                                 keyIndex = 1;
+                                 break;
+                        }
+                        break;
+                    default:
+                        keyIndex = 0;
+                        break;
+                }
 
-                string keyString  = substrings[keyIndex].TrimStart().TrimEnd().ToLower();
-
+                string keyString  = substrings[keyIndex].Trim().ToLower();
                 switch (keyString)
                 {
                     // дополнительный
@@ -97,7 +112,7 @@ namespace TableAnalizer.Objects.SKUItems
                         }
                         break;
 
-                    // отчет 
+                    //  выкупы
                     case ransomsKey:
                         if (SplitStringIntoSubstrings(substrings.Last(), new string [] {comaSeparator}, out string[]? mpStrings) &&
                             mpStrings != null)
@@ -126,6 +141,15 @@ namespace TableAnalizer.Objects.SKUItems
                     case transferKey:
                         ReportKey = SourceSKUReportFileKey.Transfer;
                         break; 
+                    
+                    // клиентский отчет
+                    case clientReportlKey:
+                        ReportKey = SourceSKUReportFileKey.Client;
+
+                        if (Login is null && substrings[1] != null) 
+                            SaveСlientLogin(substrings[1]);
+
+                        break;
 
                     default:
                         break;
