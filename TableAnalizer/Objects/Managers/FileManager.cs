@@ -111,8 +111,6 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var fileInfo in files!)
                 {
-                    Console.WriteLine(fileInfo.Name);
-
                     try
                     {
                         var sorceReportFile = new SourceReportFileForSKU(fileInfo);

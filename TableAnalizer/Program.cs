@@ -27,20 +27,23 @@ internal class Program
     private static readonly FileManager fileManager = new();
     private static readonly ExcelManager excelManager = new();
     private static readonly SKUManager skuManager = new(excelManager);
-
     #endregion
 
     #region Functionality
     private static async Task Main(string[] args)
     {
-        //await Task.Delay(100);
-
-        // var hello = tf.constant("Hello, TensorFlow!");
-        // Console.WriteLine(hello);
-        // Console.ReadKey();
-
         await AnalyzeСlientReports();
     }
+
+    private static async Task GetDeadlineDays() 
+    {
+        // Set deadline days
+        string deadLineDaysTitleMessage = "Введите срок дедлайна для клиента и нажмите 'Enter'\n(положительное целое число, отличное от 0): ";
+        string deadLineDaysSuccessMessage = "Срок дедлайна для текущего клиента, дней";
+        int deadLineDays = await GetUserIntInfo(deadLineDaysTitleMessage, deadLineDaysSuccessMessage, failureMessage);
+        skuManager.SetDeadlineDays(deadLineDays);
+    }
+
 
     private static async Task AnalyzeСlientReports()
     {
@@ -50,19 +53,40 @@ internal class Program
         excelManager.ManagerReached += Report;
         skuManager.ManagerReached += Report;
 
-        var helloString = $"" +
-            $"--------------------------------------------\n" +
-            $"Отчета по взаиморасчетам с клиентом логистики\n" +
-            $"Версия: {AppVersion}\n" +
-            $"---------------------------------------------";
+        var helloString = $"--------------------------------------------\n" +
+                          $"Отчет по взаиморасчетам с клиентами логистики\n" +
+                          $"Версия: {AppVersion}\n" +
+                          $"---------------------------------------------\n" +
+                          "Выберите вариант отчета:\n" +
+                          "1: Отчет по взаиморасчетам с клиентом логистики\n" +
+                          "2: Сводный отчет по нескольким клиентам\n" +
+                          "Другая клавиша: Выход из программы \n" +
+                          $"---------------------------------------------";
 
-        Console.WriteLine(helloString);
+        ConsoleKey? selectKey = null;
 
+        do
+        {
+            Console.Clear();
+            Console.WriteLine(helloString);
+            selectKey = Console.ReadKey().Key;
+        } while (selectKey == null);
+
+        Task choiseTask = selectKey switch
+        {
+            ConsoleKey.D1 => Task.Run(() => AnalyzeSingleСlientReports()),
+            ConsoleKey.D2 => Task.Run(() => AnalyzeMultiСlientReports()),
+            _ => Task.Run(() => Report(goodByMessage, 200, true)),
+        };
+
+        choiseTask.Wait();
+    }
+
+    private static async Task AnalyzeSingleСlientReports() 
+    {
         // Set deadline days
-        string deadLineDaysTitleMessage = "Введите срок дедлайна для клиента и нажмите 'Enter'\n(положительное целое число, отличное от 0): ";
-        string deadLineDaysSuccessMessage = "Срок дедлайна для текущего клиента, дней";
-        int deadLineDays = await GetUserIntInfo(deadLineDaysTitleMessage, deadLineDaysSuccessMessage, failureMessage);
-        skuManager.SetDeadlineDays(deadLineDays);
+        Task deadLineDaysTask = Task.Run(() => GetDeadlineDays());
+        deadLineDaysTask.Wait();
 
         await Task.Delay(500);
         Console.WriteLine();
@@ -196,6 +220,22 @@ internal class Program
         await Exit();
     }
 
+    private static async Task AnalyzeMultiСlientReports() 
+    {
+        // Set deadline days
+        Task deadLineDaysTask = Task.Run(() => GetDeadlineDays());
+        deadLineDaysTask.Wait();
+
+        // Set source reports path
+        string reportsPathTitleMessage = "Укажите путь к директории c исходными отчетами нескольких клиентов и нажмите 'Enter':\n ";
+        string reportsPathSuccessMessage = "Директория c отчетами клиента:\n";
+        string reportsPath = await GetUserStringInfo(reportsPathTitleMessage, reportsPathSuccessMessage, failureMessage);
+
+        await Exit();
+    }
+
+
+
     /// <summary>
     /// Receiving and processing data from seller reports.
     /// </summary>
@@ -288,6 +328,7 @@ internal class Program
         int resultValue = default;
         while (resultValue == default)
         {
+            Console.Clear();
             Console.WriteLine(titleMessage);
 
             if (int.TryParse(Console.ReadLine(), out resultValue))
@@ -325,7 +366,6 @@ internal class Program
     {
         Console.WriteLine();
         Console.WriteLine(message);
-        Console.WriteLine();
 
         await Task.Delay(delay);
 
