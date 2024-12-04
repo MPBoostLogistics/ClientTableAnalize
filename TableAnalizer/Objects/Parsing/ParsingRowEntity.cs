@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using TableAnalizer.Enums;
 using TableAnalizer.Interfaces;
@@ -100,6 +101,7 @@ namespace TableAnalizer.Objects.Parsing
                             break;
 
                         //22.03.2024 14:00
+                        //06.11.2024
                         case ParsingTypeCode.DataOnlyTypeCode:
                             property.SetValue(this, (DateOnly)value);
                             break;
@@ -162,7 +164,14 @@ namespace TableAnalizer.Objects.Parsing
                     }
                     else
                     {
-                        value = DateOnly.TryParseExact(valueString, IParsingRowEntity.DateOnlyFormats.ToArray(), out DateOnly dateOnlyValue) ? dateOnlyValue : null;
+                        if(int.TryParse(valueString, out int intValue)) 
+                        {
+                            value = DateOnly.FromDateTime(DateTime.FromOADate(intValue));  
+                        } 
+                        else 
+                        {
+                            value = DateOnly.TryParseExact(valueString, IParsingRowEntity.DateOnlyFormats.ToArray(), out DateOnly dateOnlyValue) ? dateOnlyValue : null;
+                        }
                     }
                     break;
 

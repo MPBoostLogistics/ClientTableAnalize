@@ -376,10 +376,13 @@ namespace TableAnalizer.Objects.Managers
                                 into unitGroup  
                                 select unitGroup;
 
-
                 foreach (var skuUnit in skuUnits)
                 {
-                    Console.WriteLine(skuUnit.Key + "- " + skuUnit.Count());
+                    foreach (var item in skuUnit)
+                    {
+                        SKU sku = new(item, DeadlineDays);
+                        Console.WriteLine(sku);
+                    }
                 }
             }
 

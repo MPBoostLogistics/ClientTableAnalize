@@ -151,6 +151,27 @@ namespace TableAnalizer.Objects.SKUItems
             IsParallelSKU = isParallelSKU;
         }
 
+        // Constructor for analize client report
+        public SKU(SKUClientReportDataUnit dataUnit, int deadlineDays) 
+        {
+            Marketplace = dataUnit.SKUMp;
+            SKUNumber = dataUnit.SKUNumber;
+            SKUBrand = dataUnit.SKUBrand ?? string.Empty;
+            SKUName = dataUnit.SKUName ?? string.Empty;
+
+            SKURansomsBalance = new SKURansomsBalance (dataUnit.SKURansomsOnWay, dataUnit.SKURansomsCanceled, dataUnit.SKURansomsDelivered, dataUnit.SKURansomsWithDrawn);
+            SKURemainingBalance = new SKURemainingBalance(dataUnit.SKUNumber, SKUName, dataUnit.SKUReceipt, dataUnit.SKUShipped, dataUnit.SKURemaining);
+            SKUWriteOffBalance = null;
+            SKUCompensationBalance = null;
+            SKUDummiesBalance = null;
+            SKUResortBalance = null;
+
+            AveragePrice = dataUnit.SKUPrice ?? 0.00;
+            MaxRansomsDate = dataUnit.SKURansomDate;
+
+            DeadLineDays = deadlineDays;
+        }
+
         public override string ToString() =>
             $"{SKUNumber} ({Marketplace}): '{SKUBrand} / {SKUName}', {AveragePrice}. Date: {MaxRansomsDate}\n{SKURansomsBalance}";
 
