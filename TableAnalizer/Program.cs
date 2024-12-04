@@ -14,6 +14,7 @@ using System.Reflection;
 using OfficeOpenXml;
 using TableAnalizer.Enums;
 using TableAnalizer.Objects.Managers;
+using TableAnalizer.Objects.SKUItems;
 
 internal class Program
 {
@@ -44,7 +45,6 @@ internal class Program
         skuManager.SetDeadlineDays(deadLineDays);
     }
 
-
     private static async Task AnalyzeСlientReports()
     {
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -63,14 +63,15 @@ internal class Program
                           "Другая клавиша: Выход из программы \n" +
                           $"---------------------------------------------";
 
-        ConsoleKey? selectKey = null;
+        //ConsoleKey? selectKey = null;
+        ConsoleKey selectKey = ConsoleKey.D2;
 
-        do
-        {
-            Console.Clear();
-            Console.WriteLine(helloString);
-            selectKey = Console.ReadKey().Key;
-        } while (selectKey == null);
+        // do
+        // {
+        //     Console.Clear();
+        //     Console.WriteLine(helloString);
+        //     selectKey = Console.ReadKey().Key;
+        // } while (selectKey == null);
 
         Task choiseTask = selectKey switch
         {
@@ -236,10 +237,55 @@ internal class Program
         await Task.Run(async () => await availabilityNecessaryTask);
         availabilityNecessaryTask.Wait();
 
+        // Create and run analize task
+        List<Task> summaryTasksList = new();
+        foreach(var (key, value) in fileManager.ReportsPathsMultyReport) 
+        {
+            summaryTasksList.Add(ReceivingAndProcessingData(value));
+        }
+
+        Task[] summaryTasksArray = summaryTasksList.ToArray();
+        for (int i = 0; i < summaryTasksArray.Length; i++)
+        {
+            var currentTask = summaryTasksArray[i];
+            if (currentTask is not null)
+            {
+                await Task.Run(async () => await currentTask);
+            }
+        }
+
+        Task.WaitAll(summaryTasksArray);
 
         await Exit();
     }
 
+    private static async Task<double> ReceivingAndProcessingData(SourceReportFileForSKU reportFile) 
+    {
+        if(reportFile.ReportKey is null)
+            return 0.00;
+
+        // Make ExcelPackage
+        var package = new ExcelPackage(reportFile.FileInfo);
+ 
+        // Receiving and processing data
+        Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData((SourceSKUReportFileKey)reportFile.ReportKey, package);
+        if(receivingAndProcessingDataTask is not null) 
+        {
+            await Task.Run(async () => await receivingAndProcessingDataTask);
+            
+        }
+        receivingAndProcessingDataTask?.Wait();
+        package.Dispose();
+
+        // ???? 
+
+        
+        
+
+
+        // Dummy 
+        return 0.00;
+    }
 
 
     /// <summary>
@@ -254,19 +300,19 @@ internal class Program
         await Task.Run(async () => await getReportFileTask);
         getReportFileTask.Wait();
 
-        var reportFile = getReportFileTask.Result;
+        SourceReportFileForSKU? reportFile = getReportFileTask.Result;
 
         if (reportFile is not null)
         {
             // Make ExcelPackage
             ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
 
-            // ReceivingAndProcessing
-            Task<double>? processingRansomsDataTask = skuManager.ReceivingAndProcessingData(reportFileKey);
-            if(processingRansomsDataTask is not null) 
+            // Receiving and processing data
+            Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData(reportFileKey);
+            if(receivingAndProcessingDataTask is not null) 
             {
-                await Task.Run(async () => await processingRansomsDataTask);
-                processingRansomsDataTask.Wait();
+                await Task.Run(async () => await receivingAndProcessingDataTask);
+                receivingAndProcessingDataTask.Wait();
             }
   
             // Dispose package
@@ -276,7 +322,7 @@ internal class Program
             }
 
             // Return time
-            return processingRansomsDataTask?.Result ?? 0.00;
+            return receivingAndProcessingDataTask?.Result ?? 0.00;
         }
         else
         {

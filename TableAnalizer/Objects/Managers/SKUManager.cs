@@ -73,7 +73,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="reportFileKey">Key of source file with report.</param>
         /// <returns>Function execution time in seconds.</returns>
         /// <remarks><i>New version</i></remarks>
-        public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey)
+        public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, ExcelPackage? excelPackage = null)
         {
             double time = 0.00;
 
@@ -84,7 +84,7 @@ namespace TableAnalizer.Objects.Managers
                 List<Task<double>> processingTasksList = new();
                 for (int i = 0; i < workSheetNames.Count; i++)
                 {
-                    var processingData = ProcessingData(reportFileKey, workSheetNames[i]);
+                    var processingData = ProcessingData(reportFileKey, workSheetNames[i], excelPackage);
                     processingTasksList.Add(processingData);
                 }
 
@@ -108,13 +108,13 @@ namespace TableAnalizer.Objects.Managers
             return time;
         }
 
-        private async Task<double> ProcessingData(SourceSKUReportFileKey reportFileKey, string workSheetName)
+        private async Task<double> ProcessingData(SourceSKUReportFileKey reportFileKey, string workSheetName, ExcelPackage? excelPackage = null)
         {
             // Start
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             // Get source excel worksheet by name
-            ExcelManager.GetExcelWorksheetByName(workSheetName, reportFileKey, out ExcelWorksheet? currentWorksheet);
+            ExcelManager.GetExcelWorksheetByName(workSheetName, reportFileKey, out ExcelWorksheet? currentWorksheet, excelPackage);
             if (currentWorksheet is null)
             {
                 await Task.Delay(100);
@@ -136,6 +136,11 @@ namespace TableAnalizer.Objects.Managers
                     from sourceReportRowsRange in rangeSourceReportRows
                     from item in sourceReportRowsRange.DataOnReadRowsCollection
                     select item;
+
+                foreach (var rawRowsItem in rawRowsItems)
+                {
+                    Console.WriteLine(rawRowsItem + "\n");
+                }
 
                 // Processing:
                 // 1. Save balances for sku's
@@ -235,6 +240,7 @@ namespace TableAnalizer.Objects.Managers
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isDummies = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME;
             bool isParellel = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
+            bool isClient = reportFileKey == SourceSKUReportFileKey.Client && workSheetName == ExcelManager.OUTPUT_REPORT_WORKSHEET01_NAME;
 
             if (isRansoms)
             {
@@ -360,6 +366,20 @@ namespace TableAnalizer.Objects.Managers
                     {
                         SKUParallelUnits.Add(unit);
                     }
+                }
+            }
+            else if(isClient) 
+            {
+                var skuUnits = from rowWithRawData in rowsWithRawData
+                                let unit = new SKUClientReportDataUnit(rowWithRawData)
+                                group unit by unit.SKUNumber 
+                                into unitGroup  
+                                select unitGroup;
+
+
+                foreach (var skuUnit in skuUnits)
+                {
+                    Console.WriteLine(skuUnit.Key + "- " + skuUnit.Count());
                 }
             }
 

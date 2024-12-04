@@ -27,6 +27,7 @@ namespace TableAnalizer.Objects.Managers
         public const string PARALLEL_SKUS_WORKSHEET_NAME = "Параллельные";
         public const string RANSOMS_WORKSHEET_NAME = "Выкупы";
         public const string REMAINING_OR_SHIPPED_WORKSHEET_NAME = "TDSheet";
+
         private const int DEFAULT_TABLE_ROW_HEIGHT = 18;
         private const int DEFAULT_TABLE_COL_WIDTH = 18;
         private const int RECORD_INDEX = 1;
@@ -37,6 +38,7 @@ namespace TableAnalizer.Objects.Managers
         #endregion
 
         #region Properties
+        private static Dictionary<string, ExcelPackage> MultiReportExcelPackages { get; } = new();
         private static Dictionary<SourceSKUReportFileKey, ExcelPackage> ExcelPackages { get; } = new();
         private static Type TypeString { get; } = typeof(string);
         private static Type TypeInt { get; } = typeof(int);
@@ -136,6 +138,24 @@ namespace TableAnalizer.Objects.Managers
             new(5, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(39, "SKUWriteOffCount", ParsingTypeCode.IntTypeCode, true)
         };     
+
+        public static List<SourceColumn> ClientReportSourceCells { get; } = new()  
+        {
+            new(1, "SKUMp", ParsingTypeCode.Marketplace, true),
+            new(2, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
+            new(3, "SKUBrand", ParsingTypeCode.StringTypeCode, false),
+            new(4, "SKUName", ParsingTypeCode.StringTypeCode, false),
+            new(5, "SKUPrice", ParsingTypeCode.DoubleTypeCode, true),
+            new(6, "SKURansomDate", ParsingTypeCode.DataOnlyTypeCode, true),
+            new(8, "SKURansomsTotal", ParsingTypeCode.IntTypeCode, true),
+            new(9, "SKURansomsCanceled", ParsingTypeCode.IntTypeCode, true),
+            new(10, "SKURansomsOnWay", ParsingTypeCode.IntTypeCode, true),
+            new(11, "SKURansomsDelivered", ParsingTypeCode.IntTypeCode, true),
+            new(12, "SKURansomsWithDrawn", ParsingTypeCode.IntTypeCode, true),
+            new(14, "SKUReceipt", ParsingTypeCode.IntTypeCode, true),
+            new(16, "SKUShipped", ParsingTypeCode.IntTypeCode, true),
+            new(20, "SKURemaining", ParsingTypeCode.IntTypeCode, true)
+        };
 
         public TargetCell[] cellsReportingMain = new TargetCell[]
         {
@@ -401,6 +421,7 @@ namespace TableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => new(1) { RANSOMS_WORKSHEET_NAME },
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer or SourceSKUReportFileKey.WriteOffShortages => new(1) { REMAINING_OR_SHIPPED_WORKSHEET_NAME },
                 SourceSKUReportFileKey.Additional => new(3) { COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, DUMMIES_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME },
+                SourceSKUReportFileKey.Client => new (1) {OUTPUT_REPORT_WORKSHEET01_NAME},
                 _ => null,
             };
             return workSheetNames is not null && workSheetNames.Any();
@@ -655,12 +676,18 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="key">Key for searching ExcelPackage in internal dictionary.</param>
         /// <param name="worksheet">Found Excel worksheet or null.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public static void GetExcelWorksheetByName(string name, SourceSKUReportFileKey key, out ExcelWorksheet? worksheet)  
+        public static void GetExcelWorksheetByName(string name, SourceSKUReportFileKey key, out ExcelWorksheet? worksheet, ExcelPackage? excelPackage = null)  
         {
-            Console.WriteLine(key);
-            worksheet = (GetExcelPackageByKey(key, out ExcelPackage? package) && package is not null) ?
-                package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == name) :
-                null;
+            if(excelPackage is null) 
+            {
+                worksheet = (GetExcelPackageByKey(key, out ExcelPackage? package) && package is not null) ?
+                    package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == name) :
+                    null;
+            } 
+            else 
+            {
+                worksheet = excelPackage.Workbook.Worksheets.FirstOrDefault(ws => ws.Name.Trim().ToLower() == name.Trim().ToLower());
+            }
         }
 
         /// <summary>
@@ -863,6 +890,7 @@ namespace TableAnalizer.Objects.Managers
                     PARALLEL_SKUS_WORKSHEET_NAME => new (1) { new (ParellelSkusSourceCells)},
                     _ => new(),
                 },
+                SourceSKUReportFileKey.Client => new (1) { new (ClientReportSourceCells)},
                 _ => new(),
             };
 
