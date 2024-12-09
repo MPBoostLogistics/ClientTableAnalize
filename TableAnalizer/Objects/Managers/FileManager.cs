@@ -25,6 +25,9 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         public Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> ReportsPathsSingleReport { get; private set; } = new();
         public Dictionary<string, SourceReportFileForSKU> ReportsPathsMultyReport { get; private set; } = new();
+        
+        public SourceReportFileForSKU? AdditionalPathsMultyReport {get; private set;}
+        
         public static DirectoryInfo? DirInfoForClientTargetReports { get; private set; }
         public static string? InputReportsFilePath { get; set; } = string.Empty;
         public static string OutputClientReportFilePath { get; private set; } = string.Empty;
@@ -133,9 +136,17 @@ namespace TableAnalizer.Objects.Managers
                             switch (isMulty)
                             {
                                 case true:
-                                    // Save filePath by key 
-                                    string loginKey = sorceReportFile.Login!;
-                                    ReportsPathsMultyReport[loginKey] = sorceReportFile;
+                                    // Additional for multy report
+                                    if(sorceReportFile.ReportKey == SourceSKUReportFileKey.Additional) 
+                                    {
+                                        AdditionalPathsMultyReport = sorceReportFile;
+                                    } 
+                                    else 
+                                    {
+                                        // Save filePath by key 
+                                        string loginKey = sorceReportFile.Login!;
+                                        ReportsPathsMultyReport[loginKey] = sorceReportFile;
+                                    }
                                     break;
                                 case false:
                                     // Save filePath by key 
@@ -157,6 +168,7 @@ namespace TableAnalizer.Objects.Managers
                 }
 
                 string readinessMessage = string.Empty;
+
                 if (isMulty)
                 {
                     var logins = string.Join(",", ReportsPathsMultyReport.Keys);
@@ -266,6 +278,9 @@ namespace TableAnalizer.Objects.Managers
                     select item;
 
                 success = matchingReport.Count() > 1;
+
+                if(ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.Additional))
+                    existingKeys.Add(SourceSKUReportFileKey.Additional);
             }
             else
             {
@@ -379,8 +394,6 @@ namespace TableAnalizer.Objects.Managers
             return !File.Exists(path);
         }
 
-        #endregion
-
         /// ???        
         static readonly string persDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
         /// ???
@@ -451,5 +464,6 @@ namespace TableAnalizer.Objects.Managers
 
             return result;
         }
+         #endregion
     }
 }

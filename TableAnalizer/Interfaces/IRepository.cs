@@ -7,8 +7,9 @@ namespace TableAnalizer.Interfaces
         /// </summary>
         /// <param name="id">Search key.</param>
         /// <param name="item">Value to update or add.</param>
+        /// <param name="isMulty">This is a summary report.</param>
         /// <returns>Boolean flag for performing operation.</returns>
-        bool RetrieveAndUpdateOrAddValue(K id, V item);
+        bool RetrieveAndUpdateOrAddValue(K id, V item, bool isMulty = false);
 
         /// <summary>
         /// Returns elements of a collection as an IList.

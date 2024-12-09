@@ -4,7 +4,7 @@ namespace TableAnalizer.Objects.Repositories
 {
     public class ParsingRowEntityRepo : BaseRepo<int, List<ParsingRowEntity>>
     {
-        public override bool RetrieveAndUpdateOrAddValue(int id, List<ParsingRowEntity> item)
+        public override bool RetrieveAndUpdateOrAddValue(int id, List<ParsingRowEntity> item, bool isMulty = false)
         {
             if (Entiies.TryGetValue(id, out List<ParsingRowEntity>? retrievedValue) && retrievedValue is not null)
             {

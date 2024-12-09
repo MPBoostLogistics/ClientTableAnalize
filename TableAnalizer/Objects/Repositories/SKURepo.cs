@@ -8,11 +8,11 @@ namespace TableAnalizer.Objects.Repositories
 {
     public class SKURepo : BaseRepo<int, SKU>
     {
-        public override bool RetrieveAndUpdateOrAddValue(int id, SKU item)
+        public override bool RetrieveAndUpdateOrAddValue(int id, SKU item, bool isMulty = false)
         {
             if (Entiies.TryGetValue(id, out SKU? retrievedValue) && retrievedValue is not null)
             {
-                SKU? newValue = CreateNewSKU(retrievedValue, item);
+                SKU? newValue = CreateNewSKU(retrievedValue, item, isMulty);
 
                 return newValue is not null && Entiies.TryUpdate(id, newValue, retrievedValue);
             }
@@ -22,7 +22,7 @@ namespace TableAnalizer.Objects.Repositories
             }
         }
 
-        private static SKU CreateNewSKU(SKU retriveValue, SKU newValue) 
+        private static SKU CreateNewSKU(SKU retriveValue, SKU newValue, bool isMulty) 
         {
             // Marketplace 
             Marketplace? marketplace = null;
@@ -75,19 +75,27 @@ namespace TableAnalizer.Objects.Repositories
                     {
                         var retrieveOnWay = retriveValue.SKURansomsBalance!.SKURansomsOnWay; 
                         var newValueOnWay = newValue.SKURansomsBalance!.SKURansomsOnWay; 
-                        int? onWay =  !Equals(retrieveOnWay, newValueOnWay) ? retrieveOnWay + newValueOnWay : retrieveOnWay;
+                        int? onWay = isMulty || !Equals(retrieveOnWay, newValueOnWay)? 
+                            retrieveOnWay + newValueOnWay :
+                            retrieveOnWay;
                         
                         var retrieveCancelled = retriveValue.SKURansomsBalance!.SKURansomsCanceled; 
                         var newValueCancelled = newValue.SKURansomsBalance!.SKURansomsCanceled; 
-                        int? canceled = !Equals(retrieveCancelled, newValueCancelled) ? retrieveCancelled + newValueCancelled : retrieveCancelled;
+                        int? canceled = isMulty || !Equals(retrieveCancelled, newValueCancelled)?
+                            retrieveCancelled + newValueCancelled :
+                            retrieveCancelled;
                         
                         var retrieveDelivered = retriveValue.SKURansomsBalance!.SKURansomsDelivered; 
                         var newValueDelivered = newValue.SKURansomsBalance!.SKURansomsDelivered; 
-                        int? delivered = !Equals(retrieveDelivered, newValueDelivered) ? retrieveDelivered + newValueDelivered : retrieveDelivered;
+                        int? delivered = isMulty || !Equals(retrieveDelivered, newValueDelivered)?
+                            retrieveDelivered + newValueDelivered :
+                            retrieveDelivered;
                         
                         var retrieveWithDrawn = retriveValue.SKURansomsBalance!.SKURansomsWithDrawn; 
                         var newValueWithDrawn = newValue.SKURansomsBalance!.SKURansomsWithDrawn; 
-                        int? withDrawn = !Equals(retrieveWithDrawn, newValueWithDrawn) ? retrieveWithDrawn + newValueWithDrawn : retrieveWithDrawn;
+                        int? withDrawn = isMulty || !Equals(retrieveWithDrawn, newValueWithDrawn) ?
+                            retrieveWithDrawn + newValueWithDrawn :
+                            retrieveWithDrawn;
 
                         skuRansomsBalance = new (onWay, canceled, delivered, withDrawn);
                     }
@@ -115,17 +123,30 @@ namespace TableAnalizer.Objects.Repositories
                                 newValue.SKURemainingBalance!.SKUBrandAndName : 
                                 string.Empty;
 
+                        // Приход
                         var retriveReceipt = retriveValue.SKURemainingBalance!.SKUReceipt; 
                         var newReceipt = newValue.SKURemainingBalance!.SKUReceipt; 
-                        int skuReceipt = !Equals(retriveReceipt, newReceipt) ? retriveReceipt + newReceipt : retriveReceipt; 
+                        int skuReceipt = isMulty && Equals(retriveReceipt, newReceipt) ?
+                            retriveReceipt :
+                            !Equals(retriveReceipt, newReceipt) ? 
+                                retriveReceipt + newReceipt : 
+                                retriveReceipt; 
 
+                        // Расход 
                         var retriveShipped = retriveValue.SKURemainingBalance!.SKUShipped; 
                         var newShipped = newValue.SKURemainingBalance!.SKUShipped;   
-                        int skuShipped = !Equals(retriveShipped, newShipped) ? retriveShipped + newShipped : retriveShipped;
+                        int skuShipped = isMulty || !Equals(retriveShipped, newShipped)? 
+                            retriveShipped + newShipped : 
+                            retriveShipped;
 
+                        // Остаток
                         var retriveRemaining = retriveValue.SKURemainingBalance!.SKURemaining; 
                         var newRemaining = newValue.SKURemainingBalance!.SKURemaining;  
-                        int skuRemaining = !Equals(retriveRemaining, newRemaining) ? retriveRemaining + newRemaining : retriveRemaining;
+                        int skuRemaining = isMulty || Equals(retriveRemaining, newRemaining) ?
+                            retriveRemaining : 
+                            !Equals(retriveRemaining, newRemaining) ? 
+                                retriveRemaining + newRemaining : 
+                                retriveRemaining;
 
                         skuRemainingBalance = new SKURemainingBalance(skuNumber, brandAndName, skuReceipt,skuShipped, skuRemaining);
                     }
@@ -133,6 +154,7 @@ namespace TableAnalizer.Objects.Repositories
                     break;
             }
 
+            // SKUWriteOffBalance
             SKUWriteOffBalance? skuWriteOffBalance = null;
             switch(retriveValue.SKUWriteOffBalance is not null, newValue.SKUWriteOffBalance is not null) 
             {
@@ -224,7 +246,7 @@ namespace TableAnalizer.Objects.Repositories
             {
                 (false, true) => newValue.AveragePrice,
                 (true, false) => retriveValue.AveragePrice,
-                (true, true) => new List<double>(){retriveValue.AveragePrice, newValue.AveragePrice}.Min(),
+                (true, true) => double.Min(retriveValue.AveragePrice, newValue.AveragePrice),
                 (false, false) => null
             };
 
@@ -239,7 +261,7 @@ namespace TableAnalizer.Objects.Repositories
                 (false, false) => null
             };
 
-            // MaxRansomsDate
+            // DeadLine
             bool isRetriveValueIncludesDeadLine = !Equals(retriveValue.DeadLineDays, SKU.DEADLINE_DAYS_DEFAULT);
             bool isNewValueIncludesDeadLine = !Equals(newValue.DeadLineDays, SKU.DEADLINE_DAYS_DEFAULT);
             int? deadlineDays = (isRetriveValueIncludesDeadLine, isNewValueIncludesDeadLine) switch

@@ -19,7 +19,7 @@ namespace TableAnalizer.Objects.Repositories
   
         public virtual bool RemoveValue(K id, out V? item) => Entiies.TryRemove(id, out item);
  
-        public abstract bool RetrieveAndUpdateOrAddValue(K id, V item);
+        public abstract bool RetrieveAndUpdateOrAddValue(K id, V item, bool isMulty);
 
         IList<(K key, V value)> IRepository<K, V>.GetValuesList() => 
             Entiies.Select(e => (e.Key, e.Value)).ToList();

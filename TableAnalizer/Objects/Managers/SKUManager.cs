@@ -73,7 +73,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="reportFileKey">Key of source file with report.</param>
         /// <returns>Function execution time in seconds.</returns>
         /// <remarks><i>New version</i></remarks>
-        public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, ExcelPackage? excelPackage = null)
+        public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, ExcelPackage? excelPackage = null, bool isMulty = false)
         {
             double time = 0.00;
 
@@ -84,7 +84,7 @@ namespace TableAnalizer.Objects.Managers
                 List<Task<double>> processingTasksList = new();
                 for (int i = 0; i < workSheetNames.Count; i++)
                 {
-                    var processingData = ProcessingData(reportFileKey, workSheetNames[i], excelPackage);
+                    var processingData = ProcessingData(reportFileKey, workSheetNames[i], excelPackage, isMulty);
                     processingTasksList.Add(processingData);
                 }
 
@@ -108,7 +108,7 @@ namespace TableAnalizer.Objects.Managers
             return time;
         }
 
-        private async Task<double> ProcessingData(SourceSKUReportFileKey reportFileKey, string workSheetName, ExcelPackage? excelPackage = null)
+        private async Task<double> ProcessingData(SourceSKUReportFileKey reportFileKey, string workSheetName, ExcelPackage? excelPackage = null, bool isMulty = false)
         {
             // Start
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -144,12 +144,15 @@ namespace TableAnalizer.Objects.Managers
 
                 // Processing:
                 // 1. Save balances for sku's
-                SaveSKUBalanceUnits(reportFileKey, workSheetName, rawRowsItems.ToList());
+                SaveSKUBalanceUnits(reportFileKey, workSheetName, rawRowsItems.ToList(), isMulty);
 
-                // 2. Create or update sku's from balance units 
-                var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName);
-                await Task.Run(async () => await makeSKUsTask);
-                makeSKUsTask.Wait();
+                if(!isMulty) 
+                {
+                    // 2. Create or update sku's from balance units 
+                    var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName);
+                    await Task.Run(async () => await makeSKUsTask);
+                    makeSKUsTask.Wait();
+                }
 
                 // 3. Report
                 static bool FindSkusWithRansoms(SKU sku) => sku.SKURansomsBalance != null;
@@ -161,55 +164,55 @@ namespace TableAnalizer.Objects.Managers
                 static bool FindSkusWithDummies(SKU sku) => sku.SKUDummiesBalance != null;
                 static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
 
-                    var message = string.Empty;
+                var message = string.Empty;
 
-                    switch (reportFileKey)
-                    {
-                        case SourceSKUReportFileKey.RansomsWB:
-                        case SourceSKUReportFileKey.RansomsOZ:
-                            predicateHandler = FindSkusWithRansoms;
-                            message = "Артикулов в выкупах: ";
-                            break;
-                        case SourceSKUReportFileKey.RemainingWB:
-                        case SourceSKUReportFileKey.RemainingOZ:
-                            predicateHandler = FindSkusWithRemaining;
-                            message = "Артикулов в приходе и остатоках склада: ";
-                            break;
-                        case SourceSKUReportFileKey.Additional:
-                            switch (workSheetName)
-                            {
-                                case ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME:
-                                    predicateHandler = FindSkusWithCompensation;
-                                    message = "Артикулов из компенсации недостач: ";
-                                    break;
-                                case ExcelManager.RESORTS_REPORT_WORKSHEET_NAME:
-                                    predicateHandler = FindSkusWithResort;
-                                    message = "Артикулов из пересортов: ";
-                                    break;
-                                case ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME:
-                                    predicateHandler = FindSkusWithDummies;
-                                    message = "Артикулов из пустышек: ";
-                                    break;
-                                case ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME:
-                                    predicateHandler = FindSkusWithParallel;
-                                    message = "Артикулов из параллельных клиентов: ";
-                                    break;
-                            };
-                            break;
-                        case SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer:
-                            predicateHandler = FindSkusWithShipped;
-                            message = "Артикулов в расходе со склада: ";
-                            break;
+                switch (reportFileKey)
+                {
+                    case SourceSKUReportFileKey.RansomsWB:
+                    case SourceSKUReportFileKey.RansomsOZ:
+                        predicateHandler = FindSkusWithRansoms;
+                        message = "Добавлено артикулов из выкупов: ";
+                        break;
+                    case SourceSKUReportFileKey.RemainingWB:
+                    case SourceSKUReportFileKey.RemainingOZ:
+                        predicateHandler = FindSkusWithRemaining;
+                        message = "Добавлено артикулов из прихода и остатков на складе: ";
+                        break;
+                    case SourceSKUReportFileKey.Additional:
+                        switch (workSheetName)
+                        {
+                            case ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME:
+                                predicateHandler = FindSkusWithCompensation;
+                                message = "Артикулов из компенсации недостач: ";
+                                break;
+                            case ExcelManager.RESORTS_REPORT_WORKSHEET_NAME:
+                                predicateHandler = FindSkusWithResort;
+                                message = "Артикулов из пересортов: ";
+                                break;
+                            case ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME:
+                                predicateHandler = FindSkusWithDummies;
+                                message = "Артикулов из пустышек: ";
+                                break;
+                            case ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME:
+                                predicateHandler = FindSkusWithParallel;
+                                message = "Артикулов из параллельных клиентов: ";
+                                break;
+                        };
+                        break;
+                    case SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer:
+                        predicateHandler = FindSkusWithShipped;
+                        message = "Артикулов в расходе со склада: ";
+                        break;
 
-                        case SourceSKUReportFileKey.WriteOffShortages:
-                            predicateHandler = FindSkusWithWriteOff;
-                            message = "Артикулов в списании недостач: ";
-                            break;
-                        default:
-                            break;
-                    }
+                    case SourceSKUReportFileKey.WriteOffShortages:
+                        predicateHandler = FindSkusWithWriteOff;
+                        message = "Артикулов в списании недостач: ";
+                        break;
+                    default:
+                        break;
+                }
 
-                    // Report
+                // Report
                 if(predicateHandler is not null) 
                 {
                     int skusWithPredicateCount = SKUs.GetValuesCount(predicateHandler.Invoke);
@@ -229,7 +232,7 @@ namespace TableAnalizer.Objects.Managers
         /// <returns>Number of keys in final dictionary.</returns>
         /// <exception cref="ArgumentException">Exception when passing an empty dictionary.</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData)
+        public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData, bool isMulty)
         {
             bool isRansoms = reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ;
             bool isRemaining = reportFileKey == SourceSKUReportFileKey.RemainingWB || reportFileKey == SourceSKUReportFileKey.RemainingOZ;
@@ -381,7 +384,7 @@ namespace TableAnalizer.Objects.Managers
                     foreach (var item in skuUnit)
                     {
                         SKU sku = new(item, DeadlineDays);
-                        Console.WriteLine(sku);
+                        SKUs.RetrieveAndUpdateOrAddValue(sku.SKUNumber, sku, isMulty);
                     }
                 }
             }

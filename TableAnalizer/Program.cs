@@ -63,15 +63,14 @@ internal class Program
                           "Другая клавиша: Выход из программы \n" +
                           $"---------------------------------------------";
 
-        //ConsoleKey? selectKey = null;
-        ConsoleKey selectKey = ConsoleKey.D2;
+        ConsoleKey? selectKey = null;
 
-        // do
-        // {
-        //     Console.Clear();
-        //     Console.WriteLine(helloString);
-        //     selectKey = Console.ReadKey().Key;
-        // } while (selectKey == null);
+        do
+        {
+            Console.Clear();
+            Console.WriteLine(helloString);
+            selectKey = Console.ReadKey().Key;
+        } while (selectKey == null);
 
         Task choiseTask = selectKey switch
         {
@@ -241,7 +240,7 @@ internal class Program
         List<Task> summaryTasksList = new();
         foreach(var (key, value) in fileManager.ReportsPathsMultyReport) 
         {
-            summaryTasksList.Add(ReceivingAndProcessingData(value));
+            summaryTasksList.Add(ReceivingAndProcessingData(value, true));
         }
 
         Task[] summaryTasksArray = summaryTasksList.ToArray();
@@ -256,10 +255,30 @@ internal class Program
 
         Task.WaitAll(summaryTasksArray);
 
+        // Additional tasks
+        if (fileManager.AdditionalPathsMultyReport is not null)
+        {
+            var additionalTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Additional, fileManager.AdditionalPathsMultyReport);
+            await Task.Run(async () => await additionalTask);
+            additionalTask.Wait();
+        }
+
+        // Delete old report 
+        FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
+
+        // Make new report 
+        var skusForTargetReport = skuManager.MakeSkusForTargetReport();
+        excelManager.MakeReports(skusForTargetReport);
+
+        // Report 
+        var completedMessage = $"Отчет логистики сохранен по пути: {FileManager.OutputClientReportFilePath}\n";
+        goodByMessage = string.Concat(completedMessage, goodByMessage);
+        await Report(goodByMessage, 2000, true);
+
         await Exit();
     }
 
-    private static async Task<double> ReceivingAndProcessingData(SourceReportFileForSKU reportFile) 
+    private static async Task<double> ReceivingAndProcessingData(SourceReportFileForSKU reportFile, bool isMulty = false) 
     {
         if(reportFile.ReportKey is null)
             return 0.00;
@@ -268,7 +287,7 @@ internal class Program
         var package = new ExcelPackage(reportFile.FileInfo);
  
         // Receiving and processing data
-        Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData((SourceSKUReportFileKey)reportFile.ReportKey, package);
+        Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData((SourceSKUReportFileKey)reportFile.ReportKey, package, isMulty);
         if(receivingAndProcessingDataTask is not null) 
         {
             await Task.Run(async () => await receivingAndProcessingDataTask);
@@ -294,13 +313,21 @@ internal class Program
     /// <param name="reportFileKey">Key of source file with report.</param>
     /// <returns></returns>
     /// <remarks><i>New version</i></remarks>
-    private static async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey)
+    private static async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, SourceReportFileForSKU? existingReportFile = null)
     {
-        var getReportFileTask = fileManager.GetReportFile(reportFileKey);
-        await Task.Run(async () => await getReportFileTask);
-        getReportFileTask.Wait();
+        SourceReportFileForSKU? reportFile;
+        if(existingReportFile == null) 
+        {
+            var getReportFileTask = fileManager.GetReportFile(reportFileKey);
+            await Task.Run(async () => await getReportFileTask);
+            getReportFileTask.Wait();
 
-        SourceReportFileForSKU? reportFile = getReportFileTask.Result;
+            reportFile = getReportFileTask.Result;
+        } 
+        else 
+        {
+            reportFile = existingReportFile;
+        }
 
         if (reportFile is not null)
         {
