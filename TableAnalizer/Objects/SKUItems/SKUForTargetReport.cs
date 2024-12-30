@@ -136,10 +136,13 @@ namespace TableAnalizer.Objects.SKUItems
             // 1. Первоначальный расчет общего расхода
             CalculateTotalСonsumption();
 
-            // 2. Расчет задержек довоза
+            // 2. Балансировка остатка и прихода
+            BalancingReceiptShippedAndRemaining();
+
+            // 3. Расчет задержек довоза
             CalculateDeliveryDelay(isCalculateAmountsDelays: isDeadline);
 
-            // 3. Проверка на дедлайн
+            // 4. Проверка на дедлайн
             // Если не дедлайн
             if(!isDeadline) 
             {
@@ -158,15 +161,31 @@ namespace TableAnalizer.Objects.SKUItems
                     SellmentStatus = new SellmentStatus(SKUSellmentStatus.FullSet);
                 } 
  
+                // 5. Расчет перерасходов
                 CalculateOverruns(resortSKUs: resortSKUs);
             }
 
-            // 4. Повторный расчет общего расхода
+            // 6. Повторный расчет общего расхода
             CalculateTotalСonsumption();
 
-            // 5. Строка статуса и цвет заливки
+            // 7. Строка статуса и цвет заливки
             SellmentStatusString = SellmentStatus.StatusLabel;
             FillColor = SellmentStatus.StatusColor;
+        }
+
+        /// <summary>
+        /// Balancing correctness of receipt, shipped and remaining.
+        /// </summary>
+        private void BalancingReceiptShippedAndRemaining() 
+        {
+            // SKU remainig remainder cannot be negative.
+            if(int.IsNegative(SKURemaining))
+                SKURemaining = 0;
+
+            // SKU receipt can`t be less than sum of shipped plus remaining.
+            var shippedAndRemaining = SKUShipped + SKURemaining;
+            if(SKUReceipt != shippedAndRemaining)
+                SKUReceipt = shippedAndRemaining;
         }
 
         /// <summary>
@@ -175,6 +194,7 @@ namespace TableAnalizer.Objects.SKUItems
         /// <param name="isCalculateAmountsDelays">Flag for calculating amount of delayed delivery.</param>
         private void CalculateDeliveryDelay(bool isCalculateAmountsDelays)
         {
+            // Если ожидание меньше или равно общему расходу, задержки нулевые
             if(SKURansomsWaiting <= SKUTotalСonsumption) 
             {
                 SKUDeliveryDelayPoints = SKUDeliveryDelayStorage = SKUDeliveryDelayTotal = 0;

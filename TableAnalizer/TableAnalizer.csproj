@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
+    <PlatformTarget>anycpu</PlatformTarget>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ReleaseVersion>0.2</ReleaseVersion>
@@ -19,6 +20,7 @@
     <PackageReference Include="SciSharp.TensorFlow.Redist-Windows-GPU" Version="2.10.3" />
     <PackageReference Include="TensorFlow.Keras" Version="0.15.0" />
     <PackageReference Include="TensorFlow.NET" Version="0.150.0" />
+    <PackageReference Include="Vegiwoo.CSharpHelpers" Version="1.0.8" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Objects\" />

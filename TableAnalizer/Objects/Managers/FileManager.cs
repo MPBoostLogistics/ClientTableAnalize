@@ -367,7 +367,6 @@ namespace TableAnalizer.Objects.Managers
                 dirPathString = dirPathString.Replace("'", "");
             }
 
-
             if (!Directory.Exists(dirPathString))
                 throw new DirectoryNotFoundException($"Directory at path {dirPathString} was not found.");
 

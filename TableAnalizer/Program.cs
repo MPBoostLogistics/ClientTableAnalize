@@ -11,6 +11,8 @@
 #nullable enable
 
 using System.Reflection;
+using System.Text;
+using CSharpHelpers.Services;
 using OfficeOpenXml;
 using TableAnalizer.Enums;
 using TableAnalizer.Objects.Managers;
@@ -22,6 +24,7 @@ internal class Program
     private static readonly Version? AppVersion = Assembly.GetExecutingAssembly().GetName().Version;
     private static string goodByMessage = "\nСпасибо за использование программы. Хорошего дня!";
     private static readonly string failureMessage = "Некорретные данные, попробуйте еще раз.";
+    private static bool isManualResorting;
     #endregion
 
     #region Properties 
@@ -38,15 +41,89 @@ internal class Program
 
     private static async Task GetDeadlineDays() 
     {
-        // Set deadline days
         string deadLineDaysTitleMessage = "Введите срок дедлайна для клиента и нажмите 'Enter'\n(положительное целое число, отличное от 0): ";
-        string deadLineDaysSuccessMessage = "Срок дедлайна для текущего клиента, дней";
-        int deadLineDays = await GetUserIntInfo(deadLineDaysTitleMessage, deadLineDaysSuccessMessage, failureMessage);
-        skuManager.SetDeadlineDays(deadLineDays);
+       
+        var deadLineDays = ConsoleAppService.GetUserStringFromConsole(deadLineDaysTitleMessage);
+        
+        if(int.TryParse(deadLineDays, out int deadLineDaysNumber) && deadLineDaysNumber > 0) 
+        {
+            skuManager.SetDeadlineDays(deadLineDaysNumber);
+            await Report($"Срок дедлайна для взаиморасчетов, дней: {deadLineDaysNumber}");
+        } 
+        else 
+        {
+            await Report($"Неверное число, введите заново.");
+            await Task.Delay(1500);
+
+            await GetDeadlineDays(); 
+        } 
+    }
+
+    private static async Task<DirectoryInfo> GetSourceReportsPath() 
+    {
+        string reportsPathTitleMessage = "Укажите путь к директории c исходными отчетами клиента и нажмите 'Enter':\n ";
+        string reportsPathErrorMessage = "Путь к файлам отчетов некорректен.\nПовторите попытку.";    
+        string reportsPathSuccessMessage = "Путь к файлам отчетов: \n";
+
+        var reportsPath = ConsoleAppService.GetUserStringFromConsole(reportsPathTitleMessage);
+
+        switch (string.IsNullOrEmpty(reportsPath))
+        {
+            case true:
+                await Report(reportsPathErrorMessage);
+                break;
+            case false:
+                var isDirInfoSuccess = FileService.GetDirectoryInfo(reportsPath, out DirectoryInfo? directoryInfo);
+                switch(isDirInfoSuccess && directoryInfo is not null) 
+                {
+                    case true:
+                        await Report(reportsPathSuccessMessage + $"{directoryInfo.FullName}");
+                        return directoryInfo;
+                    case false:
+                        await Report(reportsPathErrorMessage);
+                        break;
+                }
+                break;
+        }
+
+        await Task.Delay(1500);
+        return await GetSourceReportsPath();
+    }
+
+    private static void GetUseManualRegranding()
+    {
+        ConsoleKey[] validkeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
+
+        StringBuilder manualResortsStringBuilder = new("Take into account resorts specified manually?\n");
+        manualResortsStringBuilder.Append($"1: Yes\n");
+        manualResortsStringBuilder.Append($"2: No\n");
+        manualResortsStringBuilder.Append($"ESC: Exit\n");
+        var manualResortsString = manualResortsStringBuilder.ToString();
+
+        ConsoleKey? selectKey;
+        do
+        {
+            selectKey = ConsoleAppService.GetUserKeyFromConsole(manualResortsString);
+        } while (selectKey is null || !validkeys.Contains((ConsoleKey)selectKey));
+
+        switch (selectKey)
+        {
+            case ConsoleKey.D1:
+                isManualResorting = true;
+                break;
+            case ConsoleKey.D2:
+                isManualResorting = false;
+                break;
+            case ConsoleKey.Escape:
+                ConsoleAppService.ConsoleAppExit("Thank you for using app. Have a nice day!");
+                break;
+        }
     }
 
     private static async Task AnalyzeСlientReports()
     {
+        await Task.Delay(1);
+
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
         fileManager.ManagerReached += Report;
@@ -63,15 +140,7 @@ internal class Program
                           "Другая клавиша: Выход из программы \n" +
                           $"---------------------------------------------";
 
-        ConsoleKey? selectKey = null;
-
-        do
-        {
-            Console.Clear();
-            Console.WriteLine(helloString);
-            selectKey = Console.ReadKey().Key;
-        } while (selectKey == null);
-
+        ConsoleKey? selectKey = ConsoleAppService.GetUserKeyFromConsole(helloString);
         Task choiseTask = selectKey switch
         {
             ConsoleKey.D1 => Task.Run(() => AnalyzeSingleСlientReports()),
@@ -84,21 +153,31 @@ internal class Program
 
     private static async Task AnalyzeSingleСlientReports() 
     {
-        // Set deadline days
+        // Get deadline days
         Task deadLineDaysTask = Task.Run(() => GetDeadlineDays());
         deadLineDaysTask.Wait();
-
         Console.WriteLine();
 
-        // Set source reports path
-        string reportsPathTitleMessage = "Укажите путь к директории c исходными отчетами клиента и нажмите 'Enter':\n ";
-        string reportsPathSuccessMessage = "Директория исходными отчетами клиента:\n";
-        string reportsPath = await GetUserStringInfo(reportsPathTitleMessage, reportsPathSuccessMessage, failureMessage);
+        // Get source reports Path
+        Task<DirectoryInfo> getSourceReportsPathTask = Task.Run(() => GetSourceReportsPath());
+        getSourceReportsPathTask.Wait();
+        var getSourceReportDirInfo = getSourceReportsPathTask.Result;
+        Console.WriteLine();
 
         // Availability necessary reports
-        Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(reportsPath, false);
+        Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, false);
         await Task.Run(async () => await availabilityNecessaryTask);
         availabilityNecessaryTask.Wait();
+        var sourceSKUReportFileKeys = availabilityNecessaryTask.Result;
+
+        // Get use manual regranding
+        if(sourceSKUReportFileKeys is not null && 
+           sourceSKUReportFileKeys.Contains(SourceSKUReportFileKey.Additional))
+        {
+            GetUseManualRegranding();
+        }
+
+        Console.Clear();
 
         // Report analysis tasks
         var existingKeys = availabilityNecessaryTask.Result;
@@ -219,6 +298,8 @@ internal class Program
         await Exit();
     }
 
+    
+
     private static async Task AnalyzeMultiСlientReports() 
     {
         // Set deadline days
@@ -287,7 +368,7 @@ internal class Program
         var package = new ExcelPackage(reportFile.FileInfo);
  
         // Receiving and processing data
-        Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData((SourceSKUReportFileKey)reportFile.ReportKey, package, isMulty);
+        Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData((SourceSKUReportFileKey)reportFile.ReportKey, isManualResorting, package, isMulty);
         if(receivingAndProcessingDataTask is not null) 
         {
             await Task.Run(async () => await receivingAndProcessingDataTask);
@@ -335,7 +416,7 @@ internal class Program
             ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
 
             // Receiving and processing data
-            Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData(reportFileKey);
+            Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData(reportFileKey, isManualResorting);
             if(receivingAndProcessingDataTask is not null) 
             {
                 await Task.Run(async () => await receivingAndProcessingDataTask);
@@ -404,33 +485,6 @@ internal class Program
         }
 
         return resultString!;
-    }
-
-    private static async Task<int> GetUserIntInfo(string titleMessage, string successMessage, string failureMessage)
-    {
-        int resultValue = default;
-        while (resultValue == default)
-        {
-            Console.Clear();
-            Console.WriteLine(titleMessage);
-
-            if (int.TryParse(Console.ReadLine(), out resultValue))
-            {
-                if (resultValue > 0)
-                {
-                    await Report($"{successMessage}: {resultValue}");
-                    break;
-                }
-                else
-                {
-                    await Report(failureMessage);
-                    resultValue = default;
-                    continue;
-                }
-            }
-        }
-
-        return resultValue;
     }
 
     private static void Report(object? sender, ManagerReachedEventArgs e)
