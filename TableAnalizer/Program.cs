@@ -168,11 +168,11 @@ internal class Program
         Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, false);
         await Task.Run(async () => await availabilityNecessaryTask);
         availabilityNecessaryTask.Wait();
-        var sourceSKUReportFileKeys = availabilityNecessaryTask.Result;
+        var existingKeys = availabilityNecessaryTask.Result;
 
         // Get use manual regranding
-        if(sourceSKUReportFileKeys is not null && 
-           sourceSKUReportFileKeys.Contains(SourceSKUReportFileKey.Additional))
+        if(existingKeys is not null && 
+           existingKeys.Contains(SourceSKUReportFileKey.Additional))
         {
             GetUseManualRegranding();
         }
@@ -180,7 +180,6 @@ internal class Program
         Console.Clear();
 
         // Report analysis tasks
-        var existingKeys = availabilityNecessaryTask.Result;
         if (existingKeys is not null && existingKeys.Count > 0)
         {
             // Ransoms tasks
@@ -265,7 +264,7 @@ internal class Program
             }
 
             // Transfer task
-             if (existingKeys.Contains(SourceSKUReportFileKey.Transfer))
+            if (existingKeys.Contains(SourceSKUReportFileKey.Transfer))
             {
                 var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Transfer);
                 await Task.Run(async () => await currentTask);
@@ -298,33 +297,39 @@ internal class Program
         await Exit();
     }
 
-    
-
     private static async Task AnalyzeMultiСlientReports() 
     {
-        // Set deadline days
+        // Get deadline days
         Task deadLineDaysTask = Task.Run(() => GetDeadlineDays());
         deadLineDaysTask.Wait();
-
         Console.WriteLine();
 
-        // Set source reports path
-        string reportsPathTitleMessage = "Укажите путь к директории c исходными отчетами нескольких клиентов и нажмите 'Enter':\n ";
-        string reportsPath = await GetUserStringInfo(reportsPathTitleMessage, string.Empty, failureMessage);
-
+        // Get source reports Path
+        Task<DirectoryInfo> getSourceReportsPathTask = Task.Run(() => GetSourceReportsPath());
+        getSourceReportsPathTask.Wait();
+        var getSourceReportDirInfo = getSourceReportsPathTask.Result;
+        Console.WriteLine();
+  
         // Availability necessary reports
-        Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(reportsPath, true);
+        Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, true);
         await Task.Run(async () => await availabilityNecessaryTask);
         availabilityNecessaryTask.Wait();
+        var existingKeys = availabilityNecessaryTask.Result;
 
+        // Get use manual regranding
+        GetUseManualRegranding();
+        
         // Create and run analize task
-        List<Task> summaryTasksList = new();
+        List<Task> summaryTasksList = [];
         foreach(var (key, value) in fileManager.ReportsPathsMultyReport) 
         {
             summaryTasksList.Add(ReceivingAndProcessingData(value, true));
         }
 
-        Task[] summaryTasksArray = summaryTasksList.ToArray();
+    
+        Console.Clear();
+
+        Task[] summaryTasksArray = [.. summaryTasksList];
         for (int i = 0; i < summaryTasksArray.Length; i++)
         {
             var currentTask = summaryTasksArray[i];
@@ -359,7 +364,7 @@ internal class Program
         await Exit();
     }
 
-    private static async Task<double> ReceivingAndProcessingData(SourceReportFileForSKU reportFile, bool isMulty = false) 
+    private static async Task<double> ReceivingAndProcessingData(SourceReportFileForSKU reportFile, bool isMulty = true) 
     {
         if(reportFile.ReportKey is null)
             return 0.00;
@@ -372,21 +377,12 @@ internal class Program
         if(receivingAndProcessingDataTask is not null) 
         {
             await Task.Run(async () => await receivingAndProcessingDataTask);
-            
         }
         receivingAndProcessingDataTask?.Wait();
         package.Dispose();
 
-        // ???? 
-
-        
-        
-
-
-        // Dummy 
-        return 0.00;
+        return receivingAndProcessingDataTask?.Result ?? 0.00;
     }
-
 
     /// <summary>
     /// Receiving and processing data from seller reports.
@@ -394,7 +390,7 @@ internal class Program
     /// <param name="reportFileKey">Key of source file with report.</param>
     /// <returns></returns>
     /// <remarks><i>New version</i></remarks>
-    private static async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, SourceReportFileForSKU? existingReportFile = null)
+    private static async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, SourceReportFileForSKU? existingReportFile = null, bool isMulty = false)
     {
         SourceReportFileForSKU? reportFile;
         if(existingReportFile == null) 
@@ -416,7 +412,7 @@ internal class Program
             ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
 
             // Receiving and processing data
-            Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData(reportFileKey, isManualResorting);
+            Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData(reportFileKey, isManualResorting, null, isMulty);
             if(receivingAndProcessingDataTask is not null) 
             {
                 await Task.Run(async () => await receivingAndProcessingDataTask);
@@ -448,43 +444,6 @@ internal class Program
         await Task.Delay(500);
 
         Environment.Exit(0);
-    }
-
-    /// <summary>
-    /// Receives data from user from console as a string.
-    /// </summary>
-    /// <param name="titleMessage">Title message.</param>
-    /// <param name="successMessage">Message to user if successful.</param>
-    /// <param name="failureMessage">Message to user in case of failure.</param>
-    /// <returns>Received data as a string.</returns>
-    /// <remarks><i>New version ok</i></remarks>
-    private static async Task<string> GetUserStringInfo(string titleMessage, string? successMessage, string failureMessage)
-    {
-        string? resultString = string.Empty;
-        while (resultString == string.Empty)
-        {
-            Console.WriteLine(titleMessage);
-
-            resultString = Console.ReadLine();
-
-            if (!string.Equals(string.Empty, resultString))
-            {
-                if(!string.IsNullOrEmpty(successMessage)) 
-                {
-                    await Report($"{successMessage}: {resultString}");
-                }
-
-                break;
-            }
-            else
-            {
-                await Report(failureMessage);
-                resultString = default;
-                continue;
-            }
-        }
-
-        return resultString!;
     }
 
     private static void Report(object? sender, ManagerReachedEventArgs e)
