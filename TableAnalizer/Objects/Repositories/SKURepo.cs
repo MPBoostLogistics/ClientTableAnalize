@@ -2,6 +2,7 @@ using TableAnalizer.Enums;
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUDummiesBalance;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.Repositories
 //https://learn.microsoft.com/en-us/dotnet/standard/collections/thread-safe/how-to-add-and-remove-items
@@ -13,7 +14,6 @@ namespace TableAnalizer.Objects.Repositories
             if (Entiies.TryGetValue(id, out SKU? retrievedValue) && retrievedValue is not null)
             {
                 SKU? newValue = CreateNewSKU(retrievedValue, item, isMulty);
-
                 return newValue is not null && Entiies.TryUpdate(id, newValue, retrievedValue);
             }
             else
@@ -211,7 +211,7 @@ namespace TableAnalizer.Objects.Repositories
 
                     if(newValue.SKUResortBalance is not null) 
                     {
-                        var resortSKUsInNewValue = newValue.SKUResortBalance.ResortSKUs;
+                        var resortSKUsInNewValue = newValue.SKUResortBalance.SKUsToResort;
                         if(resortSKUsInNewValue is not null && resortSKUsInNewValue.Count > 0) 
                         {
                             skuResortBalance!.Update(resortSKUsInNewValue);

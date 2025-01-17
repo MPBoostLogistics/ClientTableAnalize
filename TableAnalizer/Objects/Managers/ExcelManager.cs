@@ -115,9 +115,9 @@ namespace TableAnalizer.Objects.Managers
 
         public static List<SourceColumn> ResortSourceCells { get; } = new()
         {
-            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(2, "ResortSKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(3, "ResortSKUCount", ParsingTypeCode.IntTypeCode, true),
+            new(1, "SKUFromResortNumber", ParsingTypeCode.IntTypeCode, true),
+            new(2, "SKUToResortNumber", ParsingTypeCode.IntTypeCode, true),
+            new(3, "SKUToResortNumberCount", ParsingTypeCode.IntTypeCode, true),
             new(4, "ResortComment", ParsingTypeCode.StringTypeCode, false)
         };
 

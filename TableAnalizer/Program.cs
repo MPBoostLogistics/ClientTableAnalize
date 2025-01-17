@@ -23,8 +23,9 @@ internal class Program
     #region Variables and constants
     private static readonly Version? AppVersion = Assembly.GetExecutingAssembly().GetName().Version;
     private static string goodByMessage = "\nСпасибо за использование программы. Хорошего дня!";
-    private static readonly string failureMessage = "Некорретные данные, попробуйте еще раз.";
+    //private static readonly string failureMessage = "Некорретные данные, попробуйте еще раз.";
     private static bool isManualResorting;
+    private static bool isAnalyzeResortsForWarehouse;
     #endregion
 
     #region Properties 
@@ -54,7 +55,6 @@ internal class Program
         {
             await Report($"Неверное число, введите заново.");
             await Task.Delay(1500);
-
             await GetDeadlineDays(); 
         } 
     }
@@ -90,7 +90,7 @@ internal class Program
         return await GetSourceReportsPath();
     }
 
-    private static void GetUseManualRegranding()
+    private static async Task GetUseManualRegranding()
     {
         ConsoleKey[] validkeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
 
@@ -118,8 +118,79 @@ internal class Program
                 ConsoleAppService.ConsoleAppExit("Thank you for using app. Have a nice day!");
                 break;
         }
+
+        await Task.Delay(1500);
     }
 
+    private static void GetUseInfoForWarehouse()
+    {
+        ConsoleKey[] validkeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
+
+        StringBuilder analyzeResortsForWarehouseBuilder = new("Analyze re-sorts for warehouse?\n");
+        analyzeResortsForWarehouseBuilder.Append($"1: Yes\n");
+        analyzeResortsForWarehouseBuilder.Append($"2: No\n");
+        analyzeResortsForWarehouseBuilder.Append($"ESC: Exit\n");
+        var analyzeResortsForWarehouseString = analyzeResortsForWarehouseBuilder.ToString();
+
+        ConsoleKey? selectKey;
+        do
+        {
+            selectKey = ConsoleAppService.GetUserKeyFromConsole(analyzeResortsForWarehouseString);
+        } while (selectKey is null || !validkeys.Contains((ConsoleKey)selectKey));
+
+        switch (selectKey)
+        {
+            case ConsoleKey.D1:
+                isAnalyzeResortsForWarehouse = true;
+                break;
+            case ConsoleKey.D2:
+                isAnalyzeResortsForWarehouse = false;
+                break;
+            case ConsoleKey.Escape:
+                ConsoleAppService.ConsoleAppExit("Thank you for using app. Have a nice day!");
+                break;
+        }
+    }
+    
+    private static async Task<List<SourceSKUReportFileKey>?> GetDataFromUserInConsole(bool isMulty) 
+    {
+        // Get deadline days
+        Task deadLineDaysTask = Task.Run(GetDeadlineDays);
+        deadLineDaysTask.Wait();
+        Console.WriteLine();
+
+        // Get source reports path
+        Task<DirectoryInfo> getSourceReportsPathTask = Task.Run(GetSourceReportsPath);
+        getSourceReportsPathTask.Wait();
+        var getSourceReportDirInfo = getSourceReportsPathTask.Result;
+        Console.WriteLine();
+
+        // Availability necessary reports
+        Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, isMulty);
+        await Task.Run(async () => await availabilityNecessaryTask);
+        availabilityNecessaryTask.Wait();
+        var existingKeys = availabilityNecessaryTask.Result;
+        Console.WriteLine();
+
+        // Get analyze resorts for warehouse
+        Task analizeResortsTask = Task.Run(() => GetUseInfoForWarehouse());
+        analizeResortsTask.Wait();
+        Console.WriteLine();
+
+        // Get use manual regranding
+        if(existingKeys is not null && existingKeys.Contains(SourceSKUReportFileKey.Additional))
+        {
+            Task useManualRegrandingTask = Task.Run(() => GetUseManualRegranding());
+            useManualRegrandingTask.Wait();
+        } 
+
+        Console.Clear();
+
+        isManualResorting = true;
+
+        return existingKeys;
+    }
+    
     private static async Task AnalyzeСlientReports()
     {
         await Task.Delay(1);
@@ -153,31 +224,11 @@ internal class Program
 
     private static async Task AnalyzeSingleСlientReports() 
     {
-        // Get deadline days
-        Task deadLineDaysTask = Task.Run(() => GetDeadlineDays());
-        deadLineDaysTask.Wait();
-        Console.WriteLine();
-
-        // Get source reports Path
-        Task<DirectoryInfo> getSourceReportsPathTask = Task.Run(() => GetSourceReportsPath());
-        getSourceReportsPathTask.Wait();
-        var getSourceReportDirInfo = getSourceReportsPathTask.Result;
-        Console.WriteLine();
-
-        // Availability necessary reports
-        Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, false);
-        await Task.Run(async () => await availabilityNecessaryTask);
-        availabilityNecessaryTask.Wait();
-        var existingKeys = availabilityNecessaryTask.Result;
-
-        // Get use manual regranding
-        if(existingKeys is not null && 
-           existingKeys.Contains(SourceSKUReportFileKey.Additional))
-        {
-            GetUseManualRegranding();
-        }
-
-        Console.Clear();
+        // Get data from console
+        var getExistingKeysTask = GetDataFromUserInConsole(false);
+        await Task.Run(() => getExistingKeysTask);
+        getExistingKeysTask.Wait();
+        var existingKeys = getExistingKeysTask.Result;
 
         // Report analysis tasks
         if (existingKeys is not null && existingKeys.Count > 0)
@@ -209,14 +260,14 @@ internal class Program
                 }
             }
 
-            if (ransomsTasks.Any())
+            if (ransomsTasks.Length != 0)
             {
                 Task.WaitAll(ransomsTasks);
             }
 
             // Remaining tasks
-            List<Task> remainingTasksList = new();
-            Task[] remainingTasks = Array.Empty<Task>();
+            List<Task> remainingTasksList = [];
+            Task[] remainingTasks = [];
             if (existingKeys.Contains(SourceSKUReportFileKey.RemainingWB))
             {
                 remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingWB));
@@ -227,7 +278,7 @@ internal class Program
                 remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingOZ));
             }
 
-            if (remainingTasksList.Any())
+            if (remainingTasksList.Count != 0)
             {
                 remainingTasks = remainingTasksList.ToArray();
                 for (int i = 0; i < remainingTasks.Length; i++)
@@ -242,7 +293,7 @@ internal class Program
                 Task.WaitAll(remainingTasks);
             }
 
-            if (remainingTasks.Any())
+            if (remainingTasks.Length != 0)
             {
                 Task.WaitAll(remainingTasks);
             }
@@ -281,7 +332,7 @@ internal class Program
 
             // Delete old logistic report 
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
-            var skusForTargetReport = skuManager.MakeSkusForTargetReport();
+            var skusForTargetReport = skuManager.MakeSkusForTargetReport(isAnalyzeResortsForWarehouse);
             excelManager.MakeReports(skusForTargetReport);
 
             // Report 
@@ -299,25 +350,10 @@ internal class Program
 
     private static async Task AnalyzeMultiСlientReports() 
     {
-        // Get deadline days
-        Task deadLineDaysTask = Task.Run(() => GetDeadlineDays());
-        deadLineDaysTask.Wait();
-        Console.WriteLine();
-
-        // Get source reports Path
-        Task<DirectoryInfo> getSourceReportsPathTask = Task.Run(() => GetSourceReportsPath());
-        getSourceReportsPathTask.Wait();
-        var getSourceReportDirInfo = getSourceReportsPathTask.Result;
-        Console.WriteLine();
-  
-        // Availability necessary reports
-        Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, true);
-        await Task.Run(async () => await availabilityNecessaryTask);
-        availabilityNecessaryTask.Wait();
-        var existingKeys = availabilityNecessaryTask.Result;
-
-        // Get use manual regranding
-        GetUseManualRegranding();
+        // Get data from console
+        var getExistingKeysTask = GetDataFromUserInConsole(true);
+        await Task.Run(() => getExistingKeysTask);
+        getExistingKeysTask.Wait();
         
         // Create and run analize task
         List<Task> summaryTasksList = [];
@@ -326,8 +362,7 @@ internal class Program
             summaryTasksList.Add(ReceivingAndProcessingData(value, true));
         }
 
-    
-        Console.Clear();
+       //Console.Clear();
 
         Task[] summaryTasksArray = [.. summaryTasksList];
         for (int i = 0; i < summaryTasksArray.Length; i++)
@@ -353,7 +388,7 @@ internal class Program
         FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
 
         // Make new report 
-        var skusForTargetReport = skuManager.MakeSkusForTargetReport();
+        var skusForTargetReport = skuManager.MakeSkusForTargetReport(isAnalyzeResortsForWarehouse);
         excelManager.MakeReports(skusForTargetReport);
 
         // Report 

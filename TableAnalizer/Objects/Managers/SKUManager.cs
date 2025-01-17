@@ -8,6 +8,7 @@ using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUDummiesBalance;
 using OfficeOpenXml;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -28,10 +29,10 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuDummiesBalanceUnits { get; }
 
-        // арткул на который пересорт (артикул с которого пересорт, количество)
-        public ConcurrentDictionary <int, ConcurrentDictionary<int, int>> ResortSKUs {get; set;} = new();
+        // арткул на который пересорт: (артикул с которого пересорт: количество, комментарий)
+        public ConcurrentDictionary <int, ConcurrentDictionary<int, (int, string?)>> SKUToResorts {get; set;} = new();
 
-        private static List<SKUParallelUnit> SKUParallelUnits {get;set;} = new();
+        private static List<SKUParallelUnit> SKUParallelUnits {get; set;} = [];
 
         /// <summary>
         /// Returns number of SKUs in collection.
@@ -318,17 +319,16 @@ namespace TableAnalizer.Objects.Managers
             else if(isResort && isManualRegranding) 
             {
                 var skuResortDataUnits = from rowWithRawData in rowsWithRawData
-                                         let unit = new SKUResortDataUnit(rowWithRawData)
-                                         group unit by unit.SKUNumber 
-                                         into unitGroup  
-                                         select unitGroup;
+                                        let unit = new SKUResortDataUnit(rowWithRawData)
+                                        group unit by unit.SKUFromResortNumber 
+                                        into unitGroup  
+                                        select unitGroup;
 
                 foreach (var skuResortGroup in skuResortDataUnits)
                 {
                     var skuNumber = skuResortGroup.Key;
-
-                    var list = (((List<SKUResortDataUnit>?)skuResortGroup.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
-                        throw new InvalidCastException("Невозможно привести List<SKUResortDataUnit> к List<ParsingRowEntity>");
+                    List<ParsingRowEntity>? list = (((List<SKUResortDataUnit>?)[.. skuResortGroup])?.Cast<ParsingRowEntity>().ToList()) ?? 
+                        throw new InvalidCastException("Cannot cast List<SKUResortDataUnit> to List<ParsingRowEntity>.");
 
                     SkuResortBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
                 }
@@ -447,7 +447,7 @@ namespace TableAnalizer.Objects.Managers
 
             if(isCollectionValid) 
             {
-                List<(int key, List<ParsingRowEntity> value)>? listCollection = parsingEntityCollection!.GetValuesList().ToList();
+                List<(int key, List<ParsingRowEntity> value)>? listCollection = [.. parsingEntityCollection!.GetValuesList()];
                 if (listCollection is null || listCollection.Count == 0)
                     throw new Exception("It is not possible to process an empty collection of type List<(int key, List<ParsingRowEntity> value)>.");
 
@@ -512,34 +512,39 @@ namespace TableAnalizer.Objects.Managers
                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUResortDataUnit>().ToList()) ??
                             throw new InvalidCastException("Cannot cast collection to IList<SKUResortDataUnit>.");
                         
-                        SKUResortBalance skuResortBalance = new(skuNumber, units.ToList());
+                        SKUResortBalance skuResortBalance = new(skuNumber, [.. units]);
+
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuResortBalance));
 
-                        foreach (KeyValuePair<int, int> item in skuResortBalance.ResortSKUs)
-                        {
-                            var skuFromResort = skuNumber;
-                            var skuForResort = item.Key;
-                            var skuForResortCount = item.Value;
+                        // foreach (SKUResortDataUnit? item in skuResortBalance.SKUsToResort)
+                        // {
+                        //     // value - cписок артов на который пересорт, в каждом - арт, количество, коммент
 
-                            if(ResortSKUs.TryGetValue(skuForResort, out ConcurrentDictionary<int, int>? value)) 
-                            {
-                                if(value.TryGetValue(skuFromResort, out int comparisonValue)) 
-                                {
-                                    var newValue = comparisonValue += skuForResortCount;
-                                    value.TryUpdate(skuFromResort, newValue, comparisonValue);
-                                }
-                                else 
-                                {
-                                    value.TryAdd(skuFromResort, skuForResortCount);
-                                }
-                            } 
-                            else 
-                            {
-                                var newDict = new ConcurrentDictionary<int, int>();
-                                newDict.TryAdd(skuFromResort, skuForResortCount);
-                                ResortSKUs.TryAdd(skuForResort, newDict);
-                            }
-                        }
+                        //     // ищем есть ли запись по артикулу с котрого пересорт
+                        //     if(SKUToResorts.TryGetValue(skuFromResortKey, out ConcurrentDictionary<int, (int, string?)>? skuToResort)) 
+                        //     {
+
+
+
+                        //     } 
+                        //     // {
+                        //     //     if(value.TryGetValue(skuFromResort, out int comparisonValue)) 
+                        //     //     {
+                        //     //         var newValue = comparisonValue += skuForResortCount;
+                        //     //         value.TryUpdate(skuFromResort, newValue, comparisonValue);
+                        //     //     }
+                        //     //     else 
+                        //     //     {
+                        //     //         value.TryAdd(skuFromResort, skuForResortCount);
+                        //     //     }
+                        //     // } 
+                        //     // else 
+                        //     // {
+                        //     //     var newDict = new ConcurrentDictionary<int, int>();
+                        //     //     newDict.TryAdd(skuFromResort, skuForResortCount);
+                        //     //     ResortSKUs.TryAdd(skuForResort, newDict);
+                        //     // }
+                        // }
                         
                     }
                     else if(isDummies)
@@ -563,20 +568,18 @@ namespace TableAnalizer.Objects.Managers
             }
         }
         
-        public List<SKUForTargetReports> MakeSkusForTargetReport() 
+        public List<SKUForTargetReports> MakeSkusForTargetReport(bool isAnalyzeResortsForWarehouse) 
         {
-            List<SKUForTargetReports> sKUForTargetReports = new();
+            List<SKUForTargetReports> sKUForTargetReports = [];
             foreach (var (key, sku) in SKUs.GetValuesList())
             {
-                SKUForTargetReports newValue = ResortSKUs.TryGetValue(key, out var value) && value is not null ? 
-                    new(sku, value) : 
-                    new(sku);
+                SKUForTargetReports newValue = SKUToResorts.TryGetValue(key, out var value) && value is not null ? 
+                    new(sku, isAnalyzeResortsForWarehouse, value) : 
+                    new(sku, isAnalyzeResortsForWarehouse);
                     
                 sKUForTargetReports.Add(newValue);
             }
-            return sKUForTargetReports
-                .OrderByDescending(el => el.SKUDate)
-                .ToList();
+            return [.. sKUForTargetReports.OrderByDescending(el => el.SKUDate)];
         }
         
         #endregion

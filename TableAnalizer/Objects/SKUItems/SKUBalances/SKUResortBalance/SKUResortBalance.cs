@@ -1,68 +1,169 @@
-namespace TableAnalizer.Objects.SKUItems.SKUBalances
+using System.Diagnostics;
+using System.Text;
+using TableAnalizer.Enums;
+
+namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 {
     public class SKUResortBalance
     {
+        #region Variables and constants
+        public const string WRITE_OFF_1C_NAME = "Списание по 1С";  
+        public const string NO_DATA_NAME = "Нет данных";    
+        #endregion
+
         #region Properties
-        public int SKUNumber { get; private set; }
-        public readonly Dictionary<int, int> ResortSKUs = new(); // Key: resort SKUNumber, Value: resort Count
+        /// <summary>
+        /// Sku FROM WHICH re-sorting is what was <b>not delivered</b> and is <b>written off</b> in 1C system
+        /// </summary>
+        public int SKUFromResortNumber { get; private set; }
+        /// <summary>
+        /// SKUs FOR WHICH re-sorting - what was <b>re-graded</b> and <b>entered</b> into 1C system: key - sku to resort: value - target of resorting, count.
+        /// </summary>
+        public readonly Dictionary<int, Dictionary<SKUResortBalanceTarget, int>> SKUsToResort = []; 
         public string ResortComment { get; private set; } = string.Empty;
         
         #endregion Properties
 
         #region Constructors
-        public SKUResortBalance(int skuNumber, List<SKUResortDataUnit> skuResortDataUnits)
+        public SKUResortBalance(int skuFromResortNumber, List<SKUResortDataUnit> skuToResortUnits)
         {
-            SKUNumber = skuNumber;
-            Update(skuResortDataUnits);
+            SKUFromResortNumber = skuFromResortNumber;
+            Update(skuToResortUnits);
         }
         #endregion
 
         #region Functionality
         public void Update(List<SKUResortDataUnit> skuResortDataUnits) 
         {
+            static void SkippedProcedureMessage() 
+            {
+                Trace.WriteLine("Entry for re-sort must contain a comment. Skipped.");
+            }
+
             foreach (var skuResortDataUnit in skuResortDataUnits)
             {
-                var key = skuResortDataUnit.ResortSKUNumber;
-                var count = skuResortDataUnit.ResortSKUCount;
-      
+                // If there is no comment, entry is skipped
+                if (skuResortDataUnit.ResortComment == string.Empty)
+                {
+                    SkippedProcedureMessage();
+                    continue;
+                }
 
-                UpdateResortSKUs(key, count);
+                if(!CheckEqualsSkus(skuResortDataUnit))
+                {
+                    continue;
+                }
+
+                // Get key and target
+                var skuToResortKey = skuResortDataUnit.SKUToResortNumber;
+                SKUResortBalanceTarget skuResortBalanceTarget;
+
+                switch (skuResortDataUnit.ResortComment!.Trim())
+                {
+                    case WRITE_OFF_1C_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.WriteOff1C;
+                        break;
+                    case NO_DATA_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.NoData;
+                        break;
+                    default:
+                        SkippedProcedureMessage();
+                        continue;
+                }
+
+                if (SKUsToResort.TryGetValue(skuToResortKey, out Dictionary<SKUResortBalanceTarget, int>? value))
+                {
+                    var resortDict = value;
+                    if (resortDict.TryGetValue(skuResortBalanceTarget, out int count))
+                    {
+                        var resortCountByTarget = count + skuResortDataUnit.SKUToResortNumberCount;
+                        resortDict[skuResortBalanceTarget] = resortCountByTarget;
+                    }
+                    else
+                    {
+                        resortDict[skuResortBalanceTarget] = skuResortDataUnit.SKUToResortNumberCount;
+                    }
+
+                    SKUsToResort[skuToResortKey] = resortDict;
+                }
+                else
+                {
+                    SKUsToResort[skuToResortKey] = new Dictionary<SKUResortBalanceTarget, int>()
+                    {
+                        {skuResortBalanceTarget, skuResortDataUnit.SKUToResortNumberCount}
+                    };
+                }
             }
         }
-        
-        public void Update(Dictionary<int, int> newValues) 
+
+        private bool CheckEqualsSkus(SKUResortDataUnit skuResortDataUnit)
         {
-            foreach (var (key, value) in newValues)
+            // If balance and resortFrom articles are not equal, entry is skipped.
+            if (!int.Equals(SKUFromResortNumber, skuResortDataUnit.SKUFromResortNumber))
             {
-                UpdateResortSKUs(key, value);
+                Trace.WriteLine($"Balance ({SKUFromResortNumber}) and resortFrom ({skuResortDataUnit.SKUFromResortNumber}) skus number are not equal. Skipped.");
+                return false;
+            }
+            else 
+            {
+                return true;
             }
         }
 
-        private void UpdateResortSKUs(int resortSKUNumber, int resortCount) 
-        {
-            ResortSKUs[resortSKUNumber] = ResortSKUs.TryGetValue(resortSKUNumber, out int resortSKUCount) ? 
-                resortSKUCount + resortCount : 
-                resortCount; 
+        public void Update(Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortSKUsInNewValues) 
+        {       
+            if(resortSKUsInNewValues is null || resortSKUsInNewValues.Count == 0) return;
+
+            foreach (var resortSKUsInNewValue in resortSKUsInNewValues)
+            {
+                var resortSKUsInNewValueKey = resortSKUsInNewValue.Key;
+                if (SKUsToResort.TryGetValue(resortSKUsInNewValueKey, out Dictionary<SKUResortBalanceTarget, int>? value)) 
+                {
+                    var resortDict = value;
+
+                    foreach (var item in resortSKUsInNewValue.Value)
+                    {
+                        var skuResortBalanceTarget = item.Key;
+                        if (resortDict.TryGetValue(skuResortBalanceTarget, out int count))
+                        {
+                            var resortCountByTarget = count + item.Value;
+                            resortDict[skuResortBalanceTarget] = resortCountByTarget;
+                        }
+                        else
+                        {
+                            resortDict[skuResortBalanceTarget] = item.Value;
+                        }
+
+                        SKUsToResort[resortSKUsInNewValueKey] = resortDict;
+                    }
+                } 
+                else 
+                {
+                    SKUsToResort[resortSKUsInNewValueKey] = resortSKUsInNewValue.Value;
+                }
+            }
         }
 
-        public void AddСommentToBalance() 
+        public override string ToString()
         {
-           foreach (var resortSKU in ResortSKUs)
-           {
-                var resortSku = resortSKU.Key;
-                var resortSkuCount = resortSKU.Value;
+            StringBuilder builder = new($"----------\n{SKUFromResortNumber} --> SKUResortBalance:\n"); 
 
-                var comment = $"\nПересорт на {resortSku} ({resortSkuCount})";
-                comment = ResortSKUs.Values.Last() != resortSKU.Value ? 
-                    string.Concat(comment, ", ") : 
-                    string.Concat(comment, ".");
+            foreach (var skuToResort in SKUsToResort)
+            {
+                builder.Append($"- Sku to resort number: {skuToResort.Key}\n");
 
-                ResortComment = string.IsNullOrEmpty(ResortComment) ? 
-                    comment :
-                    string.Concat(ResortComment, "\n", comment);
-           }
+                foreach (var skuToResortValues in skuToResort.Value)
+                {
+                    builder.Append($"-- Sku to resort target/count: {skuToResortValues.Key} : {skuToResortValues.Value}\n");
+                }
+            }
+
+            builder.Append($"----------\n");
+            builder.Append(String.Empty);
+
+            return builder.ToString();
         }
-        
+
         #endregion
     }
 }

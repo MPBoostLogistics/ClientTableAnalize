@@ -70,11 +70,17 @@ namespace TableAnalizer.Enums
         SellmentStatus              // 6
     }
 
-    enum SourceCellsType 
+    public enum SourceCellsType 
     {
         Required,
         Filtration,
         NonFiltration
+    }
+
+    public enum SKUResortBalanceTarget 
+    {
+        WriteOff1C, // Списание по 1С
+        NoData      // Нет данных
     }
 
 }
