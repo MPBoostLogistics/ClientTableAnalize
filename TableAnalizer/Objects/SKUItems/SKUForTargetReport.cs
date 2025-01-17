@@ -3,11 +3,13 @@ using System.Drawing;
 using System.Text;
 using TableAnalizer.Enums;
 using TableAnalizer.Interfaces;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.SKUItems
 {
     public class SKUForTargetReports : IColorable
     {
+        #region Properties
         public Marketplace? SKUmp { get; set; }
         public int SKUNumber { get; set; }
         public string SKUBrand { get; set; }
@@ -45,7 +47,7 @@ namespace TableAnalizer.Objects.SKUItems
         public int SKUAccountingByResortsCount { get; set; } = 0;
         public string SKUAccountingByResortsComment { get; set; } = string.Empty;
 
-         // Overruns 
+        // Overruns 
         public int SKUOverrunsCount { get; set; } = 0;
         public double SKUOverrunsSum { get; set; } = 0.00;
 
@@ -54,6 +56,9 @@ namespace TableAnalizer.Objects.SKUItems
 
         public string SKUComment { get; set;} = string.Empty;
         public Color FillColor { get; set; }
+        #endregion
+
+        private static bool IsWriteOffIn1C((SKUResortBalanceTarget target, int count) item) => item.target == SKUResortBalanceTarget.WriteOff1C;
 
         #region Constructors
         public SKUForTargetReports(SKU sku, bool isAnalyzeResortsForWarehouse, ConcurrentDictionary<int, (int, string?)>? resortSKUs = null )
@@ -102,6 +107,11 @@ namespace TableAnalizer.Objects.SKUItems
             // Fill SKUResortBalance 
             if (sku.SKUResortBalance is not null)
             {
+                CheckResortingsWithWriteOffin1C(in sku);
+
+
+
+
                 // foreach (var resortSKU in sku.SKUResortBalance.SKUsToResort)
                 // {
                 //     SKUResort += resortSKU.Value;
@@ -110,8 +120,8 @@ namespace TableAnalizer.Objects.SKUItems
                 //sku.SKUResortBalance.AddСommentToBalance();
 
                 //SKUAccountingByResortsComment = string.IsNullOrEmpty(SKUAccountingByResortsComment) ?  
-                  //  sku.SKUResortBalance.ResortComment :
-                    //string.Concat(SKUAccountingByResortsComment, sku.SKUResortBalance.ResortComment);
+                //  sku.SKUResortBalance.ResortComment :
+                //string.Concat(SKUAccountingByResortsComment, sku.SKUResortBalance.ResortComment);
             }
 
             // Fill SKUDummiesBalance 
@@ -124,21 +134,29 @@ namespace TableAnalizer.Objects.SKUItems
             SellmentStatusString = SellmentStatus.StatusLabel;
             FillColor = SellmentStatus.StatusColor;
 
-            Analize(isAnalyzeResortsForWarehouse);
+            Analize(isAnalyzeResortsForWarehouse, sku.SKUResortBalance);
         }
 
-        /* 
-        Аротикул пересорта
-        то, что 1С - добавить на приход, добавить на расход, добавить примечение 
-        "Пересортица (учтено в расходе пересортом) на артикулы: - хххххх, шт: х"
-        
-        
-        */
+        private void CheckResortingsWithWriteOffin1C(in SKU sku)
+        {
+            if(sku.SKUResortBalance is null) return;
 
+            var writeOffIn1CItems = sku.SKUResortBalance.FindSkusInBalanceByPredicate(IsWriteOffIn1C);
 
+            if (writeOffIn1CItems.HasValue)
+            {
+                // Сумма списанных в 1С пересортов прибавляется к приходу и к расходу пересортами
+                if (int.IsPositive(writeOffIn1CItems.Value.sum))
+                {
+                    SKUReceipt += writeOffIn1CItems.Value.sum;
+                    SKUResort += writeOffIn1CItems.Value.sum;
 
+                    SKUAccountingByResortsComment = writeOffIn1CItems.Value.comment;
+                }
+            }
+        }
 
-        private void Analize( bool isAnalyzeResortsForWarehouse) 
+        private void Analize( bool isAnalyzeResortsForWarehouse, SKUResortBalance skuResortBalance) 
         {
             void CalculateTotalСonsumption() 
             {
@@ -178,7 +196,7 @@ namespace TableAnalizer.Objects.SKUItems
                 } 
  
                 // 5. Расчет перерасходов
-                //CalculateOverruns(resortSKUs: resortSKUs);
+                CalculateOverruns();
            }
 
             // 6. Повторный расчет общего расхода
@@ -211,8 +229,8 @@ namespace TableAnalizer.Objects.SKUItems
         /// </summary>
         private void BalancingReceiptShippedAndRemaining() 
         {
-            // SKU receipt can`t be less than sum of shipped plus remaining.
-            var shippedAndRemaining = SKUShipped + SKURemaining;
+            // SKUReceipt can`t be less than sum of SKUShipped plus SKURemaining + SKUResort.
+            var shippedAndRemaining = SKUShipped + SKURemaining + SKUResort;
             if(SKUReceipt != shippedAndRemaining)
                 SKUReceipt = shippedAndRemaining;
         }
@@ -292,13 +310,8 @@ namespace TableAnalizer.Objects.SKUItems
             return result;
         }
 
-        private void CalculateOverruns(ConcurrentDictionary<int, int>? resortSKUs) 
+        private void CalculateOverruns() 
         {
-            if(resortSKUs is null)
-                return;
-
-
-
             // SKUOverrunsCount = SKUTotalСonsumption > SKURansomsWaiting && isDeadline ? SKUTotalСonsumption - SKURansomsWaiting : 0; 
 
             // switch(SKUOverrunsCount) 

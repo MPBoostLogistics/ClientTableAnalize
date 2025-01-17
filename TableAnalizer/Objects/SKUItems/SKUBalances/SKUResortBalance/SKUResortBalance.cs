@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text;
 using TableAnalizer.Enums;
 
@@ -23,6 +24,8 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
         public string ResortComment { get; private set; } = string.Empty;
         
         #endregion Properties
+
+        public delegate bool FindSkusInBalanceDelegate((SKUResortBalanceTarget target, int count) item); 
 
         #region Constructors
         public SKUResortBalance(int skuFromResortNumber, List<SKUResortDataUnit> skuToResortUnits)
@@ -142,6 +145,28 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
                     SKUsToResort[resortSKUsInNewValueKey] = resortSKUsInNewValue.Value;
                 }
             }
+        }
+
+        public (int sum, string comment)? FindSkusInBalanceByPredicate(FindSkusInBalanceDelegate findSkusInBalanceDelegate) 
+        {
+            var items = from skuToResort in SKUsToResort
+                        from item in skuToResort.Value
+                        where findSkusInBalanceDelegate((item.Key ,item.Value))
+                        let data = new {skuToResort.Key, item.Value}
+                        select data;
+
+            if(!items.Any()) return null;
+
+            StringBuilder stringBuilder = new("Пересортица на артикулы:\n");
+            foreach (var item in items)
+            {
+                stringBuilder.Append($"{item.Key}, шт - {item.Value}");
+                if(items.Last() != item) stringBuilder.Append(", ");
+            }
+
+            var sum = items.Aggregate(0, (acc, i) => acc + i.Value);
+
+            return (sum, stringBuilder.ToString());
         }
 
         public override string ToString()
