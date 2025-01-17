@@ -35,6 +35,11 @@ namespace TableAnalizer.Objects.Managers
         private const int HEADER_FONT_SIZE = 14;
         private const string LOGISTIC_FLAG = "Да";
 
+        // Accent 
+        private readonly Color AccentFillColor = ColorTranslator.FromHtml("#FCF9FB");
+        private readonly Color AccentTextColor = ColorTranslator.FromHtml("#503A49");
+        private readonly int AccentTextSize = 14;
+
         #endregion
 
         #region Properties
@@ -157,8 +162,8 @@ namespace TableAnalizer.Objects.Managers
             new(20, "SKURemaining", ParsingTypeCode.IntTypeCode, true)
         };
 
-        public TargetCell[] cellsReportingMain = new TargetCell[]
-        {
+        public TargetCell[] cellsReportingMain =
+        [
             new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUmp",
                 parsingTypeCode: ParsingTypeCode.Marketplace, excelFillStyle:  ExcelFillStyle.None,
@@ -239,50 +244,46 @@ namespace TableAnalizer.Objects.Managers
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURemaining",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
                 valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 21, colName: "Задержка довоза, всего", colWidth: 12, format: "0",
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayTotal",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle: ExcelFillStyle.None, 
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: true),
-            new (colNumber: 22, colName: "Задержка довоза от точек, товаров", colWidth: 12, format: "0",
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPoints",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 23, colName: "Задержка довоза от точек, сумма", colWidth: 12, format: "0.00",
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPointsSum",
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 24, colName: "Задержка довоза от склада, товаров", colWidth: 12, format: "0",
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorage",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 25, colName: "Задержка довоза от склада, сумма", colWidth: 12, format: "0.00",
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorageSum",
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 26, colName: "Учтено пересортами, товаров", colWidth: 15, format: "0",
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUAccountingByResortsCount",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 27, colName: "Учтено пересортами, комментарий", colWidth: 25, format: "0",
+            new (colNumber: 21, colName: "Комментарий к пересортам", colWidth: 30, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUAccountingByResortsComment",
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 28, colName: "Перерасход, товаров", colWidth: 14, format: "0",
+            new (colNumber: 22, colName: "Задержка довоза, всего", colWidth: 12, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayTotal",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle: ExcelFillStyle.None, 
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: true),
+            new (colNumber: 23, colName: "Задержка довоза от точек, кол-во", colWidth: 12, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPoints",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
+            new (colNumber: 24, colName: "Задержка довоза от точек, сумма руб.", colWidth: 12, format: "0.00",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPointsSum",
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
+            new (colNumber: 25, colName: "Задержка довоза от склада, кол-во", colWidth: 12, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorage",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
+            new (colNumber: 26, colName: "Задержка довоза от склада, сумма руб.", colWidth: 12, format: "0.00",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorageSum",
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
+            new (colNumber: 27, colName: "Перерасход, кол-ао", colWidth: 14, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUOverrunsCount",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: true),
-            new (colNumber: 29, colName: "Перерасход, сумма", colWidth: 14, format: "0.00",
+            new (colNumber: 28, colName: "Перерасход, сумма руб.", colWidth: 14, format: "0.00",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUOverrunsSum",
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 30, colName: "Комментарий к артикулу", colWidth: 50, format: "0",
+            new (colNumber: 29, colName: "Комментарий к артикулу", colWidth: 50, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUComment",
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None, 
                 valueСheckingPredicate: null, isBoldFont: false),
-        };
+        ];
         
-        public TargetCell[] cellsReportingDelays = new TargetCell[] 
-        {
+        public TargetCell[] cellsReportingDelays =
+        [
             new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUmp",
                 parsingTypeCode: ParsingTypeCode.Marketplace, excelFillStyle:  ExcelFillStyle.None,
@@ -315,10 +316,10 @@ namespace TableAnalizer.Objects.Managers
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorageSum",
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: false)
-        };
+        ];
 
-        public TargetCell[] cellsReportingOverruns = new TargetCell[] 
-        {
+        public TargetCell[] cellsReportingOverruns =
+        [
              new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUmp",
                 parsingTypeCode: ParsingTypeCode.Marketplace, excelFillStyle:  ExcelFillStyle.None,
@@ -343,12 +344,15 @@ namespace TableAnalizer.Objects.Managers
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUOverrunsSum",
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: false)
-        };
+        ];
         
         #endregion
 
         #region Constructors && destructors
-        public ExcelManager() { }
+        public ExcelManager() 
+        {
+            // ... 
+        }
 
         ~ExcelManager()
         {
@@ -447,29 +451,27 @@ namespace TableAnalizer.Objects.Managers
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? mainOutputReportSheet, Colors[SKUSellmentStatus.FullSet]);
             FillingСellsWithData<SKUForTargetReports>(outputPackage, ref mainOutputReportSheet, in actualData, targetCells, FileManager.OutputClientReportFilePath); 
             SetupTableHeader(in targetCells, ref mainOutputReportSheet);    
-            AddFilterInWorkSheet(ref mainOutputReportSheet);
+            AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, [13,15,22,27]);
 
             // Make delay report
-            actualData = skuForTargetReports
-                .Where(el => el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.OnSearchPoints || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouseAndPoints))
-                .ToList();
+            actualData = [.. skuForTargetReports
+                .Where(el => el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.OnSearchPoints || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouseAndPoints))];
             sheetName = OUTPUT_REPORT_WORKSHEET02_NAME;
             targetCells = cellsReportingDelays;
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? delayOutputReportSheet, Colors[SKUSellmentStatus.OnSearchWarehouse]);
             FillingСellsWithData<SKUForTargetReports>(outputPackage, ref delayOutputReportSheet, in actualData, targetCells, FileManager.OutputClientReportFilePath); 
             SetupTableHeader(in targetCells, ref delayOutputReportSheet); 
-            AddFilterInWorkSheet(ref delayOutputReportSheet); 
+            AddFilterAndAccentInWorkSheet(ref delayOutputReportSheet); 
 
             // Make overruns report
-            actualData = skuForTargetReports
-                .Where(el => el.SKUOverrunsSum > 0.00)
-                .ToList();
+            actualData = [.. skuForTargetReports.Where(el => el.SKUOverrunsSum > 0.00)];
+
             sheetName = OUTPUT_REPORT_WORKSHEET03_NAME;
             targetCells = cellsReportingOverruns;
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? overrunsOutputReportSheet, Colors[SKUSellmentStatus.Unknown]);
             FillingСellsWithData<SKUForTargetReports>(outputPackage, ref overrunsOutputReportSheet, in actualData, targetCells, FileManager.OutputClientReportFilePath); 
             SetupTableHeader(in targetCells, ref overrunsOutputReportSheet); 
-            AddFilterInWorkSheet(ref overrunsOutputReportSheet); 
+            AddFilterAndAccentInWorkSheet(ref overrunsOutputReportSheet); 
 
             // Save work
             SaveReceivedData(FileManager.OutputClientReportFilePath, ref outputPackage);
@@ -552,7 +554,7 @@ namespace TableAnalizer.Objects.Managers
                             cell.Style.Fill.BackgroundColor.SetColor(item.FillColor);
                         }
 
-                        // Checking predicate condition ()
+                        // Checking predicate condition
                         if(targetCell.ValueСheckingPredicate is not null) 
                         {
                             int? cheking = value is double ? Convert.ToInt32(value) : value is int v ? v : null;
@@ -563,7 +565,8 @@ namespace TableAnalizer.Objects.Managers
                             }
                         }
 
-                        //
+                        // verticalAlignment
+                        cell.Style.VerticalAlignment = ExcelVerticalAlignment.Top;
 
                         // Bold font for cell
                         cell.Style.Font.Bold = targetCell.IsBoldFont;
@@ -641,7 +644,7 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        private static void AddFilterInWorkSheet(ref ExcelWorksheet excelWorksheet)
+        private void AddFilterAndAccentInWorkSheet(ref ExcelWorksheet excelWorksheet, int[]? accentCellsRange = null)
         {
             int firstRow = excelWorksheet.Dimension.Start.Row;
             int endRow = excelWorksheet.Dimension.End.Row;
@@ -653,7 +656,6 @@ namespace TableAnalizer.Objects.Managers
             string endColLet = ExcelCellAddress.GetColumnLetter(endCol);
 
             excelWorksheet.Cells[$"{firstColLet}{firstRow}:{endColLet}{endRow}"].AutoFilter = true;
-
 
             //Column Group
             excelWorksheet.OutLineSummaryBelow = false;
@@ -667,6 +669,23 @@ namespace TableAnalizer.Objects.Managers
             excelWorksheet.Columns[range03.First(), range03.Last()].Group();
 
             excelWorksheet.View.FreezePanes(2, 4);
+
+            // Add accents
+            if(accentCellsRange is not null && accentCellsRange.Length > 0) 
+            {
+                for (int i = 0; i < accentCellsRange.Length; i++)
+                {
+                    // Background 
+                    string columnLetter = ExcelCellAddress.GetColumnLetter(accentCellsRange[i]);
+                    var address = $"{columnLetter}{firstRow + 1}:{columnLetter}{endRow}";
+                    excelWorksheet.Cells[address].Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    excelWorksheet.Cells[address].Style.Fill.BackgroundColor.SetColor(AccentFillColor);
+                    
+                    // Text
+                    excelWorksheet.Cells[address].Style.Font.Color.SetColor(AccentTextColor);
+                    excelWorksheet.Cells[address].Style.Font.Size = AccentTextSize;
+                };
+            }
         }
 
         /// <summary>

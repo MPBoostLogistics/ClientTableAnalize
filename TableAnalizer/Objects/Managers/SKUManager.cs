@@ -45,6 +45,8 @@ namespace TableAnalizer.Objects.Managers
 
         #endregion
 
+        public static bool IsWriteOffIn1C((SKUResortBalanceTarget target, int count) item) => item.target == SKUResortBalanceTarget.WriteOff1C;
+
         #region Constructors and destructors
         public SKUManager(ExcelManager excelReportManager)
         {
@@ -515,6 +517,11 @@ namespace TableAnalizer.Objects.Managers
                         SKUResortBalance skuResortBalance = new(skuNumber, [.. units]);
 
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuResortBalance));
+
+                        skuResortBalance.FindSkusInBalanceByPredicate
+
+
+
 
                         // foreach (SKUResortDataUnit? item in skuResortBalance.SKUsToResort)
                         // {

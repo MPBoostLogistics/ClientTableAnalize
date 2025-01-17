@@ -58,8 +58,6 @@ namespace TableAnalizer.Objects.SKUItems
         public Color FillColor { get; set; }
         #endregion
 
-        private static bool IsWriteOffIn1C((SKUResortBalanceTarget target, int count) item) => item.target == SKUResortBalanceTarget.WriteOff1C;
-
         #region Constructors
         public SKUForTargetReports(SKU sku, bool isAnalyzeResortsForWarehouse, ConcurrentDictionary<int, (int, string?)>? resortSKUs = null )
         {
@@ -134,7 +132,7 @@ namespace TableAnalizer.Objects.SKUItems
             SellmentStatusString = SellmentStatus.StatusLabel;
             FillColor = SellmentStatus.StatusColor;
 
-            Analize(isAnalyzeResortsForWarehouse, sku.SKUResortBalance);
+            Analize(isAnalyzeResortsForWarehouse);
         }
 
         private void CheckResortingsWithWriteOffin1C(in SKU sku)
@@ -156,7 +154,7 @@ namespace TableAnalizer.Objects.SKUItems
             }
         }
 
-        private void Analize( bool isAnalyzeResortsForWarehouse, SKUResortBalance skuResortBalance) 
+        private void Analize( bool isAnalyzeResortsForWarehouse) 
         {
             void CalculateTotalСonsumption() 
             {
