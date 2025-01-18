@@ -46,7 +46,7 @@ namespace TableAnalizer.Objects.Managers
 
         #endregion
 
-        public static bool IsWriteOffIn1C((SKUResortBalanceTarget target, int count) item) => item.target == SKUResortBalanceTarget.WriteOff1C;
+        public static bool IsWriteOffIn1C((SKUResortBalanceTarget target, int count) item) => item.target == SKUResortBalanceTarget.ResortIn1C;
 
         #region Constructors and destructors
         public SKUManager(ExcelManager excelReportManager)

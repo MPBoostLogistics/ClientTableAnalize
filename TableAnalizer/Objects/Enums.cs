@@ -79,8 +79,11 @@ namespace TableAnalizer.Enums
 
     public enum SKUResortBalanceTarget 
     {
-        WriteOff1C, // Списание по 1С
-        NoData      // Нет данных
+        ResortIn1C,              // Создан пересорт в 1С
+        MaybeResortIn1C,         // Возможен пересорт в 1С
+        MaybeWriteOffFromPoints, //Возможно списание с точек
+        NoSolution               // Нет решения
+        
     }
 
 }

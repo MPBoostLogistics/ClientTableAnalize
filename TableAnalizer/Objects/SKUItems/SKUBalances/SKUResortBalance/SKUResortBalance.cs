@@ -7,8 +7,10 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
     public class SKUResortBalance
     {
         #region Variables and constants
-        public const string WRITE_OFF_1C_NAME = "Списание по 1С";  
-        public const string NO_DATA_NAME = "Нет данных";    
+        public const string RESORT_1C_NAME = "Создан пересорт в 1С";  
+        public const string MAYBE_RESORT_1C_NAME = "Возможен пересорт в 1С";  
+        public const string MAYBE_WRITEOFF_POINTS_NAME = "Возможно списание с точек";  
+        public const string NO_SOLUTION_NAME = "Нет решениия"; 
         #endregion
 
         #region Properties
@@ -62,11 +64,17 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 
                 switch (skuResortDataUnit.ResortComment!.Trim())
                 {
-                    case WRITE_OFF_1C_NAME:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.WriteOff1C;
+                    case RESORT_1C_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.ResortIn1C;
                         break;
-                    case NO_DATA_NAME:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.NoData;
+                    case MAYBE_RESORT_1C_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.MaybeResortIn1C;
+                        break;
+                    case MAYBE_WRITEOFF_POINTS_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.MaybeWriteOffFromPoints;
+                        break;
+                    case NO_SOLUTION_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.NoSolution;
                         break;
                     default:
                         SkippedProcedureMessage();
