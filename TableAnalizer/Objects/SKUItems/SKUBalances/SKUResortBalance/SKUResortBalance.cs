@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Security.Cryptography;
 using System.Text;
 using TableAnalizer.Enums;
 
@@ -149,26 +148,30 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 
         public (int sum, string comment)? FindSkusInBalanceByPredicate(FindSkusInBalanceDelegate findSkusInBalanceDelegate) 
         {
-            var items = from skuToResort in SKUsToResort
-                        from item in skuToResort.Value
-                        where findSkusInBalanceDelegate((item.Key ,item.Value))
-                        let data = new {skuToResort.Key, item.Value}
-                        select data;
+            var items = GetSkusResortToSum(findSkusInBalanceDelegate);
 
             if(!items.Any()) return null;
 
             StringBuilder stringBuilder = new("Пересортица на артикулы:\n");
             foreach (var item in items)
             {
-                stringBuilder.Append($"{item.Key}, шт - {item.Value}");
+                stringBuilder.Append($"{item.skuResortTo}, шт - {item.skuResortToSum}");
                 if(items.Last() != item) stringBuilder.Append(", ");
             }
 
-            var sum = items.Aggregate(0, (acc, i) => acc + i.Value);
-
+            var sum = items.Aggregate(0, (acc, i) => acc + i.skuResortToSum);
             return (sum, stringBuilder.ToString());
         }
 
+        public IEnumerable<(int skuResortTo, int skuResortToSum)> GetSkusResortToSum(FindSkusInBalanceDelegate findSkusInBalanceDelegate) 
+        {
+            return from skuToResort in SKUsToResort
+                   from item in skuToResort.Value
+                   where findSkusInBalanceDelegate((item.Key ,item.Value))
+                   let data = (skuToResort.Key, item.Value)
+                   select data;
+        }
+        
         public override string ToString()
         {
             StringBuilder builder = new($"----------\n{SKUFromResortNumber} --> SKUResortBalance:\n"); 

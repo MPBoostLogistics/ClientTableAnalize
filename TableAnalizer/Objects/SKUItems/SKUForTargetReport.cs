@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Text;
 using TableAnalizer.Enums;
 using TableAnalizer.Interfaces;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
+using TableAnalizer.Objects.Managers;
 
 namespace TableAnalizer.Objects.SKUItems
 {
@@ -59,7 +59,7 @@ namespace TableAnalizer.Objects.SKUItems
         #endregion
 
         #region Constructors
-        public SKUForTargetReports(SKU sku, bool isAnalyzeResortsForWarehouse, ConcurrentDictionary<int, (int, string?)>? resortSKUs = null )
+        public SKUForTargetReports(SKU sku, bool isAnalyzeResortsForWarehouse, string? resortFromSKUsComment = null)
         {
             SKUmp = sku.Marketplace;
             SKUNumber = sku.SKUNumber;
@@ -106,21 +106,9 @@ namespace TableAnalizer.Objects.SKUItems
             if (sku.SKUResortBalance is not null)
             {
                 CheckResortingsWithWriteOffin1C(in sku);
-
-
-
-
-                // foreach (var resortSKU in sku.SKUResortBalance.SKUsToResort)
-                // {
-                //     SKUResort += resortSKU.Value;
-                // }
-
-                //sku.SKUResortBalance.AddСommentToBalance();
-
-                //SKUAccountingByResortsComment = string.IsNullOrEmpty(SKUAccountingByResortsComment) ?  
-                //  sku.SKUResortBalance.ResortComment :
-                //string.Concat(SKUAccountingByResortsComment, sku.SKUResortBalance.ResortComment);
             }
+            if(!string.IsNullOrEmpty(resortFromSKUsComment))
+                SKUAccountingByResortsComment += resortFromSKUsComment;
 
             // Fill SKUDummiesBalance 
             if (sku.SKUDummiesBalance is not null)  
@@ -137,21 +125,22 @@ namespace TableAnalizer.Objects.SKUItems
 
         private void CheckResortingsWithWriteOffin1C(in SKU sku)
         {
-            if(sku.SKUResortBalance is null) return;
-
-            var writeOffIn1CItems = sku.SKUResortBalance.FindSkusInBalanceByPredicate(IsWriteOffIn1C);
-
-            if (writeOffIn1CItems.HasValue)
+            // Учет пересортов на другие артикулы в балансе и комментарии 
+            if(sku.SKUResortBalance is not null)
             {
-                // Сумма списанных в 1С пересортов прибавляется к приходу и к расходу пересортами
-                if (int.IsPositive(writeOffIn1CItems.Value.sum))
+                var writeOffIn1CItems = sku.SKUResortBalance.FindSkusInBalanceByPredicate(SKUManager.IsWriteOffIn1C);
+                if (writeOffIn1CItems.HasValue)
                 {
-                    SKUReceipt += writeOffIn1CItems.Value.sum;
-                    SKUResort += writeOffIn1CItems.Value.sum;
+                    // Сумма списанных в 1С пересортов прибавляется к приходу и к расходу пересортами
+                    if (int.IsPositive(writeOffIn1CItems.Value.sum))
+                    {
+                        SKUReceipt += writeOffIn1CItems.Value.sum;
+                        SKUResort += writeOffIn1CItems.Value.sum;
 
-                    SKUAccountingByResortsComment = writeOffIn1CItems.Value.comment;
+                        SKUAccountingByResortsComment = writeOffIn1CItems.Value.comment;
+                    }
                 }
-            }
+            };
         }
 
         private void Analize( bool isAnalyzeResortsForWarehouse) 

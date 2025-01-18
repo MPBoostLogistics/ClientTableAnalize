@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using TableAnalizer.Enums;
 using TableAnalizer.Interfaces;
@@ -29,8 +28,10 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuDummiesBalanceUnits { get; }
 
-        // арткул на который пересорт: (артикул с которого пересорт: количество, комментарий)
-        public ConcurrentDictionary <int, ConcurrentDictionary<int, (int, string?)>> SKUToResorts {get; set;} = new();
+        /// <summary>
+        /// Словарь прересортов в обратном направлении - ключ: skuResortToNumber, значение: словарь - ключ: skuResortFromNumber, значение: skuResortFromSum
+        /// </summary>
+        private readonly Dictionary<int, string> SKUToResorts =[]; 
 
         private static List<SKUParallelUnit> SKUParallelUnits {get; set;} = [];
 
@@ -223,7 +224,6 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="rowsWithRawData">List of raw data dictionaries.</param>
         /// <returns>Number of keys in final dictionary.</returns>
         /// <exception cref="ArgumentException">Exception when passing an empty dictionary.</exception>
-        /// <remarks><i>New version, tested</i></remarks>
         public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData, bool isMulty, bool isManualRegranding)
         {
             bool isRansoms = reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ;
@@ -509,50 +509,15 @@ namespace TableAnalizer.Objects.Managers
                         SKUCompensationBalance skuCompensationBalance = new(skuNumber, units.ToList());
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuCompensationBalance));
                     }
-                    else if(isResorts && isManualResorting) 
+                    else if(isResorts && isManualResorting)
                     {
                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUResortDataUnit>().ToList()) ??
                             throw new InvalidCastException("Cannot cast collection to IList<SKUResortDataUnit>.");
-                        
+
                         SKUResortBalance skuResortBalance = new(skuNumber, [.. units]);
-
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuResortBalance));
-
-                        skuResortBalance.FindSkusInBalanceByPredicate
-
-
-
-
-                        // foreach (SKUResortDataUnit? item in skuResortBalance.SKUsToResort)
-                        // {
-                        //     // value - cписок артов на который пересорт, в каждом - арт, количество, коммент
-
-                        //     // ищем есть ли запись по артикулу с котрого пересорт
-                        //     if(SKUToResorts.TryGetValue(skuFromResortKey, out ConcurrentDictionary<int, (int, string?)>? skuToResort)) 
-                        //     {
-
-
-
-                        //     } 
-                        //     // {
-                        //     //     if(value.TryGetValue(skuFromResort, out int comparisonValue)) 
-                        //     //     {
-                        //     //         var newValue = comparisonValue += skuForResortCount;
-                        //     //         value.TryUpdate(skuFromResort, newValue, comparisonValue);
-                        //     //     }
-                        //     //     else 
-                        //     //     {
-                        //     //         value.TryAdd(skuFromResort, skuForResortCount);
-                        //     //     }
-                        //     // } 
-                        //     // else 
-                        //     // {
-                        //     //     var newDict = new ConcurrentDictionary<int, int>();
-                        //     //     newDict.TryAdd(skuFromResort, skuForResortCount);
-                        //     //     ResortSKUs.TryAdd(skuForResort, newDict);
-                        //     // }
-                        // }
                         
+                        UpdateSKUsToResortCollection(skuResortBalance);
                     }
                     else if(isDummies)
                     {
@@ -574,19 +539,50 @@ namespace TableAnalizer.Objects.Managers
                 }
             }
         }
-        
+
+        private void UpdateSKUsToResortCollection(SKUResortBalance skuResortBalance)
+        { 
+            List<(int skuResortTo, int skuResortToSum)>? skusResortTo = [.. skuResortBalance.GetSkusResortToSum(IsWriteOffIn1C)];
+            if (skusResortTo is not null && skusResortTo.Count != 0)
+            {
+                foreach ((int skuResortToNumber, int skuResortToSum) in skusResortTo)
+                {
+                    string? resultComment = 
+                        SKUToResorts.TryGetValue(skuResortToNumber, out string? existingComment) && 
+                            !string.IsNullOrEmpty(existingComment) ?
+                                existingComment : 
+                                string.Empty;
+  
+                    if(string.IsNullOrEmpty(resultComment)) 
+                    {
+                        resultComment = "Пересорт от артикулов (добавлено в \"Склад: Приход товаров\"):\n";
+                    }
+                    
+                    resultComment += $"{skuResortBalance.SKUFromResortNumber},шт.: {skuResortToSum},";
+
+                    SKUToResorts[skuResortToNumber] = resultComment;
+                }
+            }
+        }
+
         public List<SKUForTargetReports> MakeSkusForTargetReport(bool isAnalyzeResortsForWarehouse) 
         {
-            List<SKUForTargetReports> sKUForTargetReports = [];
-            foreach (var (key, sku) in SKUs.GetValuesList())
+            List<SKUForTargetReports> skuForTargetReports = [];
+            foreach (var (_, targetSku) in SKUs.GetValuesList())
             {
-                SKUForTargetReports newValue = SKUToResorts.TryGetValue(key, out var value) && value is not null ? 
-                    new(sku, isAnalyzeResortsForWarehouse, value) : 
-                    new(sku, isAnalyzeResortsForWarehouse);
-                    
-                sKUForTargetReports.Add(newValue);
+                SKUForTargetReports newValue;
+                if(SKUToResorts.TryGetValue(targetSku.SKUNumber, out string? resortFromSkusComment)  && !string.IsNullOrEmpty(resortFromSkusComment)) 
+                {
+                    newValue = new(targetSku, isAnalyzeResortsForWarehouse, resortFromSkusComment);
+                } 
+                else 
+                {
+                    newValue = new(targetSku, isAnalyzeResortsForWarehouse);
+                }
+
+                skuForTargetReports.Add(newValue);
             }
-            return [.. sKUForTargetReports.OrderByDescending(el => el.SKUDate)];
+            return [.. skuForTargetReports.OrderByDescending(el => el.SKUDate)];
         }
         
         #endregion

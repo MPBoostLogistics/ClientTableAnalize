@@ -36,8 +36,8 @@ namespace TableAnalizer.Objects.Managers
         private const string LOGISTIC_FLAG = "Да";
 
         // Accent 
-        private readonly Color AccentFillColor = ColorTranslator.FromHtml("#FCF9FB");
-        private readonly Color AccentTextColor = ColorTranslator.FromHtml("#503A49");
+        private readonly Color AccentFillColor = ColorTranslator.FromHtml("#FEFEF4");
+        private readonly Color AccentTextColor = ColorTranslator.FromHtml("#3a425d");
         private readonly int AccentTextSize = 14;
 
         #endregion
