@@ -1,4 +1,4 @@
-namespace TableAnalizer.Enums
+namespace TableAnalizer.Objects.Enums
 {
     public enum Marketplace { WB, OZ }
 
@@ -83,7 +83,5 @@ namespace TableAnalizer.Enums
         MaybeResortIn1C,         // Возможен пересорт в 1С
         MaybeWriteOffFromPoints, //Возможно списание с точек
         NoSolution               // Нет решения
-        
     }
-
 }
