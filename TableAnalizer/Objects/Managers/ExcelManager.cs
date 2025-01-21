@@ -1,7 +1,7 @@
 #nullable enable
 
 using System.Drawing;
-using TableAnalizer.Enums;
+using TableAnalizer.Objects.Enums;
 using TableAnalizer.Interfaces;
 using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.SKUItems;
@@ -780,7 +780,7 @@ namespace TableAnalizer.Objects.Managers
             }
 
             // Getting values
-            values = new();
+            values = [];
             foreach (var dataCell in dataСellsNonFilters)
             {
                 var value = workSheet.Cells[rowIndex, dataCell.ColIndex].Value;

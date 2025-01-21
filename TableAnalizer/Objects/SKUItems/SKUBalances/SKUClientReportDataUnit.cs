@@ -1,4 +1,4 @@
-using TableAnalizer.Enums;
+using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.Parsing;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances

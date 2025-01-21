@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Reflection;
-using TableAnalizer.Enums;
+
+using TableAnalizer.Objects.Enums;
 
 namespace TableAnalizer.Objects.Managers
 {

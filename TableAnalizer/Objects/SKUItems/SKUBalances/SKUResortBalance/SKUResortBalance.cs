@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Text;
-using TableAnalizer.Enums;
+using TableAnalizer.Objects.Enums;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 {

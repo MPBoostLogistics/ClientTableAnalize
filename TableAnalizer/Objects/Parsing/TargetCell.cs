@@ -1,6 +1,7 @@
-﻿using System.Drawing;
-using TableAnalizer.Enums;
+﻿
+using System.Drawing;
 using OfficeOpenXml.Style;
+using TableAnalizer.Objects.Enums;
 
 namespace TableAnalizer.Objects.Parsing
 {

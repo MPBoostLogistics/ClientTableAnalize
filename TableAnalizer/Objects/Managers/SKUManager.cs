@@ -1,13 +1,15 @@
 using System.Diagnostics;
-using TableAnalizer.Enums;
+using OfficeOpenXml;
 using TableAnalizer.Interfaces;
 using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.Repositories;
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUDummiesBalance;
-using OfficeOpenXml;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
+using TableAnalizer.Objects.Enums;
+using OneOf.Types;
+using Serilog.Formatting.Json;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -31,7 +33,7 @@ namespace TableAnalizer.Objects.Managers
         /// <summary>
         /// Словарь прересортов в обратном направлении - ключ: skuResortToNumber, значение: словарь - ключ: skuResortFromNumber, значение: skuResortFromSum
         /// </summary>
-        private readonly Dictionary<int, string> SKUToResorts =[]; 
+        private readonly Dictionary<int, Dictionary<int, int>> SKUToResorts =[]; 
 
         private static List<SKUParallelUnit> SKUParallelUnits {get; set;} = [];
 
@@ -542,25 +544,26 @@ namespace TableAnalizer.Objects.Managers
 
         private void UpdateSKUsToResortCollection(SKUResortBalance skuResortBalance)
         { 
+            int skuResortFromNumber = skuResortBalance.SKUFromResortNumber;
+
             List<(int skuResortTo, int skuResortToSum)>? skusResortTo = [.. skuResortBalance.GetSkusResortToSum(IsWriteOffIn1C)];
             if (skusResortTo is not null && skusResortTo.Count != 0)
             {
+                Dictionary<int, int> result;
                 foreach ((int skuResortToNumber, int skuResortToSum) in skusResortTo)
                 {
-                    string? resultComment = 
-                        SKUToResorts.TryGetValue(skuResortToNumber, out string? existingComment) && 
-                            !string.IsNullOrEmpty(existingComment) ?
-                                existingComment : 
-                                string.Empty;
-  
-                    if(string.IsNullOrEmpty(resultComment)) 
+                    if (SKUToResorts.TryGetValue(skuResortToNumber, out Dictionary<int, int>? values) &&
+                        values is not null &&
+                        values.Count > 0)
                     {
-                        resultComment = "Пересорт от артикулов (добавлено в \"Склад: Приход товаров\"):\n";
+                        result = values;
+                        result[skuResortFromNumber] = skuResortToSum;
+                        SKUToResorts[skuResortToNumber] = result; 
                     }
-                    
-                    resultComment += $"{skuResortBalance.SKUFromResortNumber},шт.: {skuResortToSum},";
-
-                    SKUToResorts[skuResortToNumber] = resultComment;
+                    else 
+                    {
+                        SKUToResorts[skuResortToNumber] = new Dictionary<int, int>(){ {skuResortFromNumber,skuResortToSum }};
+                    }
                 }
             }
         }
@@ -571,9 +574,11 @@ namespace TableAnalizer.Objects.Managers
             foreach (var (_, targetSku) in SKUs.GetValuesList())
             {
                 SKUForTargetReports newValue;
-                if(SKUToResorts.TryGetValue(targetSku.SKUNumber, out string? resortFromSkusComment)  && !string.IsNullOrEmpty(resortFromSkusComment)) 
+                if(SKUToResorts.TryGetValue(targetSku.SKUNumber, out Dictionary<int, int>? resortFromSkusValues) && 
+                    resortFromSkusValues is not null &&
+                    resortFromSkusValues.Count > 0) 
                 {
-                    newValue = new(targetSku, isAnalyzeResortsForWarehouse, resortFromSkusComment);
+                    newValue = new(targetSku, isAnalyzeResortsForWarehouse, resortFromSkusValues);
                 } 
                 else 
                 {

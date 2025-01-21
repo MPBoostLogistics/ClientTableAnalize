@@ -1,7 +1,6 @@
 ﻿
-using System.Reflection.Metadata;
 using System.Text.RegularExpressions;
-using TableAnalizer.Enums;
+using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.SKUItems;
 
 namespace TableAnalizer.Objects.Managers

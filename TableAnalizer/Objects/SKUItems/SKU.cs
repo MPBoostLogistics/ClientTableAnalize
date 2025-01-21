@@ -1,4 +1,4 @@
-﻿using TableAnalizer.Enums;
+﻿using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUDummiesBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;

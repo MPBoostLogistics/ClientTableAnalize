@@ -1,11 +1,10 @@
-using TableAnalizer.Enums;
+using TableAnalizer.Objects.Enums;
 
 namespace TableAnalizer.Objects.Parsing
 {
     /// <summary>
     /// Represents source column of an Excel table.
     /// </summary>
-    /// <remarks><i>New version</i></remarks>
     public readonly struct SourceColumn 
     {
         #region Properties

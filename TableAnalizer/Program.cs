@@ -14,7 +14,7 @@ using System.Reflection;
 using System.Text;
 using CSharpHelpers.Services;
 using OfficeOpenXml;
-using TableAnalizer.Enums;
+using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.Managers;
 using TableAnalizer.Objects.SKUItems;
 
@@ -23,7 +23,6 @@ internal class Program
     #region Variables and constants
     private static readonly Version? AppVersion = Assembly.GetExecutingAssembly().GetName().Version;
     private static string goodByMessage = "\nСпасибо за использование программы. Хорошего дня!";
-    //private static readonly string failureMessage = "Некорретные данные, попробуйте еще раз.";
     private static bool isManualResorting;
     private static bool isAnalyzeResortsForWarehouse;
     #endregion

@@ -1,4 +1,4 @@
-using TableAnalizer.Enums;
+using TableAnalizer.Objects.Enums;
 
 namespace TableAnalizer.Objects.SKUItems
 {

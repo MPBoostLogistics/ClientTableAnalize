@@ -1,8 +1,7 @@
 using System.Diagnostics;
-using System.Globalization;
 using System.Reflection;
-using TableAnalizer.Enums;
 using TableAnalizer.Interfaces;
+using TableAnalizer.Objects.Enums;
 
 namespace TableAnalizer.Objects.Parsing
 {
