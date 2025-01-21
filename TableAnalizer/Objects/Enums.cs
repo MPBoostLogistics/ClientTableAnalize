@@ -12,7 +12,7 @@ namespace TableAnalizer.Enums
         InWork,                     // В работе
         OnSearchWarehouseAndPoints, // На поиске склада и ПВЗ
         OnSearchWarehouse,          // На поиске склада 
-        OnSearchPoints,              // На поиске ПВЗ
+        OnSearchPoints,             // На поиске ПВЗ
         Unknown                     // Неопределенный
     }
 
