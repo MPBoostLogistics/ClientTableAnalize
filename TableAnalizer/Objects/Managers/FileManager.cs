@@ -1,4 +1,5 @@
 ﻿
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.SKUItems;
@@ -56,19 +57,21 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <param name="reportsPath">Directory with client reports.</param>
         /// <returns>List of existing keys as Task result.</returns>
-        public async Task<List<SourceSKUReportFileKey>?> ChecksAvailabilityNecessaryFiles(string reportsPath, bool isMulty)
+        public async Task<List<SourceSKUReportFileKey>?> ChecksAvailabilityNecessaryFiles(string reportsPath, bool isMulty, int delay)
         {
             ManagerReachedEventArgs? args = null;
 
             try
             {
                 var fileCount = GetReportFiles(reportsPath, isMulty);
+                await Task.Delay(delay);
+
                 var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, isMulty);
 
                 if(!success && isMulty) 
                 {
                     await Task.Delay(100);
-                    args = new("Нет необходимого количества отчетов (>1) для формирования сводного", 2000, true);
+                    args = new("There is not enough reports (>1) to generate a summary.", 2000, true);
                     return null;
                 } 
                 else 
@@ -82,7 +85,7 @@ namespace TableAnalizer.Objects.Managers
                             lostKeysString = string.Concat(lostKeysString, lostKey, !Equals(lostKey, lastKey) ? ", " : ". ");
 
                         await Task.Delay(100);
-                        args = new(string.Concat("Не предоставлены обязательные данные для анализа: ", lostKeysString), 2000, true);
+                        args = new(string.Concat("Mandatory data for analysis not provided: ", lostKeysString), 2000, true);
                         return null;
                     }
                     else
@@ -94,7 +97,7 @@ namespace TableAnalizer.Objects.Managers
             catch (System.Exception ex)
             {
                 await Task.Delay(100);
-                args = new(string.Concat($"Ошибка данных: {ex.Message}", "\n"), 2000, true);
+                args = new(string.Concat($"Data error: {ex.Message}", "\n"), 2000, true);
                 return null;
             }
             finally
@@ -116,7 +119,6 @@ namespace TableAnalizer.Objects.Managers
             ManagerReachedEventArgs? args = default;
 
             var files = GetFilesFromDirectory(dirPathString, EXCEL_FILE_EXTENSION);
-
             if (files is null || !files.Any())
             {
                 args = new ManagerReachedEventArgs("Directory with files for processing does not exist or is empty, check it.", 1000, false);
@@ -159,7 +161,7 @@ namespace TableAnalizer.Objects.Managers
                             }
                         }
                     }
-                    catch (System.Exception ex)
+                    catch (Exception ex)
                     {
                         args = new($"{ex.Message}", 500, true);
                         throw;
@@ -187,11 +189,11 @@ namespace TableAnalizer.Objects.Managers
 
                     if (!string.IsNullOrEmpty(clientOutputPath))
                     {
-                        readinessMessage = string.Concat(readinessMessage, $"Директория для работы с клиентом: {clientOutputPath}");
+                        readinessMessage = string.Concat(readinessMessage, $"Directory for target report: {clientOutputPath}");
                     }
                     else
                     {
-                        throw new Exception("Путь к диретории для работы с клиентом не может быть пустой строкой!");
+                        throw new Exception("Path to dir for working with client can`t be an empty string!");
                     }
                 }
                 catch (System.Exception ex)
@@ -264,9 +266,7 @@ namespace TableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public bool IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, bool isMulty)
         {
-            existingKeys = new(Array.Empty<SourceSKUReportFileKey>());
-            lostKeys = new(Array.Empty<SourceSKUReportFileKey>());
-
+            existingKeys = lostKeys = new([]);
             bool success = false;
 
             if (isMulty)
@@ -276,10 +276,10 @@ namespace TableAnalizer.Objects.Managers
                     where _clientReportRegex.Match(item.Value.FileInfo.Name).Success
                     select item;
 
-                success = matchingReport.Count() > 1;
-
-                if(ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.Additional))
+                if(ReportsPathsMultyReport.Any(r => r.Value.ReportKey == SourceSKUReportFileKey.Additional))
                     existingKeys.Add(SourceSKUReportFileKey.Additional);
+
+                success = matchingReport.Count() > 1;
             }
             else
             {
@@ -386,9 +386,7 @@ namespace TableAnalizer.Objects.Managers
         // TODO: Описать функционал 
         public static bool DeleteExistingFile(string path)
         {
-            if (File.Exists(path))
-                File.Delete(path);
-
+            if (File.Exists(path))File.Delete(path);
             return !File.Exists(path);
         }
 

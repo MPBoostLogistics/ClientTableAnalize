@@ -37,11 +37,11 @@ namespace TableAnalizer.Objects.SKUItems
                 fileName = fileName.TrimStart('~','$');
             }
 
-            if (SplitStringIntoSubstrings(fileName, new string[] { SPACE_SEPARATOR, LOW_LINE_SEPARATOR }, out string[]? substrings) &&
+            if (SplitStringIntoSubstrings(fileName, [SPACE_SEPARATOR, LOW_LINE_SEPARATOR], out string[]? substrings) &&
                 substrings is not null)
             {
                 // Юсупов расходы 22052024.xlsx                  3
-                // Юсупов дополнительный 220224.xlsx             3
+                // дополнительный отчет 23012025.xlsx            3
                 // Общее списание 230124.xlsx                    3
                 // Башорин перемещение 190724.xlsx               3
                 // ClientReport 79687978888 03-12-2024           3
@@ -49,7 +49,6 @@ namespace TableAnalizer.Objects.SKUItems
                 // Отчет по клиенту +79164372997 (WB).xlsx       5
                 // Отчет по клиенту +79164372997 (Ozon).xlsx     5
                 
-
                 // Юсупов приходы и остатки 220524 (WB).xlsx     6
                 // Юсупов приходы и остатки 220524 (Ozon).xlsx   6
 

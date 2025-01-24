@@ -8,8 +8,6 @@ using TableAnalizer.Objects.SKUItems.SKUBalances;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUDummiesBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 using TableAnalizer.Objects.Enums;
-using OneOf.Types;
-using Serilog.Formatting.Json;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -73,7 +71,7 @@ namespace TableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public void SetDeadlineDays(int days) => DeadlineDays = days;
 
-        public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, bool isManualRegranding, ExcelPackage? excelPackage = null, bool isMulty = false)
+        public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, bool isRawReport, ExcelPackage? excelPackage = null, bool isMulty = false)
         {
             double time = 0.00;
 
@@ -81,14 +79,14 @@ namespace TableAnalizer.Objects.Managers
                 workSheetNames is not null &&
                 workSheetNames.Count > 0)
             {
-                List<Task<double>> processingTasksList = new();
+                List<Task<double>> processingTasksList = [];
                 for (int i = 0; i < workSheetNames.Count; i++)
                 {
-                    var processingData = ProcessingData(reportFileKey, workSheetNames[i], isManualRegranding, excelPackage, isMulty);
+                    var processingData = ProcessingData(reportFileKey, workSheetNames[i], isRawReport, excelPackage, isMulty);
                     processingTasksList.Add(processingData);
                 }
 
-                if(processingTasksList.Any()) 
+                if(processingTasksList.Count != 0) 
                 {
                     Task<double> [] processingTasksArray = processingTasksList.ToArray();
                     for (int i = 0; i < processingTasksArray.Length; i++)
@@ -108,7 +106,7 @@ namespace TableAnalizer.Objects.Managers
             return time;
         }
 
-        private async Task<double> ProcessingData(SourceSKUReportFileKey reportFileKey, string workSheetName, bool isManualResorting, ExcelPackage? excelPackage = null, bool isMulty = false)
+        private async Task<double> ProcessingData(SourceSKUReportFileKey reportFileKey, string workSheetName, bool isRawReport, ExcelPackage? excelPackage = null, bool isMulty = false)
         {
             // Start
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -139,12 +137,12 @@ namespace TableAnalizer.Objects.Managers
 
                 // Processing:
                 // 1. Save balances for sku's
-                SaveSKUBalanceUnits(reportFileKey, workSheetName, rawRowsItems.ToList(), isMulty, isManualResorting);
+                SaveSKUBalanceUnits(reportFileKey, workSheetName, [.. rawRowsItems], isMulty, isRawReport);
 
                 if(!isMulty) 
                 {
                     // 2. Create or update sku's from balance units 
-                    var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName, isManualResorting);
+                    var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName, isRawReport);
                     await Task.Run(async () => await makeSKUsTask);
                     makeSKUsTask.Wait();
                 }
@@ -226,7 +224,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="rowsWithRawData">List of raw data dictionaries.</param>
         /// <returns>Number of keys in final dictionary.</returns>
         /// <exception cref="ArgumentException">Exception when passing an empty dictionary.</exception>
-        public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData, bool isMulty, bool isManualRegranding)
+        public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData, bool isMulty, bool isRawReport)
         {
             bool isRansoms = reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ;
             bool isRemaining = reportFileKey == SourceSKUReportFileKey.RemainingWB || reportFileKey == SourceSKUReportFileKey.RemainingOZ;
@@ -320,13 +318,13 @@ namespace TableAnalizer.Objects.Managers
                     SkuCompensationBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             }
-            else if(isResort && isManualRegranding) 
+            else if(isResort && !isRawReport) 
             {
                 var skuResortDataUnits = from rowWithRawData in rowsWithRawData
-                                        let unit = new SKUResortDataUnit(rowWithRawData)
-                                        group unit by unit.SKUFromResortNumber 
-                                        into unitGroup  
-                                        select unitGroup;
+                                         let unit = new SKUResortDataUnit(rowWithRawData)
+                                         group unit by unit.SKUFromResortNumber 
+                                         into unitGroup  
+                                         select unitGroup;
 
                 foreach (var skuResortGroup in skuResortDataUnits)
                 {
@@ -405,7 +403,7 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <exception cref="ArgumentException">Manager does not contain an array of "raw data".</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public async Task UpdateSKUsFromBalanceUnits(SourceSKUReportFileKey skuReportFileKey, string workSheetName, bool isManualResorting)
+        public async Task UpdateSKUsFromBalanceUnits(SourceSKUReportFileKey skuReportFileKey, string workSheetName, bool isRawReport)
         {
             bool isWB = skuReportFileKey == SourceSKUReportFileKey.RansomsWB || skuReportFileKey == SourceSKUReportFileKey.RemainingWB;
             bool isOZ = skuReportFileKey == SourceSKUReportFileKey.RansomsOZ || skuReportFileKey == SourceSKUReportFileKey.RemainingOZ;
@@ -511,7 +509,7 @@ namespace TableAnalizer.Objects.Managers
                         SKUCompensationBalance skuCompensationBalance = new(skuNumber, units.ToList());
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuCompensationBalance));
                     }
-                    else if(isResorts && isManualResorting)
+                    else if(isResorts && !isRawReport)
                     {
                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUResortDataUnit>().ToList()) ??
                             throw new InvalidCastException("Cannot cast collection to IList<SKUResortDataUnit>.");
@@ -568,7 +566,7 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        public List<SKUForTargetReports> MakeSkusForTargetReport(bool isAnalyzeResortsForWarehouse) 
+        public List<SKUForTargetReports> MakeSkusForTargetReport(bool isRawReport) 
         {
             List<SKUForTargetReports> skuForTargetReports = [];
             foreach (var (_, targetSku) in SKUs.GetValuesList())
@@ -578,11 +576,11 @@ namespace TableAnalizer.Objects.Managers
                     resortFromSkusValues is not null &&
                     resortFromSkusValues.Count > 0) 
                 {
-                    newValue = new(targetSku, isAnalyzeResortsForWarehouse, resortFromSkusValues);
+                    newValue = new(targetSku, isRawReport, resortFromSkusValues);
                 } 
                 else 
                 {
-                    newValue = new(targetSku, isAnalyzeResortsForWarehouse);
+                    newValue = new(targetSku, isRawReport);
                 }
 
                 skuForTargetReports.Add(newValue);

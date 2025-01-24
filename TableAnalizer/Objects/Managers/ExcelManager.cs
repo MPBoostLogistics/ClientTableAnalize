@@ -104,7 +104,7 @@ namespace TableAnalizer.Objects.Managers
             new(28, "SKUShippedCount", ParsingTypeCode.IntTypeCode, true)
         };
 
-          public static List<SourceColumn> TransferSourceCells { get; } = new()
+        public static List<SourceColumn> TransferSourceCells { get; } = new()
         {
             new(4, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(34, "SKUShippedCount", ParsingTypeCode.IntTypeCode, true)
@@ -244,39 +244,43 @@ namespace TableAnalizer.Objects.Managers
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURemaining",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
                 valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 21, colName: "Комментарий к пересортам", colWidth: 30, format: "0",
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUAccountingByResortsComment",
+            new (colNumber: 21, colName: "Передано пересортами от других артикулов, кол-во", colWidth: 15, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUFromIncomingResortsSum",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
+                valueСheckingPredicate: null, isBoldFont: false),
+            new (colNumber: 22, colName: "Комментарий к пересортами от других артикулов", colWidth: 32, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUResortsComment",
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 22, colName: "Задержка довоза, всего", colWidth: 12, format: "0",
+            new (colNumber: 23, colName: "Задержка довоза, всего", colWidth: 12, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayTotal",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle: ExcelFillStyle.None, 
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: true),
-            new (colNumber: 23, colName: "Задержка довоза от точек, кол-во", colWidth: 12, format: "0",
+            new (colNumber: 24, colName: "Задержка довоза от точек, кол-во", colWidth: 12, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPoints",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 24, colName: "Задержка довоза от точек, сумма руб.", colWidth: 12, format: "0.00",
+            new (colNumber: 25, colName: "Задержка довоза от точек, сумма руб.", colWidth: 12, format: "0.00",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPointsSum",
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 25, colName: "Задержка довоза от склада, кол-во", colWidth: 12, format: "0",
+            new (colNumber: 26, colName: "Задержка довоза от склада, кол-во", colWidth: 12, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorage",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 26, colName: "Задержка довоза от склада, сумма руб.", colWidth: 12, format: "0.00",
+            new (colNumber: 27, colName: "Задержка довоза от склада, сумма руб.", colWidth: 12, format: "0.00",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorageSum",
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 27, colName: "Перерасход, кол-ао", colWidth: 14, format: "0",
+            new (colNumber: 28, colName: "Перерасход, кол-во", colWidth: 14, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUOverrunsCount",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: true),
-            new (colNumber: 28, colName: "Перерасход, сумма руб.", colWidth: 14, format: "0.00",
+            new (colNumber: 29, colName: "Перерасход, сумма руб.", colWidth: 14, format: "0.00",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUOverrunsSum",
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 29, colName: "Комментарий к артикулу", colWidth: 50, format: "0",
+            new (colNumber: 30, colName: "Комментарий к артикулу", colWidth: 50, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUComment",
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None, 
                 valueСheckingPredicate: null, isBoldFont: false),
@@ -451,7 +455,7 @@ namespace TableAnalizer.Objects.Managers
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? mainOutputReportSheet, Colors[SKUSellmentStatus.FullSet]);
             FillingСellsWithData<SKUForTargetReports>(outputPackage, ref mainOutputReportSheet, in actualData, targetCells, FileManager.OutputClientReportFilePath); 
             SetupTableHeader(in targetCells, ref mainOutputReportSheet);    
-            AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, [13,15,22,27]);
+            AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, [13,15,21,23,28]);
 
             // Make delay report
             actualData = [.. skuForTargetReports
@@ -662,7 +666,7 @@ namespace TableAnalizer.Objects.Managers
 
             var range01 = Enumerable.Range(9, 4).ToList();
             var range02 = Enumerable.Range(16, 4).ToList();
-            var range03 = Enumerable.Range(22, 4).ToList();
+            var range03 = Enumerable.Range(24, 4).ToList();
 
             excelWorksheet.Columns[range01.First(), range01.Last()].Group();
             excelWorksheet.Columns[range02.First(), range02.Last()].Group();
