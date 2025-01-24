@@ -68,11 +68,13 @@ namespace TableAnalizer.Objects.Managers
         /// Sets period before deadline when paying a client (in days).
         /// </summary>
         /// <param name="days">Period until deadline, days</param>
-        /// <remarks><i>New version, tested</i></remarks>
         public void SetDeadlineDays(int days) => DeadlineDays = days;
 
-        public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, bool isRawReport, ExcelPackage? excelPackage = null, bool isMulty = false)
+        public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, bool isRawReport, int delay, ExcelPackage? excelPackage = null, bool isMulty = false)
         {
+            Trace.WriteLine($"{reportFileKey}");
+            await Task.Delay(delay);
+            
             double time = 0.00;
 
             if (ExcelManager.GetExcelWorksheetStringNamesByKey(reportFileKey, out List<string>? workSheetNames) &&
@@ -88,7 +90,7 @@ namespace TableAnalizer.Objects.Managers
 
                 if(processingTasksList.Count != 0) 
                 {
-                    Task<double> [] processingTasksArray = processingTasksList.ToArray();
+                    Task<double> [] processingTasksArray = [.. processingTasksList];
                     for (int i = 0; i < processingTasksArray.Length; i++)
                     {
                         Task<double>? currentTask = processingTasksArray[i];
@@ -139,13 +141,12 @@ namespace TableAnalizer.Objects.Managers
                 // 1. Save balances for sku's
                 SaveSKUBalanceUnits(reportFileKey, workSheetName, [.. rawRowsItems], isMulty, isRawReport);
 
-                if(!isMulty) 
-                {
-                    // 2. Create or update sku's from balance units 
-                    var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName, isRawReport);
-                    await Task.Run(async () => await makeSKUsTask);
-                    makeSKUsTask.Wait();
-                }
+         
+                // 2. Create or update sku's from balance units 
+                var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName, isRawReport);
+                await Task.Run(async () => await makeSKUsTask);
+                makeSKUsTask.Wait();
+                
 
                 // 3. Report
                 static bool FindSkusWithRansoms(SKU sku) => sku.SKURansomsBalance != null;

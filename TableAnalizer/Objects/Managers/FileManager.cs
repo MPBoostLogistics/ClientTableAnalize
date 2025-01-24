@@ -1,6 +1,7 @@
 ﻿
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.SKUItems;
 
@@ -26,7 +27,7 @@ namespace TableAnalizer.Objects.Managers
         public Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> ReportsPathsSingleReport { get; private set; } = new();
         public Dictionary<string, SourceReportFileForSKU> ReportsPathsMultyReport { get; private set; } = new();
         
-        public SourceReportFileForSKU? AdditionalPathsMultyReport {get; private set;}
+        public SourceReportFileForSKU? AdditionalPathsMultyReport { get; private set; }
         
         public static DirectoryInfo? DirInfoForClientTargetReports { get; private set; }
         public static string? InputReportsFilePath { get; set; } = string.Empty;
@@ -63,10 +64,12 @@ namespace TableAnalizer.Objects.Managers
 
             try
             {
-                var fileCount = GetReportFiles(reportsPath, isMulty);
+                var fileCount = GetReportFiles(reportsPath, isMulty, delay);
+                
+                Trace.WriteLine($"File count: {fileCount.Result}");
                 await Task.Delay(delay);
 
-                var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, isMulty);
+                var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, isMulty, delay);
 
                 if(!success && isMulty) 
                 {
@@ -114,7 +117,7 @@ namespace TableAnalizer.Objects.Managers
         /// <returns>Number of files transferred for analysis.</returns>
         /// <exception cref="Exception">Exception for empty directory without files.</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public async Task<int> GetReportFiles(string dirPathString, bool isMulty)
+        public async Task<int> GetReportFiles(string dirPathString, bool isMulty, int delay)
         {
             ManagerReachedEventArgs? args = default;
 
@@ -125,6 +128,9 @@ namespace TableAnalizer.Objects.Managers
             }
             else
             {
+                Trace.WriteLine($"Number of files in dir with ext \"{EXCEL_FILE_EXTENSION}s\": {files!.Count()}");
+                await Task.Delay(delay);
+
                 foreach (var fileInfo in files!)
                 {
                     try
@@ -264,7 +270,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="lostKeys">A collection of required file keys that were not provided.</param>
         /// <returns>Logical flag for performing an operation.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public bool IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, bool isMulty)
+        public bool IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, bool isMulty, int delay)
         {
             existingKeys = lostKeys = new([]);
             bool success = false;
@@ -274,10 +280,7 @@ namespace TableAnalizer.Objects.Managers
                 IEnumerable<KeyValuePair<string, SourceReportFileForSKU>>? matchingReport = 
                     from item in ReportsPathsMultyReport
                     where _clientReportRegex.Match(item.Value.FileInfo.Name).Success
-                    select item;
-
-                if(ReportsPathsMultyReport.Any(r => r.Value.ReportKey == SourceSKUReportFileKey.Additional))
-                    existingKeys.Add(SourceSKUReportFileKey.Additional);
+                    select item;    
 
                 success = matchingReport.Count() > 1;
             }

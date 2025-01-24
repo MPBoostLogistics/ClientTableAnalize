@@ -97,29 +97,33 @@ internal class Program
             switch (isMulty)
             {
                 case true:
-                    reportTask = AnalyzeMultiСlientReports();
+                    reportTask = AnalyzeMultiСlientReports(delay);
                     break;
                 case false:
-                    reportTask = AnalyzeSingleСlientReports(keys);
+                    reportTask = AnalyzeSingleСlientReports(keys, delay);
                     break;
             }
         } 
-        Trace.WriteLine("Report analysis task has started.");
-        await Task.Delay(delay);
-        await Task.Run(() => reportTask);
 
+        if(isRawReport is null) 
+        {
+            throw new ArgumentNullException("'isRawReport' is not defined");
+        } 
+        else 
+        {
+            Trace.WriteLine("Report analysis task has started.");
+            await Task.Delay(delay);
+            await Task.Run(() => reportTask);
+        }
+            
         reportTask?.Wait();
-
-        fileManager.ManagerReached += Report;
-        excelManager.ManagerReached += Report;
-        skuManager.ManagerReached += Report;
+        fileManager.ManagerReached -= Report;
+        excelManager.ManagerReached -= Report;
+        skuManager.ManagerReached -= Report;
     }
 
-    private static async Task AnalyzeSingleСlientReports(List<SourceSKUReportFileKey>? existingKeys) 
+    private static async Task AnalyzeSingleСlientReports(List<SourceSKUReportFileKey>? existingKeys, int delay) 
     {
-        if(isRawReport is null)
-            throw new ArgumentNullException("'isRawReport' is not defined");
-
         // Report analysis tasks
         if (existingKeys is not null && existingKeys.Count > 0)
         {
@@ -128,12 +132,12 @@ internal class Program
             Task[] ransomsTasks = [];
             if (existingKeys.Contains(SourceSKUReportFileKey.RansomsWB))
             {
-                ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsWB));
+                ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsWB, delay));
             }
 
             if (existingKeys.Contains(SourceSKUReportFileKey.RansomsOZ))
             {
-                ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsOZ));
+                ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsOZ, delay));
             }
 
             if (ransomsTasksList.Count != 0)
@@ -160,12 +164,12 @@ internal class Program
             Task[] remainingTasks = [];
             if (existingKeys.Contains(SourceSKUReportFileKey.RemainingWB))
             {
-                remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingWB));
+                remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingWB, delay));
             }
 
             if (existingKeys.Contains(SourceSKUReportFileKey.RemainingOZ))
             {
-                remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingOZ));
+                remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingOZ, delay));
             }
 
             if (remainingTasksList.Count != 0)
@@ -191,7 +195,7 @@ internal class Program
             // WriteOff task 
             if (existingKeys.Contains(SourceSKUReportFileKey.WriteOffShortages))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffShortages);
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffShortages, delay);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -199,7 +203,7 @@ internal class Program
             // Shipped tasks
             if (existingKeys.Contains(SourceSKUReportFileKey.Shipped))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Shipped);
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Shipped, delay);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -207,7 +211,7 @@ internal class Program
             // Transfer task
             if (existingKeys.Contains(SourceSKUReportFileKey.Transfer))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Transfer);
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Transfer, delay);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -215,7 +219,7 @@ internal class Program
             // Additional tasks
             if (existingKeys.Contains(SourceSKUReportFileKey.Additional))
             {
-                var additionalTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Additional);
+                var additionalTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Additional, delay);
                 await Task.Run(async () => await additionalTask);
                 additionalTask.Wait();
             }
@@ -238,16 +242,15 @@ internal class Program
         await Exit();
     }
 
-    private static async Task AnalyzeMultiСlientReports() 
-    {
-        if(isRawReport is null)
-            throw new ArgumentNullException("'isRawReport' is not defined");
-        
+    private static async Task AnalyzeMultiСlientReports(int delay) 
+    {   
         // Create and run analize task
         List<Task> summaryTasksList = [];
         foreach(var (key, value) in fileManager.ReportsPathsMultyReport) 
         {
-            summaryTasksList.Add(ReceivingAndProcessingData(value, (bool)isRawReport, isMulty));
+            summaryTasksList.Add(ReceivingAndProcessingData(value, (bool)isRawReport!, isMulty, delay));
+            Trace.WriteLine($"{key}");
+            await Task.Delay(delay);
         }
 
         Console.Clear();
@@ -265,18 +268,20 @@ internal class Program
         Task.WaitAll(summaryTasksArray);
 
         // Additional tasks
-        if (fileManager.AdditionalPathsMultyReport is not null)
+        Task<double>? additionalTask = null;
+        if (fileManager.AdditionalPathsMultyReport is not null && !(bool)isRawReport!)
         {
-            var additionalTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Additional, fileManager.AdditionalPathsMultyReport, isMulty);
+            additionalTask = ReceivingAndProcessingData(fileManager.AdditionalPathsMultyReport, (bool)isRawReport!, isMulty, delay);
             await Task.Run(async () => await additionalTask);
-            additionalTask.Wait();
         }
+
+        additionalTask?.Wait();
 
         // Delete old report 
         FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
 
         // Make new report 
-        var skusForTargetReport = skuManager.MakeSkusForTargetReport((bool)isRawReport);
+        var skusForTargetReport = skuManager.MakeSkusForTargetReport((bool)isRawReport!);
         excelManager.MakeReports(skusForTargetReport);
 
         // Report 
@@ -287,7 +292,7 @@ internal class Program
         await Exit();
     }
 
-    private static async Task<double> ReceivingAndProcessingData(SourceReportFileForSKU reportFile, bool isRawReport, bool isMulty) 
+    private static async Task<double> ReceivingAndProcessingData(SourceReportFileForSKU reportFile, bool isRawReport, bool isMulty, int delay) 
     {
         if(reportFile.ReportKey is null) return 0.00;
 
@@ -295,7 +300,7 @@ internal class Program
         var package = new ExcelPackage(reportFile.FileInfo);
  
         // Receiving and processing data
-        Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData((SourceSKUReportFileKey)reportFile.ReportKey, isRawReport, package, isMulty);
+        Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData((SourceSKUReportFileKey)reportFile.ReportKey, isRawReport, delay, package, isMulty);
         if(receivingAndProcessingDataTask is not null) 
         {
             await Task.Run(async () => await receivingAndProcessingDataTask);
@@ -312,7 +317,7 @@ internal class Program
     /// <param name="reportFileKey">Key of source file with report.</param>
     /// <returns></returns>
     /// <remarks><i>New version</i></remarks>
-    private static async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, SourceReportFileForSKU? existingReportFile = null, bool isMulty = false)
+    private static async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, int delay, SourceReportFileForSKU? existingReportFile = null, bool isMulty = false)
     {
         SourceReportFileForSKU? reportFile;
         if(existingReportFile == null) 
@@ -334,7 +339,7 @@ internal class Program
             ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
 
             // Receiving and processing data
-            Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData(reportFileKey, (bool)isRawReport!, null, isMulty);
+            Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData(reportFileKey, (bool)isRawReport!, delay, null, isMulty);
             if(receivingAndProcessingDataTask is not null) 
             {
                 await Task.Run(async () => await receivingAndProcessingDataTask);
