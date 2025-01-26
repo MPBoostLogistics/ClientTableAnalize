@@ -47,8 +47,7 @@ namespace TableAnalizer.Objects.Enums
         Shipped,            // расходы товаром 
         WriteOffShortages,  // списание недростач общее 
         Compensation,       // оплаченные недостачи
-        Resort,             // пересорты
-        Dummies             // пустышки  
+        Resort,             // пересорты 
     }
 
     public enum SKURansomsStatus
@@ -81,7 +80,7 @@ namespace TableAnalizer.Objects.Enums
     {
         ResortIn1C,              // Создан пересорт в 1С
         MaybeResortIn1C,         // Возможен пересорт в 1С
-        MaybeWriteOffFromPoints, //Возможно списание с точек
+        MaybeWriteOffFromPoints, // Возможно списание с точек
         NoSolution               // Нет решения
     }
 }

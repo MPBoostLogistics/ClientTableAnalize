@@ -1,6 +1,5 @@
 ﻿using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUDummiesBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.SKUItems
@@ -23,7 +22,6 @@ namespace TableAnalizer.Objects.SKUItems
         public SKURemainingBalance? SKURemainingBalance { get; private set;}
         public SKUWriteOffBalance? SKUWriteOffBalance { get; private set;}
         public SKUCompensationBalance? SKUCompensationBalance { get; private set; }
-        public SKUDummiesBalance? SKUDummiesBalance { get; private set; }
         public SKUResortBalance? SKUResortBalance { get; private set; }
         public double AveragePrice { get; private set;} = AVERAGE_PRICE_DEFAULT;
         public DateOnly MaxRansomsDate { get; private set;} = DATEONLY_DEFAULT;
@@ -84,7 +82,7 @@ namespace TableAnalizer.Objects.SKUItems
         public SKU(Marketplace? marketplace, int skuNumber, string skuBrand, string skuName, 
             SKURansomsBalance? skuRansomsBalance, SKURemainingBalance? skuRemainingBalance, 
             SKUWriteOffBalance? skuWriteOffBalance, SKUCompensationBalance? skuCompensationBalance, 
-            SKUResortBalance skuResortBalance, SKUDummiesBalance? skuDummiesBalance, double? averagePrice, 
+            SKUResortBalance skuResortBalance, double? averagePrice, 
             DateOnly? maxRansomsDate, int? deadLineDays, bool isParallel) 
        {
             Marketplace = marketplace;
@@ -95,7 +93,6 @@ namespace TableAnalizer.Objects.SKUItems
             SKURemainingBalance = skuRemainingBalance;
             SKUWriteOffBalance = skuWriteOffBalance;
             SKUCompensationBalance = skuCompensationBalance;
-            SKUDummiesBalance = skuDummiesBalance;
             SKUResortBalance = skuResortBalance;
 
             if(averagePrice.HasValue && !Equals(averagePrice, AVERAGE_PRICE_DEFAULT)) 
@@ -121,13 +118,6 @@ namespace TableAnalizer.Objects.SKUItems
         {
             SKUNumber = skuNumber;
             SKUCompensationBalance = skuCompensationBalance;
-        }
-
-        // Constructor for dummiesBalance 
-        public SKU(int skuNumber, SKUDummiesBalance skuDummiesBalance) 
-        {
-            SKUNumber = skuNumber;
-            SKUDummiesBalance = skuDummiesBalance;
         }
 
         // Constructor for writeOffBalance 
@@ -164,7 +154,6 @@ namespace TableAnalizer.Objects.SKUItems
             SKURemainingBalance = new SKURemainingBalance(dataUnit.SKUNumber, SKUName, dataUnit.SKUReceipt, dataUnit.SKUShipped, dataUnit.SKURemaining);
             SKUWriteOffBalance = null;
             SKUCompensationBalance = null;
-            SKUDummiesBalance = null;
             SKUResortBalance = null;
 
             AveragePrice = dataUnit.SKUPrice ?? 0.00;

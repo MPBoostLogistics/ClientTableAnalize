@@ -27,14 +27,19 @@ namespace TableAnalizer.Objects.SKUItems
         public int SKURansomsWithDrawn { get; set; }
 
         public int SKURansomsWaiting { get; set; }          // Склад: ожидание
-        public int SKUReceipt { get; set; }                 // Склад: приход
-        public int SKUReceiptResorts { get; set; }          // Склад: приход пересортами
+        
+        // Приход
+        public int SKUTotalReceipt { get; set; }            // Склад: приход, всего 
+        public int SKUReceipt { get; set; }                 // Склад: приход  товарамим
+        public int SKUReceivedResorts { get; set; }         // Склад: приход пересортами
+
         public int SKUWriteOff { get; set; }                // Склад: списание недостач
+
         public int SKUTotalСonsumption { get; set;}         // Склад: общий расход (товаром, компенсацией, пересортом, пустшками)    
         public int SKUShipped { get; set; }                 // Склад: Расход товаром 
         public int SKUPaid { get; set; }                    // Склад: Расход компенсацией 
         public int SKUResort { get; set; }                  // Склад: Расход пересортом 
-        public int SKUDummies { get; set; }                 // Склад: Расход пустышками 
+       
         public int SKURemaining { get; set; }               // Склад: Остаток товаров
 
         // Delivery delay
@@ -115,12 +120,6 @@ namespace TableAnalizer.Objects.SKUItems
                 SKUPaid = sku.SKUCompensationBalance.Count;
             }
 
-            // Fill SKUDummiesBalance 
-            if (sku.SKUDummiesBalance is not null)  
-            {
-                SKUDummies = sku.SKUDummiesBalance.Count;
-            }
-
             // Article analysis
             AnalizeSKU(sku, isRawReport, resortFromSkusValues);
         }
@@ -133,7 +132,12 @@ namespace TableAnalizer.Objects.SKUItems
 
         private void CalculateTotalСonsumption() 
         {
-            SKUTotalСonsumption = SKUShipped + SKUPaid + SKUResort + SKUDummies;
+            SKUTotalСonsumption = SKUShipped + SKUPaid + SKUResort;
+        }
+
+         private void CalculateTotalReceipt() 
+        {
+            SKUTotalReceipt = SKUReceipt + SKUReceivedResorts;
         }
 
         private void AnalizeSKU(SKU sku, bool isRawReport, Dictionary<int, int>? resortFromSkusValues) 
@@ -164,11 +168,11 @@ namespace TableAnalizer.Objects.SKUItems
             // 3. Фикация входящих пересортов 
             if(!isRawReport && resortFromSkusValues is not null && resortFromSkusValues.Count > 0) 
             {
-                SKUReceiptResorts = resortFromSkusValues.Aggregate(0, (acc, i) => acc + i.Value);
+                SKUReceivedResorts = resortFromSkusValues.Aggregate(0, (acc, i) => acc + i.Value);
                 // Приход товаром уменьшается на количество товаров в пересорте
-                SKUReceipt -= SKUReceiptResorts;
+                SKUReceipt -= SKUReceivedResorts;
                 // Расход товаром уменьшается на количество товаров в пересорте
-                SKUShipped -= SKUReceiptResorts;
+                SKUShipped -= SKUReceivedResorts;
                 
                 // Обновление комментария по пересортам
                 StringBuilder stringBuilder = new("Пересорт от артикулов (вычтено из \"Склад: Приход товаром\" и \"Склад: Расход товаром\", справочно добавлено в \"Склад: Приход пересортом товаров\"):\n"); 
@@ -244,7 +248,7 @@ namespace TableAnalizer.Objects.SKUItems
                 case (false, false, true): 
 
                     // Недовоз от точек = ожидание минус приход минус калькуляция минус вычтенные из прихода входяшие пересорты
-                    SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceipt - SKUReceiptResorts;
+                    SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceipt - SKUReceivedResorts;
                     if(int.IsNegative(SKUDeliveryDelayPoints)) SKUDeliveryDelayPoints = 0;
                     SKUDeliveryDelayPointsSum = SKUDeliveryDelayPoints > 0 && isDeadline ? SKUDeliveryDelayPoints * SKUPrice : 0.00;
                     

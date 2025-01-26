@@ -5,7 +5,6 @@ using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.Repositories;
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUDummiesBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 using TableAnalizer.Objects.Enums;
 
@@ -26,7 +25,6 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuWriteOffBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; }
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; }
-        public IRepository<int, List<ParsingRowEntity>> SkuDummiesBalanceUnits { get; }
 
         /// <summary>
         /// Словарь прересортов в обратном направлении - ключ: skuResortToNumber, значение: словарь - ключ: skuResortFromNumber, значение: skuResortFromSum
@@ -58,7 +56,6 @@ namespace TableAnalizer.Objects.Managers
             SkuWriteOffBalanceUnits = new ParsingRowEntityRepo();
             SkuCompensationBalanceUnits = new ParsingRowEntityRepo();
             SkuResortBalanceUnits = new ParsingRowEntityRepo();
-            SkuDummiesBalanceUnits = new ParsingRowEntityRepo();
         }
         #endregion
 
@@ -141,7 +138,6 @@ namespace TableAnalizer.Objects.Managers
                 // 1. Save balances for sku's
                 SaveSKUBalanceUnits(reportFileKey, workSheetName, [.. rawRowsItems], isMulty, isRawReport);
 
-         
                 // 2. Create or update sku's from balance units 
                 var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName, isRawReport);
                 await Task.Run(async () => await makeSKUsTask);
@@ -155,7 +151,6 @@ namespace TableAnalizer.Objects.Managers
                 static bool FindSkusWithWriteOff(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOff > 0;
                 static bool FindSkusWithCompensation(SKU sku) => sku.SKUCompensationBalance != null;
                 static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
-                static bool FindSkusWithDummies(SKU sku) => sku.SKUDummiesBalance != null;
                 static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
 
                 var message = string.Empty;
@@ -182,10 +177,6 @@ namespace TableAnalizer.Objects.Managers
                             case ExcelManager.RESORTS_REPORT_WORKSHEET_NAME:
                                 predicateHandler = FindSkusWithResort;
                                 message = "Артикулов из пересортов: ";
-                                break;
-                            case ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME:
-                                predicateHandler = FindSkusWithDummies;
-                                message = "Артикулов из пустышек: ";
                                 break;
                             case ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME:
                                 predicateHandler = FindSkusWithParallel;
@@ -234,7 +225,6 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOff = reportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
-            bool isDummies = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME;
             bool isParellel = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
             bool isClient = reportFileKey == SourceSKUReportFileKey.Client && workSheetName == ExcelManager.OUTPUT_REPORT_WORKSHEET01_NAME;
 
@@ -336,22 +326,6 @@ namespace TableAnalizer.Objects.Managers
                     SkuResortBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
                 }
             } 
-            else if(isDummies) 
-            {
-                var skuDummiesDataUnits = from rowWithRawData in rowsWithRawData
-                                          let unit = new SKUDummiesDataUnit(rowWithRawData)
-                                          group unit by unit.SKUNumber 
-                                          into unitGroup  
-                                          select unitGroup;
-
-                foreach (var group in skuDummiesDataUnits)
-                {
-                    var list = (((List<SKUDummiesDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
-                        throw new InvalidCastException("Невозможно привести List<SKUDummiesDataUnit> к List<ParsingRowEntity>");
-                    
-                    SkuDummiesBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
-                }
-            }
             else if(isParellel) 
             {
                 foreach (var rowWithRawData in rowsWithRawData)
@@ -391,7 +365,6 @@ namespace TableAnalizer.Objects.Managers
                 {
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => SkuCompensationBalanceUnits.Count(),
                     ExcelManager.RESORTS_REPORT_WORKSHEET_NAME => SkuResortBalanceUnits.Count(),
-                    ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME => SkuDummiesBalanceUnits.Count(),
                     ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME => SKUParallelUnits.Count,
                     _ => 0
                 },
@@ -415,7 +388,6 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOff = skuReportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResorts = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
-            bool isDummies = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME;
             bool isParellel = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
 
             // Dummy
@@ -439,8 +411,6 @@ namespace TableAnalizer.Objects.Managers
                         parsingEntityCollection = SkuCompensationBalanceUnits,
                     ExcelManager.RESORTS_REPORT_WORKSHEET_NAME => 
                         parsingEntityCollection = SkuResortBalanceUnits,
-                    ExcelManager.DUMMIES_REPORT_WORKSHEET_NAME => 
-                        parsingEntityCollection = SkuDummiesBalanceUnits,
                     _ => parsingEntityCollection = null
                 },
                 _ => parsingEntityCollection = null,
@@ -519,14 +489,6 @@ namespace TableAnalizer.Objects.Managers
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuResortBalance));
                         
                         UpdateSKUsToResortCollection(skuResortBalance);
-                    }
-                    else if(isDummies)
-                    {
-                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUDummiesDataUnit>().ToList()) ??
-                            throw new InvalidCastException("Cannot cast collection to IList<SKUDummiesDataUnit>.");
-
-                        SKUDummiesBalance skuDummiesBalance = new(skuNumber, units.ToList());
-                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuDummiesBalance));
                     }
                 }
             }
