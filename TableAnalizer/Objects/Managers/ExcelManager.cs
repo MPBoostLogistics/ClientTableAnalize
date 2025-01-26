@@ -9,6 +9,7 @@ using TableAnalizer.Objects.SKUItems;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Diagnostics;
+using System.Security.Cryptography;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -197,7 +198,7 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x > 0, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 9, colName: "Заказов: отменено",colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsCanceled",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings, 4),
             new (colNumber: 10, colName: "Заказов: в пути", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsOnWay",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
@@ -215,7 +216,7 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 15, colName: "Склад: Приход товаром", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUReceipt",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings, 2),
             new (colNumber: 16, colName: "Склад: Оприходовано пересортицей", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUReceivedResorts",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
@@ -227,7 +228,7 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: accentTargetCellSettings),
             new (colNumber: 19, colName: "Склад: Расход товаром", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUShipped",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings, 3),
             new (colNumber: 20, colName: "Склад: Расход компенсацией", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUPaid",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
@@ -245,7 +246,7 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: accentTargetCellSettings),
             new (colNumber: 25, colName: "Задержка довоза от точек, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPoints",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings, 4),
             new (colNumber: 26, colName: "Задержка довоза от точек, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPointsSum",
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
@@ -391,10 +392,10 @@ namespace TableAnalizer.Objects.Managers
         {
             workSheetNames = reportFileKey switch
             {
-                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => new(1) { RANSOMS_WORKSHEET_NAME },
-                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer or SourceSKUReportFileKey.WriteOffShortages => new(1) { REMAINING_OR_SHIPPED_WORKSHEET_NAME },
-                SourceSKUReportFileKey.Additional => new(3) { COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME },
-                SourceSKUReportFileKey.Client => new (1) {OUTPUT_REPORT_WORKSHEET01_NAME},
+                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => [RANSOMS_WORKSHEET_NAME],
+                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer or SourceSKUReportFileKey.WriteOffShortages => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
+                SourceSKUReportFileKey.Additional => [COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
+                SourceSKUReportFileKey.Client => [OUTPUT_REPORT_WORKSHEET01_NAME],
                 _ => null,
             };
             return workSheetNames is not null && workSheetNames.Any();
@@ -410,41 +411,53 @@ namespace TableAnalizer.Objects.Managers
                 throw new Exception("ExcelPackage for output reports cannot be created");
             
             var sheetName = string.Empty;
-            TargetCell[] targetCells = Array.Empty<TargetCell>();
+            TargetCell[] targetCells = [];
             List<SKUForTargetReports> actualData = [];
+            List<List<int>>? rangeForGrouping;
 
             // Make main report
             sheetName = OUTPUT_REPORT_WORKSHEET01_NAME;
             targetCells = cellsReportingMain;
+            rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
             actualData = skuForTargetReports;
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? mainOutputReportSheet, Colors[SKUSellmentStatus.FullSet]);
             FillingСellsWithData(ref mainOutputReportSheet, in actualData, targetCells); 
             SetupTableHeader(in targetCells, ref mainOutputReportSheet);
-            AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, accentCellsRange: [13,17,23,28]);
+            AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, in rangeForGrouping);
 
             // Make delay report
             actualData = [.. skuForTargetReports
                 .Where(el => el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.OnSearchPoints || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouseAndPoints))];
             sheetName = OUTPUT_REPORT_WORKSHEET02_NAME;
             targetCells = cellsReportingDelays;
+            rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? delayOutputReportSheet, Colors[SKUSellmentStatus.OnSearchWarehouse]);
             FillingСellsWithData(ref delayOutputReportSheet, in actualData, targetCells); 
             SetupTableHeader(in targetCells, ref delayOutputReportSheet);
-            AddFilterAndAccentInWorkSheet(ref delayOutputReportSheet); 
+            AddFilterAndAccentInWorkSheet(ref delayOutputReportSheet, in rangeForGrouping); 
 
             // Make overruns report
             actualData = [.. skuForTargetReports.Where(el => el.SKUOverrunsSum > 0.00)];
 
             sheetName = OUTPUT_REPORT_WORKSHEET03_NAME;
             targetCells = cellsReportingOverruns;
+            rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? overrunsOutputReportSheet, Colors[SKUSellmentStatus.Unknown]);
             FillingСellsWithData(ref overrunsOutputReportSheet, in actualData, targetCells); 
             SetupTableHeader(in targetCells, ref overrunsOutputReportSheet);
-            AddFilterAndAccentInWorkSheet(ref overrunsOutputReportSheet); 
+            AddFilterAndAccentInWorkSheet(ref overrunsOutputReportSheet, in rangeForGrouping); 
 
             // Save work
             SaveReceivedData(FileManager.OutputClientReportFilePath, ref outputPackage);
             outputPackage.Dispose();
+        }
+
+        private static IEnumerable<List<int>>? GetRangeForGrouping(in TargetCell[] targetCells)
+        {
+            return from targetCell in targetCells
+                    where targetCell.GroupCellsFromCurrentCount != 0
+                    let range = Enumerable.Range(targetCell.ColNumber, targetCell.GroupCellsFromCurrentCount)
+                    select range.ToList();
         }
 
         public void FillingСellsWithData(ref ExcelWorksheet worksheet, in List<SKUForTargetReports> skusForTargetReport, TargetCell[] targetCells, int recordIndex = 1)
@@ -641,7 +654,7 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        private static void AddFilterAndAccentInWorkSheet(ref ExcelWorksheet excelWorksheet, int[]? accentCellsRange = null)
+        private static void AddFilterAndAccentInWorkSheet(ref ExcelWorksheet excelWorksheet, in List<List<int>>? rangesForGrouping)
         {
             int firstRow = excelWorksheet.Dimension.Start.Row;
             int endRow = excelWorksheet.Dimension.End.Row;
@@ -656,33 +669,19 @@ namespace TableAnalizer.Objects.Managers
 
             //Column Group
             excelWorksheet.OutLineSummaryBelow = false;
-
-            var range01 = Enumerable.Range(9, 4).ToList();
-            var range02 = Enumerable.Range(17, 4).ToList();
-            var range03 = Enumerable.Range(24, 4).ToList();
-
-            excelWorksheet.Columns[range01.First(), range01.Last()].Group();
-            excelWorksheet.Columns[range02.First(), range02.Last()].Group();
-            excelWorksheet.Columns[range03.First(), range03.Last()].Group();
-
             excelWorksheet.View.FreezePanes(2, 4);
 
-            // // Add accents
-            // if(accentCellsRange is not null && accentCellsRange.Length > 0) 
-            // {
-            //     for (int i = 0; i < accentCellsRange.Length; i++)
-            //     {
-            //         // Background 
-            //         string columnLetter = ExcelCellAddress.GetColumnLetter(accentCellsRange[i]);
-            //         var address = $"{columnLetter}{firstRow + 1}:{columnLetter}{endRow}";
-            //         excelWorksheet.Cells[address].Style.Fill.PatternType = ExcelFillStyle.Solid;
-            //         excelWorksheet.Cells[address].Style.Fill.BackgroundColor.SetColor(AccentFillColor);
-                    
-            //         // Text
-            //         excelWorksheet.Cells[address].Style.Font.Color.SetColor(AccentTextColor);
-            //         excelWorksheet.Cells[address].Style.Font.Size = accentTextSize;
-            //     };
-            // }
+            // 
+            if(rangesForGrouping is not null && rangesForGrouping.Count > 0) 
+            {
+                foreach (var rangeForGrouping in rangesForGrouping)
+                {
+                    ExcelRangeColumn? excelRangeColumn = excelWorksheet.Columns[rangeForGrouping.First(), rangeForGrouping.Last()];
+                    excelRangeColumn.Group();
+                    excelRangeColumn.SetVisibleOutlineLevel(1, false);
+                }
+            }
+
         }
 
         /// <summary>
