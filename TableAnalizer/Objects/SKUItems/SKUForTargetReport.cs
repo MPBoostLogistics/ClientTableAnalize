@@ -40,8 +40,8 @@ namespace TableAnalizer.Objects.SKUItems
         public int SKUPaid { get; set; }                    // Склад: Расход компенсацией 
         public int SKUResort { get; set; }                  // Склад: Расход пересортом 
        
+        // Склад: Списано пересортицей, товаров
         public int SKUWriteOffByResorts { get; set; }       // Склад: списано пересортами
-
 
         public int SKURemaining { get; set; }               // Склад: Остаток товаров
 
@@ -61,7 +61,6 @@ namespace TableAnalizer.Objects.SKUItems
         // Is Parrales sku
         private bool IsParallelSku {get ;set;}
 
-        
         public string SKUComment { get; set;} = string.Empty;
 
         public Color FillColor { get; set;}
@@ -174,14 +173,20 @@ namespace TableAnalizer.Objects.SKUItems
             // 3. Фикация входящих пересортов 
             if(!isRawReport && resortFromSkusValues is not null && resortFromSkusValues.Count > 0) 
             {
+                // Оприходовано пересортицей
                 SKUReceivedResorts = resortFromSkusValues.Aggregate(0, (acc, i) => acc + i.Value);
+                
                 // Приход товаром уменьшается на количество товаров в пересорте
                 SKUReceipt -= SKUReceivedResorts;
+
                 // Расход товаром уменьшается на количество товаров в пересорте
                 SKUShipped -= SKUReceivedResorts;
-                
+
+                // Расход пересортом увеличивается на количество пересортов
+                SKUResort += SKUReceivedResorts;
+
                 // Обновление комментария по пересортам
-                StringBuilder stringBuilder = new("Пересорт от артикулов (вычтено из \"Склад: Приход товаром\" и \"Склад: Расход товаром\", справочно добавлено в \"Склад: Приход пересортом товаров\"):\n"); 
+                StringBuilder stringBuilder = new("Пересортица от артикулов (добавлено в \"Склад: Оприходовано пересортицей\", \"Склад: Расход пересортом\", вычтено из \"Склад: Приход товаром\",\"Склад: Расход товаром\"):\n"); 
                 foreach ((int resortFromSkusValueSku, int resortFromSkusValueSum)  in resortFromSkusValues)
                 {
                     stringBuilder.Append($"{resortFromSkusValueSku} шт.:{resortFromSkusValueSum}, ");
@@ -196,7 +201,6 @@ namespace TableAnalizer.Objects.SKUItems
                     SKUResortsComment += $"\n{stringBuilder}";
                 }
             }
-
 
             // Расчет общего расхода
             CalculateTotalСonsumption();
@@ -259,7 +263,7 @@ namespace TableAnalizer.Objects.SKUItems
                     SKUDeliveryDelayPointsSum = SKUDeliveryDelayPoints > 0 && isDeadline ? SKUDeliveryDelayPoints * SKUPrice : 0.00;
                     
                     // Недовоз от склада = ожидание минус недовоз от точек - общий расход
-                    SKUDeliveryDelayStorage = SKURansomsWaiting - SKUDeliveryDelayPoints - SKUTotalСonsumption;
+                    SKUDeliveryDelayStorage = SKURansomsWaiting - SKUDeliveryDelayPoints - SKUTotalСonsumption - SKUWriteOffByResorts;
                     if(int.IsNegative(SKUDeliveryDelayStorage)) SKUDeliveryDelayStorage = 0;
                     SKUDeliveryDelayStorageSum = SKUDeliveryDelayStorage > 0 && isDeadline ? SKUDeliveryDelayStorage * SKUPrice : 0.00;
                     

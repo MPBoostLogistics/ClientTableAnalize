@@ -160,7 +160,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 
             if(!items.Any()) return null;
 
-            StringBuilder stringBuilder = new("Пересорт на другие арт (добавлено в \"Склад: Расход пересортом\"):\n");
+            StringBuilder stringBuilder = new("Пересортица на другие артикулы (добавлено в \"Склад: Списано пересортицей, товаров\"):\n");
             foreach (var item in items)
             {
                 stringBuilder.Append($"{item.skuResortTo}, шт - {item.skuResortToSum}");

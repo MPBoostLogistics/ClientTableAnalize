@@ -7,12 +7,10 @@ namespace TableAnalizer.Objects.Parsing
     public class TargetCellSettings 
     {
         public Color TextСolor { get; }
-        public Color? CellFillColor { get; }
+        public Color? CellFillColor { get; private set; }
         public bool IsTextBold { get; }
         public int TextSize { get; }
-        public ExcelFillStyle ExcelFillStyle { get; }
-
-       
+        public ExcelFillStyle ExcelFillStyle { get; private set; }
 
         public TargetCellSettings(Color textСolor, int textSize, Color? cellFillColor,  bool isTextBold = false)
         {
@@ -20,17 +18,22 @@ namespace TableAnalizer.Objects.Parsing
             TextSize = textSize;
             IsTextBold = isTextBold;
 
-            switch(cellFillColor is null) 
+            SetCellFillColor(cellFillColor);
+        }
+
+        public void SetCellFillColor(Color? color) 
+        {
+            switch(color is null) 
             {
                 case true:
                     ExcelFillStyle = ExcelFillStyle.None;
                     break;
                 case false:
                     ExcelFillStyle = ExcelFillStyle.Solid;
-                    CellFillColor = cellFillColor;
+                    CellFillColor = color;
                     break;
             }
-        }
+        } 
     }
 
     /// <summary>

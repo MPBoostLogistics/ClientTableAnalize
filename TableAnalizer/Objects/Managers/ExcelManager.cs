@@ -10,6 +10,7 @@ using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using OfficeOpenXml.FormulaParsing.ExpressionGraph.FunctionCompilers;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -421,7 +422,7 @@ namespace TableAnalizer.Objects.Managers
             rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
             actualData = skuForTargetReports;
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? mainOutputReportSheet, Colors[SKUSellmentStatus.FullSet]);
-            FillingСellsWithData(ref mainOutputReportSheet, in actualData, targetCells); 
+            FillingСellsWithData(true, ref mainOutputReportSheet, in actualData, targetCells); 
             SetupTableHeader(in targetCells, ref mainOutputReportSheet);
             AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, in rangeForGrouping);
 
@@ -432,7 +433,7 @@ namespace TableAnalizer.Objects.Managers
             targetCells = cellsReportingDelays;
             rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? delayOutputReportSheet, Colors[SKUSellmentStatus.OnSearchWarehouse]);
-            FillingСellsWithData(ref delayOutputReportSheet, in actualData, targetCells); 
+            FillingСellsWithData(false, ref delayOutputReportSheet, in actualData, targetCells); 
             SetupTableHeader(in targetCells, ref delayOutputReportSheet);
             AddFilterAndAccentInWorkSheet(ref delayOutputReportSheet, in rangeForGrouping); 
 
@@ -443,7 +444,7 @@ namespace TableAnalizer.Objects.Managers
             targetCells = cellsReportingOverruns;
             rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? overrunsOutputReportSheet, Colors[SKUSellmentStatus.Unknown]);
-            FillingСellsWithData(ref overrunsOutputReportSheet, in actualData, targetCells); 
+            FillingСellsWithData(false, ref overrunsOutputReportSheet, in actualData, targetCells); 
             SetupTableHeader(in targetCells, ref overrunsOutputReportSheet);
             AddFilterAndAccentInWorkSheet(ref overrunsOutputReportSheet, in rangeForGrouping); 
 
@@ -460,7 +461,7 @@ namespace TableAnalizer.Objects.Managers
                     select range.ToList();
         }
 
-        public void FillingСellsWithData(ref ExcelWorksheet worksheet, in List<SKUForTargetReports> skusForTargetReport, TargetCell[] targetCells, int recordIndex = 1)
+        public void FillingСellsWithData(bool isMainReport, ref ExcelWorksheet worksheet, in List<SKUForTargetReports> skusForTargetReport, TargetCell[] targetCells, int recordIndex = 1)
         {
             int rowIndex = recordIndex + 1;
 
@@ -468,6 +469,9 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var targetCell in targetCells)
                 {
+                    // Get color for status 
+                    // ...
+         
                     object? value = null;
 
                     switch (targetCell.ParsingTypeCode)
@@ -520,15 +524,14 @@ namespace TableAnalizer.Objects.Managers
 
                     if (value is not null)
                     {
-
                         // Set value for cell 
                         ExcelRange? tableCell = worksheet.Cells[rowIndex, targetCell.ColNumber];
-                        
+    
                         try
                         {
                             ApplySettingsToTableCell(ref tableCell, value, targetCell);
                         }
-                        catch (System.Exception ex)
+                        catch (Exception ex)
                         {
                             Trace.WriteLine(ex.Message);
                             throw;
@@ -551,15 +554,13 @@ namespace TableAnalizer.Objects.Managers
             tableCell.Style.VerticalAlignment = ExcelVerticalAlignment.Top;
 
             // Filling cells with color   
-
             if (targetCell.CellSettings.ExcelFillStyle == ExcelFillStyle.Solid)
             {
                  if(targetCell.CellSettings.CellFillColor is null)
                     throw new Exception($"Cell fill don`t have a \"{nameof(targetCell.CellSettings.CellFillColor)}\" parameter assigned.");
 
-                tableCell.Style.Fill.PatternType = ExcelFillStyle.Solid;
-                var tempColor = (Color)targetCell.CellSettings.CellFillColor;
-                tableCell.Style.Fill.BackgroundColor.SetColor(Color.FromArgb(150, tempColor.R, tempColor.G, tempColor.B));
+                tableCell.Style.Fill.PatternType = targetCell.CellSettings.ExcelFillStyle;
+                tableCell.Style.Fill.BackgroundColor.SetColor((Color)targetCell.CellSettings.CellFillColor);
             }
 
             // Apply font settings 
@@ -678,10 +679,9 @@ namespace TableAnalizer.Objects.Managers
                 {
                     ExcelRangeColumn? excelRangeColumn = excelWorksheet.Columns[rangeForGrouping.First(), rangeForGrouping.Last()];
                     excelRangeColumn.Group();
-                    excelRangeColumn.SetVisibleOutlineLevel(1, false);
+                    excelRangeColumn.OutlineLevel = 1;
                 }
             }
-
         }
 
         /// <summary>
