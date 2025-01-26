@@ -20,12 +20,12 @@ namespace TableAnalizer.Objects.Managers
         /// <remarks><i>New version</i></remarks>
         public Dictionary<SKUSellmentStatus, System.Drawing.Color> Colors { get; } = new()
         {
-            {SKUSellmentStatus.FullSet, System.Drawing.ColorTranslator.FromHtml("#98fb98")},
-            {SKUSellmentStatus.InWork, System.Drawing.ColorTranslator.FromHtml("#ffd700")},
-            {SKUSellmentStatus.OnSearchWarehouseAndPoints, System.Drawing.ColorTranslator.FromHtml("#f08080")},
-            {SKUSellmentStatus.OnSearchWarehouse, System.Drawing.ColorTranslator.FromHtml("#ffa07a")},
-            {SKUSellmentStatus.OnSearchPoints, System.Drawing.ColorTranslator.FromHtml("#ffc4ad")},
-            {SKUSellmentStatus.Unknown, System.Drawing.ColorTranslator.FromHtml("#add8e6")}
+            {SKUSellmentStatus.FullSet, System.Drawing.ColorTranslator.FromHtml("#bbe4e0")},                    // #bbe4e0
+            {SKUSellmentStatus.InWork, System.Drawing.ColorTranslator.FromHtml("#fedd9f")},                     // #fedd9f
+            {SKUSellmentStatus.OnSearchWarehouseAndPoints, System.Drawing.ColorTranslator.FromHtml("#ffa678")}, // #ffa678
+            {SKUSellmentStatus.OnSearchWarehouse, System.Drawing.ColorTranslator.FromHtml("#ffe1d2")},          // #ffe1d2
+            {SKUSellmentStatus.OnSearchPoints, System.Drawing.ColorTranslator.FromHtml("#ffc4a5")},             // #ffc4a5
+            {SKUSellmentStatus.Unknown, System.Drawing.ColorTranslator.FromHtml("#d5e8f0")}                     // #d5e8f0
         };
         #endregion Properties
 

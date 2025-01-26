@@ -1,16 +1,42 @@
-﻿
-using System.Drawing;
+﻿using System.Drawing;
 using OfficeOpenXml.Style;
 using TableAnalizer.Objects.Enums;
 
 namespace TableAnalizer.Objects.Parsing
 {
+    public class TargetCellSettings 
+    {
+        public Color TextСolor { get; }
+        public Color? CellFillColor { get; }
+        public bool IsTextBold { get; }
+        public int TextSize { get; }
+        public ExcelFillStyle ExcelFillStyle { get; }
+
+        public TargetCellSettings(Color textСolor, int textSize, Color? cellFillColor,  bool isTextBold = false)
+        {
+            TextСolor = textСolor;
+            TextSize = textSize;
+            IsTextBold = isTextBold;
+
+            switch(cellFillColor is null) 
+            {
+                case true:
+                    ExcelFillStyle = ExcelFillStyle.None;
+                    break;
+                case false:
+                    ExcelFillStyle = ExcelFillStyle.Solid;
+                    CellFillColor = cellFillColor;
+                    break;
+            }
+        }
+    }
+
     /// <summary>
     /// Represents the result cell for an Excel table.
     /// </summary>
     public readonly struct TargetCell(int colNumber, string colName, double colWidth, string format,
         bool wrapTextInHeader, int textRotationInHeader, string propertyName, ParsingTypeCode parsingTypeCode,
-        ExcelFillStyle excelFillStyle, Predicate<int>? valueСheckingPredicate, bool isBoldFont = false)
+        Predicate<int>? valueСheckingPredicate, TargetCellSettings targetCellSettings)
     {
         #region Properties
         public int ColNumber { get; } = colNumber;
@@ -21,10 +47,8 @@ namespace TableAnalizer.Objects.Parsing
         public int TextRotationInHeader { get; } = textRotationInHeader;
         public string PropertyName { get; } = propertyName;
         public ParsingTypeCode ParsingTypeCode { get; } = parsingTypeCode;
-        public ExcelFillStyle ExcelFillStyle { get; } = excelFillStyle;
         public readonly Predicate<int>? ValueСheckingPredicate = valueСheckingPredicate; 
-        public Color HighlightTextСolor { get; } = ColorTranslator.FromHtml("#72bcd4");
-        public bool IsBoldFont { get; } = isBoldFont;
+        public readonly TargetCellSettings CellSettings { get; } = targetCellSettings;
         #endregion
     }
 }

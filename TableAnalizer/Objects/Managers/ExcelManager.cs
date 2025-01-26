@@ -1,12 +1,14 @@
 #nullable enable
 
+//https://www.color-hex.com/color-palette/1054961
+
 using System.Drawing;
 using TableAnalizer.Objects.Enums;
-using TableAnalizer.Interfaces;
 using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.SKUItems;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
+using System.Diagnostics;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -34,10 +36,23 @@ namespace TableAnalizer.Objects.Managers
         private const int HEADER_FONT_SIZE = 14;
         private const string LOGISTIC_FLAG = "Да";
 
-        // Accent 
-        private readonly Color AccentFillColor = ColorTranslator.FromHtml("#FEFEF4");
-        private readonly Color AccentTextColor = ColorTranslator.FromHtml("#3a425d");
-        private readonly int AccentTextSize = 14;
+        private const string STRING_OR_INT_CELL_FORMAT = "0";
+        private const string DOUBLE_CELL_FORMAT = "0.00";
+        private const string DATE_CELL_FORNAT = "dd.MM.yyyy";
+
+        // Default target cell settings
+        private static readonly Color defaultTextColor = ColorTranslator.FromHtml("#1e2834");       // #1e2834           
+        private static readonly int defaultTextSize = 12;
+
+        // Accent target cell settings
+        private static readonly Color accentTextColor = ColorTranslator.FromHtml("#7f360f");        // #7f360f
+        private static readonly Color accentCellFillColor = ColorTranslator.FromHtml("#f7f1e1");    // #f7f1e1
+        private static readonly int accentTextSize = 14;
+
+        private static readonly TargetCellSettings defaultTargetCellSettings = 
+            new (textСolor: defaultTextColor, textSize: defaultTextSize, cellFillColor: null, false);
+        private static readonly TargetCellSettings accentTargetCellSettings  = 
+            new (textСolor: accentTextColor, textSize: accentTextSize, cellFillColor: accentCellFillColor, true);
 
         #endregion
 
@@ -83,19 +98,19 @@ namespace TableAnalizer.Objects.Managers
             new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
         };
 
-        public static List<SourceColumn> RemainingSecondRoomSourceCells { get; } = new()
-        {
+        public static List<SourceColumn> RemainingSecondRoomSourceCells { get; } =
+        [
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(6, "SKUBrandAndName", ParsingTypeCode.StringTypeCode, true),
             new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
-        };
+        ];
 
-        public static List<SourceColumn> RemainingThirdRoomSourceCells { get; } = new()
-        {
+        public static List<SourceColumn> RemainingThirdRoomSourceCells { get; } =
+        [
             new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
             new(6, "SKUBrandAndName", ParsingTypeCode.StringTypeCode, true),
             new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
-        };
+        ];
 
         public static List<SourceColumn> ShippedSourceCells { get; } = new()
         {
@@ -156,194 +171,148 @@ namespace TableAnalizer.Objects.Managers
 
         public TargetCell[] cellsReportingMain =
         [
-            new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
+            new (colNumber: 1, colName: "МП", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUmp",
-                parsingTypeCode: ParsingTypeCode.Marketplace, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 2, colName: "Артикул", colWidth: 12, format: "0",
+                parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 2, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUNumber",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUBrand",
-                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 4, colName: "Наименование товара", colWidth: 50, format: "0",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 4, colName: "Наименование товара", colWidth: 50, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUName",
-                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null),
-            new (colNumber: 5, colName: "Средняя цена, руб.", colWidth: 12, format: "0.00",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 5, colName: "Средняя цена, руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, "SKUPrice",
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x > 0),
-            new (colNumber: 6, colName: "Дата последнего заказа", colWidth: 13, format: "dd.MM.yyyy",
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode,  valueСheckingPredicate: (int x) => x > 0, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 6, colName: "Дата последнего заказа", colWidth: 13, format: DATE_CELL_FORNAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDate",
-                parsingTypeCode: ParsingTypeCode.DataOnlyTypeCode, excelFillStyle:  ExcelFillStyle.Solid,
-                valueСheckingPredicate: null),
-            new (colNumber: 7, colName: "Статус взаиморасчетов", colWidth: 12, format: "0",
+                parsingTypeCode: ParsingTypeCode.DataOnlyTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 7, colName: "Статус взаиморасчетов", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SellmentStatusString",
-                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 8, colName: "Заказов: всего", colWidth: 12, format: "0",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 8, colName: "Заказов: всего", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKURansomsTotal",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x > 0),
-            new (colNumber: 9, colName: "Заказов: отменено",colWidth: 7, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x > 0, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 9, colName: "Заказов: отменено",colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsCanceled",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 10, colName: "Заказов: в пути", colWidth: 7, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 10, colName: "Заказов: в пути", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsOnWay",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 11, colName: "Заказов: доставлено на ПВЗ", colWidth: 7, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 11, colName: "Заказов: доставлено на ПВЗ", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsDelivered",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 12, colName: "Заказов: забрано с ПВЗ", colWidth: 7, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 12, colName: "Заказов: забрано с ПВЗ", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsWithDrawn",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 13, colName: "Склад: Ожидание", colWidth: 7, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 13, colName: "Склад: Ожидание", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsWaiting",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null, isBoldFont: true),                                             
-            new (colNumber: 14, colName: "Склад: Приход, всего", colWidth: 7, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: accentTargetCellSettings),                                             
+            new (colNumber: 14, colName: "Склад: Приход, всего", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUTotalReceipt",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 15, colName: "Склад: Приход товаром", colWidth: 7, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 15, colName: "Склад: Приход товаром", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUReceipt",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 16, colName: "Склад: Оприходовано пересортицей", colWidth: 7, format: "0",
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUReceiptResorts",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 17, colName: "Склад: Списано пересортицей, товаров", colWidth: 7, format: "0",
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUReceiptResorts",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 18, colName: "Склад: Расход всего", colWidth: 7, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 16, colName: "Склад: Оприходовано пересортицей", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUReceivedResorts",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 17, colName: "Склад: Списано пересортицей, товаров", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUWriteOffByResorts",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: accentTargetCellSettings),
+            new (colNumber: 18, colName: "Склад: Расход всего", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUTotalСonsumption",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null, isBoldFont: true),
-            new (colNumber: 19, colName: "Склад: Расход товаром", colWidth: 7, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: accentTargetCellSettings),
+            new (colNumber: 19, colName: "Склад: Расход товаром", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUShipped",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 20, colName: "Склад: Расход компенсацией", colWidth: 7, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 20, colName: "Склад: Расход компенсацией", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUPaid",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 21, colName: "Склад: Расход пересортом", colWidth: 7, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 21, colName: "Склад: Расход пересортом", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUResort",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 22, colName: "Склад: Остаток товаров", colWidth: 7, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 22, colName: "Склад: Остаток товаров", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURemaining",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 23, colName: "Комментарий к пересортами", colWidth: 32, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 23, colName: "Комментарий к пересортами", colWidth: 32, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUResortsComment",
-                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 24, colName: "Задержка довоза, всего", colWidth: 12, format: "0",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 24, colName: "Задержка довоза, всего", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayTotal",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle: ExcelFillStyle.None, 
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: true),
-            new (colNumber: 25, colName: "Задержка довоза от точек, кол-во", colWidth: 12, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: accentTargetCellSettings),
+            new (colNumber: 25, colName: "Задержка довоза от точек, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPoints",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 26, colName: "Задержка довоза от точек, сумма руб.", colWidth: 12, format: "0.00",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 26, colName: "Задержка довоза от точек, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPointsSum",
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 27, colName: "Задержка довоза от склада, кол-во", colWidth: 12, format: "0",
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 27, colName: "Задержка довоза от склада, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorage",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 28, colName: "Задержка довоза от склада, сумма руб.", colWidth: 12, format: "0.00",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 28, colName: "Задержка довоза от склада, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorageSum",
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 29, colName: "Перерасход, кол-во", colWidth: 14, format: "0",
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 29, colName: "Перерасход, кол-во", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUOverrunsCount",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: true),
-            new (colNumber: 30, colName: "Перерасход, сумма руб.", colWidth: 14, format: "0.00",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: accentTargetCellSettings),
+            new (colNumber: 30, colName: "Перерасход, сумма руб.", colWidth: 14, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUOverrunsSum",
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 31, colName: "Комментарий к артикулу", colWidth: 50, format: "0",
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 31, colName: "Комментарий к артикулу", colWidth: 50, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUComment",
-                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null, isBoldFont: false),
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
         ];
-        
         public TargetCell[] cellsReportingDelays =
         [
-            new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
+            new (colNumber: 1, colName: "МП", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUmp",
-                parsingTypeCode: ParsingTypeCode.Marketplace, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 2, colName: "Артикул", colWidth: 12, format: "0",
+                parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 2, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUNumber",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUBrand",
-                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 4, colName: "Наименование товара", colWidth: 50, format: "0",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 4, colName: "Наименование товара", colWidth: 50, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUName",
-                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null),
-            new (colNumber: 5, colName: "Задержка довоза от точек, товаров", colWidth: 12, format: "0",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 5, colName: "Задержка довоза от точек, товаров", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPoints",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 6, colName: "Задержка довоза от точек, сумма", colWidth: 12, format: "0.00",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 6, colName: "Задержка довоза от точек, сумма", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPointsSum",
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 7, colName: "Задержка довоза от склада, товаров", colWidth: 12, format: "0",
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 7, colName: "Задержка довоза от склада, товаров", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorage",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false),
-            new (colNumber: 8, colName: "Задержка довоза от склада, сумма", colWidth: 12, format: "0.00",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 8, colName: "Задержка довоза от склада, сумма", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorageSum",
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false)
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings)
         ];
-
         public TargetCell[] cellsReportingOverruns =
         [
-             new (colNumber: 1, colName: "МП", colWidth: 8, format: "0",
+            new (colNumber: 1, colName: "МП", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUmp",
-                parsingTypeCode: ParsingTypeCode.Marketplace, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 2, colName: "Артикул", colWidth: 12, format: "0",
+                parsingTypeCode: ParsingTypeCode.Marketplace, 
+                valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 2, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUNumber",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: "0",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUBrand",
-                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null),
-            new (colNumber: 4, colName: "Наименование товара", colWidth: 50, format: "0",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 4, colName: "Наименование товара", colWidth: 50, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUName",
-                parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None, 
-                valueСheckingPredicate: null),
-             new (colNumber: 5, colName: "Перерасход, товаров", colWidth: 14, format: "0",
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 5, colName: "Перерасход, товаров", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUOverrunsCount",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: true),
-            new (colNumber: 6, colName: "Перерасход, сумма", colWidth: 14, format: "0.00",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 6, colName: "Перерасход, сумма", colWidth: 14, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUOverrunsSum",
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: (int x) => x == 0, isBoldFont: false)
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode,valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings)
         ];
         
         #endregion
@@ -449,9 +418,9 @@ namespace TableAnalizer.Objects.Managers
             targetCells = cellsReportingMain;
             actualData = skuForTargetReports;
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? mainOutputReportSheet, Colors[SKUSellmentStatus.FullSet]);
-            FillingСellsWithData<SKUForTargetReports>(outputPackage, ref mainOutputReportSheet, in actualData, targetCells, FileManager.OutputClientReportFilePath); 
-            SetupTableHeader(in targetCells, ref mainOutputReportSheet);    
-            AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, [13,16,23,28]);
+            FillingСellsWithData(ref mainOutputReportSheet, in actualData, targetCells); 
+            SetupTableHeader(in targetCells, ref mainOutputReportSheet);
+            AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, accentCellsRange: [13,17,23,28]);
 
             // Make delay report
             actualData = [.. skuForTargetReports
@@ -459,8 +428,8 @@ namespace TableAnalizer.Objects.Managers
             sheetName = OUTPUT_REPORT_WORKSHEET02_NAME;
             targetCells = cellsReportingDelays;
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? delayOutputReportSheet, Colors[SKUSellmentStatus.OnSearchWarehouse]);
-            FillingСellsWithData<SKUForTargetReports>(outputPackage, ref delayOutputReportSheet, in actualData, targetCells, FileManager.OutputClientReportFilePath); 
-            SetupTableHeader(in targetCells, ref delayOutputReportSheet); 
+            FillingСellsWithData(ref delayOutputReportSheet, in actualData, targetCells); 
+            SetupTableHeader(in targetCells, ref delayOutputReportSheet);
             AddFilterAndAccentInWorkSheet(ref delayOutputReportSheet); 
 
             // Make overruns report
@@ -469,8 +438,8 @@ namespace TableAnalizer.Objects.Managers
             sheetName = OUTPUT_REPORT_WORKSHEET03_NAME;
             targetCells = cellsReportingOverruns;
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? overrunsOutputReportSheet, Colors[SKUSellmentStatus.Unknown]);
-            FillingСellsWithData<SKUForTargetReports>(outputPackage, ref overrunsOutputReportSheet, in actualData, targetCells, FileManager.OutputClientReportFilePath); 
-            SetupTableHeader(in targetCells, ref overrunsOutputReportSheet); 
+            FillingСellsWithData(ref overrunsOutputReportSheet, in actualData, targetCells); 
+            SetupTableHeader(in targetCells, ref overrunsOutputReportSheet);
             AddFilterAndAccentInWorkSheet(ref overrunsOutputReportSheet); 
 
             // Save work
@@ -478,12 +447,11 @@ namespace TableAnalizer.Objects.Managers
             outputPackage.Dispose();
         }
 
-        public void FillingСellsWithData<T>(ExcelPackage package, ref ExcelWorksheet worksheet, in List<T> items, TargetCell[] targetCells, string outputPath, int recordIndex = 1)
-            where T : IColorable
+        public void FillingСellsWithData(ref ExcelWorksheet worksheet, in List<SKUForTargetReports> skusForTargetReport, TargetCell[] targetCells, int recordIndex = 1)
         {
             int rowIndex = recordIndex + 1;
 
-            foreach (var item in items)
+            foreach (var skuForTargetReport in skusForTargetReport)
             {
                 foreach (var targetCell in targetCells)
                 {
@@ -492,43 +460,43 @@ namespace TableAnalizer.Objects.Managers
                     switch (targetCell.ParsingTypeCode)
                     {
                         case ParsingTypeCode.IntTypeCode:
-                            if (TryGetPropertyValue(item, targetCell.PropertyName, out int intValue))
+                            if (TryGetPropertyValue(skuForTargetReport, targetCell.PropertyName, out int intValue))
                             {
                                 value = intValue;
                             }
                             break;
                         case ParsingTypeCode.DoubleTypeCode:
-                            if (TryGetPropertyValue(item, targetCell.PropertyName, out double doubleValue))
+                            if (TryGetPropertyValue(skuForTargetReport, targetCell.PropertyName, out double doubleValue))
                             {
                                 value = doubleValue;
                             }
                             break;
                         case ParsingTypeCode.DataOnlyTypeCode:
-                            if (TryGetPropertyValue(item, targetCell.PropertyName, out DateOnly dateOnlyValue))
+                            if (TryGetPropertyValue(skuForTargetReport, targetCell.PropertyName, out DateOnly dateOnlyValue))
                             {
                                 value = dateOnlyValue.ToDateTime(new TimeOnly());
                             }
                             break;
                         case ParsingTypeCode.StringTypeCode:
-                            if (TryGetPropertyValue(item, targetCell.PropertyName, out string? stringValue))
+                            if (TryGetPropertyValue(skuForTargetReport, targetCell.PropertyName, out string? stringValue))
                             {
                                 value = stringValue ?? null;
                             }
                             break;
                         case ParsingTypeCode.SKURansomsStatus:
-                            if (TryGetPropertyValue(item, targetCell.PropertyName, out SKURansomsStatus ransomsStatusValue))
+                            if (TryGetPropertyValue(skuForTargetReport, targetCell.PropertyName, out SKURansomsStatus ransomsStatusValue))
                             {
                                 value = ransomsStatusValue;
                             }
                             break;
                         case ParsingTypeCode.Marketplace:
-                            if (TryGetPropertyValue(item, targetCell.PropertyName, out Marketplace? marketplaceValue))
+                            if (TryGetPropertyValue(skuForTargetReport, targetCell.PropertyName, out Marketplace? marketplaceValue))
                             {
                                 value = marketplaceValue;
                             }
                             break;
                         case ParsingTypeCode.SellmentStatus:
-                            if (TryGetPropertyValue(item, targetCell.PropertyName, out SellmentStatus? sellmentStatus))
+                            if (TryGetPropertyValue(skuForTargetReport, targetCell.PropertyName, out SellmentStatus? sellmentStatus))
                             {
                                 value = sellmentStatus;
                             }
@@ -539,41 +507,70 @@ namespace TableAnalizer.Objects.Managers
 
                     if (value is not null)
                     {
+
                         // Set value for cell 
-                        var cell = worksheet.Cells[rowIndex, targetCell.ColNumber];
-                        cell.Value = value;
-
-                        // Cell value format
-                        cell.Style.Numberformat.Format = targetCell.Format;
-
-                        // Filling cells with color   
-                        cell.Style.Fill.PatternType = targetCell.ExcelFillStyle;
-                        if (cell.Style.Fill.PatternType == ExcelFillStyle.Solid &&
-                            item.FillColor != Color.Empty)
+                        ExcelRange? tableCell = worksheet.Cells[rowIndex, targetCell.ColNumber];
+                        
+                        try
                         {
-                            cell.Style.Fill.BackgroundColor.SetColor(item.FillColor);
+                            ApplySettingsToTableCell(ref tableCell, value, targetCell);
                         }
-
-                        // Checking predicate condition
-                        if(targetCell.ValueСheckingPredicate is not null) 
+                        catch (System.Exception ex)
                         {
-                            int? cheking = value is double ? Convert.ToInt32(value) : value is int v ? v : null;
-
-                            if(cheking.HasValue && !targetCell.ValueСheckingPredicate(cheking.Value)) 
-                            {
-                                cell.Style.Font.Color.SetColor(targetCell.HighlightTextСolor);
-                            }
+                            Trace.WriteLine(ex.Message);
+                            throw;
                         }
-
-                        // verticalAlignment
-                        cell.Style.VerticalAlignment = ExcelVerticalAlignment.Top;
-
-                        // Bold font for cell
-                        cell.Style.Font.Bold = targetCell.IsBoldFont;
                     }
                 }
                 rowIndex++;
             }
+        }
+
+        private static void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell) 
+        {
+            // Add value to cell 
+            tableCell.Value = value;
+
+            //Add number format to cell 
+            tableCell.Style.Numberformat.Format = targetCell.Format;
+
+            // Set alignment
+            tableCell.Style.VerticalAlignment = ExcelVerticalAlignment.Top;
+
+            // Filling cells with color   
+
+            if (targetCell.CellSettings.ExcelFillStyle == ExcelFillStyle.Solid)
+            {
+                 if(targetCell.CellSettings.CellFillColor is null)
+                    throw new Exception($"Cell fill don`t have a \"{nameof(targetCell.CellSettings.CellFillColor)}\" parameter assigned.");
+
+                tableCell.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                var tempColor = (Color)targetCell.CellSettings.CellFillColor;
+                tableCell.Style.Fill.BackgroundColor.SetColor(Color.FromArgb(150, tempColor.R, tempColor.G, tempColor.B));
+            }
+
+            // Apply font settings 
+            tableCell.Style.Font.Size = targetCell.CellSettings.TextSize;
+            tableCell.Style.Font.Bold = targetCell.CellSettings.IsTextBold;
+
+            // Checking predicate condition
+            if(targetCell.ValueСheckingPredicate is not null) 
+            {
+                int? cheking = value is double ? Convert.ToInt32(value) : value is int v ? v : null;
+                if(cheking.HasValue && !targetCell.ValueСheckingPredicate(cheking.Value)) 
+                {
+                    tableCell.Style.Font.Color.SetColor(accentTextColor);
+                } 
+                else 
+                {
+                    tableCell.Style.Font.Color.SetColor(targetCell.CellSettings.TextСolor);
+                }
+            } 
+            else 
+            {
+                tableCell.Style.Font.Color.SetColor(targetCell.CellSettings.TextСolor);
+            }
+
         }
 
         /// <summary>
@@ -644,7 +641,7 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        private void AddFilterAndAccentInWorkSheet(ref ExcelWorksheet excelWorksheet, int[]? accentCellsRange = null)
+        private static void AddFilterAndAccentInWorkSheet(ref ExcelWorksheet excelWorksheet, int[]? accentCellsRange = null)
         {
             int firstRow = excelWorksheet.Dimension.Start.Row;
             int endRow = excelWorksheet.Dimension.End.Row;
@@ -670,22 +667,22 @@ namespace TableAnalizer.Objects.Managers
 
             excelWorksheet.View.FreezePanes(2, 4);
 
-            // Add accents
-            if(accentCellsRange is not null && accentCellsRange.Length > 0) 
-            {
-                for (int i = 0; i < accentCellsRange.Length; i++)
-                {
-                    // Background 
-                    string columnLetter = ExcelCellAddress.GetColumnLetter(accentCellsRange[i]);
-                    var address = $"{columnLetter}{firstRow + 1}:{columnLetter}{endRow}";
-                    excelWorksheet.Cells[address].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                    excelWorksheet.Cells[address].Style.Fill.BackgroundColor.SetColor(AccentFillColor);
+            // // Add accents
+            // if(accentCellsRange is not null && accentCellsRange.Length > 0) 
+            // {
+            //     for (int i = 0; i < accentCellsRange.Length; i++)
+            //     {
+            //         // Background 
+            //         string columnLetter = ExcelCellAddress.GetColumnLetter(accentCellsRange[i]);
+            //         var address = $"{columnLetter}{firstRow + 1}:{columnLetter}{endRow}";
+            //         excelWorksheet.Cells[address].Style.Fill.PatternType = ExcelFillStyle.Solid;
+            //         excelWorksheet.Cells[address].Style.Fill.BackgroundColor.SetColor(AccentFillColor);
                     
-                    // Text
-                    excelWorksheet.Cells[address].Style.Font.Color.SetColor(AccentTextColor);
-                    excelWorksheet.Cells[address].Style.Font.Size = AccentTextSize;
-                };
-            }
+            //         // Text
+            //         excelWorksheet.Cells[address].Style.Font.Color.SetColor(AccentTextColor);
+            //         excelWorksheet.Cells[address].Style.Font.Size = accentTextSize;
+            //     };
+            // }
         }
 
         /// <summary>

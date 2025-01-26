@@ -40,26 +40,30 @@ namespace TableAnalizer.Objects.SKUItems
         public int SKUPaid { get; set; }                    // Склад: Расход компенсацией 
         public int SKUResort { get; set; }                  // Склад: Расход пересортом 
        
+        public int SKUWriteOffByResorts { get; set; }       // Склад: списано пересортами
+
+
         public int SKURemaining { get; set; }               // Склад: Остаток товаров
 
         // Delivery delay
-        public int SKUDeliveryDelayTotal { get; set; }
-        public int SKUDeliveryDelayPoints { get; set; }
-        public double SKUDeliveryDelayPointsSum { get;set;}
-        public int SKUDeliveryDelayStorage { get; set; }
-        public double SKUDeliveryDelayStorageSum { get; set; }
+        public int SKUDeliveryDelayTotal { get; set; }          // недовоз, товаров всего 
+        public int SKUDeliveryDelayPoints { get; set; }         // недовоз от точек, товаров
+        public double SKUDeliveryDelayPointsSum { get;set;}     // недовоз от точек, сумма
+        public int SKUDeliveryDelayStorage { get; set; }        // недовоз от склада, товаров
+        public double SKUDeliveryDelayStorageSum { get; set; }  // недовоз от склада, сумма 
 
-        public int SKUAccountingByResortsCount { get; set; } = 0;
-        public string SKUResortsComment { get; set; } = string.Empty;
+        public string SKUResortsComment { get; set; } = string.Empty;  // Комментарий по пересортам
 
         // Overruns 
-        public int SKUOverrunsCount { get; set; } = 0;
-        public double SKUOverrunsSum { get; set; } = 0.00;
+        public int SKUOverrunsCount { get; set; } = 0;          // перерасходы, товаров
+        public double SKUOverrunsSum { get; set; } = 0.00;      // перерасходы, сумма
 
         // Is Parrales sku
         private bool IsParallelSku {get ;set;}
 
+        
         public string SKUComment { get; set;} = string.Empty;
+
         public Color FillColor { get; set;}
 
         // Work properties
@@ -142,6 +146,8 @@ namespace TableAnalizer.Objects.SKUItems
 
         private void AnalizeSKU(SKU sku, bool isRawReport, Dictionary<int, int>? resortFromSkusValues) 
         {
+            CalculateTotalReceipt();
+
             // 0. Установка неопределенного статуса для всех позиций
             SetSellmentStatus(SKUSellmentStatus.Unknown);
 
@@ -160,7 +166,7 @@ namespace TableAnalizer.Objects.SKUItems
                 var writeOffIn1CItems = sku.SKUResortBalance.FindSkusInBalanceByPredicate(SKUManager.IsWriteOffIn1C);
                 if (writeOffIn1CItems.HasValue && writeOffIn1CItems.Value.sum > 0)
                 { 
-                    SKUResort += writeOffIn1CItems.Value.sum;
+                    SKUWriteOffByResorts += writeOffIn1CItems.Value.sum;
                     SKUResortsComment = writeOffIn1CItems.Value.comment;
                 }
             }
