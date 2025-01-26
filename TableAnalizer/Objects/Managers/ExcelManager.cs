@@ -216,39 +216,39 @@ namespace TableAnalizer.Objects.Managers
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsWaiting",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
                 valueСheckingPredicate: null, isBoldFont: true),                                             
-            new (colNumber: 14, colName: "Склад: Приход товаров", colWidth: 7, format: "0",
+            new (colNumber: 14, colName: "Склад: Приход товаром", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUReceipt",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
                 valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 15, colName: "Склад: Расход всего", colWidth: 7, format: "0",
+            new (colNumber: 15, colName: "Склад: Приход пересортом товаров", colWidth: 7, format: "0",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUReceiptResorts",
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
+                valueСheckingPredicate: null, isBoldFont: false),
+            new (colNumber: 16, colName: "Склад: Расход всего", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUTotalСonsumption",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
                 valueСheckingPredicate: null, isBoldFont: true),
-            new (colNumber: 16, colName: "Склад: Расход товаром", colWidth: 7, format: "0",
+            new (colNumber: 17, colName: "Склад: Расход товаром", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUShipped",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
                 valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 17, colName: "Склад: Расход компенсацией", colWidth: 7, format: "0",
+            new (colNumber: 18, colName: "Склад: Расход компенсацией", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUPaid",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
                 valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 18, colName: "Склад: Расход пересортом", colWidth: 7, format: "0",
+            new (colNumber: 19, colName: "Склад: Расход пересортом", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUResort",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
                 valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 19, colName: "Склад: Расход пустышками", colWidth: 7, format: "0",
+            new (colNumber: 20, colName: "Склад: Расход пустышками", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUDummies",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
                 valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 20, colName: "Склад: Остаток товаров", colWidth: 7, format: "0",
+            new (colNumber: 21, colName: "Склад: Остаток товаров", colWidth: 7, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURemaining",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None, 
                 valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 21, colName: "Передано пересортами от других артикулов, кол-во", colWidth: 15, format: "0",
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUFromIncomingResortsSum",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, excelFillStyle:  ExcelFillStyle.None,
-                valueСheckingPredicate: null, isBoldFont: false),
-            new (colNumber: 22, colName: "Комментарий к пересортами от других артикулов", colWidth: 32, format: "0",
+            new (colNumber: 22, colName: "Комментарий к пересортами", colWidth: 32, format: "0",
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUResortsComment",
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, excelFillStyle:  ExcelFillStyle.None,
                 valueСheckingPredicate: null, isBoldFont: false),
@@ -446,7 +446,7 @@ namespace TableAnalizer.Objects.Managers
             
             var sheetName = string.Empty;
             TargetCell[] targetCells = Array.Empty<TargetCell>();
-            List<SKUForTargetReports> actualData = new();
+            List<SKUForTargetReports> actualData = [];
 
             // Make main report
             sheetName = OUTPUT_REPORT_WORKSHEET01_NAME;
@@ -455,7 +455,7 @@ namespace TableAnalizer.Objects.Managers
             CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? mainOutputReportSheet, Colors[SKUSellmentStatus.FullSet]);
             FillingСellsWithData<SKUForTargetReports>(outputPackage, ref mainOutputReportSheet, in actualData, targetCells, FileManager.OutputClientReportFilePath); 
             SetupTableHeader(in targetCells, ref mainOutputReportSheet);    
-            AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, [13,15,21,23,28]);
+            AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, [13,16,23,28]);
 
             // Make delay report
             actualData = [.. skuForTargetReports
@@ -665,7 +665,7 @@ namespace TableAnalizer.Objects.Managers
             excelWorksheet.OutLineSummaryBelow = false;
 
             var range01 = Enumerable.Range(9, 4).ToList();
-            var range02 = Enumerable.Range(16, 4).ToList();
+            var range02 = Enumerable.Range(17, 4).ToList();
             var range03 = Enumerable.Range(24, 4).ToList();
 
             excelWorksheet.Columns[range01.First(), range01.Last()].Group();

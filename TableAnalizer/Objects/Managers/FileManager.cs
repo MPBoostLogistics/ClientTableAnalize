@@ -1,5 +1,6 @@
 ﻿
 using System.Diagnostics;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TableAnalizer.Objects.Enums;
@@ -65,42 +66,48 @@ namespace TableAnalizer.Objects.Managers
             try
             {
                 var fileCount = GetReportFiles(reportsPath, isMulty, delay);
-                
                 Trace.WriteLine($"File count: {fileCount.Result}");
                 await Task.Delay(delay);
 
                 var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, isMulty, delay);
-
-                if(!success && isMulty) 
+                
+                if(!success) 
                 {
-                    await Task.Delay(100);
-                    args = new("There is not enough reports (>1) to generate a summary.", 2000, true);
-                    return null;
-                } 
-                else 
-                {
-                    if (!success || lostKeys.Count > 0)
+                    switch (isMulty)
                     {
-                        var lastKey = lostKeys.Last();
-                        var lostKeysString = string.Empty;
+                        case true:
+                            await Task.Delay(delay);
+                            args = new("There is not enough reports (>1) to generate a summary.", delay, true);
+                            return null;
+                        case false:
+                            switch(lostKeys.Count > 0) 
+                            {
+                                case true:
+                                    var lastKey = lostKeys.Last();
+                                    StringBuilder lostKeysBuilder = new("Mandatory data for analysis not provided: ");
 
-                        foreach (var lostKey in lostKeys)
-                            lostKeysString = string.Concat(lostKeysString, lostKey, !Equals(lostKey, lastKey) ? ", " : ". ");
+                                    foreach (var lostKey in lostKeys)
+                                        lostKeysBuilder.Append(string.Concat(lostKey, !Equals(lostKey, lastKey) ? ", " : ". "));
 
-                        await Task.Delay(100);
-                        args = new(string.Concat("Mandatory data for analysis not provided: ", lostKeysString), 2000, true);
-                        return null;
-                    }
-                    else
-                    {
-                        return existingKeys;
+                                    await Task.Delay(delay);
+                                    args = new(lostKeysBuilder.ToString(), delay, true);
+                                    return null;
+    
+                                case false:
+                                    return null;
+                       
+                            }
                     }
                 }
+                else 
+                {
+                    return existingKeys;
+                }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 await Task.Delay(100);
-                args = new(string.Concat($"Data error: {ex.Message}", "\n"), 2000, true);
+                args = new($"Data error: {ex.Message}\n", 2000, true);
                 return null;
             }
             finally
@@ -124,7 +131,7 @@ namespace TableAnalizer.Objects.Managers
             var files = GetFilesFromDirectory(dirPathString, EXCEL_FILE_EXTENSION);
             if (files is null || !files.Any())
             {
-                args = new ManagerReachedEventArgs("Directory with files for processing does not exist or is empty, check it.", 1000, false);
+                args = new ManagerReachedEventArgs("Directory with files for processing does not exist or is empty, check it.", delay, false);
             }
             else
             {
@@ -156,7 +163,7 @@ namespace TableAnalizer.Objects.Managers
                                     }
                                     break;
                                 case false:
-                                    // Save filePath by key 
+
                                     ReportsPathsSingleReport[key.Value] = sorceReportFile;
 
                                     // Save login
@@ -463,6 +470,6 @@ namespace TableAnalizer.Objects.Managers
 
             return result;
         }
-         #endregion
+        #endregion
     }
 }
