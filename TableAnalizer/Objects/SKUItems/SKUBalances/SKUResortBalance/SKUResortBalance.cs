@@ -8,6 +8,8 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
     {
         #region Variables and constants
         public const string RESORT_1C_NAME = "Создан пересорт в 1С";  
+        public const string COMPENSATION_31_NAME = "Компенсация между помещениями 3 и 1"; 
+        public const string COMPENSATION_13_NAME = "Компенсация между помещениями 1 и 3"; 
         public const string MAYBE_RESORT_1C_NAME = "Возможен пересорт в 1С";  
         public const string MAYBE_WRITEOFF_POINTS_NAME = "Возможно списание с точек";  
         public const string NO_SOLUTION_NAME = "Нет решениия"; 
@@ -47,7 +49,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             foreach (var skuResortDataUnit in skuResortDataUnits)
             {
                 // If there is no comment, entry is skipped
-                if (skuResortDataUnit.ResortComment == string.Empty)
+                if(string.IsNullOrEmpty(skuResortDataUnit.ResortComment)) 
                 {
                     SkippedProcedureMessage();
                     continue;
@@ -72,6 +74,12 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
                         break;
                     case MAYBE_WRITEOFF_POINTS_NAME:
                         skuResortBalanceTarget = SKUResortBalanceTarget.MaybeWriteOffFromPoints;
+                        break;
+                    case COMPENSATION_31_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.CompensationInWarehouse31;
+                        break;
+                    case COMPENSATION_13_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.CompensationInWarehouse13;
                         break;
                     case NO_SOLUTION_NAME:
                         skuResortBalanceTarget = SKUResortBalanceTarget.NoSolution;
@@ -154,28 +162,42 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             }
         }
 
-        public (int sum, string comment)? FindSkusInBalanceByPredicate(FindSkusInBalanceDelegate findSkusInBalanceDelegate) 
+        public (int sum, string comment)? FindSkusInBalanceByPredicate(SKUResortBalanceTarget target) 
         {
-            var items = GetSkusResortToSum(findSkusInBalanceDelegate);
-
+            var items = GetSkusResortToSum(target);
             if(!items.Any()) return null;
+            var comment = string.Empty;
 
-            StringBuilder stringBuilder = new("Пересортица на другие артикулы (добавлено в \"Склад: Списано пересортицей, товаров\"):\n");
-            foreach (var item in items)
+            if(target == SKUResortBalanceTarget.ResortIn1C) 
             {
-                stringBuilder.Append($"{item.skuResortTo}, шт - {item.skuResortToSum}");
-                if(items.Last() != item) stringBuilder.Append(", ");
+                StringBuilder stringBuilder = new("Пересортица на другие артикулы (добавлено в \"Склад: Списано пересортицей, товаров\"):\n");
+                foreach (var item in items)
+                {
+                    stringBuilder.Append($"{item.skuResortTo}, шт - {item.skuResortToSum}");
+                    if(items.Last() != item) stringBuilder.Append(", ");
+                }
+                comment = stringBuilder.ToString();
+            } 
+            else if(target ==  SKUResortBalanceTarget.CompensationInWarehouse31) 
+            {
+                StringBuilder stringBuilder = new("\nВнутреняя компенсация артикула - пересорт между помещениями 1 и 3  (вычтено из \"Склад: Приход товаром\"):\n");
+                foreach (var item in items)
+                {
+                    stringBuilder.Append($"{item.skuResortTo}, шт - {item.skuResortToSum}");
+                    if(items.Last() != item) stringBuilder.Append(", ");
+                }
+                comment = stringBuilder.ToString();
             }
 
             var sum = items.Aggregate(0, (acc, i) => acc + i.skuResortToSum);
-            return (sum, stringBuilder.ToString());
+            return (sum, comment);
         }
 
-        public IEnumerable<(int skuResortTo, int skuResortToSum)> GetSkusResortToSum(FindSkusInBalanceDelegate findSkusInBalanceDelegate) 
+        public IEnumerable<(int skuResortTo, int skuResortToSum)> GetSkusResortToSum(SKUResortBalanceTarget target) 
         {
             return from skuToResort in SKUsToResort
                    from item in skuToResort.Value
-                   where findSkusInBalanceDelegate((item.Key ,item.Value))
+                   where item.Key == target
                    let data = (skuToResort.Key, item.Value)
                    select data;
         }

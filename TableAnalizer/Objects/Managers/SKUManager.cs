@@ -10,7 +10,7 @@ using TableAnalizer.Objects.Enums;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public class SKUManager : BaseManager
+    public class SKUManager(ExcelManager excelReportManager) : BaseManager
     {
         #region Variables and constants 
         private const bool IS_REMOVE_BRAND_FROM_NAME = false;
@@ -18,13 +18,13 @@ namespace TableAnalizer.Objects.Managers
 
         #region Properties 
         public int DeadlineDays { get; private set; }
-        public IRepository<int, SKU> SKUs { get; }
-        public IRepository<int, List<ParsingRowEntity>> SkuRansomsBalanceUnits { get; }
-        public IRepository<int, List<ParsingRowEntity>> SkuRemainingBalanceUnits { get; }
-        public IRepository<int, List<ParsingRowEntity>> SkuShippedBalanceUnits { get; }
-        public IRepository<int, List<ParsingRowEntity>> SkuWriteOffBalanceUnits { get; }
-        public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; }
-        public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; }
+        public IRepository<int, SKU> SKUs { get; } = new SKURepo();
+        public IRepository<int, List<ParsingRowEntity>> SkuRansomsBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<int, List<ParsingRowEntity>> SkuRemainingBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<int, List<ParsingRowEntity>> SkuShippedBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<int, List<ParsingRowEntity>> SkuWriteOffBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; } = new ParsingRowEntityRepo();
 
         /// <summary>
         /// Словарь прересортов в обратном направлении - ключ: skuResortToNumber, значение: словарь - ключ: skuResortFromNumber, значение: skuResortFromSum
@@ -42,21 +42,6 @@ namespace TableAnalizer.Objects.Managers
         private delegate bool FindSkusWithPredicate(SKU sku);
         private FindSkusWithPredicate? predicateHandler;
 
-        #endregion
-
-        public static bool IsWriteOffIn1C((SKUResortBalanceTarget target, int count) item) => item.target == SKUResortBalanceTarget.ResortIn1C;
-
-        #region Constructors and destructors
-        public SKUManager(ExcelManager excelReportManager)
-        {
-            SKUs = new SKURepo();
-            SkuRansomsBalanceUnits = new ParsingRowEntityRepo();
-            SkuRemainingBalanceUnits = new ParsingRowEntityRepo();
-            SkuShippedBalanceUnits = new ParsingRowEntityRepo();
-            SkuWriteOffBalanceUnits = new ParsingRowEntityRepo();
-            SkuCompensationBalanceUnits = new ParsingRowEntityRepo();
-            SkuResortBalanceUnits = new ParsingRowEntityRepo();
-        }
         #endregion
 
         #region Functionality
@@ -507,7 +492,7 @@ namespace TableAnalizer.Objects.Managers
         { 
             int skuResortFromNumber = skuResortBalance.SKUFromResortNumber;
 
-            List<(int skuResortTo, int skuResortToSum)>? skusResortTo = [.. skuResortBalance.GetSkusResortToSum(IsWriteOffIn1C)];
+            List<(int skuResortTo, int skuResortToSum)>? skusResortTo = [.. skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortIn1C)];
             if (skusResortTo is not null && skusResortTo.Count != 0)
             {
                 Dictionary<int, int> result;
@@ -529,7 +514,7 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        public List<SKUForTargetReports> MakeSkusForTargetReport(bool isRawReport) 
+        public List<SKUForTargetReports> MakeSkusForTargetReport(bool isRawReport, int traceDelay) 
         {
             List<SKUForTargetReports> skuForTargetReports = [];
             foreach (var (_, targetSku) in SKUs.GetValuesList())
@@ -539,11 +524,11 @@ namespace TableAnalizer.Objects.Managers
                     resortFromSkusValues is not null &&
                     resortFromSkusValues.Count > 0) 
                 {
-                    newValue = new(targetSku, isRawReport, resortFromSkusValues);
+                    newValue = new(targetSku, isRawReport,  traceDelay, resortFromSkusValues);
                 } 
                 else 
                 {
-                    newValue = new(targetSku, isRawReport);
+                    newValue = new(targetSku, isRawReport, traceDelay);
                 }
 
                 skuForTargetReports.Add(newValue);
