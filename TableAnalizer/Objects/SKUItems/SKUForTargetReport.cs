@@ -99,6 +99,10 @@ a       rrival of mixed goods
         /// Слубежная информация, только для склада. 
         /// </summary>
         private int SKUNotReceivedFromPoints {get; set;} = 0;
+
+
+        // ...
+        public int SKUInlineResort { get; set; } = 0;
         
         #endregion
 
@@ -221,42 +225,57 @@ a       rrival of mixed goods
                 var writeOffIn1CItems = sku.SKUResortBalance.FindSkusInBalanceByPredicate(SKUResortBalanceTarget.ResortIn1C);
                 if (writeOffIn1CItems.HasValue && writeOffIn1CItems.Value.sum > 0)
                 {
-                    SKUWriteOffByResorts += writeOffIn1CItems.Value.sum;
+                    SKUReceiptGoods -= writeOffIn1CItems.Value.sum;
+                    SKUReceiptResorts += writeOffIn1CItems.Value.sum;
+
+                    SKUResort +=  writeOffIn1CItems.Value.sum;;
+
                     SKUResortsComment = string.IsNullOrEmpty(SKUResortsComment) ?
                             writeOffIn1CItems.Value.comment :
                             SKUResortsComment += writeOffIn1CItems.Value.comment;
                 }
+
+                // // Пересорты, созданные без списания в 1С (концептуальные) 
+                // var conceptualResortItems = sku.SKUResortBalance.FindSkusInBalanceByPredicate(SKUResortBalanceTarget.Conceptual);
+                // if (conceptualResortItems.HasValue && conceptualResortItems.Value.sum > 0)
+                // {
+                //     SKUWriteOffByResorts += conceptualResortItems.Value.sum;
+                //     SKUResortsComment = string.IsNullOrEmpty(SKUResortsComment) ?
+                //             conceptualResortItems.Value.comment :
+                //             SKUResortsComment += conceptualResortItems.Value.comment;
+                // }
             }
 
-            // Переcорты, компенсированные между помещеняими 3 и 1 в 1С
-            var compensation31 = sku.SKUResortBalance?.FindSkusInBalanceByPredicate(SKUResortBalanceTarget.CompensationInWarehouse31);
-            {
-                if (compensation31.HasValue && compensation31.Value.sum > 0)
-                {
-                    SKUReceiptGoods -= compensation31.Value.sum;
-                    SKUResortsComment = string.IsNullOrEmpty(SKUResortsComment) ?
-                        compensation31.Value.comment :
-                        SKUResortsComment += compensation31.Value.comment;
-                }
-            }
+            // // Переcорты, компенсированные между помещеняими 3 и 1 в 1С
+            // var compensation31 = sku.SKUResortBalance?.FindSkusInBalanceByPredicate(SKUResortBalanceTarget.CompensationInWarehouse31);
+            // {
+            //     if (compensation31.HasValue && compensation31.Value.sum > 0)
+            //     {
+            //         SKUReceiptGoods -= compensation31.Value.sum;
+            //         SKUResortsComment = string.IsNullOrEmpty(SKUResortsComment) ?
+            //             compensation31.Value.comment :
+            //             SKUResortsComment += compensation31.Value.comment;
+            //     }
+            // }
 
             // 3. Фикация входящих пересортов 
             if (!isRawReport && resortFromSkusValues is not null && resortFromSkusValues.Count > 0)
             {
-                // Оприходовано пересортицей
-                SKUReceiptResorts = resortFromSkusValues.Aggregate(0, (acc, i) => acc + i.Value);
+                SKUInlineResort = resortFromSkusValues.Aggregate(0, (acc, i) => acc + i.Value);
+                SKUShipped -= SKUInlineResort;
 
-                // Приход товаром уменьшается на Оприходовано пересортицей
-                SKUReceiptGoods -= SKUReceiptResorts;
 
-                // Расход товаром уменьшается на Оприходовано пересортицей
-                SKUShipped -= SKUReceiptResorts;
+                // // Приход товаром уменьшается на Оприходовано пересортицей
+                // SKUReceiptGoods -= SKUReceiptResorts;
 
-                // Расход пересортом увеличивается на Оприходовано пересортицей
-                SKUResort += SKUReceiptResorts;
+                // // Расход товаром уменьшается на Оприходовано пересортицей
+                // SKUShipped -= SKUReceiptResorts;
+
+                // // Расход пересортом увеличивается на Оприходовано пересортицей
+                // SKUResort += SKUReceiptResorts;
 
                 // Обновление комментария по пересортам
-                StringBuilder stringBuilder = new("Пересортица от артикулов (добавлено в \"Склад: Оприходовано пересортицей\" и \"Склад: Расход пересортом\", а также вычтено из \"Склад: Приход товаром\" и \"Склад: Расход товаром\"):\n");
+                StringBuilder stringBuilder = new("Пересортица от артикулов (вычтено из \"Склад: Расход товаром\"): \n");
                 foreach ((int resortFromSkusValueSku, int resortFromSkusValueSum) in resortFromSkusValues)
                 {
                     stringBuilder.Append($"{resortFromSkusValueSku} шт.:{resortFromSkusValueSum}, ");
@@ -278,42 +297,78 @@ a       rrival of mixed goods
             SKUDeliveryDelayPoints = SKUDeliveryDelayStorage = SKUDeliveryDelayTotal = SKUDeliveryDelayTotal = SKUOverrunsCount = 0;
             SKUDeliveryDelayPointsSum = SKUDeliveryDelayStorageSum = SKUOverrunsSum = 0.00;
 
-         
-                if(SKURansomsWaiting == SKUReceiptGoods + SKUReceiptResorts) 
+            SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceiptGoods - SKUReceiptResorts;
+            if(isDeadline && int.IsPositive(SKUDeliveryDelayPoints) && SKUDeliveryDelayPoints > 0)
+            {
+                SKUDeliveryDelayPointsSum = SKUDeliveryDelayPoints * SKUPrice;
+            } 
+            else 
+            {
+                SKUDeliveryDelayPoints = 0;
+            }
+            
+            SKUDeliveryDelayStorage = SKURansomsWaiting - SKUTotalСonsumption - SKUDeliveryDelayPoints;
+            if(isDeadline && int.IsPositive(SKUDeliveryDelayStorage) && SKUDeliveryDelayStorage > 0)
+            {
+                SKUDeliveryDelayStorageSum = SKUDeliveryDelayStorage * SKUPrice;
+            } 
+            else 
+            {
+                SKUDeliveryDelayStorage = 0;
+            }
+
+            SKUDeliveryDelayTotal = SKUDeliveryDelayPoints + SKUDeliveryDelayStorage;
+
+            if(SKUShipped > SKURansomsWaiting) 
+            {
+                SKUOverrunsCount = SKUShipped - SKURansomsWaiting - SKUInlineResort;
+                if(int.IsNegative(SKUOverrunsCount)) SKUOverrunsCount = 0;
+                if(isDeadline && int.IsPositive(SKUOverrunsCount)&& SKUOverrunsCount > 0) 
                 {
-                    if(SKUReceiptGoods == SKUShipped) 
-                    {
-                        // Полный расчет
-                    }
+                    SKUOverrunsSum = SKUOverrunsCount * SKUPrice;
                 } 
-                // Ожидание больше прихода товаров 
-                else if (SKURansomsWaiting > SKUReceiptGoods + SKUReceiptResorts) 
+                else 
                 {
-                    SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceiptGoods;
+                    SKUOverrunsSum = 0;
                 }
-                // Ожидание меньше прихода товаров 
-                else if (SKURansomsWaiting < SKUReceiptGoods + SKUReceiptResorts) 
-                {
-                    var tc = SKUShipped + SKUWriteOffByResorts;
-                    if(tc >= SKURansomsWaiting) 
-                    {
-                        SKUOverrunsCount = tc - SKURansomsWaiting;
-                    } 
-                    else 
-                    {
-                        SKUDeliveryDelayStorage = SKURansomsWaiting - tc;
-                    }
-                }
+            }
 
-                SKUDeliveryDelayTotal = SKUDeliveryDelayPoints + SKUDeliveryDelayStorage;
+         
+            // if(SKURansomsWaiting == SKUReceiptGoods + SKUReceiptResorts) 
+            // {
+            //     if(SKUReceiptGoods == SKUShipped) 
+            //     {
+            //         // Полный расчет
+            //     }
+            // } 
+            // // Ожидание больше прихода товаров 
+            // else if (SKURansomsWaiting > SKUReceiptGoods + SKUReceiptResorts) 
+            // {
+            //     SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceiptGoods;
+            // }
+            // // Ожидание меньше прихода товаров 
+            // else if (SKURansomsWaiting < SKUReceiptGoods + SKUReceiptResorts) 
+            // {
+            //     var tc = SKUShipped + SKUWriteOffByResorts;
+            //     if(tc >= SKURansomsWaiting) 
+            //     {
+            //         SKUOverrunsCount = tc - SKURansomsWaiting;
+            //     } 
+            //     else 
+            //     {
+            //         SKUDeliveryDelayStorage = SKURansomsWaiting - tc;
+            //     }
+            // }
 
-                SKUDeliveryDelayPointsSum = isDeadline && SKUDeliveryDelayPoints > 0 ?
-                    SKUDeliveryDelayPoints * SKUPrice : 
-                    0.00;
+            // SKUDeliveryDelayTotal = SKUDeliveryDelayPoints + SKUDeliveryDelayStorage;
 
-                SKUDeliveryDelayStorageSum = isDeadline && SKUDeliveryDelayStorage > 0 ?
-                    SKUDeliveryDelayStorage * SKUPrice : 
-                    0.00;
+            // SKUDeliveryDelayPointsSum = isDeadline && SKUDeliveryDelayPoints > 0 ?
+            //     SKUDeliveryDelayPoints * SKUPrice : 
+            //     0.00;
+
+            // SKUDeliveryDelayStorageSum = isDeadline && SKUDeliveryDelayStorage > 0 ?
+            //     SKUDeliveryDelayStorage * SKUPrice : 
+            //     0.00;
             
 
 

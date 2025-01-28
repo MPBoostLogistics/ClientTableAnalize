@@ -8,6 +8,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
     {
         #region Variables and constants
         public const string RESORT_1C_NAME = "Создан пересорт в 1С";  
+        public const string CONCEPLUAL_NAME = "Концептуальный пересорт";  
         public const string COMPENSATION_31_NAME = "Компенсация между помещениями 3 и 1"; 
         public const string COMPENSATION_13_NAME = "Компенсация между помещениями 1 и 3"; 
         public const string MAYBE_RESORT_1C_NAME = "Возможен пересорт в 1С";  
@@ -28,7 +29,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
         
         #endregion Properties
 
-        public delegate bool FindSkusInBalanceDelegate((SKUResortBalanceTarget target, int count) item); 
+        //public delegate bool FindSkusInBalanceDelegate((SKUResortBalanceTarget target, int count) item); 
 
         #region Constructors
         public SKUResortBalance(int skuFromResortNumber, List<SKUResortDataUnit> skuToResortUnits)
@@ -68,6 +69,9 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
                 {
                     case RESORT_1C_NAME:
                         skuResortBalanceTarget = SKUResortBalanceTarget.ResortIn1C;
+                        break;
+                    case CONCEPLUAL_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.Conceptual;
                         break;
                     case MAYBE_RESORT_1C_NAME:
                         skuResortBalanceTarget = SKUResortBalanceTarget.MaybeResortIn1C;
@@ -170,7 +174,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 
             if(target == SKUResortBalanceTarget.ResortIn1C) 
             {
-                StringBuilder stringBuilder = new("Пересортица на другие артикулы (добавлено в \"Склад: Списано пересортицей, товаров\"):\n");
+                StringBuilder stringBuilder = new("Пересортица на другие артикулы (1C, добавлено в \"Склад: Оприходовано пересортицей\" и вычтено из \"Склад: Приход товаром\", а также добавлено в  \"Склад: Расход пересортом\"):\n");
                 foreach (var item in items)
                 {
                     stringBuilder.Append($"{item.skuResortTo}, шт - {item.skuResortToSum}");
@@ -178,6 +182,16 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
                 }
                 comment = stringBuilder.ToString();
             } 
+            else if(target == SKUResortBalanceTarget.Conceptual) 
+            {
+                StringBuilder stringBuilder = new("Пересортица на другие артикулы (баланс,добавлено в \"Склад: Списано пересортицей, товаров\"):\n");
+                foreach (var item in items)
+                {
+                    stringBuilder.Append($"{item.skuResortTo}, шт - {item.skuResortToSum}");
+                    if(items.Last() != item) stringBuilder.Append(", ");
+                }
+                comment = stringBuilder.ToString();
+            }
             else if(target ==  SKUResortBalanceTarget.CompensationInWarehouse31) 
             {
                 StringBuilder stringBuilder = new("\nВнутреняя компенсация артикула - пересорт между помещениями 1 и 3  (вычтено из \"Склад: Приход товаром\"):\n");

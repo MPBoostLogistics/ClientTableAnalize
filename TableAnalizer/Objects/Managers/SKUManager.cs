@@ -492,7 +492,13 @@ namespace TableAnalizer.Objects.Managers
         { 
             int skuResortFromNumber = skuResortBalance.SKUFromResortNumber;
 
-            List<(int skuResortTo, int skuResortToSum)>? skusResortTo = [.. skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortIn1C)];
+            List<(int skuResortTo, int skuResortToSum)> writeOff1CResortItems = [.. skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortIn1C)];
+            List<(int skuResortTo, int skuResortToSum)> conceptualResortItems = [.. skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.Conceptual)];
+
+            List<(int skuResortTo, int skuResortToSum)>? skusResortTo = [];
+            skusResortTo.AddRange(writeOff1CResortItems);
+            skusResortTo.AddRange(conceptualResortItems);
+            
             if (skusResortTo is not null && skusResortTo.Count != 0)
             {
                 Dictionary<int, int> result;
