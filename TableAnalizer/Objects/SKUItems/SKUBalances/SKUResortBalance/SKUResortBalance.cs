@@ -174,7 +174,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 
             if(target == SKUResortBalanceTarget.ResortIn1C) 
             {
-                StringBuilder stringBuilder = new("Пересортица на другие артикулы (1C, добавлено в \"Склад: Оприходовано пересортицей\" и вычтено из \"Склад: Приход товаром\", а также добавлено в  \"Склад: Расход пересортом\"):\n");
+                StringBuilder stringBuilder = new("Пересортица на другие артикулы (1C, добавлено в \"{Склад: Списано пересортицей, товаров}\"):\n");
                 foreach (var item in items)
                 {
                     stringBuilder.Append($"{item.skuResortTo}, шт - {item.skuResortToSum}");
@@ -184,7 +184,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             } 
             else if(target == SKUResortBalanceTarget.Conceptual) 
             {
-                StringBuilder stringBuilder = new("Пересортица на другие артикулы (баланс,добавлено в \"Склад: Списано пересортицей, товаров\"):\n");
+                StringBuilder stringBuilder = new("Пересортица на другие артикулы [0m (баланс,добавлено в \"Склад: Списано пересортицей, товаров\"):\n");
                 foreach (var item in items)
                 {
                     stringBuilder.Append($"{item.skuResortTo}, шт - {item.skuResortToSum}");
@@ -194,7 +194,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             }
             else if(target ==  SKUResortBalanceTarget.CompensationInWarehouse31) 
             {
-                StringBuilder stringBuilder = new("\nВнутреняя компенсация артикула - пересорт между помещениями 1 и 3  (вычтено из \"Склад: Приход товаром\"):\n");
+                StringBuilder stringBuilder = new("\nВнутреняя компенсация артикула - пересорт между помещениями 1 и 3:\n");
                 foreach (var item in items)
                 {
                     stringBuilder.Append($"{item.skuResortTo}, шт - {item.skuResortToSum}");

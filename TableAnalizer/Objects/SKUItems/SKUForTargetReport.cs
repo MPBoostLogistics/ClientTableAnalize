@@ -1,4 +1,3 @@
-using System.Data.Common;
 using System.Diagnostics;
 using System.Drawing;
 using System.Text;
@@ -225,25 +224,28 @@ a       rrival of mixed goods
                 var writeOffIn1CItems = sku.SKUResortBalance.FindSkusInBalanceByPredicate(SKUResortBalanceTarget.ResortIn1C);
                 if (writeOffIn1CItems.HasValue && writeOffIn1CItems.Value.sum > 0)
                 {
-                    SKUReceiptGoods -= writeOffIn1CItems.Value.sum;
-                    SKUReceiptResorts += writeOffIn1CItems.Value.sum;
+                    SKUWriteOffByResorts += writeOffIn1CItems.Value.sum;
 
-                    SKUResort +=  writeOffIn1CItems.Value.sum;;
+
+                    // SKUReceiptGoods -= writeOffIn1CItems.Value.sum;
+                    // SKUReceiptResorts += writeOffIn1CItems.Value.sum;
+
+                    // SKUResort +=  writeOffIn1CItems.Value.sum;;
 
                     SKUResortsComment = string.IsNullOrEmpty(SKUResortsComment) ?
                             writeOffIn1CItems.Value.comment :
                             SKUResortsComment += writeOffIn1CItems.Value.comment;
                 }
 
-                // // Пересорты, созданные без списания в 1С (концептуальные) 
-                // var conceptualResortItems = sku.SKUResortBalance.FindSkusInBalanceByPredicate(SKUResortBalanceTarget.Conceptual);
-                // if (conceptualResortItems.HasValue && conceptualResortItems.Value.sum > 0)
-                // {
-                //     SKUWriteOffByResorts += conceptualResortItems.Value.sum;
-                //     SKUResortsComment = string.IsNullOrEmpty(SKUResortsComment) ?
-                //             conceptualResortItems.Value.comment :
-                //             SKUResortsComment += conceptualResortItems.Value.comment;
-                // }
+                // Пересорты, созданные без списания в 1С (концептуальные) 
+                var conceptualResortItems = sku.SKUResortBalance.FindSkusInBalanceByPredicate(SKUResortBalanceTarget.Conceptual);
+                if (conceptualResortItems.HasValue && conceptualResortItems.Value.sum > 0)
+                {
+                    //SKUWriteOffByResorts += conceptualResortItems.Value.sum;
+                    SKUResortsComment = string.IsNullOrEmpty(SKUResortsComment) ?
+                            conceptualResortItems.Value.comment :
+                            SKUResortsComment += conceptualResortItems.Value.comment;
+                }
             }
 
             // // Переcорты, компенсированные между помещеняими 3 и 1 в 1С
@@ -261,21 +263,13 @@ a       rrival of mixed goods
             // 3. Фикация входящих пересортов 
             if (!isRawReport && resortFromSkusValues is not null && resortFromSkusValues.Count > 0)
             {
-                SKUInlineResort = resortFromSkusValues.Aggregate(0, (acc, i) => acc + i.Value);
-                SKUShipped -= SKUInlineResort;
-
-
-                // // Приход товаром уменьшается на Оприходовано пересортицей
-                // SKUReceiptGoods -= SKUReceiptResorts;
-
-                // // Расход товаром уменьшается на Оприходовано пересортицей
-                // SKUShipped -= SKUReceiptResorts;
-
-                // // Расход пересортом увеличивается на Оприходовано пересортицей
-                // SKUResort += SKUReceiptResorts;
+                SKUResort += resortFromSkusValues.Aggregate(0, (acc, i) => acc + i.Value);
+                SKUReceiptGoods -= SKUResort;
+                SKUReceiptResorts += SKUResort;
+                SKUShipped -= SKUResort;
 
                 // Обновление комментария по пересортам
-                StringBuilder stringBuilder = new("Пересортица от артикулов (вычтено из \"Склад: Расход товаром\"): \n");
+                StringBuilder stringBuilder = new("\x1b[Пересортица от артикулов\x1b[ (вычтено из \"Склад: Приход товаром\", \"Склад: Расход товаром\", добавлено в \"Склад: Оприходовано пересортицей\", \"Склад: Расход пересортом\",\n");
                 foreach ((int resortFromSkusValueSku, int resortFromSkusValueSum) in resortFromSkusValues)
                 {
                     stringBuilder.Append($"{resortFromSkusValueSku} шт.:{resortFromSkusValueSum}, ");
@@ -307,7 +301,7 @@ a       rrival of mixed goods
                 SKUDeliveryDelayPoints = 0;
             }
             
-            SKUDeliveryDelayStorage = SKURansomsWaiting - SKUTotalСonsumption - SKUDeliveryDelayPoints;
+            SKUDeliveryDelayStorage = SKURansomsWaiting - SKUTotalСonsumption - SKUWriteOffByResorts - SKUDeliveryDelayPoints;
             if(isDeadline && int.IsPositive(SKUDeliveryDelayStorage) && SKUDeliveryDelayStorage > 0)
             {
                 SKUDeliveryDelayStorageSum = SKUDeliveryDelayStorage * SKUPrice;
@@ -321,7 +315,7 @@ a       rrival of mixed goods
 
             if(SKUShipped > SKURansomsWaiting) 
             {
-                SKUOverrunsCount = SKUShipped - SKURansomsWaiting - SKUInlineResort;
+                SKUOverrunsCount = SKUShipped - SKURansomsWaiting - SKUResort;
                 if(int.IsNegative(SKUOverrunsCount)) SKUOverrunsCount = 0;
                 if(isDeadline && int.IsPositive(SKUOverrunsCount)&& SKUOverrunsCount > 0) 
                 {
