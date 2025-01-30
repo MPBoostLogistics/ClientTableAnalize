@@ -66,7 +66,7 @@ namespace TableAnalizer.Objects.Managers
                 List<Task<double>> processingTasksList = [];
                 for (int i = 0; i < workSheetNames.Count; i++)
                 {
-                    var processingData = ProcessingData(reportFileKey, workSheetNames[i], isRawReport, excelPackage, isMulty);
+                    var processingData = ProcessingData(reportFileKey, workSheetNames[i], isRawReport, delay, excelPackage, isMulty);
                     processingTasksList.Add(processingData);
                 }
 
@@ -90,13 +90,13 @@ namespace TableAnalizer.Objects.Managers
             return time;
         }
 
-        private async Task<double> ProcessingData(SourceSKUReportFileKey reportFileKey, string workSheetName, bool isRawReport, ExcelPackage? excelPackage = null, bool isMulty = false)
+        private async Task<double> ProcessingData(SourceSKUReportFileKey reportFileKey, string workSheetName, bool isRawReport, int taskDelay, ExcelPackage? excelPackage = null, bool isMulty = false)
         {
             // Start
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-            // Get source excel worksheet by name
-            ExcelManager.GetExcelWorksheetByName(workSheetName, reportFileKey, out ExcelWorksheet? currentWorksheet, excelPackage);
+            // Get source excel worksheet by nam
+            ExcelWorksheet? currentWorksheet = ExcelManager.GetExcelWorksheetByName(workSheetName, reportFileKey, taskDelay, excelPackage).Result ;
             if (currentWorksheet is null)
             {
                 await Task.Delay(100);

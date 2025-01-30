@@ -361,7 +361,6 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="key">ExcelPackage search key.</param>
         /// <param name="package">ExcelPackage or null.</param>
         /// <returns>Boolean flag of operation.</returns>
-        /// <remarks><i>New version, tested</i></remarks>
         public static bool GetExcelPackageByKey(SourceSKUReportFileKey key, out ExcelPackage? package)
         {
             package = null;
@@ -370,11 +369,10 @@ namespace TableAnalizer.Objects.Managers
             {
                 ExcelPackages.TryGetValue(key, out package);
                 return package is not null;
-                
             }
             catch (System.Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Trace.WriteLine(ex.Message);
                 return false;
             }
 
@@ -692,17 +690,41 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="key">Key for searching ExcelPackage in internal dictionary.</param>
         /// <param name="worksheet">Found Excel worksheet or null.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public static void GetExcelWorksheetByName(string name, SourceSKUReportFileKey key, out ExcelWorksheet? worksheet, ExcelPackage? excelPackage = null)  
+        public static async Task<ExcelWorksheet?> GetExcelWorksheetByName(string name, SourceSKUReportFileKey key, int taskDelay, ExcelPackage? excelPackage = null)  
         {
+            Trace.WriteLine($"");
+            await Task.Delay(taskDelay);
+
             if(excelPackage is null) 
             {
-                worksheet = (GetExcelPackageByKey(key, out ExcelPackage? package) && package is not null) ?
-                    package.Workbook.Worksheets.FirstOrDefault(ws => ws.Name == name) :
-                    null;
+                try
+                {
+                    if(GetExcelPackageByKey(key, out ExcelPackage? package) && package is not null) 
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkGray;
+                        Trace.WriteLine(name);
+                        await Task.Delay(taskDelay);
+                        Console.ResetColor();
+
+                        return package.Workbook.Worksheets[name];
+                    } 
+                    else 
+                    {
+                        return null;
+                    }
+                    
+                }
+                catch (System.Exception ex)
+                {
+                    Trace.WriteLine(ex.Message);
+                    await Task.Delay(1500);
+                    throw;
+                }
+               
             } 
             else 
             {
-                worksheet = excelPackage.Workbook.Worksheets.FirstOrDefault(ws => ws.Name.Trim().ToLower() == name.Trim().ToLower());
+                return  excelPackage.Workbook.Worksheets.FirstOrDefault(ws => ws.Name.Trim().ToLower() == name.Trim().ToLower());
             }
         }
 
