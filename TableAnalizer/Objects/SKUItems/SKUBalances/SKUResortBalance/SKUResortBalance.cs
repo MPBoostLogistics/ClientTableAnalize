@@ -4,16 +4,35 @@ using TableAnalizer.Objects.Enums;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 {
+    public class ResortBalanceUnit (SKUResortBalanceTarget balanceTarget)
+    {
+        public SKUResortBalanceTarget BalanceTarget { get; } = balanceTarget;
+
+        public Dictionary<int ,int> ResortTo { get; private set; } = []; 
+
+        public void Update(int sku, int sum) 
+        {
+            if(ResortTo.TryGetValue(sku, out int value)) 
+            {
+                value += sum;
+                ResortTo[sku] = value;
+            }
+            else 
+            {
+                ResortTo[sku] = sum;
+            }
+        }
+    }
+
     public class SKUResortBalance
     {
         #region Variables and constants
-        public const string RESORT_1C_NAME = "Создан пересорт в 1С";  
-        public const string CONCEPLUAL_NAME = "Концептуальный пересорт";  
-        public const string COMPENSATION_31_NAME = "Компенсация между помещениями 3 и 1"; 
-        public const string COMPENSATION_13_NAME = "Компенсация между помещениями 1 и 3"; 
+        public const string MAYBE_RESORT_1C_RECEIPT_NAME = "Возможен пересорт в 1С (приходы)";  
+        public const string RESORT_1C_RECEIPT_NAME = "Создан пересорт в 1С (приходы)";  
         public const string MAYBE_RESORT_1C_NAME = "Возможен пересорт в 1С";  
-        public const string MAYBE_WRITEOFF_POINTS_NAME = "Возможно списание с точек";  
-        public const string NO_SOLUTION_NAME = "Нет решениия"; 
+        public const string RESORT_1C_NAME = "Создан пересорт в 1С";  
+        public const string CONCEPLUAL_NAME = "Концептуальный";    
+        public const string NO_SOLUTION_NAME = "Нет решения"; 
         #endregion
 
         #region Properties
@@ -44,7 +63,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
         {
             static void SkippedProcedureMessage() 
             {
-                Trace.WriteLine("Entry for re-sort must contain a comment. Skipped.");
+                Trace.WriteLine("Entry for re-sort must contain a correct comment.\nSkipped.");
             }
 
             foreach (var skuResortDataUnit in skuResortDataUnits)
@@ -67,23 +86,20 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 
                 switch (skuResortDataUnit.ResortComment!.Trim())
                 {
+                    case MAYBE_RESORT_1C_RECEIPT_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.MaybeResortIn1CReceipt;
+                        break;
+                    case RESORT_1C_RECEIPT_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.ResortIn1CReceipt;
+                        break;
+                    case MAYBE_RESORT_1C_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.MaybeResortIn1C;
+                        break;
                     case RESORT_1C_NAME:
                         skuResortBalanceTarget = SKUResortBalanceTarget.ResortIn1C;
                         break;
                     case CONCEPLUAL_NAME:
                         skuResortBalanceTarget = SKUResortBalanceTarget.Conceptual;
-                        break;
-                    case MAYBE_RESORT_1C_NAME:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.MaybeResortIn1C;
-                        break;
-                    case MAYBE_WRITEOFF_POINTS_NAME:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.MaybeWriteOffFromPoints;
-                        break;
-                    case COMPENSATION_31_NAME:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.CompensationInWarehouse31;
-                        break;
-                    case COMPENSATION_13_NAME:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.CompensationInWarehouse13;
                         break;
                     case NO_SOLUTION_NAME:
                         skuResortBalanceTarget = SKUResortBalanceTarget.NoSolution;
@@ -166,74 +182,60 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             }
         }
 
-        public (int sum, string comment)? FindSkusInBalanceByPredicate(SKUResortBalanceTarget target) 
+        public (int sum, string comment)? FindSkusInBalanceBy(SKUResortBalanceTarget target) 
         {
-            var items = GetSkusResortToSum(target);
-            if(!items.Any()) return null;
+            var resortBalanceUnit = GetSkusResortToSum(target);
+            if(resortBalanceUnit.ResortTo.Count == 0) return null;
+
             var comment = string.Empty;
 
-            if(target == SKUResortBalanceTarget.ResortIn1C) 
+            StringBuilder stringBuilder = new();
+            switch(target) 
             {
-                StringBuilder stringBuilder = new("Пересортица на другие артикулы (1C, добавлено в \"{Склад: Списано пересортицей, товаров}\"):\n");
-                foreach (var item in items)
-                {
-                    stringBuilder.Append($"{item.skuResortTo}, шт - {item.skuResortToSum}");
-                    if(items.Last() != item) stringBuilder.Append(", ");
-                }
-                comment = stringBuilder.ToString();
-            } 
-            else if(target == SKUResortBalanceTarget.Conceptual) 
-            {
-                StringBuilder stringBuilder = new("Пересортица на другие артикулы [0m (баланс,добавлено в \"Склад: Списано пересортицей, товаров\"):\n");
-                foreach (var item in items)
-                {
-                    stringBuilder.Append($"{item.skuResortTo}, шт - {item.skuResortToSum}");
-                    if(items.Last() != item) stringBuilder.Append(", ");
-                }
-                comment = stringBuilder.ToString();
-            }
-            else if(target ==  SKUResortBalanceTarget.CompensationInWarehouse31) 
-            {
-                StringBuilder stringBuilder = new("\nВнутреняя компенсация артикула - пересорт между помещениями 1 и 3:\n");
-                foreach (var item in items)
-                {
-                    stringBuilder.Append($"{item.skuResortTo}, шт - {item.skuResortToSum}");
-                    if(items.Last() != item) stringBuilder.Append(", ");
-                }
-                comment = stringBuilder.ToString();
+                case SKUResortBalanceTarget.ResortIn1CReceipt:
+                    stringBuilder.Append("Пересортица прихода (1C, вычтено из \"Склад: Приход товаром\"):\n");
+                    break;
+                case SKUResortBalanceTarget.ResortIn1C:
+                    stringBuilder.Append("Пересортица расхода (1C, добавлено в \"{Склад: Списано пересортицей, товаров}\"):\n");
+                    break;
+                case SKUResortBalanceTarget.Conceptual:
+                    stringBuilder.Append("Пересортица расхода (баланс, добавлено в \"Склад: Списано пересортицей, товаров\"):\n");
+                    break;
+                default:
+                    stringBuilder.Append("Нераспознанный пересорт:\n");
+                    break;
             }
 
-            var sum = items.Aggregate(0, (acc, i) => acc + i.skuResortToSum);
+            foreach (var item in resortBalanceUnit.ResortTo)
+            {
+                stringBuilder.Append($"{item.Key}, шт - {item.Value}");
+                if(resortBalanceUnit.ResortTo.Keys.Last() != item.Key) 
+                {
+                    stringBuilder.Append(", ");
+                }
+            }
+
+            // Result
+            comment = stringBuilder.ToString();
+            var sum = resortBalanceUnit.ResortTo.Aggregate(0, (acc, i) => acc + i.Value);
             return (sum, comment);
         }
 
-        public IEnumerable<(int skuResortTo, int skuResortToSum)> GetSkusResortToSum(SKUResortBalanceTarget target) 
+        public ResortBalanceUnit GetSkusResortToSum(SKUResortBalanceTarget target) 
         {
-            return from skuToResort in SKUsToResort
-                   from item in skuToResort.Value
-                   where item.Key == target
-                   let data = (skuToResort.Key, item.Value)
-                   select data;
-        }
-        
-        public override string ToString()
-        {
-            StringBuilder builder = new($"----------\n{SKUFromResortNumber} --> SKUResortBalance:\n"); 
-
-            foreach (var skuToResort in SKUsToResort)
+            var resort = new ResortBalanceUnit(target);
+            foreach (var sku in SKUsToResort)
             {
-                builder.Append($"- Sku to resort number: {skuToResort.Key}\n");
-
-                foreach (var skuToResortValues in skuToResort.Value)
+                foreach ((SKUResortBalanceTarget t, int s) in sku.Value)
                 {
-                    builder.Append($"-- Sku to resort target/count: {skuToResortValues.Key} : {skuToResortValues.Value}\n");
+                    if(t == target) 
+                    {
+                        resort.Update(sku.Key, s);
+                    }
                 }
             }
 
-            builder.Append($"----------\n");
-            builder.Append(String.Empty);
-
-            return builder.ToString();
+            return resort;
         }
 
         #endregion

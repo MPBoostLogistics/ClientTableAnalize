@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using TableAnalizer.Objects.Enums;
 
 namespace TableAnalizer.Objects.SKUItems
@@ -40,8 +41,9 @@ namespace TableAnalizer.Objects.SKUItems
             if (SplitStringIntoSubstrings(fileName, [SPACE_SEPARATOR, LOW_LINE_SEPARATOR], out string[]? substrings) &&
                 substrings is not null)
             {
+                // дополнительный 30012925.xlsx                  2
+
                 // Юсупов расходы 22052024.xlsx                  3
-                // дополнительный отчет 23012025.xlsx            3
                 // Общее списание 230124.xlsx                    3
                 // Башорин перемещение 190724.xlsx               3
                 // ClientReport 79687978888 03-12-2024           3
@@ -72,6 +74,12 @@ namespace TableAnalizer.Objects.SKUItems
                 }
 
                 string keyString  = substrings[keyIndex].Trim().ToLower();
+
+                Trace.WriteLine($"keyString: {keyString}");
+                Task.Delay(1500);
+
+
+
                 switch (keyString)
                 {
                     // дополнительный
@@ -166,7 +174,6 @@ namespace TableAnalizer.Objects.SKUItems
         /// <param name="separators">Array of string separators.</param>
         /// <param name="substrings">An array of substrings derived from source string.</param>
         /// <returns>Logical flag for performing an operation.</returns>
-        /// <remarks><i>New version, tested</i></remarks>
         public static bool SplitStringIntoSubstrings(string sourceString, string[] separators, out string[]? substrings)
         {
             substrings = null;

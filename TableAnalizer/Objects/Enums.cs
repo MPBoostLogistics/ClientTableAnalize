@@ -79,32 +79,28 @@ namespace TableAnalizer.Objects.Enums
     public enum SKUResortBalanceTarget 
     {
         /// <summary>
-        /// Создан пересорт в 1С
+        /// Возможен пересорт в 1С (приходы)
         /// </summary>
-        ResortIn1C,                 
+        MaybeResortIn1CReceipt, 
         /// <summary>
-        /// Компенсация между помещениями 3 и 1
+        /// Создан пересорт в 1С (приходы)
         /// </summary>
-        CompensationInWarehouse31,  
-        /// <summary>
-        /// Компенсация между помещениями 1 и 3
-        /// </summary>
-        CompensationInWarehouse13,  
+        ResortIn1CReceipt,
         /// <summary>
         /// Возможен пересорт в 1С
         /// </summary>
-        MaybeResortIn1C,          
+        MaybeResortIn1C,
         /// <summary>
-        /// Возможно списание с точек
+        /// Создан пересорт в 1С
         /// </summary>
-        MaybeWriteOffFromPoints,    
+        ResortIn1C,
+        /// <summary>
+        /// Концептуальный
+        /// </summary>
+        Conceptual,
         /// <summary>
         /// Нет решения 
         /// </summary>
-        NoSolution,                 
-        /// <summary>
-        /// Концептуальный пересорт
-        /// </summary>
-        Conceptual                
+        NoSolution      
     }
 }

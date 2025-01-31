@@ -7,6 +7,7 @@ using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 using TableAnalizer.Objects.Enums;
+using Tensorflow;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -27,9 +28,13 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; } = new ParsingRowEntityRepo();
 
         /// <summary>
-        /// Словарь прересортов в обратном направлении - ключ: skuResortToNumber, значение: словарь - ключ: skuResortFromNumber, значение: skuResortFromSum
+        /// Словарь прересортов в обратном направлении:
+        ///  - ключ: skuResortToNumber (артикул на который пересорт), 
+        ///  значение: словарь - ключ: skuResortFromNumber (артикул с которого пересорт), 
+        ///  значение:  словарь - ключ: resortTarget (цель пересорта)
+        ///                       значение: resortSum (количество)
         /// </summary>
-        private readonly Dictionary<int, Dictionary<int, int>> SKUToResorts =[]; 
+        private readonly Dictionary<int, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>?> SKUToResorts =[]; 
 
         private static List<SKUParallelUnit> SKUParallelUnits {get; set;} = [];
 
@@ -492,30 +497,81 @@ namespace TableAnalizer.Objects.Managers
         { 
             int skuResortFromNumber = skuResortBalance.SKUFromResortNumber;
 
-            List<(int skuResortTo, int skuResortToSum)> writeOff1CResortItems = [.. skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortIn1C)];
-            List<(int skuResortTo, int skuResortToSum)> conceptualResortItems = [.. skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.Conceptual)];
+            ResortBalanceUnit? writeOffResortIn1CReceiptItem = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortIn1CReceipt);
+            ResortBalanceUnit? writeOff1CResortItems = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortIn1C);
+            ResortBalanceUnit? conceptualResortItems = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.Conceptual);
 
-            List<(int skuResortTo, int skuResortToSum)>? skusResortTo = [];
-            skusResortTo.AddRange(writeOff1CResortItems);
-            skusResortTo.AddRange(conceptualResortItems);
-            
-            if (skusResortTo is not null && skusResortTo.Count != 0)
+            List<ResortBalanceUnit>? skusResortToUnits = [];
+            skusResortToUnits.AddRange([writeOffResortIn1CReceiptItem, writeOff1CResortItems, conceptualResortItems]);
+
+            if (skusResortToUnits is not null && skusResortToUnits.Count != 0)
             {
-                Dictionary<int, int> result;
-                foreach ((int skuResortToNumber, int skuResortToSum) in skusResortTo)
+                // Проходим по юнитам
+                foreach (var skusResortToUnit in skusResortToUnits)
                 {
-                    if (SKUToResorts.TryGetValue(skuResortToNumber, out Dictionary<int, int>? values) &&
-                        values is not null &&
-                        values.Count > 0)
+                    // Цель пересорта
+                    var resortToTarget = skusResortToUnit.BalanceTarget;
+
+                    Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortsFromDict;
+                    Dictionary<SKUResortBalanceTarget, int>? resortItemsByTarget;
+                    int resortSumByTarget = 0;
+
+                    // Проходим по элементам словаря внутри юнита (арт пересорта, сумма)
+                    foreach ((int resortToNumber, int resortToSum) in skusResortToUnit.ResortTo)
                     {
-                        result = values;
-                        result[skuResortFromNumber] = skuResortToSum;
-                        SKUToResorts[skuResortToNumber] = result; 
-                    }
-                    else 
-                    {
-                        SKUToResorts[skuResortToNumber] = new Dictionary<int, int>(){ {skuResortFromNumber,skuResortToSum }};
-                    }
+                        // Если по артикулу resortToNumber есть сведения...
+                        if (SKUToResorts.TryGetValue(resortToNumber, out Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortsFromExistingDict) &&
+                        resortsFromExistingDict is not null &&
+                        resortsFromExistingDict.Count > 0)
+                        {
+                            resortsFromDict = resortsFromExistingDict;
+
+                            if(resortsFromDict.TryGetValue(skuResortFromNumber, out Dictionary<SKUResortBalanceTarget, int>? resortDictTargets)) 
+                            {
+                                resortItemsByTarget = resortDictTargets;
+
+                                if(resortItemsByTarget.TryGetValue(resortToTarget, out int sum)) 
+                                {
+                                    resortSumByTarget = sum;
+                                    resortSumByTarget += resortToSum;
+                                } 
+                                else 
+                                {
+                                    resortSumByTarget = resortToSum;
+                                }
+
+                                resortItemsByTarget[resortToTarget] = resortSumByTarget;
+                            } 
+                            else 
+                            {
+                                // Сумма пересортов
+                                resortSumByTarget = resortToSum;
+
+                                // Новый словарь: Цель пересортов - Сумма пересортов
+                                resortItemsByTarget = new() 
+                                {
+                                    {resortToTarget, resortSumByTarget}
+                                };
+                            }  
+
+                            resortsFromDict[skuResortFromNumber] = resortItemsByTarget;
+                        } 
+                        // Если по артикулу resortToNumber нет сведений, создается новая запись
+                        else 
+                        {
+                            resortItemsByTarget = new() 
+                            {
+                                {resortToTarget, resortToSum}
+                            };
+
+                            resortsFromDict = new() 
+                            {
+                                { skuResortFromNumber, resortItemsByTarget }
+                            };
+                        } 
+
+                        SKUToResorts[resortToNumber] = resortsFromDict;
+                    }                    
                 }
             }
         }
@@ -526,7 +582,7 @@ namespace TableAnalizer.Objects.Managers
             foreach (var (_, targetSku) in SKUs.GetValuesList())
             {
                 SKUForTargetReports newValue;
-                if(SKUToResorts.TryGetValue(targetSku.SKUNumber, out Dictionary<int, int>? resortFromSkusValues) && 
+                if(SKUToResorts.TryGetValue(targetSku.SKUNumber, out Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues) && 
                     resortFromSkusValues is not null &&
                     resortFromSkusValues.Count > 0) 
                 {
@@ -536,7 +592,7 @@ namespace TableAnalizer.Objects.Managers
                 {
                     newValue = new(targetSku, isRawReport, traceDelay);
                 }
-
+                
                 skuForTargetReports.Add(newValue);
             }
             return [.. skuForTargetReports.OrderByDescending(el => el.SKUDate)];

@@ -25,7 +25,7 @@ namespace TableAnalizer.Objects.Managers
         /// <summary>
         /// Dictionary, where key is the key of report file for a client of a certain type, and value is report file itself.
         /// </summary>
-        public Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> ReportsPathsSingleReport { get; private set; } = new();
+        public Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> ReportsPathsSingleReport { get; private set; } = [];
         public Dictionary<string, SourceReportFileForSKU> ReportsPathsMultyReport { get; private set; } = new();
         
         public SourceReportFileForSKU? AdditionalPathsMultyReport { get; private set; }
@@ -95,7 +95,6 @@ namespace TableAnalizer.Objects.Managers
     
                                 case false:
                                     return null;
-                       
                             }
                     }
                 }
@@ -163,7 +162,6 @@ namespace TableAnalizer.Objects.Managers
                                     }
                                     break;
                                 case false:
-
                                     ReportsPathsSingleReport[key.Value] = sorceReportFile;
 
                                     // Save login
@@ -176,7 +174,7 @@ namespace TableAnalizer.Objects.Managers
                     }
                     catch (Exception ex)
                     {
-                        args = new($"{ex.Message}", 500, true);
+                        args = new($"Error SourceReportFileForSKU create: {ex.Message}", delay, true);
                         throw;
                     }
                 }
@@ -211,7 +209,7 @@ namespace TableAnalizer.Objects.Managers
                 }
                 catch (System.Exception ex)
                 {
-                    args = new($"{ex.Message}", 500, true);
+                    args = new($"DefineDirInfoForClientTargetReports Error: {ex.Message}", delay, true);
                     throw;
                 }
 
