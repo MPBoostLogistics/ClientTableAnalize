@@ -226,7 +226,7 @@ internal class Program
 
             // Delete old logistic report 
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
-            var skusForTargetReport = skuManager.MakeSkusForTargetReport((bool)isRawReport!, delay);
+            var skusForTargetReport = skuManager.MakeSkusForTargetReport((bool)isRawReport!, isMulty, delay);
             excelManager.MakeReports(skusForTargetReport, (bool)isRawReport);
 
             // Report 
@@ -280,7 +280,7 @@ internal class Program
         FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
 
         // Make new report 
-        var skusForTargetReport = skuManager.MakeSkusForTargetReport((bool)isRawReport!, delay);
+        var skusForTargetReport = skuManager.MakeSkusForTargetReport((bool)isRawReport!, isMulty, delay);
         excelManager.MakeReports(skusForTargetReport, (bool)isRawReport);
 
         // Report 

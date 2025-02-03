@@ -571,7 +571,7 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        public List<SKUForTargetReports> MakeSkusForTargetReport(bool isRawReport, int traceDelay) 
+        public List<SKUForTargetReports> MakeSkusForTargetReport(bool isRawReport, bool isMulty, int traceDelay) 
         {
             List<SKUForTargetReports> skuForTargetReports = [];
             foreach (var (_, targetSku) in SKUs.GetValuesList())
@@ -581,11 +581,11 @@ namespace TableAnalizer.Objects.Managers
                     resortFromSkusValues is not null &&
                     resortFromSkusValues.Count > 0) 
                 {
-                    newValue = new(targetSku, isRawReport,  traceDelay, resortFromSkusValues);
+                    newValue = new(targetSku, isRawReport, isMulty,  traceDelay, resortFromSkusValues);
                 } 
                 else 
                 {
-                    newValue = new(targetSku, isRawReport, traceDelay);
+                    newValue = new(targetSku, isRawReport, isMulty, traceDelay);
                 }
                 
                 skuForTargetReports.Add(newValue);
