@@ -174,10 +174,6 @@ namespace TableAnalizer.Objects.SKUItems
                 SKUShipped = sku.SKURemainingBalance.SKUShipped;
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
             } 
-            // else 
-            // {
-            //     throw new Exception("SKURemainingBalance is null!");
-            // }
 
             // Fill SKUCompensationBalance 
             if (sku.SKUCompensationBalance is not null)
@@ -199,19 +195,9 @@ namespace TableAnalizer.Objects.SKUItems
         {
             // Установка неопределенного статуса 
             SetSellmentStatus(SKUSellmentStatus.Unknown);
-
-            /// Приход больше ожидания: инфо для склада в комментарий 
-            if(SKUIncreasedReceiptGoods > 0) 
-            {
-                SKUComment = $"Приход товарами больше ожидания на: {Math.Abs(SKUReceiptGoods - SKURansomsWaiting)}";
-            }
-
-            // Отрицательный остаток товаров на складе: инфо для склада в комментарий и остаток = 0
-            if(!isRawReport && int.IsNegative(SKURemaining)) 
-            {
-                SKUComment = $"Передано клиенту с пересортами: {Math.Abs(SKURemaining)}";
-                SKURemaining = 0;
-            }
+            
+            if(isRawReport)
+                GetInfoForWarehouse(isRawReport);
 
             // Калькуляция пересоров 
             if (!isRawReport)
@@ -222,6 +208,25 @@ namespace TableAnalizer.Objects.SKUItems
             // Расчет задержек довоза и перерасходов
             var _ = CalculateDelayAndOverruns();
 
+            if(!isRawReport)
+                GetInfoForWarehouse(isRawReport);
+
+        }
+
+        private void GetInfoForWarehouse(bool isRawReport)
+        {
+            /// Приход больше ожидания: инфо для склада в комментарий 
+            if (SKUIncreasedReceiptGoods > 0)
+            {
+                SKUComment = $"Приход товарами больше ожидания на: {Math.Abs(SKUReceiptGoods - SKURansomsWaiting)}";
+            }
+
+            // Отрицательный остаток товаров на складе: инфо для склада в комментарий и остаток = 0
+            if (!isRawReport && int.IsNegative(SKURemaining))
+            {
+                SKUComment = $"Передано клиенту с пересортами: {Math.Abs(SKURemaining)}";
+                SKURemaining = 0;
+            }
         }
 
         private void CalcResorts(SKU sku, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
@@ -288,7 +293,6 @@ namespace TableAnalizer.Objects.SKUItems
                 if(skuAndSumsByResortIn1CReceipt is not null && skuAndSumsByResortIn1CReceipt.Any() && skuAndSumsByResortIn1CReceiptSum > 0) 
                 {
                     StringBuilder resortIn1CReceiptSB = new("Пересортица прихода на другие артикулы (вычтено из \"Склад: Приход товаром\"): \n");
-                    
                     SKUReceiptGoods -= (int)skuAndSumsByResortIn1CReceiptSum;
                     
                     foreach ((int sk, int su) in skuAndSumsByResortIn1CReceipt)
