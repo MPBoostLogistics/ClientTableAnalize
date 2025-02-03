@@ -233,7 +233,7 @@ namespace TableAnalizer.Objects.SKUItems
                 var resortIn1CReceiptItems = sku.SKUResortBalance.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortIn1CReceipt);
                 if (resortIn1CReceiptItems.HasValue && resortIn1CReceiptItems.Value.sum > 0)
                 {
-                    SKUReceiptGoods -= resortIn1CReceiptItems.Value.sum;
+                    SKUReceiptGoods += resortIn1CReceiptItems.Value.sum;
                     SKUResortsComment = string.IsNullOrEmpty(SKUResortsComment) ?
                             resortIn1CReceiptItems.Value.comment :
                             SKUResortsComment += resortIn1CReceiptItems.Value.comment;
@@ -285,12 +285,12 @@ namespace TableAnalizer.Objects.SKUItems
                 // Входящие пересорты: пересорты приходов
                 var skuAndSumsByResortIn1CReceipt = GetResortValuesBy(SKUResortBalanceTarget.ResortIn1CReceipt);
                 var skuAndSumsByResortIn1CReceiptSum = skuAndSumsByResortIn1CReceipt?.Aggregate(0, (acc, i) => acc + i.sum);
-                if(skuAndSumsByResortIn1CReceipt is not null && skuAndSumsByResortIn1CReceipt.Any()) 
+                if(skuAndSumsByResortIn1CReceipt is not null && skuAndSumsByResortIn1CReceipt.Any() && skuAndSumsByResortIn1CReceiptSum > 0) 
                 {
-                    // Прибавляются в Склад: Оприходовано пересортицей
-                    //SKUReceiptResorts += skuAndSumsByResortIn1CReceiptSum ?? 0;
-
-                    StringBuilder resortIn1CReceiptSB = new("Пересортица прихода от других артикулов (см. в \"Склад: Приход товаром\"): \n");
+                    StringBuilder resortIn1CReceiptSB = new("Пересортица прихода на другие артикулы (вычтено из \"Склад: Приход товаром\"): \n");
+                    
+                    SKUReceiptGoods -= (int)skuAndSumsByResortIn1CReceiptSum;
+                    
                     foreach ((int sk, int su) in skuAndSumsByResortIn1CReceipt)
                     {
                         resortIn1CReceiptSB.Append($"{sk} шт.:{su}, ");

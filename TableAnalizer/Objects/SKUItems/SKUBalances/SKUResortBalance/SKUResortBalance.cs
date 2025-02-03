@@ -193,7 +193,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             switch(target) 
             {
                 case SKUResortBalanceTarget.ResortIn1CReceipt:
-                    stringBuilder.Append("Пересортица прихода (1C, вычтено из \"Склад: Приход товаром\"):\n");
+                    stringBuilder.Append("Пересортица прихода (1C, исходящий, добавлено в \"Склад: Приход товаром\"):\n");
                     break;
                 case SKUResortBalanceTarget.ResortIn1C:
                     stringBuilder.Append("Пересортица расхода (1C, добавлено в \"{Склад: Списано пересортицей, товаров}\"):\n");

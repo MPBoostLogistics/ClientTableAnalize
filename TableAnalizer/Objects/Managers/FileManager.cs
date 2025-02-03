@@ -64,7 +64,10 @@ namespace TableAnalizer.Objects.Managers
 
             try
             {
-                var fileCount = GetReportFiles(reportsPath, isMulty, delay);
+                Task<int> getFilesTask = GetReportFiles(reportsPath, isMulty, delay);
+                await Task.Run(() => getFilesTask);
+                getFilesTask.Wait();
+   
                 var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, isMulty, delay);
                 
                 if(!success) 
