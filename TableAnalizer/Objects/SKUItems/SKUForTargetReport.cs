@@ -132,7 +132,7 @@ namespace TableAnalizer.Objects.SKUItems
         #endregion
 
         #region Constructors
-        public SKUForTargetReports(SKU sku, bool isRawReport, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues = null)
+        public SKUForTargetReports(SKU sku, bool isRawReport, bool isMulty, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues = null)
         {
             SKUmp = sku.Marketplace;
             SKUNumber = sku.SKUNumber;
@@ -182,7 +182,7 @@ namespace TableAnalizer.Objects.SKUItems
             }
 
             // Article analysis
-            AnalizeSKU(sku, isRawReport, traceDelay, resortFromSkusValues);
+            AnalizeSKU(sku, isRawReport, isMulty, traceDelay, resortFromSkusValues);
         }
 
         private void SetSellmentStatus(SKUSellmentStatus skuSellmentStatus) 
@@ -191,13 +191,16 @@ namespace TableAnalizer.Objects.SKUItems
             FillColor = SellmentStatus.StatusColor;
         }
 
-        private void AnalizeSKU(SKU sku, bool isRawReport, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
+        private void AnalizeSKU(SKU sku, bool isRawReport, bool isMulty, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
         {
             // Установка неопределенного статуса 
             SetSellmentStatus(SKUSellmentStatus.Unknown);
+<<<<<<< HEAD
             
             if(isRawReport)
                 GetInfoForWarehouse(isRawReport);
+=======
+>>>>>>> newCalc01
 
             // Калькуляция пересоров 
             if (!isRawReport)
@@ -208,12 +211,23 @@ namespace TableAnalizer.Objects.SKUItems
             // Расчет задержек довоза и перерасходов
             var _ = CalculateDelayAndOverruns();
 
+<<<<<<< HEAD
             if(!isRawReport)
                 GetInfoForWarehouse(isRawReport);
 
         }
 
         private void GetInfoForWarehouse(bool isRawReport)
+=======
+            /// Информация для пересортов (склад)
+            if(!isMulty && isRawReport) 
+            {
+                GetInfoForResort();
+            }
+        }
+
+        private void GetInfoForResort()
+>>>>>>> newCalc01
         {
             /// Приход больше ожидания: инфо для склада в комментарий 
             if (SKUIncreasedReceiptGoods > 0)
@@ -222,7 +236,11 @@ namespace TableAnalizer.Objects.SKUItems
             }
 
             // Отрицательный остаток товаров на складе: инфо для склада в комментарий и остаток = 0
+<<<<<<< HEAD
             if (!isRawReport && int.IsNegative(SKURemaining))
+=======
+            if (int.IsNegative(SKURemaining))
+>>>>>>> newCalc01
             {
                 SKUComment = $"Передано клиенту с пересортами: {Math.Abs(SKURemaining)}";
                 SKURemaining = 0;
@@ -238,7 +256,7 @@ namespace TableAnalizer.Objects.SKUItems
                 var resortIn1CReceiptItems = sku.SKUResortBalance.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortIn1CReceipt);
                 if (resortIn1CReceiptItems.HasValue && resortIn1CReceiptItems.Value.sum > 0)
                 {
-                    SKUReceiptGoods += resortIn1CReceiptItems.Value.sum;
+                    SKUReceiptGoods -= resortIn1CReceiptItems.Value.sum;
                     SKUResortsComment = string.IsNullOrEmpty(SKUResortsComment) ?
                             resortIn1CReceiptItems.Value.comment :
                             SKUResortsComment += resortIn1CReceiptItems.Value.comment;
@@ -292,9 +310,13 @@ namespace TableAnalizer.Objects.SKUItems
                 var skuAndSumsByResortIn1CReceiptSum = skuAndSumsByResortIn1CReceipt?.Aggregate(0, (acc, i) => acc + i.sum);
                 if(skuAndSumsByResortIn1CReceipt is not null && skuAndSumsByResortIn1CReceipt.Any() && skuAndSumsByResortIn1CReceiptSum > 0) 
                 {
+<<<<<<< HEAD
                     StringBuilder resortIn1CReceiptSB = new("Пересортица прихода на другие артикулы (вычтено из \"Склад: Приход товаром\"): \n");
                     SKUReceiptGoods -= (int)skuAndSumsByResortIn1CReceiptSum;
                     
+=======
+                    StringBuilder resortIn1CReceiptSB = new("Пересортица прихода (1С, входящий, см \"Склад: Приход товаром\"): \n");
+>>>>>>> newCalc01
                     foreach ((int sk, int su) in skuAndSumsByResortIn1CReceipt)
                     {
                         resortIn1CReceiptSB.Append($"{sk} шт.:{su}, ");
@@ -326,7 +348,6 @@ namespace TableAnalizer.Objects.SKUItems
 
         private int CalculateDelayAndOverruns()
         {
-
             SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceiptGoods;
             SKUDeliveryDelayStorage = SKURansomsWaiting - SKUTotalСonsumption - SKUWriteOffByResorts - SKUDeliveryDelayPoints;
 
