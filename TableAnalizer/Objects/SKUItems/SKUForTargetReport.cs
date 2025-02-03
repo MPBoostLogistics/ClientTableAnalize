@@ -1,16 +1,8 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Text;
-using OfficeOpenXml.Drawing.Style.ThreeD;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Finance.Implementations;
-using OneOf.Types;
-using Serilog.Formatting.Raw;
 using TableAnalizer.Interfaces;
 using TableAnalizer.Objects.Enums;
-using TableAnalizer.Objects.Managers;
-using Tensorflow;
-using Tensorflow.Keras.ArgsDefinition;
-
 namespace TableAnalizer.Objects.SKUItems
 {
     public class SKUForTargetReports : IColorable
@@ -59,7 +51,7 @@ namespace TableAnalizer.Objects.SKUItems
         /// <summary>
         /// Склад: общий расход (товаром, компенсацией, пересортом) 
         /// </summary>
-        public int SKUTotalСonsumption =>  SKUShipped + SKUPaid + SKUResort;
+        public int SKUTotalСonsumption => SKUShipped + SKUResort + SKUPaid;
         /// <summary>
         /// Склад: Расход товаром
         /// </summary>
@@ -78,7 +70,10 @@ namespace TableAnalizer.Objects.SKUItems
         /// </summary>
         public int SKUWriteOffByResorts { get; set; }       
 
-        public int SKURemaining { get; set; }               // Склад: Остаток товаров
+        /// <summary>
+        /// Склад: Остаток товаров
+        /// </summary>
+        public int SKURemaining { get; set; }             
 
         /// <summary>
         /// Задержка довоза, всего
@@ -178,7 +173,11 @@ namespace TableAnalizer.Objects.SKUItems
 
                 SKUShipped = sku.SKURemainingBalance.SKUShipped;
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
-            }
+            } 
+            // else 
+            // {
+            //     throw new Exception("SKURemainingBalance is null!");
+            // }
 
             // Fill SKUCompensationBalance 
             if (sku.SKUCompensationBalance is not null)

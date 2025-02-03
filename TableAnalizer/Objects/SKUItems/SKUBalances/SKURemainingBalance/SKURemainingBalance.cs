@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace TableAnalizer.Objects.SKUItems.SKUBalances
 {
     /// <summary>
@@ -64,6 +66,11 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         }
 
         public override int GetHashCode() => SKUNumber.GetHashCode();
+
+        public override string ToString()
+        {
+            return $"Remaining {SKUNumber}: receipt {SKUReceipt}, shipped: {SKUShipped}, remaining: {SKURemaining}";
+        }
 
         #endregion Functionality
     }

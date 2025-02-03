@@ -227,7 +227,7 @@ internal class Program
             // Delete old logistic report 
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
             var skusForTargetReport = skuManager.MakeSkusForTargetReport((bool)isRawReport!, delay);
-            excelManager.MakeReports(skusForTargetReport);
+            excelManager.MakeReports(skusForTargetReport, (bool)isRawReport);
 
             // Report 
             var completedMessage = $"Отчет логистики сохранен по пути: {FileManager.OutputClientReportFilePath}\n";
@@ -269,6 +269,7 @@ internal class Program
         Task<double>? additionalTask = null;
         if (fileManager.AdditionalPathsMultyReport is not null && !(bool)isRawReport!)
         {
+            Trace.WriteLine($"isMulty {isMulty}");
             additionalTask = ReceivingAndProcessingData(fileManager.AdditionalPathsMultyReport, (bool)isRawReport!, isMulty, delay);
             await Task.Run(async () => await additionalTask);
         }
@@ -280,7 +281,7 @@ internal class Program
 
         // Make new report 
         var skusForTargetReport = skuManager.MakeSkusForTargetReport((bool)isRawReport!, delay);
-        excelManager.MakeReports(skusForTargetReport);
+        excelManager.MakeReports(skusForTargetReport, (bool)isRawReport);
 
         // Report 
         var completedMessage = $"Отчет логистики сохранен по пути: {FileManager.OutputClientReportFilePath}\n";
@@ -293,9 +294,6 @@ internal class Program
     private static async Task<double> ReceivingAndProcessingData(SourceReportFileForSKU reportFile, bool isRawReport, bool isMulty, int delay) 
     {
         if(reportFile.ReportKey is null) return 0.00;
-
-        Trace.Write($"key: {reportFile.ReportKey}, ");
-        await Task.Delay(delay);
 
         // Make ExcelPackage
         var package = new ExcelPackage(reportFile.FileInfo);

@@ -7,7 +7,6 @@ using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 using TableAnalizer.Objects.Enums;
-using Tensorflow;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -97,7 +96,7 @@ namespace TableAnalizer.Objects.Managers
             // Start
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-            // Get source excel worksheet by nam
+            // Get source excel worksheet by name
             ExcelWorksheet? currentWorksheet = ExcelManager.GetExcelWorksheetByName(workSheetName, reportFileKey, taskDelay, excelPackage).Result ;
             if (currentWorksheet is null)
             {
@@ -130,7 +129,6 @@ namespace TableAnalizer.Objects.Managers
                 await Task.Run(async () => await makeSKUsTask);
                 makeSKUsTask.Wait();
                 
-
                 // 3. Report
                 static bool FindSkusWithRansoms(SKU sku) => sku.SKURansomsBalance != null;
                 static bool FindSkusWithRemaining(SKU sku) => sku.SKURemainingBalance != null;

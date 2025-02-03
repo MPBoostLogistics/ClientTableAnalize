@@ -9,6 +9,7 @@ using TableAnalizer.Objects.SKUItems;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Diagnostics;
+using TableAnalizer.Objects.SKUItems.SKUBalances;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -83,39 +84,39 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         public static List<SourceColumn> RansomsSourceCells { get; } = new()
         {
-            new(2, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(7, "SKURansomDate", ParsingTypeCode.DataOnlyTypeCode,true),
-            new(9, "SKURansomsStatus", ParsingTypeCode.SKURansomsStatus, true),
+            new(2, nameof(SKURansomsBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(7, nameof(SKURansomsBalanceDataUnit.SKURansomDate), ParsingTypeCode.DataOnlyTypeCode,true),
+            new(9, nameof(SKURansomsBalanceDataUnit.SKURansomsStatus), ParsingTypeCode.SKURansomsStatus, true),
             new(10, "Логистика", ParsingTypeCode.StringTypeCode, true, LOGISTIC_FLAG),
-            new(14, "SKUCost",  ParsingTypeCode.DoubleTypeCode, true)
+            new(14, nameof(SKURansomsBalanceDataUnit.SKUCost),  ParsingTypeCode.DoubleTypeCode, true)
         };
 
         public static List<SourceColumn> RemainingFirstRoomSourceCells { get; } = new()
         {
-            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(6, "SKUBrandAndName", ParsingTypeCode.StringTypeCode, true),
-            new(15, "SKUReceipt", ParsingTypeCode.IntTypeCode, false),
-            new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
+            new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(6, nameof(SKURemainingBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
+            new(15, nameof(SKURemainingBalanceDataUnit.SKUReceipt), ParsingTypeCode.IntTypeCode, false),
+            new(17, nameof(SKURemainingBalanceDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, false)
         };
 
         public static List<SourceColumn> RemainingSecondRoomSourceCells { get; } =
         [
-            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(6, "SKUBrandAndName", ParsingTypeCode.StringTypeCode, true),
-            new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
+            new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(6, nameof(SKURemainingBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
+            new(17, nameof(SKURemainingBalanceDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, false)
         ];
 
         public static List<SourceColumn> RemainingThirdRoomSourceCells { get; } =
         [
-            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(6, "SKUBrandAndName", ParsingTypeCode.StringTypeCode, true),
-            new(17, "SKURemaining", ParsingTypeCode.IntTypeCode, false)
+            new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(6, nameof(SKURemainingBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
+            new(17, nameof(SKURemainingBalanceDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, false)
         ];
 
         public static List<SourceColumn> ShippedSourceCells { get; } = new()
         {
-            new(4, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(28, "SKUShippedCount", ParsingTypeCode.IntTypeCode, true)
+            new(4, nameof(SKUShippedDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(28, nameof(SKUShippedDataUnit.SKUShippedCount), ParsingTypeCode.IntTypeCode, true)
         };
 
         public static List<SourceColumn> TransferSourceCells { get; } = new()
@@ -151,115 +152,115 @@ namespace TableAnalizer.Objects.Managers
             new(39, "SKUWriteOffCount", ParsingTypeCode.IntTypeCode, true)
         };     
 
-        public static List<SourceColumn> ClientReportSourceCells { get; } = new()  
-        {
-            new(1, "SKUMp", ParsingTypeCode.Marketplace, true),
-            new(2, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(3, "SKUBrand", ParsingTypeCode.StringTypeCode, false),
-            new(4, "SKUName", ParsingTypeCode.StringTypeCode, false),
-            new(5, "SKUPrice", ParsingTypeCode.DoubleTypeCode, true),
-            new(6, "SKURansomDate", ParsingTypeCode.DataOnlyTypeCode, true),
-            new(8, "SKURansomsTotal", ParsingTypeCode.IntTypeCode, true),
-            new(9, "SKURansomsCanceled", ParsingTypeCode.IntTypeCode, true),
-            new(10, "SKURansomsOnWay", ParsingTypeCode.IntTypeCode, true),
-            new(11, "SKURansomsDelivered", ParsingTypeCode.IntTypeCode, true),
-            new(12, "SKURansomsWithDrawn", ParsingTypeCode.IntTypeCode, true),
-            new(14, "SKUReceipt", ParsingTypeCode.IntTypeCode, true),
-            new(16, "SKUShipped", ParsingTypeCode.IntTypeCode, true),
-            new(20, "SKURemaining", ParsingTypeCode.IntTypeCode, true)
-        };
+        public static List<SourceColumn> ClientReportSourceCells { get; } =
+        [
+            new(1, nameof(SKUClientReportDataUnit.SKUMp), ParsingTypeCode.Marketplace, true),
+            new(2, nameof(SKUClientReportDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(3, nameof(SKUClientReportDataUnit.SKUBrand), ParsingTypeCode.StringTypeCode, false),
+            new(4, nameof(SKUClientReportDataUnit.SKUName), ParsingTypeCode.StringTypeCode, false),
+            new(5, nameof(SKUClientReportDataUnit.SKUPrice), ParsingTypeCode.DoubleTypeCode, true),
+            new(6, nameof(SKUClientReportDataUnit.SKURansomDate), ParsingTypeCode.DataOnlyTypeCode, true),
+            new(8, nameof(SKUClientReportDataUnit.SKURansomsTotal), ParsingTypeCode.IntTypeCode, true),
+            new(9, nameof(SKUClientReportDataUnit.SKURansomsCanceled), ParsingTypeCode.IntTypeCode, true),
+            new(10, nameof(SKUClientReportDataUnit.SKURansomsOnWay), ParsingTypeCode.IntTypeCode, true),
+            new(11, nameof(SKUClientReportDataUnit.SKURansomsDelivered), ParsingTypeCode.IntTypeCode, true),
+            new(12, nameof(SKUClientReportDataUnit.SKURansomsWithDrawn), ParsingTypeCode.IntTypeCode, true),
+            new(14, nameof(SKUClientReportDataUnit.SKUReceipt), ParsingTypeCode.IntTypeCode, true),
+            new(18, nameof(SKUClientReportDataUnit.SKUShipped), ParsingTypeCode.IntTypeCode, true),
+            new(21, nameof(SKUClientReportDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, true)
+        ];
 
         public TargetCell[] cellsReportingMain =
         [
             new (colNumber: 1, colName: "МП", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUmp",
+                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: nameof(SKUForTargetReports.SKUmp),
                 parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 2, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: "SKUNumber",
+                wrapTextInHeader: false, textRotationInHeader: 0, propertyName: nameof(SKUForTargetReports.SKUNumber),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUBrand",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: nameof(SKUForTargetReports.SKUBrand),
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 4, colName: "Наименование товара", colWidth: 50, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUName",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUName),
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 5, colName: "Средняя цена, руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, "SKUPrice",
+                wrapTextInHeader: true, textRotationInHeader: 0,  nameof(SKUForTargetReports.SKUPrice),
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode,  valueСheckingPredicate: (int x) => x > 0, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 6, colName: "Дата последнего заказа", colWidth: 13, format: DATE_CELL_FORNAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDate",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUDate),
                 parsingTypeCode: ParsingTypeCode.DataOnlyTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 7, colName: "Статус взаиморасчетов", colWidth: 18, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SellmentStatusString",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SellmentStatusString),
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 8, colName: "Заказов: всего", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKURansomsTotal",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKURansomsTotal),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x > 0, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 9, colName: "Заказов: отменено",colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsCanceled",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKURansomsCanceled),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings, 4),
             new (colNumber: 10, colName: "Заказов: в пути", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsOnWay",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKURansomsOnWay),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 11, colName: "Заказов: доставлено на ПВЗ", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsDelivered",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKURansomsDelivered),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 12, colName: "Заказов: забрано с ПВЗ", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsWithDrawn",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKURansomsWithDrawn),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 13, colName: "Склад: Ожидание", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURansomsWaiting",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKURansomsWaiting),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: accentTargetCellSettings),                                             
             new (colNumber: 14, colName: "Склад: Приход товаром", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUReceiptGoods",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKUReceiptGoods),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 15, colName: "Склад: Оприходовано пересортицей", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUReceiptResorts",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKUReceiptResorts),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 16, colName: "Склад: Списано пересортицей, товаров", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUWriteOffByResorts",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKUWriteOffByResorts),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: accentTargetCellSettings),
             new (colNumber: 17, colName: "Склад: Расход всего", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUTotalСonsumption",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKUTotalСonsumption),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: accentTargetCellSettings),
             new (colNumber: 18, colName: "Склад: Расход товаром", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUShipped",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: nameof(SKUForTargetReports.SKUShipped) ,
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings, 3),
             new (colNumber: 19, colName: "Склад: Расход компенсацией", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUPaid",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKUPaid),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 20, colName: "Склад: Расход пересортом", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKUResort",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKUResort),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 21, colName: "Склад: Остаток товаров", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: "SKURemaining",
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKURemaining),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 22, colName: "Комментарий к пересортами", colWidth: 32, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUResortsComment",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUResortsComment),
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 23, colName: "Задержка довоза, всего", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayTotal",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayTotal),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: accentTargetCellSettings),
             new (colNumber: 24, colName: "Задержка довоза от точек, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPoints",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayPoints),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings, 4),
             new (colNumber: 25, colName: "Задержка довоза от точек, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayPointsSum",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayPointsSum),
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 26, colName: "Задержка довоза от склада, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorage",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayStorage),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 27, colName: "Задержка довоза от склада, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUDeliveryDelayStorageSum",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayStorageSum),
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 28, colName: "Перерасход, кол-во", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUOverrunsCount",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUOverrunsCount),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: accentTargetCellSettings),
             new (colNumber: 29, colName: "Перерасход, сумма руб.", colWidth: 14, format: DOUBLE_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUOverrunsSum",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUOverrunsSum),
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 30, colName: "Комментарий к артикулу", colWidth: 50, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, propertyName: "SKUComment",
+                wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUComment),
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
         ];
         public TargetCell[] cellsReportingDelays =
@@ -395,7 +396,7 @@ namespace TableAnalizer.Objects.Managers
             return workSheetNames is not null && workSheetNames.Any();
         }
 
-        public void MakeReports(List<SKUForTargetReports> skuForTargetReports) 
+        public void MakeReports(List<SKUForTargetReports> skuForTargetReports, bool isRawReport) 
         {
             if(string.IsNullOrEmpty(FileManager.OutputClientReportFilePath)) 
                 throw new Exception("Output client report file path cannot be empty!");
@@ -420,26 +421,32 @@ namespace TableAnalizer.Objects.Managers
             AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, in rangeForGrouping);
 
             // Make delay report
-            actualData = [.. skuForTargetReports
-                .Where(el => el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.OnSearchPoints || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouseAndPoints))];
-            sheetName = OUTPUT_REPORT_WORKSHEET02_NAME;
-            targetCells = cellsReportingDelays;
-            rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
-            CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? delayOutputReportSheet, Colors[SKUSellmentStatus.OnSearchWarehouse]);
-            FillingСellsWithData(false, ref delayOutputReportSheet, in actualData, targetCells); 
-            SetupTableHeader(in targetCells, ref delayOutputReportSheet);
-            AddFilterAndAccentInWorkSheet(ref delayOutputReportSheet, in rangeForGrouping); 
-
+            if(!isRawReport) 
+            {
+                actualData = [.. skuForTargetReports
+                    .Where(el => el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.OnSearchPoints || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouseAndPoints))];
+                sheetName = OUTPUT_REPORT_WORKSHEET02_NAME;
+                targetCells = cellsReportingDelays;
+                rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
+                CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? delayOutputReportSheet, Colors[SKUSellmentStatus.OnSearchWarehouse]);
+                FillingСellsWithData(false, ref delayOutputReportSheet, in actualData, targetCells); 
+                SetupTableHeader(in targetCells, ref delayOutputReportSheet);
+                AddFilterAndAccentInWorkSheet(ref delayOutputReportSheet, in rangeForGrouping); 
+            }
+ 
             // Make overruns report
-            actualData = [.. skuForTargetReports.Where(el => el.SKUOverrunsSum > 0.00)];
-
-            sheetName = OUTPUT_REPORT_WORKSHEET03_NAME;
-            targetCells = cellsReportingOverruns;
-            rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
-            CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? overrunsOutputReportSheet, Colors[SKUSellmentStatus.Unknown]);
-            FillingСellsWithData(false, ref overrunsOutputReportSheet, in actualData, targetCells); 
-            SetupTableHeader(in targetCells, ref overrunsOutputReportSheet);
-            AddFilterAndAccentInWorkSheet(ref overrunsOutputReportSheet, in rangeForGrouping); 
+            if(!isRawReport) 
+            {
+                actualData = [.. skuForTargetReports
+                            .Where(el => el.SKUOverrunsSum > 0.00)];
+                sheetName = OUTPUT_REPORT_WORKSHEET03_NAME;
+                targetCells = cellsReportingOverruns;
+                rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
+                CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? overrunsOutputReportSheet, Colors[SKUSellmentStatus.Unknown]);
+                FillingСellsWithData(false, ref overrunsOutputReportSheet, in actualData, targetCells); 
+                SetupTableHeader(in targetCells, ref overrunsOutputReportSheet);
+                AddFilterAndAccentInWorkSheet(ref overrunsOutputReportSheet, in rangeForGrouping); 
+            }
 
             // Save work
             SaveReceivedData(FileManager.OutputClientReportFilePath, ref outputPackage);
@@ -924,8 +931,8 @@ namespace TableAnalizer.Objects.Managers
                     PARALLEL_SKUS_WORKSHEET_NAME => new (1) { new (ParellelSkusSourceCells)},
                     _ => new(),
                 },
-                SourceSKUReportFileKey.Client => new (1) { new (ClientReportSourceCells)},
-                _ => new(),
+                SourceSKUReportFileKey.Client => [new (ClientReportSourceCells)],
+                _ => [],
             };
 
             return rangeSourceReportRows.Any();

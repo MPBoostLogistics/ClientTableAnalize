@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.SKUItems;
 
@@ -66,9 +65,6 @@ namespace TableAnalizer.Objects.Managers
             try
             {
                 var fileCount = GetReportFiles(reportsPath, isMulty, delay);
-                Trace.WriteLine($"File count: {fileCount.Result}");
-                await Task.Delay(delay);
-
                 var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, isMulty, delay);
                 
                 if(!success) 

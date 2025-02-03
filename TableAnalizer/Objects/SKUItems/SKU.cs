@@ -1,4 +1,5 @@
-﻿using TableAnalizer.Objects.Enums;
+﻿using System.Diagnostics;
+using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
@@ -151,7 +152,12 @@ namespace TableAnalizer.Objects.SKUItems
             SKUName = dataUnit.SKUName ?? string.Empty;
 
             SKURansomsBalance = new SKURansomsBalance (dataUnit.SKURansomsOnWay, dataUnit.SKURansomsCanceled, dataUnit.SKURansomsDelivered, dataUnit.SKURansomsWithDrawn);
+ 
             SKURemainingBalance = new SKURemainingBalance(dataUnit.SKUNumber, SKUName, dataUnit.SKUReceipt, dataUnit.SKUShipped, dataUnit.SKURemaining);
+            
+            Trace.WriteLine($"SKURemainingBalance: {SKURemainingBalance}");
+            Task.Delay(1500);
+            
             SKUWriteOffBalance = null;
             SKUCompensationBalance = null;
             SKUResortBalance = null;
