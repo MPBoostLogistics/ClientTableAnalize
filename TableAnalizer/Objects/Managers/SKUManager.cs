@@ -58,10 +58,7 @@ namespace TableAnalizer.Objects.Managers
         public void SetDeadlineDays(int days) => DeadlineDays = days;
 
         public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, bool isRawReport, int delay, ExcelPackage? excelPackage = null, bool isMulty = false)
-        {
-            Trace.WriteLine($"{reportFileKey}");
-            await Task.Delay(delay);
-            
+        {            
             double time = 0.00;
 
             if (ExcelManager.GetExcelWorksheetStringNamesByKey(reportFileKey, out List<string>? workSheetNames) &&
@@ -104,7 +101,7 @@ namespace TableAnalizer.Objects.Managers
             ExcelWorksheet? currentWorksheet = ExcelManager.GetExcelWorksheetByName(workSheetName, reportFileKey, taskDelay, excelPackage).Result ;
             if (currentWorksheet is null)
             {
-                await Task.Delay(100);
+                await Task.Delay(taskDelay);
                 OnManagerReached(new($"There is no worksheet named '{workSheetName}' in workbook file at key {reportFileKey}.", 2000, true));
                 return StopFuctionExecuting(ref stopwatch);
             }

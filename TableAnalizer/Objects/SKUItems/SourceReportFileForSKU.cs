@@ -75,11 +75,6 @@ namespace TableAnalizer.Objects.SKUItems
 
                 string keyString  = substrings[keyIndex].Trim().ToLower();
 
-                Trace.WriteLine($"keyString: {keyString}");
-                Task.Delay(1500);
-
-
-
                 switch (keyString)
                 {
                     // дополнительный

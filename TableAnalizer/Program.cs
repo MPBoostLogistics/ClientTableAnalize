@@ -11,7 +11,6 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using CSharpHelpers.Services;
 using OfficeOpenXml;
 using TableAnalizer.Objects.Enums;
@@ -36,6 +35,8 @@ internal class Program
     #region Functionality
     private static async Task Main(string[] args)
     {
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+
         Trace.Listeners.Add(new ConsoleTraceListener());
 
         await AnalyzeСlientReports(1000);
@@ -45,7 +46,6 @@ internal class Program
     
     private static async Task AnalyzeСlientReports(int delay)
     {
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
         ConsoleKey[] allowedConsoleKeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
 
         fileManager.ManagerReached += Report;
@@ -249,8 +249,6 @@ internal class Program
         foreach(var (key, value) in fileManager.ReportsPathsMultyReport) 
         {
             summaryTasksList.Add(ReceivingAndProcessingData(value, (bool)isRawReport!, isMulty, delay));
-            Trace.WriteLine($"{key}");
-            await Task.Delay(delay);
         }
 
         Console.Clear();
@@ -295,6 +293,9 @@ internal class Program
     private static async Task<double> ReceivingAndProcessingData(SourceReportFileForSKU reportFile, bool isRawReport, bool isMulty, int delay) 
     {
         if(reportFile.ReportKey is null) return 0.00;
+
+        Trace.Write($"key: {reportFile.ReportKey}, ");
+        await Task.Delay(delay);
 
         // Make ExcelPackage
         var package = new ExcelPackage(reportFile.FileInfo);

@@ -46,25 +46,33 @@ namespace TableAnalizer.Objects.SKUItems
         /// </summary>
         public int SKUReceiptResorts { get; set; } = 0;
 
-        /*
-        arrival of goods
-a       rrival of mixed goods
-        */
-
+        /// <summary>
+        /// Положительная разница между приходом и ожиданием 
+        /// </summary>
+        private int SKUIncreasedReceiptGoods => 
+            SKUReceiptGoods > SKURansomsWaiting ? 
+            SKUReceiptGoods - SKURansomsWaiting : 
+            0;
+ 
         public int SKUWriteOff { get; set; }                // Склад: списание недостач
 
         /// <summary>
         /// Склад: общий расход (товаром, компенсацией, пересортом) 
         /// </summary>
         public int SKUTotalСonsumption =>  SKUShipped + SKUPaid + SKUResort;
-        
-        public int SKUShipped { get; set; }                 // Склад: Расход товаром 
-        public int SKUPaid { get; set; }                    // Склад: Расход компенсацией 
+        /// <summary>
+        /// Склад: Расход товаром
+        /// </summary>
+        public int SKUShipped { get; set; }     
+        /// <summary>
+        /// Склад: Расход компенсацией
+        /// </summary>                       
+        public int SKUPaid { get; set; }           
         /// <summary>
         /// Склад: расход пересортом                
         /// </summary>
         public int SKUResort { get; set; }    
-       
+
         /// <summary>
         /// Склад: Списано пересортицей, товаров
         /// </summary>
@@ -72,14 +80,43 @@ a       rrival of mixed goods
 
         public int SKURemaining { get; set; }               // Склад: Остаток товаров
 
-        // Delivery delay
-        public int SKUDeliveryDelayTotal { get; set; }          // недовоз, товаров всего 
-        public int SKUDeliveryDelayPoints { get; set; }         // недовоз от точек, товаров
-        public double SKUDeliveryDelayPointsSum { get;set;}     // недовоз от точек, сумма
-        public int SKUDeliveryDelayStorage { get; set; }        // недовоз от склада, товаров
-        public double SKUDeliveryDelayStorageSum { get; set; }  // недовоз от склада, сумма 
+        /// <summary>
+        /// Задержка довоза, всего
+        /// </summary>
+        public int SKUDeliveryDelayTotal => SKUDeliveryDelayPoints + SKUDeliveryDelayStorage;
+        
+        private int skuDeliveryDelayPoints = 0;
+        /// <summary>
+        /// Задержка довоза от точек, кол-во
+        /// </summary>
+        public int SKUDeliveryDelayPoints 
+        { 
+            get => skuDeliveryDelayPoints;
+            set => skuDeliveryDelayPoints = value > 0 ? value : 0;
+        }
+        /// <summary>
+        /// Задержка довоза от точек, сумма руб.
+        /// </summary>
+        public double SKUDeliveryDelayPointsSum => SKUDeliveryDelayPoints > 0 && isDeadline ? SKUDeliveryDelayPoints * SKUPrice : 0.00;
+        
+        private int skuDeliveryDelayStorage = 0;
+        /// <summary>
+        /// Задержка довоза от склада, кол-во
+        /// </summary>
+        public int SKUDeliveryDelayStorage 
+        { 
+            get => skuDeliveryDelayStorage;
+            set => skuDeliveryDelayStorage = value > 0 ? value : 0;
+        }
+        /// <summary>
+        /// Задержка довоза от склада, сумма руб.
+        /// </summary>
+        public double SKUDeliveryDelayStorageSum => SKUDeliveryDelayStorage > 0 && isDeadline ? SKUDeliveryDelayStorage * SKUPrice : 0.00;
 
-        public string SKUResortsComment { get; set; } = string.Empty;  // Комментарий по пересортам
+        /// <summary>
+        /// Комментарий к пересортами
+        /// </summary>
+        public string SKUResortsComment { get; set; } = string.Empty;
 
         // Overruns 
         public int SKUOverrunsCount { get; set; } = 0;          // перерасходы, товаров
@@ -88,26 +125,15 @@ a       rrival of mixed goods
         // Is Parrales sku
         private bool IsParallelSku {get ;set;}
 
-        public string SKUComment { get; set;} = string.Empty;
+        private string skuComment = string.Empty;
+        public string SKUComment 
+         { 
+            get => skuComment;
+            set => skuComment = string.IsNullOrEmpty(skuComment) ? skuComment = value : skuComment += $"\n{value}" ;
+        }
 
         public Color FillColor { get; set;}
 
-        // Work properties
-        /// <summary>
-        /// Передано складом с пересортами (из отрицательных значений остатков).
-        /// Слубежная информация, только для склада. 
-        /// </summary>
-        private int SKUShippedWithResort { get ; set;} = 0;
-        /// <summary>
-        /// Не довезено от точек до склада согласно предварительного расчета. 
-        /// Слубежная информация, только для склада. 
-        /// </summary>
-        private int SKUNotReceivedFromPoints {get; set;} = 0;
-
-
-        // ...
-        public int SKUInlineResort { get; set; } = 0;
-        
         #endregion
 
         #region Constructors
@@ -175,6 +201,19 @@ a       rrival of mixed goods
             // Установка неопределенного статуса 
             SetSellmentStatus(SKUSellmentStatus.Unknown);
 
+            /// Приход больше ожидания: инфо для склада в комментарий 
+            if(SKUIncreasedReceiptGoods > 0) 
+            {
+                SKUComment = $"Приход товарами больше ожидания на: {Math.Abs(SKUReceiptGoods - SKURansomsWaiting)}";
+            }
+
+            // Отрицательный остаток товаров на складе: инфо для склада в комментарий и остаток = 0
+            if(!isRawReport && int.IsNegative(SKURemaining)) 
+            {
+                SKUComment = $"Передано клиенту с пересортами: {Math.Abs(SKURemaining)}";
+                SKURemaining = 0;
+            }
+
             // Калькуляция пересоров 
             if (!isRawReport)
             {
@@ -182,29 +221,8 @@ a       rrival of mixed goods
             }
 
             // Расчет задержек довоза и перерасходов
-            var skuNotReceivedFromPoints = CalculateDelayAndOverruns();
-            SKUNotReceivedFromPoints = !isRawReport ? skuNotReceivedFromPoints : 0;
+            var _ = CalculateDelayAndOverruns();
 
-            // Получение информации для пересортов (в работу склада)
-            GetInfoForResorts();
-        }
-
-        private void GetInfoForResorts()
-        {
-            // Информация для склада
-            // Если общий приход больше ожидания: выносим в комментарий
-            if (SKUReceiptTolal > SKURansomsWaiting)
-            {
-                SKUComment += $"Общий приход больше ожидания на {Math.Abs(SKUReceiptTolal - SKURansomsWaiting)}\n\n";
-            }
-
-            // Информация для склада
-            // Если остаток товаров отрицательный: выносим в комментарий и обнуляем его 
-            if (int.IsNegative(SKURemaining))
-            {
-                SKUComment += $"Отрицательный остаток {Math.Abs(SKURemaining)}\n\n";
-                SKURemaining = 0;
-            }
         }
 
         private void CalcResorts(SKU sku, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
@@ -305,30 +323,9 @@ a       rrival of mixed goods
 
         private int CalculateDelayAndOverruns()
         {
-            SKUDeliveryDelayPoints = SKUDeliveryDelayStorage = SKUDeliveryDelayTotal = SKUDeliveryDelayTotal = SKUOverrunsCount = 0;
-            SKUDeliveryDelayPointsSum = SKUDeliveryDelayStorageSum = SKUOverrunsSum = 0.00;
 
-            SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceiptGoods - SKUReceiptResorts;
-            if(isDeadline && int.IsPositive(SKUDeliveryDelayPoints) && SKUDeliveryDelayPoints > 0)
-            {
-                SKUDeliveryDelayPointsSum = SKUDeliveryDelayPoints * SKUPrice;
-            } 
-            else 
-            {
-                SKUDeliveryDelayPoints = 0;
-            }
-            
+            SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceiptGoods;
             SKUDeliveryDelayStorage = SKURansomsWaiting - SKUTotalСonsumption - SKUWriteOffByResorts - SKUDeliveryDelayPoints;
-            if(isDeadline && int.IsPositive(SKUDeliveryDelayStorage) && SKUDeliveryDelayStorage > 0)
-            {
-                SKUDeliveryDelayStorageSum = SKUDeliveryDelayStorage * SKUPrice;
-            } 
-            else 
-            {
-                SKUDeliveryDelayStorage = 0;
-            }
-
-            SKUDeliveryDelayTotal = SKUDeliveryDelayPoints + SKUDeliveryDelayStorage;
 
             if(SKUShipped > SKURansomsWaiting) 
             {
@@ -343,175 +340,6 @@ a       rrival of mixed goods
                     SKUOverrunsSum = 0;
                 }
             }
-
-         
-            // if(SKURansomsWaiting == SKUReceiptGoods + SKUReceiptResorts) 
-            // {
-            //     if(SKUReceiptGoods == SKUShipped) 
-            //     {
-            //         // Полный расчет
-            //     }
-            // } 
-            // // Ожидание больше прихода товаров 
-            // else if (SKURansomsWaiting > SKUReceiptGoods + SKUReceiptResorts) 
-            // {
-            //     SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceiptGoods;
-            // }
-            // // Ожидание меньше прихода товаров 
-            // else if (SKURansomsWaiting < SKUReceiptGoods + SKUReceiptResorts) 
-            // {
-            //     var tc = SKUShipped + SKUWriteOffByResorts;
-            //     if(tc >= SKURansomsWaiting) 
-            //     {
-            //         SKUOverrunsCount = tc - SKURansomsWaiting;
-            //     } 
-            //     else 
-            //     {
-            //         SKUDeliveryDelayStorage = SKURansomsWaiting - tc;
-            //     }
-            // }
-
-            // SKUDeliveryDelayTotal = SKUDeliveryDelayPoints + SKUDeliveryDelayStorage;
-
-            // SKUDeliveryDelayPointsSum = isDeadline && SKUDeliveryDelayPoints > 0 ?
-            //     SKUDeliveryDelayPoints * SKUPrice : 
-            //     0.00;
-
-            // SKUDeliveryDelayStorageSum = isDeadline && SKUDeliveryDelayStorage > 0 ?
-            //     SKUDeliveryDelayStorage * SKUPrice : 
-            //     0.00;
-            
-
-
-
-            
-           
-
-
-
-
-
-
-
-            //    // // Общий результат взаиморасчета по артикулу: общий расход + списание по пересортами
-            //     //var resultSellment = SKUTotalСonsumption + SKUWriteOffByResorts;
-
-            //     // Общий результат взаиморасчета меньше ожидания то мы остались должны клиенту
-            //     if(SKUTotalСonsumption < SKURansomsWaiting) 
-            //     {
-            //         // Остаток расчетов = ожидание - общий резльтат взаиморасчета
-            //         var remainder = SKURansomsWaiting - SKUTotalСonsumption - SKUWriteOffByResorts;
-
-            //         if(SKUReceiptGoods < SKURansomsWaiting) 
-            //         {
-            //             SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceiptGoods;
-            //             remainder -= SKUDeliveryDelayPoints;
-
-            //             if(remainder > 0) 
-            //             {
-            //                 SKUDeliveryDelayStorage = remainder;
-            //             }
-            //         } 
-            //         else if(SKUReceiptGoods > SKURansomsWaiting) 
-            //         {
-            //             SKUComment += SKUReceiptGoods - SKURansomsWaiting;
-            //         }
-
-            //         SKUDeliveryDelayTotal = SKUDeliveryDelayPoints + SKUDeliveryDelayStorage;
-            //     } 
-
-
-
-
-
-
-            //     // // Справочно в комментарий
-            //     // // Общий расход + Списано пересортицей - Расход пересортом = перерасход
-            //     // if((SKUTotalСonsumption + SKUWriteOffByResorts - SKUResort) > SKURansomsWaiting)
-            //     //     SKUComment += SKUTotalСonsumption + SKUWriteOffByResorts - SKURansomsWaiting;
-
-
-
-            //     // // Недовоз от точек
-            //     // SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceipt;
-            //     // if(int.IsPositive(SKUDeliveryDelayPoints) && SKUDeliveryDelayPoints > 0 && isDeadline) 
-            //     // {
-            //     //     SKUDeliveryDelayPointsSum = SKUDeliveryDelayPoints * SKUPrice;
-            //     // } 
-            //     // else 
-            //     // {
-            //     //     SKUDeliveryDelayPoints = 0;
-            //     //     SKUDeliveryDelayPointsSum = 0.00;
-            //     // }
-
-            //     // // Недовоз от склада
-            //     // SKUDeliveryDelayStorage = SKURansomsWaiting - SKUDeliveryDelayPoints - SKUTotalСonsumption - SKUWriteOffByResorts;
-            //     // if(int.IsPositive(SKUDeliveryDelayStorage) && SKUDeliveryDelayStorage > 0 && isDeadline) 
-            //     // {
-            //     //     SKUDeliveryDelayStorageSum = SKUDeliveryDelayStorage * SKUPrice;
-            //     // } 
-            //     // else 
-            //     // {
-            //     //     SKUDeliveryDelayStorage = 0;
-            //     //     SKUDeliveryDelayStorageSum = 0.00;
-            //     // }
-
-
-            //     // var balanceDelayOfSettlement = SKURansomsWaiting - SKUTotalСonsumption;
-            //     // switch(int.IsPositive(balanceDelayOfSettlement)) 
-            //     // {
-            //     //     // Число недовоза положительное
-            //     //     case true:
-            //     //        switch(balanceDelayOfSettlement == 0) 
-            //     //        {
-            //     //             // Число недовоза равно нулю, выходим
-            //     //             case true:
-            //     //                 break;
-            //     //             // Число недовоза больше нуля, считаем недовозы (точки и склад)
-            //     //             case false:
-
-            //     //                 // Недовозы точки 
-            //     //                 SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceipt;
-            //                 if(int.IsNegative(SKUDeliveryDelayPoints)) SKUDeliveryDelayPoints = 0;
-
-            //                 SKUDeliveryDelayPointsSum = SKUDeliveryDelayPoints > 0 && isDeadline ? 
-            //                     SKUDeliveryDelayPoints * SKUPrice : 
-            //                     SKUDeliveryDelayPointsSum = 0;
-
-            //                 // Недовозы склад
-            //                 SKUDeliveryDelayStorage = balanceDelayOfSettlement - SKUDeliveryDelayPoints - SKUTotalСonsumption;
-            //                 if(int.IsNegative(SKUDeliveryDelayStorage)) SKUDeliveryDelayStorage = 0;
-
-            //                 SKUDeliveryDelayStorageSum = SKUDeliveryDelayStorage > 0 && isDeadline ? 
-            //                     SKUDeliveryDelayStorage * SKUPrice : 
-            //                     0.00;
-
-            //                 // Недовозы общие 
-            //                 switch(SKUDeliveryDelayPoints > 0, SKUDeliveryDelayStorage > 0) 
-            //                 {
-            //                     case (true, true):
-            //                         SKUDeliveryDelayTotal = SKUDeliveryDelayPoints + SKUDeliveryDelayStorage;
-            //                         break;
-            //                     case (true, false):
-            //                         SKUDeliveryDelayTotal = SKUDeliveryDelayPoints;
-            //                         break;
-            //                     case (false, true):
-            //                         SKUDeliveryDelayTotal = SKUDeliveryDelayStorage;
-            //                         break;
-            //                 }
-
-            //                 break;
-            //        }
-            //         break;
-
-            //     // Число отрицательное - есть перерасходы
-            //     case false:
-            //         SKUOverrunsCount = Math.Abs(balanceDelayOfSettlement);
-            //         SKUOverrunsSum = int.IsPositive(SKUOverrunsCount) && SKUOverrunsCount > 0 && isDeadline ? 
-            //             SKUOverrunsCount * SKUPrice :
-            //             0.00;
-            //         break;
-            // }
 
             // Add status 
             if(!isDeadline) 
