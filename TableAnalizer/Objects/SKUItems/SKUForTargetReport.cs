@@ -113,9 +113,19 @@ namespace TableAnalizer.Objects.SKUItems
         /// </summary>
         public string SKUResortsComment { get; set; } = string.Empty;
 
-        // Overruns 
-        public int SKUOverrunsCount { get; set; } = 0;          // перерасходы, товаров
-        public double SKUOverrunsSum { get; set; } = 0.00;      // перерасходы, сумма
+        private int skuOverrunsCount = 0; 
+        /// <summary>
+        /// Перерасход, кол-во
+        /// </summary>
+        public int SKUOverrunsCount
+        {
+            get => skuOverrunsCount;
+            set => skuOverrunsCount = value > 0 ? value : 0;
+        }      
+        /// <summary>
+        /// Перерасход, сумма руб.
+        /// </summary>              
+        public double SKUOverrunsSum => SKUOverrunsCount > 0 && isDeadline ? SKUOverrunsCount * SKUPrice : 0.00;
 
         // Is Parrales sku
         private bool IsParallelSku {get ;set;}
@@ -184,7 +194,6 @@ namespace TableAnalizer.Objects.SKUItems
             // Article analysis
             AnalizeSKU(sku, isRawReport, isMulty, traceDelay, resortFromSkusValues);
         }
-
         private void SetSellmentStatus(SKUSellmentStatus skuSellmentStatus) 
         {
             SellmentStatus = new SellmentStatus(skuSellmentStatus);
@@ -195,12 +204,9 @@ namespace TableAnalizer.Objects.SKUItems
         {
             // Установка неопределенного статуса 
             SetSellmentStatus(SKUSellmentStatus.Unknown);
-<<<<<<< HEAD
-            
-            if(isRawReport)
-                GetInfoForWarehouse(isRawReport);
-=======
->>>>>>> newCalc01
+
+            // Расчет недовозов от точек
+            CalculateDalay(SKUSellmentStatus.OnSearchPoints);
 
             // Калькуляция пересоров 
             if (!isRawReport)
@@ -208,26 +214,42 @@ namespace TableAnalizer.Objects.SKUItems
                 CalcResorts(sku, resortFromSkusValues);
             }
 
-            // Расчет задержек довоза и перерасходов
-            var _ = CalculateDelayAndOverruns();
+            // Расчет недовозов от склада
+            CalculateDalay(SKUSellmentStatus.OnSearchWarehouse);
 
-<<<<<<< HEAD
-            if(!isRawReport)
-                GetInfoForWarehouse(isRawReport);
+            // Расчет перерасходов
+            if(SKUShipped > SKURansomsWaiting) 
+            {
+                SKUOverrunsCount = SKUShipped - SKURansomsWaiting - SKUResort;
+            }
 
-        }
+            // Установка статуса взаморасчетов 
+            SetStatus();
 
-        private void GetInfoForWarehouse(bool isRawReport)
-=======
-            /// Информация для пересортов (склад)
+            // Информация для пересортов (склад)
+            // - если это не сводный расчет и сырой отчет
             if(!isMulty && isRawReport) 
             {
                 GetInfoForResort();
             }
         }
 
+        private void CalculateDalay(SKUSellmentStatus sellmentStatus) 
+        {
+            switch(sellmentStatus) 
+            {
+                case SKUSellmentStatus.OnSearchPoints:
+                    SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceiptGoods;
+                    break;
+                case SKUSellmentStatus.OnSearchWarehouse:
+                    SKUDeliveryDelayStorage = SKURansomsWaiting - SKUTotalСonsumption - SKUWriteOffByResorts - SKUDeliveryDelayPoints;
+                    break;
+                default:
+                    break;
+            }
+        }
+
         private void GetInfoForResort()
->>>>>>> newCalc01
         {
             /// Приход больше ожидания: инфо для склада в комментарий 
             if (SKUIncreasedReceiptGoods > 0)
@@ -236,11 +258,7 @@ namespace TableAnalizer.Objects.SKUItems
             }
 
             // Отрицательный остаток товаров на складе: инфо для склада в комментарий и остаток = 0
-<<<<<<< HEAD
-            if (!isRawReport && int.IsNegative(SKURemaining))
-=======
             if (int.IsNegative(SKURemaining))
->>>>>>> newCalc01
             {
                 SKUComment = $"Передано клиенту с пересортами: {Math.Abs(SKURemaining)}";
                 SKURemaining = 0;
@@ -310,13 +328,7 @@ namespace TableAnalizer.Objects.SKUItems
                 var skuAndSumsByResortIn1CReceiptSum = skuAndSumsByResortIn1CReceipt?.Aggregate(0, (acc, i) => acc + i.sum);
                 if(skuAndSumsByResortIn1CReceipt is not null && skuAndSumsByResortIn1CReceipt.Any() && skuAndSumsByResortIn1CReceiptSum > 0) 
                 {
-<<<<<<< HEAD
-                    StringBuilder resortIn1CReceiptSB = new("Пересортица прихода на другие артикулы (вычтено из \"Склад: Приход товаром\"): \n");
-                    SKUReceiptGoods -= (int)skuAndSumsByResortIn1CReceiptSum;
-                    
-=======
                     StringBuilder resortIn1CReceiptSB = new("Пересортица прихода (1С, входящий, см \"Склад: Приход товаром\"): \n");
->>>>>>> newCalc01
                     foreach ((int sk, int su) in skuAndSumsByResortIn1CReceipt)
                     {
                         resortIn1CReceiptSB.Append($"{sk} шт.:{su}, ");
@@ -346,25 +358,8 @@ namespace TableAnalizer.Objects.SKUItems
             }
         }
 
-        private int CalculateDelayAndOverruns()
+        private void SetStatus()
         {
-            SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceiptGoods;
-            SKUDeliveryDelayStorage = SKURansomsWaiting - SKUTotalСonsumption - SKUWriteOffByResorts - SKUDeliveryDelayPoints;
-
-            if(SKUShipped > SKURansomsWaiting) 
-            {
-                SKUOverrunsCount = SKUShipped - SKURansomsWaiting - SKUResort;
-                if(int.IsNegative(SKUOverrunsCount)) SKUOverrunsCount = 0;
-                if(isDeadline && int.IsPositive(SKUOverrunsCount)&& SKUOverrunsCount > 0) 
-                {
-                    SKUOverrunsSum = SKUOverrunsCount * SKUPrice;
-                } 
-                else 
-                {
-                    SKUOverrunsSum = 0;
-                }
-            }
-
             // Add status 
             if(!isDeadline) 
             {
@@ -388,10 +383,7 @@ namespace TableAnalizer.Objects.SKUItems
                         break;
                 } 
             }
-        
-            return 0;
         }
-
         #endregion 
     }
 }
