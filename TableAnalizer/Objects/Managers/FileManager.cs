@@ -1,8 +1,6 @@
-﻿
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
-using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.SKUItems;
 
 namespace TableAnalizer.Objects.Managers

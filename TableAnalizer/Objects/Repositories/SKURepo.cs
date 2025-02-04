@@ -1,6 +1,6 @@
-using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.Repositories
@@ -188,11 +188,7 @@ namespace TableAnalizer.Objects.Repositories
 
                     if(newValue.SKUCompensationBalance is not null) 
                     {
-                        int count = newValue.SKUCompensationBalance.Count;
-                        double sum = newValue.SKUCompensationBalance.Sum;
-                        string? comment = newValue.SKUCompensationBalance.Comments;
-
-                        skuCompensationBalance!.Update(count, sum, comment);
+                        skuCompensationBalance!.Update(newValue.SKUCompensationBalance.CompensationItems);
                     }
 
                     break;

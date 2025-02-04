@@ -1,8 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
 
-using TableAnalizer.Objects.Enums;
-
 namespace TableAnalizer.Objects.Managers
 {
     public class BaseManager 

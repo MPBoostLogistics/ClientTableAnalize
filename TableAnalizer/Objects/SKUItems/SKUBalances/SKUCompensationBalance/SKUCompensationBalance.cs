@@ -1,4 +1,7 @@
-namespace TableAnalizer.Objects.SKUItems.SKUBalances
+using System.Diagnostics;
+using System.Net.WebSockets;
+
+namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance
 {
     /// <summary>
     ///  Client's compensation balance.
@@ -6,11 +9,14 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     /// <remarks><i>New version</i></remarks>
     public class SKUCompensationBalance : IEquatable<SKUCompensationBalance>
     {
+        #region Variables and constanst
+        private const string COMPENSATION_TARGET_WAREHOUSE_NAME = "Компенсация от склада";
+        private const string COMPENSATION_TARGET_POINTS_NAME = "Компенсация от точек";
+        #endregion
+
         #region Properties
         public int SKUNumber { get; private set; }
-        public int Count { get; private set; } = 0;
-        public double Sum { get; private set; } = 0;
-        public string? Comments { get; private set; } = null;
+        public Dictionary<CompensationTarget,(int count, double sum)> CompensationItems { get; private set; } = [];
         #endregion
 
         #region Constructors 
@@ -19,20 +25,71 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
             SKUNumber = skuNumber;
             foreach (var unit in skuCompensationDataUnits)
             {
-                Update(unit.CompensationCount, unit.CompensationSum, unit.CompensationComment);
+                if(string.IsNullOrEmpty(unit.CompensationComment)) 
+                {
+                    Trace.WriteLine("Compensation info must contain a comment. Skipping.");
+                } 
+                else 
+                {
+                    Update(unit.CompensationCount, unit.CompensationSum, unit.CompensationComment);
+                }
             }
         }
         #endregion Constructors
 
         #region Functionality
-        public void Update(int count, double sum, string? comment) 
+
+        public void Update(Dictionary<CompensationTarget,(int count, double sum)> сompensationItems) 
         {
-            Count += count;
-            Sum += sum;
-            if(!string.IsNullOrEmpty(comment)) 
+            foreach (var item in сompensationItems)
             {
-                Comments = !string.IsNullOrEmpty(Comments) ? string.Concat(Comments, ", ", comment.Trim().ToLower()) : comment.Trim().ToLower();
+                (int count, double sum) newItem;
+                if(CompensationItems.TryGetValue(item.Key, out (int count, double sum) existingItem)) 
+                {
+                    newItem = existingItem;
+                    if(newItem.count != item.Value.count || newItem.sum != item.Value.sum)
+                    newItem.count += item.Value.count;
+                    newItem.sum += item.Value.sum;
+                } 
+                else 
+                {
+                    newItem = (item.Value.count, item.Value.sum);
+                }
+
+                CompensationItems[item.Key] = newItem;
             }
+        }
+
+        public void Update(int count, double sum, string comment) 
+        {
+            CompensationTarget? target = null;
+            switch(comment) 
+            {
+                case COMPENSATION_TARGET_WAREHOUSE_NAME:
+                    target = CompensationTarget.Warehouse;
+                    break;
+                case COMPENSATION_TARGET_POINTS_NAME:
+                    target = CompensationTarget.PickupPoint;
+                    break;
+                default:
+                    break;
+            }
+
+            if(target == null) return;
+
+            (int count, double sum) newItem;
+            if(CompensationItems.TryGetValue((CompensationTarget)target, out (int count, double sum) existingItem)) 
+            {
+                newItem = existingItem;
+                newItem.count += count;
+                newItem.sum += sum;
+            } 
+            else 
+            {
+                newItem = (count, sum);
+            }
+
+            CompensationItems[(CompensationTarget)target] = newItem;
         }
 
         public bool Equals(SKUCompensationBalance? other) =>

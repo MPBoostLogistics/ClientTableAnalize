@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
-using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.SKUItems
@@ -175,17 +175,17 @@ namespace TableAnalizer.Objects.SKUItems
 
         #region Functionality
 
-        public void Update(SKUCompensationBalance skuCompensationBalance) 
-        {
-            if(skuCompensationBalance is null) 
-            {
-                SKUCompensationBalance = skuCompensationBalance;
-            } 
-            else 
-            {
-                skuCompensationBalance.Update(skuCompensationBalance.Count, skuCompensationBalance.Sum, skuCompensationBalance.Comments);
-            }
-        }
+        // public void Update(SKUCompensationBalance skuCompensationBalance) 
+        // {
+        //     if(skuCompensationBalance is null) 
+        //     {
+        //         SKUCompensationBalance = skuCompensationBalance;
+        //     } 
+        //     else 
+        //     {
+        //         skuCompensationBalance.Update(skuCompensationBalance.Count, skuCompensationBalance.Sum);
+        //     }
+        // }
 
         #endregion
     }

@@ -1,4 +1,4 @@
-namespace TableAnalizer.Objects.Enums
+namespace TableAnalizer.Objects
 {
     public enum Marketplace { WB, OZ }
 
@@ -102,5 +102,17 @@ namespace TableAnalizer.Objects.Enums
         /// Нет решения 
         /// </summary>
         NoSolution      
+    }
+
+    public enum CompensationTarget 
+    {
+        /// <summary>
+        /// Компенсация от склада
+        /// </summary>
+        Warehouse, 
+        /// <summary>
+        /// Компенсация от точек
+        /// </summary>
+        PickupPoint
     }
 }

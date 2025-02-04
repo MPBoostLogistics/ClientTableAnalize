@@ -5,8 +5,8 @@ using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.Repositories;
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
-using TableAnalizer.Objects.Enums;
 
 namespace TableAnalizer.Objects.Managers
 {

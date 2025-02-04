@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text;
-using TableAnalizer.Objects.Enums;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 {
@@ -190,13 +189,15 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             var comment = string.Empty;
 
             StringBuilder stringBuilder = new();
+
+            // Исходящие пересорты
             switch(target) 
             {
                 case SKUResortBalanceTarget.ResortIn1CReceipt:
                     stringBuilder.Append("Пересортица прихода (1C, исходящий, вычтен из \"Склад: Приход товаром\"):\n");
                     break;
                 case SKUResortBalanceTarget.ResortIn1C:
-                    stringBuilder.Append("Пересортица расхода (1C, добавлено в \"{Склад: Списано пересортицей, товаров}\"):\n");
+                    stringBuilder.Append("Пересортица расхода на др. артикулы (1C, вычтено из \"Склад: Склад: Приход товаром\" и \"Склад: Склад: Расход товаром\"):\n");
                     break;
                 case SKUResortBalanceTarget.Conceptual:
                     stringBuilder.Append("Пересортица расхода (баланс, добавлено в \"Склад: Списано пересортицей, товаров\"):\n");

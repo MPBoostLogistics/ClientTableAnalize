@@ -1,4 +1,3 @@
-using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.Parsing;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances
@@ -20,7 +19,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         public int SKUReceipt { get; set; } 
         public int SKUShipped { get; set; } 
         public int SKURemaining { get; set; }
-
         #endregion Properties
     }
 }

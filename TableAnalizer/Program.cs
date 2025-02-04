@@ -13,7 +13,7 @@ using System.Reflection;
 using System.Text;
 using CSharpHelpers.Services;
 using OfficeOpenXml;
-using TableAnalizer.Objects.Enums;
+using TableAnalizer.Objects;
 using TableAnalizer.Objects.Managers;
 using TableAnalizer.Objects.SKUItems;
 

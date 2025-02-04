@@ -1,4 +1,3 @@
-using TableAnalizer.Objects.Enums;
 using TableAnalizer.Objects.Parsing;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances
@@ -6,7 +5,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     /// <summary>
     /// Data unit for forming SKURansomsBalance.
     /// </summary>
-    /// <remarks><i>New version, tested</i></remarks>
     public class SKURansomsBalanceDataUnit : ParsingRowEntity
     {
         #region Properties

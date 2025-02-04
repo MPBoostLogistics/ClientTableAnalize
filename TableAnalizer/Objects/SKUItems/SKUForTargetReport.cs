@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Text;
 using TableAnalizer.Interfaces;
-using TableAnalizer.Objects.Enums;
 namespace TableAnalizer.Objects.SKUItems
 {
     public class SKUForTargetReports : IColorable
@@ -25,18 +24,15 @@ namespace TableAnalizer.Objects.SKUItems
         public int SKURansomsDelivered { get; set; }
         public int SKURansomsWithDrawn { get; set; }
 
-        public int SKURansomsWaiting { get; set; }          // Склад: ожидание
-        
-        public int SKUReceiptTolal => SKUReceiptGoods + SKUReceiptResorts;
+        /// <summary>
+        /// Склад: Ожидание
+        /// </summary>
+        public int SKURansomsWaiting { get; set; }  
 
         /// <summary>
         /// Склад: Приход товаром
         /// </summary>
         public int SKUReceiptGoods { get; set; } = 0;              
-        /// <summary>
-        /// Склад: Оприходовано пересортицей
-        /// </summary>
-        public int SKUReceiptResorts { get; set; } = 0;
 
         /// <summary>
         /// Положительная разница между приходом и ожиданием 
@@ -45,8 +41,15 @@ namespace TableAnalizer.Objects.SKUItems
             SKUReceiptGoods > SKURansomsWaiting ? 
             SKUReceiptGoods - SKURansomsWaiting : 
             0;
- 
-        public int SKUWriteOff { get; set; }                // Склад: списание недостач
+
+        /// <summary>
+        /// Склад: Компенсация (точки)
+        /// </summary>                       
+        private int skuPaidWarehouse = 0;
+        /// <summary>
+        /// Склад: Компенсация (склад)
+        /// </summary>                       
+        private int skuPaidPoints = 0; 
 
         /// <summary>
         /// Склад: общий расход (товаром, компенсацией, пересортом) 
@@ -57,18 +60,14 @@ namespace TableAnalizer.Objects.SKUItems
         /// </summary>
         public int SKUShipped { get; set; }     
         /// <summary>
-        /// Склад: Расход компенсацией
+        /// Склад: Расход компенсацией (склад)
         /// </summary>                       
-        public int SKUPaid { get; set; }           
+        public int SKUPaid { get; set; }       
+
         /// <summary>
         /// Склад: расход пересортом                
         /// </summary>
-        public int SKUResort { get; set; }    
-
-        /// <summary>
-        /// Склад: Списано пересортицей, товаров
-        /// </summary>
-        public int SKUWriteOffByResorts { get; set; }       
+        public int SKUResort { get; set; }         
 
         /// <summary>
         /// Склад: Остаток товаров
@@ -186,9 +185,15 @@ namespace TableAnalizer.Objects.SKUItems
             } 
 
             // Fill SKUCompensationBalance 
-            if (sku.SKUCompensationBalance is not null)
+            if (sku.SKUCompensationBalance is not null )
             {
-                SKUPaid = sku.SKUCompensationBalance.Count;
+                skuPaidWarehouse = sku.SKUCompensationBalance.CompensationItems
+                    .Where(el => el.Key == CompensationTarget.Warehouse)
+                    .Aggregate(0, (acc, i) => acc + i.Value.count);
+
+                skuPaidPoints = sku.SKUCompensationBalance.CompensationItems
+                    .Where(el => el.Key == CompensationTarget.PickupPoint)
+                    .Aggregate(0, (acc, i) => acc + i.Value.count);
             }
 
             // Article analysis
@@ -204,6 +209,9 @@ namespace TableAnalizer.Objects.SKUItems
         {
             // Установка неопределенного статуса 
             SetSellmentStatus(SKUSellmentStatus.Unknown);
+
+            // Проверка компенсаций
+            SetCompensation();
 
             // Расчет недовозов от точек
             CalculateDalay(SKUSellmentStatus.OnSearchPoints);
@@ -234,6 +242,37 @@ namespace TableAnalizer.Objects.SKUItems
             }
         }
 
+        /// <summary>
+        /// Sets amount of compensation from points and warehouse.
+        /// </summary>
+        private void SetCompensation()
+        {
+            if(skuPaidPoints == 0 && skuPaidWarehouse == 0) return;
+
+             StringBuilder paidSB = new("Оплачено денежными компенсациями:\n");
+
+            // Если оплата компенсации от склада
+            // - добавляется в расход компенсацией склада
+            // - обновляется комментарий
+            if(skuPaidWarehouse > 0) 
+            {
+                SKUPaid += skuPaidWarehouse;
+                paidSB.Append($"- от склада (добавлено в \"Склад: Расход компенсацией\"): {skuPaidWarehouse}\n");
+            }
+
+            // Если оплата компенсации от точек
+            // - добавляется в приход и расход компенсацией склада
+            // - обновляется комментарий
+            if(skuPaidPoints > 0) 
+            {
+                SKUReceiptGoods += skuPaidPoints;
+                SKUPaid += skuPaidPoints;
+                paidSB.Append($"- от точек (добавлено в \"Склад: Приход товаром\" и \"Склад: Расход компенсацией\"): {skuPaidPoints}\n");
+            }
+
+            SKUComment = paidSB.ToString();
+        }
+
         private void CalculateDalay(SKUSellmentStatus sellmentStatus) 
         {
             switch(sellmentStatus) 
@@ -242,7 +281,7 @@ namespace TableAnalizer.Objects.SKUItems
                     SKUDeliveryDelayPoints = SKURansomsWaiting - SKUReceiptGoods;
                     break;
                 case SKUSellmentStatus.OnSearchWarehouse:
-                    SKUDeliveryDelayStorage = SKURansomsWaiting - SKUTotalСonsumption - SKUWriteOffByResorts - SKUDeliveryDelayPoints;
+                    SKUDeliveryDelayStorage = SKURansomsWaiting - SKUDeliveryDelayPoints - SKUTotalСonsumption;
                     break;
                 default:
                     break;
@@ -267,7 +306,7 @@ namespace TableAnalizer.Objects.SKUItems
 
         private void CalcResorts(SKU sku, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
         {
-            // 2. Фикация исходящих пересортов 
+            // Фикация исходящих пересортов 
             if (sku.SKUResortBalance is not null)
             {
                 // 2.1 Переcорты прихода, списанные в 1С
@@ -280,14 +319,14 @@ namespace TableAnalizer.Objects.SKUItems
                             SKUResortsComment += resortIn1CReceiptItems.Value.comment;
                 }
 
-                // Переcорты, списанные в 1С
+                // Переcорты расхода, списанные в 1С
                 var resortIn1CItems = sku.SKUResortBalance.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortIn1C);
                 if (resortIn1CItems.HasValue && resortIn1CItems.Value.sum > 0)
                 {
-                    SKUWriteOffByResorts += resortIn1CItems.Value.sum;
-                    SKUResortsComment = string.IsNullOrEmpty(SKUResortsComment) ?
-                            resortIn1CItems.Value.comment :
-                            SKUResortsComment += resortIn1CItems.Value.comment;
+                    SKUReceiptGoods -= resortIn1CItems.Value.sum;
+                    SKUShipped -= resortIn1CItems.Value.sum;
+                    //SKUWriteOffByResorts += resortIn1CItems.Value.sum;
+                    SKUResortsComment = resortIn1CItems.Value.comment;
                 }
 
                 // Пересорты, созданные без списания в 1С (концептуальные) 
@@ -301,7 +340,7 @@ namespace TableAnalizer.Objects.SKUItems
                 }
             }
 
-            // 3. Фикация входящих пересортов 
+            // Фикация входящих пересортов 
             if (resortFromSkusValues is not null && resortFromSkusValues.Count > 0)
             {
                 void UpdateResortComment(string message) 
@@ -342,9 +381,9 @@ namespace TableAnalizer.Objects.SKUItems
                 if(skuAndSumsByResortIn1C is not null && skuAndSumsByResortIn1C.Any())  
                 {
                     SKUResort += (int)skuAndSumsByResortIn1CSum!;   // Добавляется в Склад: Расход пересортом
-                    SKUReceiptGoods -= SKUResort;                   // Вычитается из Склад: Приход товаром
-                    SKUReceiptResorts += SKUResort;                 // Добавляется в Склад: Оприходовано пересортицей
-                    SKUShipped -= SKUResort;                        // Вычитается из Склад: Расход товаром
+                    //SKUReceiptGoods -= SKUResort;                   // Вычитается из Склад: Приход товаром
+                    //SKUReceiptResorts += SKUResort;                 // Добавляется в Склад: Оприходовано пересортицей
+                    //SKUShipped -= SKUResort;                        // Вычитается из Склад: Расход товаром
 
                     // Обновление комментария
                     StringBuilder goodsResortsSb = new("Пересортица расхода от других артикулов (вычтено из \"Склад: Приход товаром\", \"Склад: Расход товаром\", добавлено в \"Склад: Оприходовано пересортицей\", \"Склад: Расход пересортом\",\n");
