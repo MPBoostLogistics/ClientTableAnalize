@@ -309,7 +309,7 @@ namespace TableAnalizer.Objects.SKUItems
             // Фикация исходящих пересортов 
             if (sku.SKUResortBalance is not null)
             {
-                // 2.1 Переcорты прихода, списанные в 1С
+                // Переcорты прихода, списанные в 1С
                 var resortIn1CReceiptItems = sku.SKUResortBalance.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortIn1CReceipt);
                 if (resortIn1CReceiptItems.HasValue && resortIn1CReceiptItems.Value.sum > 0)
                 {
@@ -381,12 +381,9 @@ namespace TableAnalizer.Objects.SKUItems
                 if(skuAndSumsByResortIn1C is not null && skuAndSumsByResortIn1C.Any())  
                 {
                     SKUResort += (int)skuAndSumsByResortIn1CSum!;   // Добавляется в Склад: Расход пересортом
-                    //SKUReceiptGoods -= SKUResort;                   // Вычитается из Склад: Приход товаром
-                    //SKUReceiptResorts += SKUResort;                 // Добавляется в Склад: Оприходовано пересортицей
-                    //SKUShipped -= SKUResort;                        // Вычитается из Склад: Расход товаром
 
                     // Обновление комментария
-                    StringBuilder goodsResortsSb = new("Пересортица расхода от других артикулов (вычтено из \"Склад: Приход товаром\", \"Склад: Расход товаром\", добавлено в \"Склад: Оприходовано пересортицей\", \"Склад: Расход пересортом\",\n");
+                    StringBuilder goodsResortsSb = new("Пересортица расхода от др. арт. (1С, добавлено в \"Склад: Расход пересортом\",\n");
                     foreach (var (sk, su) in skuAndSumsByResortIn1C)
                     {
                         goodsResortsSb.Append($"{sk} шт.:{su}, ");

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Drawing;
 using System.Reflection;
 
 namespace TableAnalizer.Objects.Managers
@@ -16,14 +17,14 @@ namespace TableAnalizer.Objects.Managers
         /// Сollection of colors to indicate status of mutual settlements with clients.
         /// </summary>
         /// <remarks><i>New version</i></remarks>
-        public Dictionary<SKUSellmentStatus, System.Drawing.Color> Colors { get; } = new()
+        public Dictionary<SKUSellmentStatus, Color> Colors { get; } = new()
         {
-            {SKUSellmentStatus.FullSet, System.Drawing.ColorTranslator.FromHtml("#bbe4e0")},                    // #bbe4e0
-            {SKUSellmentStatus.InWork, System.Drawing.ColorTranslator.FromHtml("#fedd9f")},                     // #fedd9f
-            {SKUSellmentStatus.OnSearchWarehouseAndPoints, System.Drawing.ColorTranslator.FromHtml("#ffa678")}, // #ffa678
-            {SKUSellmentStatus.OnSearchWarehouse, System.Drawing.ColorTranslator.FromHtml("#ffe1d2")},          // #ffe1d2
-            {SKUSellmentStatus.OnSearchPoints, System.Drawing.ColorTranslator.FromHtml("#ffc4a5")},             // #ffc4a5
-            {SKUSellmentStatus.Unknown, System.Drawing.ColorTranslator.FromHtml("#d5e8f0")}                     // #d5e8f0
+            {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#EAF6F5")},                    // #EAF6F5
+            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fef4e2")},                     // #fef4e2
+            {SKUSellmentStatus.OnSearchWarehouseAndPoints, ColorTranslator.FromHtml("#ffe2d3")}, // #ffe2d3
+            {SKUSellmentStatus.OnSearchWarehouse, ColorTranslator.FromHtml("#ffe1d2")},          // #ffe1d2
+            {SKUSellmentStatus.OnSearchPoints, ColorTranslator.FromHtml("#ffe7db")},             // #ffe7db
+            {SKUSellmentStatus.Unknown, ColorTranslator.FromHtml("#eef5f9")}                     // #eef5f9
         };
         #endregion Properties
 
@@ -66,25 +67,6 @@ namespace TableAnalizer.Objects.Managers
             stopwatch.Stop();
             return stopwatch.ElapsedMilliseconds / 1000;
         }
-        #endregion Functionality
-
-        // Из старой реалиазции
-        private static string FormСorrectPath(string path)
-        {
-            var copy = path;
-
-            // Clear "\"
-            var charArray = copy.Trim().ToList();
-            for (int i = 0; i < charArray.Count; i++)
-            {
-                if (charArray[i] == '\u005c') charArray.RemoveAt(i);
-            }
-
-            copy = new string(charArray.ToArray());
-
-            // Add "/"
-            return $"/{copy}";
-        }
 
         public bool TryGetPropertyValue<TType, TObj>(TObj obj, string propertyName, out TType? value)
         {
@@ -124,7 +106,7 @@ namespace TableAnalizer.Objects.Managers
 
             return true;
         }
-
+        #endregion Functionality
         
     }
 }

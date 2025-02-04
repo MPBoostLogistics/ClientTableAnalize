@@ -7,6 +7,7 @@ using OfficeOpenXml;
 using OfficeOpenXml.Style;
 using System.Diagnostics;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
+using System.Threading.Tasks;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -163,8 +164,8 @@ namespace TableAnalizer.Objects.Managers
             new(11, nameof(SKUClientReportDataUnit.SKURansomsDelivered), ParsingTypeCode.IntTypeCode, true),
             new(12, nameof(SKUClientReportDataUnit.SKURansomsWithDrawn), ParsingTypeCode.IntTypeCode, true),
             new(14, nameof(SKUClientReportDataUnit.SKUReceipt), ParsingTypeCode.IntTypeCode, true),
-            new(18, nameof(SKUClientReportDataUnit.SKUShipped), ParsingTypeCode.IntTypeCode, true),
-            new(21, nameof(SKUClientReportDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, true)
+            new(16, nameof(SKUClientReportDataUnit.SKUShipped), ParsingTypeCode.IntTypeCode, true),
+            new(19, nameof(SKUClientReportDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, true)
         ];
 
         public TargetCell[] cellsReportingMain =
@@ -454,18 +455,20 @@ namespace TableAnalizer.Objects.Managers
 
         public void FillingСellsWithData(bool isMainReport, ref ExcelWorksheet worksheet, in List<SKUForTargetReports> skusForTargetReport, TargetCell[] targetCells, int recordIndex = 1)
         {
+            // Get status column number
+            int? statusColNumber = null;
+            if(isMainReport) 
+            {
+                statusColNumber = cellsReportingMain
+                    .Single(cl => cl.PropertyName == nameof(SKUForTargetReports.SellmentStatusString)).ColNumber;
+            }
+
             int rowIndex = recordIndex + 1;
 
             foreach (var skuForTargetReport in skusForTargetReport)
             {
                 foreach (var targetCell in targetCells)
-                {
-                    // Get color for status 
-                    // if(isMainReport && targetCell.ColNumber == 7) 
-                    // {
-                    //    targetCell.CellSettings.SetCellFillColor(skuForTargetReport.FillColor);
-                    // }
-         
+                {   
                     object? value = null;
 
                     switch (targetCell.ParsingTypeCode)
@@ -520,10 +523,10 @@ namespace TableAnalizer.Objects.Managers
                     {
                         // Set value for cell 
                         ExcelRange? tableCell = worksheet.Cells[rowIndex, targetCell.ColNumber];
-    
+
                         try
                         {
-                            ApplySettingsToTableCell(ref tableCell, value, targetCell);
+                            ApplySettingsToTableCell(ref tableCell, value, targetCell, isMainReport, skuForTargetReport.FillColor, statusColNumber);
                         }
                         catch (Exception ex)
                         {
@@ -536,10 +539,16 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        private static void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell) 
+        private static void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell, bool isMainReport, Color statusColor, int? statusColNumber) 
         {
             // Add value to cell 
             tableCell.Value = value;
+            
+            // Get color for status 
+            if(isMainReport && statusColNumber != null && tableCell.Start.Column == statusColNumber) 
+            {
+                tableCell.Style.Fill.SetBackground(statusColor);
+            }   
 
             //Add number format to cell 
             tableCell.Style.Numberformat.Format = targetCell.Format;

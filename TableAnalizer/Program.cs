@@ -107,7 +107,7 @@ internal class Program
 
         if(isRawReport is null) 
         {
-            throw new ArgumentNullException("'isRawReport' is not defined");
+            throw new ArgumentNullException(nameof(isRawReport));
         } 
         else 
         {
