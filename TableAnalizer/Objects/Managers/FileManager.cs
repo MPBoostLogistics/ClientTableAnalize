@@ -388,13 +388,6 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        // TODO: Описать функционал 
-        public static bool DeleteExistingFile(string path)
-        {
-            if (File.Exists(path))File.Delete(path);
-            return !File.Exists(path);
-        }
-
         /// ???        
         static readonly string persDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
         /// ???

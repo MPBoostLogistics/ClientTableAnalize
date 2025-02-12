@@ -8,6 +8,8 @@ using OfficeOpenXml.Style;
 using System.Diagnostics;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
 using System.Threading.Tasks;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -19,9 +21,9 @@ namespace TableAnalizer.Objects.Managers
         public const string THIRD_ROOM_NAME = "3 - Помещение упаковки и отгрузки";
         public const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
         public const int LAST_MARKER_KEY_OFFSET = 2;
-        public const string OUTPUT_REPORT_WORKSHEET01_NAME = "Отчет по логистике";
-        public const string OUTPUT_REPORT_WORKSHEET02_NAME = "Отчет по задержкам";
-        public const string OUTPUT_REPORT_WORKSHEET03_NAME = "Отчет по перерасходам";
+        public const string OUTPUT_REPORT_MAINREPORT_NAME = "Отчет по логистике";
+        public const string OUTPUT_REPORT_DELAYREPORT_NAME = "Отчет по задержкам";
+        public const string OUTPUT_REPORT_OVERRUNSREPORT_NAME = "Отчет по перерасходам";
         public const string COMPENSATION_REPORT_WORKSHEET_NAME = "Недостачи";
         public const string RESORTS_REPORT_WORKSHEET_NAME = "Пересорты";
         public const string PARALLEL_SKUS_WORKSHEET_NAME = "Параллельные";
@@ -119,35 +121,35 @@ namespace TableAnalizer.Objects.Managers
 
         public static List<SourceColumn> TransferSourceCells { get; } = new()
         {
-            new(4, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(34, "SKUShippedCount", ParsingTypeCode.IntTypeCode, true)
+            new(4, nameof(SKUShippedDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(34, nameof(SKUShippedDataUnit.SKUShippedCount), ParsingTypeCode.IntTypeCode, true)
         };
 
         public static List<SourceColumn> CompensationSourceCells { get; } = new()
         {
-            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(2, "CompensationCount", ParsingTypeCode.IntTypeCode, true),
-            new(3, "CompensationSum", ParsingTypeCode.DoubleTypeCode, true),
-            new(4, "CompensationComment", ParsingTypeCode.StringTypeCode, false)
+            new(1, nameof(SKUCompensationDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(2, nameof(SKUCompensationDataUnit.CompensationCount), ParsingTypeCode.IntTypeCode, true),
+            new(3, nameof(SKUCompensationDataUnit.CompensationSum), ParsingTypeCode.DoubleTypeCode, true),
+            new(4, nameof(SKUCompensationDataUnit.CompensationComment), ParsingTypeCode.StringTypeCode, false)
         };
 
         public static List<SourceColumn> ResortSourceCells { get; } = new()
         {
-            new(1, "SKUFromResortNumber", ParsingTypeCode.IntTypeCode, true),
-            new(2, "SKUToResortNumber", ParsingTypeCode.IntTypeCode, true),
-            new(3, "SKUToResortNumberCount", ParsingTypeCode.IntTypeCode, true),
-            new(4, "ResortComment", ParsingTypeCode.StringTypeCode, false)
+            new(1, nameof(SKUResortDataUnit.SKUFromResortNumber), ParsingTypeCode.IntTypeCode, true),
+            new(2, nameof(SKUResortDataUnit.SKUToResortNumber), ParsingTypeCode.IntTypeCode, true),
+            new(3, nameof(SKUResortDataUnit.SKUToResortNumberCount), ParsingTypeCode.IntTypeCode, true),
+            new(4, nameof(SKUResortDataUnit.ResortComment), ParsingTypeCode.StringTypeCode, false)
         };
 
         public static List<SourceColumn> ParellelSkusSourceCells { get; } = new()
         {
-            new(1, "SKUNumber", ParsingTypeCode.IntTypeCode, true)
+            new(1, nameof(SKUParallelUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true)
         };
         
         public static List<SourceColumn> WriteOffShortagesSourceCells { get; } = new() 
         {
-            new(5, "SKUNumber", ParsingTypeCode.IntTypeCode, true),
-            new(39, "SKUWriteOffCount", ParsingTypeCode.IntTypeCode, true)
+            new(5, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(39, nameof(SKUWriteOffDataUnit.SKUWriteOffCount), ParsingTypeCode.IntTypeCode, true)
         };     
 
         public static List<SourceColumn> ClientReportSourceCells { get; } =
@@ -382,7 +384,7 @@ namespace TableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => [RANSOMS_WORKSHEET_NAME],
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer or SourceSKUReportFileKey.WriteOffShortages => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
                 SourceSKUReportFileKey.Additional => [COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
-                SourceSKUReportFileKey.Client => [OUTPUT_REPORT_WORKSHEET01_NAME],
+                SourceSKUReportFileKey.Client => [OUTPUT_REPORT_MAINREPORT_NAME],
                 _ => null,
             };
             return workSheetNames is not null && workSheetNames.Any();
@@ -403,62 +405,115 @@ namespace TableAnalizer.Objects.Managers
             List<List<int>>? rangeForGrouping;
 
             // Make main report
-            sheetName = OUTPUT_REPORT_WORKSHEET01_NAME;
+            sheetName = OUTPUT_REPORT_MAINREPORT_NAME;
             targetCells = cellsReportingMain;
             rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
             actualData = skuForTargetReports;
-            CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? mainOutputReportSheet, Colors[SKUSellmentStatus.FullSet]);
-            FillingСellsWithData(true, ref mainOutputReportSheet, in actualData, targetCells); 
+            CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? mainOutputReportSheet, Colors[SKUSellmentStatus.FullSet], isTracing);
+            
+            try
+            {
+                var fillingСellsWithDataTask = FillingСellsWithData(sheetName == OUTPUT_REPORT_MAINREPORT_NAME, mainOutputReportSheet, actualData, targetCells, isTracing); 
+                await Task.Run(() => fillingСellsWithDataTask);
+                fillingСellsWithDataTask.Wait();
+                mainOutputReportSheet = fillingСellsWithDataTask.Result;
+            }
+            catch (System.Exception ex)
+            {
+                Trace.WriteLine(ex.Message);
+                throw;
+            }
+            
             SetupTableHeader(in targetCells, ref mainOutputReportSheet);
             AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, in rangeForGrouping);
 
             if(isTracing) 
             {
-                Trace.WriteLine($"Лист '{OUTPUT_REPORT_WORKSHEET01_NAME}' создан.");
-                await Task.Delay(100);
+                Trace.WriteLine($"Лист '{OUTPUT_REPORT_MAINREPORT_NAME}' создан.");
             }
             
             // Make delay report
             if(!isRawReport) 
             {
+                if(isTracing) 
+                {
+                    Trace.WriteLine($"Создаю лист '{OUTPUT_REPORT_DELAYREPORT_NAME}'...");
+                }
                 actualData = [.. skuForTargetReports
                     .Where(el => el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.OnSearchPoints || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouseAndPoints))];
-                sheetName = OUTPUT_REPORT_WORKSHEET02_NAME;
+                sheetName = OUTPUT_REPORT_DELAYREPORT_NAME;
                 targetCells = cellsReportingDelays;
                 rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
-                CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? delayOutputReportSheet, Colors[SKUSellmentStatus.OnSearchWarehouse]);
-                FillingСellsWithData(false, ref delayOutputReportSheet, in actualData, targetCells); 
+                CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? delayOutputReportSheet, Colors[SKUSellmentStatus.OnSearchWarehouse], isTracing);
+
+                try
+                {
+                    var fillingСellsWithDataTask = FillingСellsWithData(sheetName == OUTPUT_REPORT_MAINREPORT_NAME, delayOutputReportSheet, actualData, targetCells, isTracing); 
+                    await Task.Run(() => fillingСellsWithDataTask);
+                    fillingСellsWithDataTask.Wait();
+
+                    delayOutputReportSheet = fillingСellsWithDataTask.Result;
+
+                }
+                catch (System.Exception ex)
+                {
+                    Trace.WriteLine(ex.Message);
+                    throw;
+                }
+
+                
                 SetupTableHeader(in targetCells, ref delayOutputReportSheet);
                 AddFilterAndAccentInWorkSheet(ref delayOutputReportSheet, in rangeForGrouping); 
 
                 if(isTracing) 
                 {
-                    Trace.WriteLine($"Лист '{OUTPUT_REPORT_WORKSHEET02_NAME}' создан.");
-                    await Task.Delay(100);
+                    Trace.WriteLine($"Лист '{OUTPUT_REPORT_DELAYREPORT_NAME}' создан.");
                 }
             }
  
             // Make overruns report
             if(!isRawReport) 
             {
+                if(isTracing) 
+                {
+                    Trace.WriteLine($"Создаю лист '{OUTPUT_REPORT_OVERRUNSREPORT_NAME}'...");
+                }
+
                 actualData = [.. skuForTargetReports
                             .Where(el => el.SKUOverrunsSum > 0.00)];
-                sheetName = OUTPUT_REPORT_WORKSHEET03_NAME;
+                sheetName = OUTPUT_REPORT_OVERRUNSREPORT_NAME;
                 targetCells = cellsReportingOverruns;
                 rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
-                CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? overrunsOutputReportSheet, Colors[SKUSellmentStatus.Unknown]);
-                FillingСellsWithData(false, ref overrunsOutputReportSheet, in actualData, targetCells); 
+                CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? overrunsOutputReportSheet, Colors[SKUSellmentStatus.Unknown], isTracing);
+                
+                try
+                {
+                    var fillingСellsWithDataTask =  FillingСellsWithData(sheetName == OUTPUT_REPORT_MAINREPORT_NAME, overrunsOutputReportSheet, actualData, targetCells, isTracing); 
+                    await Task.Run(() => fillingСellsWithDataTask);
+                    fillingСellsWithDataTask.Wait();
+                    overrunsOutputReportSheet = fillingСellsWithDataTask.Result;
+                }
+                catch (System.Exception ex)
+                {
+                    Trace.WriteLine(ex.Message);
+                    throw;
+                }
+                
+                
                 SetupTableHeader(in targetCells, ref overrunsOutputReportSheet);
                 AddFilterAndAccentInWorkSheet(ref overrunsOutputReportSheet, in rangeForGrouping); 
 
                 if(isTracing) 
                 {
-                    Trace.WriteLine($"Лист '{OUTPUT_REPORT_WORKSHEET03_NAME}' создан.");
-                    await Task.Delay(100);
+                    Trace.WriteLine($"Лист '{OUTPUT_REPORT_OVERRUNSREPORT_NAME}' создан.");
                 }
             }
 
             // Save work
+            if(isTracing) 
+            {
+                Trace.WriteLine($"Сохраняю выполенную работу...");
+            }
             var isSaveWork = false;
             if(SaveReceivedData(FileManager.OutputClientReportFilePath, ref outputPackage)) 
             {
@@ -466,11 +521,19 @@ namespace TableAnalizer.Objects.Managers
                 if(isTracing) 
                 {
                     Trace.WriteLine($"Сохранение новой книги по указанному пути завершено.");
-                    await Task.Delay(100);
+                }
+            } 
+            else 
+            {
+                if(isTracing) 
+                {
+                    Trace.WriteLine($"Ошибка в сохранении работы.");
                 }
             }
 
             outputPackage.Dispose();
+
+            await Task.Delay(1000);
 
             return isSaveWork;
         }
@@ -483,8 +546,13 @@ namespace TableAnalizer.Objects.Managers
                     select range.ToList();
         }
 
-        public void FillingСellsWithData(bool isMainReport, ref ExcelWorksheet worksheet, in List<SKUForTargetReports> skusForTargetReport, TargetCell[] targetCells, int recordIndex = 1)
+        public Task<ExcelWorksheet> FillingСellsWithData(bool isMainReport, ExcelWorksheet worksheet, List<SKUForTargetReports> skusForTargetReport, TargetCell[] targetCells, bool isTracing, int recordIndex = 1)
         {
+            var result = worksheet;
+
+            if(isTracing)
+                Trace.WriteLine($"Fill in Excel sheet with the name '{result.Name}'...");
+
             // Get status column number
             int? statusColNumber = null;
             if(isMainReport) 
@@ -546,14 +614,14 @@ namespace TableAnalizer.Objects.Managers
                             }
                             break;
                         default:
-                            break;
+                            throw new Exception ("ParsingTypeCode при заполнении ячеек не определен!");
                     }
 
                     if (value is not null)
                     {
                         // Set value for cell 
-                        ExcelRange? tableCell = worksheet.Cells[rowIndex, targetCell.ColNumber];
-
+                        ExcelRange tableCell = result.Cells[rowIndex, targetCell.ColNumber] ?? 
+                            throw new Exception($"tableCell for rowIndex {rowIndex} && colNumber {targetCell.ColNumber} is NULL!");
                         try
                         {
                             ApplySettingsToTableCell(ref tableCell, value, targetCell, isMainReport, skuForTargetReport.FillColor, statusColNumber);
@@ -563,10 +631,19 @@ namespace TableAnalizer.Objects.Managers
                             Trace.WriteLine(ex.Message);
                             throw;
                         }
+                    } 
+                    else 
+                    {
+                        throw new Exception($"When filling in the cells on sheet, the value for '{targetCell.ColName}' turned out to be NULL!");
                     }
                 }
                 rowIndex++;
             }
+
+            if(isTracing)
+                Trace.WriteLine($"Excel sheet named '{result.Name}'is filled with data.");
+            
+            return Task.Run(() => result);
         }
 
         private static void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell, bool isMainReport, Color statusColor, int? statusColNumber) 
@@ -642,10 +719,11 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="worksheet">Excel worksheet that is created.</param>
         /// <param name="tabColor">Worksheet label (tab) color.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public static void CreateExcelWorkSheet(string workSheetName, in ExcelPackage excelPackage, out ExcelWorksheet worksheet, System.Drawing.Color tabColor)
+        public static void CreateExcelWorkSheet(string workSheetName, in ExcelPackage excelPackage, out ExcelWorksheet worksheet, System.Drawing.Color tabColor, bool isTracing)
         {
             // Remove existing worksheet
-            var existingWorksheet = excelPackage.Workbook.Worksheets.SingleOrDefault(x => x.Name == workSheetName);
+            var existingWorksheet = excelPackage.Workbook.Worksheets
+                                        .SingleOrDefault(x => x.Name == workSheetName);
             if (existingWorksheet is not null) excelPackage.Workbook.Worksheets.Delete(existingWorksheet);
 
             // Create net worksheet
@@ -655,6 +733,9 @@ namespace TableAnalizer.Objects.Managers
             worksheet.TabColor = tabColor;
             worksheet.DefaultRowHeight = DEFAULT_TABLE_ROW_HEIGHT;
             worksheet.DefaultColWidth = DEFAULT_TABLE_COL_WIDTH;
+
+            if(isTracing)
+                Trace.WriteLine($"Excel sheet named '{worksheet.Name}' created.");
         }
 
         private static void SetupTableHeader(in TargetCell[] resultCells, ref ExcelWorksheet worksheet, double headerRowHeight = HEADER_TABLE_ROW_HEIGHT)

@@ -226,11 +226,37 @@ internal class Program
             }
 
             // Delete old logistic report 
-            FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
-            var skusForTargetReport = skuManager.MakeSkusForTargetReport((bool)isRawReport!, isMulty, delay);
-            Task<bool>? saveWorkTask = excelManager.MakeReports(skusForTargetReport, (bool)isRawReport,isTracing);
-            await Task.Run(() => saveWorkTask);
-            saveWorkTask.Wait();
+            if(isTracing) 
+            {
+                Trace.WriteLine($"Удаляю старый файлы по пути {FileManager.OutputClientReportFilePath}...");
+            }
+            if(FileService.DeleteFileAtPath(FileManager.OutputClientReportFilePath)) 
+            {
+                Trace.WriteLine("Старые файлы удалены.");
+            } 
+            else 
+            {
+                Trace.WriteLine("Ошибка в удалении старых файлов.");
+                await Task.Delay(delay);
+            }
+            
+            Task<List<SKUForTargetReports>>? skusForTargetReportTask = skuManager.MakeSkusForTargetReport((bool)isRawReport!, isMulty, delay);
+            await Task.Run(() => skusForTargetReportTask);
+            skusForTargetReportTask.Wait();
+
+            if(isTracing) 
+            {
+                Trace.WriteLine($"Артикулов для итогового отчета: {skusForTargetReportTask.Result.Count}.");
+            }
+
+            // Save work 
+            if(isTracing) 
+            {
+                Trace.WriteLine("Сохраняю текущую работу по отчету...");
+            }
+            Task<bool>? makeReportTask = excelManager.MakeReports(skusForTargetReportTask.Result, (bool)isRawReport,isTracing);
+            await Task.Run(() => makeReportTask);
+            makeReportTask.Wait();
 
             // Report 
             var completedMessage = $"Отчет логистики сохранен по пути: {FileManager.OutputClientReportFilePath}\n";
@@ -242,6 +268,11 @@ internal class Program
             await Report(string.Concat("Нет отчетов, доступных для анализа\n", goodByMessage), 2000, true);
         }
 
+            
+        if(isTracing) 
+        {
+            Trace.WriteLine("Exiting the program");
+        }
         await Exit();
     }
 
@@ -280,11 +311,14 @@ internal class Program
         additionalTask?.Wait();
 
         // Delete old report 
-        FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
+        FileService.DeleteFileAtPath(FileManager.OutputClientReportFilePath);
 
         // Make new report 
-        var skusForTargetReport = skuManager.MakeSkusForTargetReport((bool)isRawReport!, isMulty, delay);
-        var saveWorkTask = excelManager.MakeReports(skusForTargetReport, (bool)isRawReport, isTracing);
+        Task<List<SKUForTargetReports>>? skusForTargetReportTask = skuManager.MakeSkusForTargetReport((bool)isRawReport!, isMulty, delay);
+        await Task.Run(() => skusForTargetReportTask);
+        skusForTargetReportTask.Wait();
+        
+        var saveWorkTask = excelManager.MakeReports(skusForTargetReportTask.Result, (bool)isRawReport, isTracing);
         await Task.Run(() => saveWorkTask);
         saveWorkTask.Wait();
 

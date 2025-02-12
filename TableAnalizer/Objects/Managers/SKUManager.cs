@@ -211,7 +211,7 @@ namespace TableAnalizer.Objects.Managers
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isParellel = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
-            bool isClient = reportFileKey == SourceSKUReportFileKey.Client && workSheetName == ExcelManager.OUTPUT_REPORT_WORKSHEET01_NAME;
+            bool isClient = reportFileKey == SourceSKUReportFileKey.Client && workSheetName == ExcelManager.OUTPUT_REPORT_MAINREPORT_NAME;
 
             if (isRansoms)
             {
@@ -571,7 +571,7 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        public List<SKUForTargetReports> MakeSkusForTargetReport(bool isRawReport, bool isMulty, int traceDelay) 
+        public async Task<List<SKUForTargetReports>> MakeSkusForTargetReport(bool isRawReport, bool isMulty, int traceDelay) 
         {
             List<SKUForTargetReports> skuForTargetReports = [];
             foreach (var (_, targetSku) in SKUs.GetValuesList())
@@ -590,7 +590,10 @@ namespace TableAnalizer.Objects.Managers
                 
                 skuForTargetReports.Add(newValue);
             }
-            return [.. skuForTargetReports.OrderByDescending(el => el.SKUDate)];
+
+            await Task.Delay(10); // dummy 
+            
+            return skuForTargetReports;
         }
         
         #endregion
