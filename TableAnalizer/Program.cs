@@ -24,6 +24,7 @@ internal class Program
     private static string goodByMessage = "\n Спасибо за использование программы. Хорошего дня!";
     private static bool? isRawReport = null;
     private static bool isMulty;
+    private static readonly bool isTracing = true;
     #endregion
 
     #region Properties 
@@ -227,7 +228,9 @@ internal class Program
             // Delete old logistic report 
             FileManager.DeleteExistingFile(FileManager.OutputClientReportFilePath);
             var skusForTargetReport = skuManager.MakeSkusForTargetReport((bool)isRawReport!, isMulty, delay);
-            excelManager.MakeReports(skusForTargetReport, (bool)isRawReport);
+            Task<bool>? saveWorkTask = excelManager.MakeReports(skusForTargetReport, (bool)isRawReport,isTracing);
+            await Task.Run(() => saveWorkTask);
+            saveWorkTask.Wait();
 
             // Report 
             var completedMessage = $"Отчет логистики сохранен по пути: {FileManager.OutputClientReportFilePath}\n";
@@ -281,7 +284,9 @@ internal class Program
 
         // Make new report 
         var skusForTargetReport = skuManager.MakeSkusForTargetReport((bool)isRawReport!, isMulty, delay);
-        excelManager.MakeReports(skusForTargetReport, (bool)isRawReport);
+        var saveWorkTask = excelManager.MakeReports(skusForTargetReport, (bool)isRawReport, isTracing);
+        await Task.Run(() => saveWorkTask);
+        saveWorkTask.Wait();
 
         // Report 
         var completedMessage = $"Отчет логистики сохранен по пути: {FileManager.OutputClientReportFilePath}\n";

@@ -388,7 +388,7 @@ namespace TableAnalizer.Objects.Managers
             return workSheetNames is not null && workSheetNames.Any();
         }
 
-        public void MakeReports(List<SKUForTargetReports> skuForTargetReports, bool isRawReport) 
+        public async Task<bool> MakeReports(List<SKUForTargetReports> skuForTargetReports, bool isRawReport, bool isTracing) 
         {
             if(string.IsNullOrEmpty(FileManager.OutputClientReportFilePath)) 
                 throw new Exception("Output client report file path cannot be empty!");
@@ -412,6 +412,12 @@ namespace TableAnalizer.Objects.Managers
             SetupTableHeader(in targetCells, ref mainOutputReportSheet);
             AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, in rangeForGrouping);
 
+            if(isTracing) 
+            {
+                Trace.WriteLine($"Лист '{OUTPUT_REPORT_WORKSHEET01_NAME}' создан.");
+                await Task.Delay(100);
+            }
+            
             // Make delay report
             if(!isRawReport) 
             {
@@ -424,6 +430,12 @@ namespace TableAnalizer.Objects.Managers
                 FillingСellsWithData(false, ref delayOutputReportSheet, in actualData, targetCells); 
                 SetupTableHeader(in targetCells, ref delayOutputReportSheet);
                 AddFilterAndAccentInWorkSheet(ref delayOutputReportSheet, in rangeForGrouping); 
+
+                if(isTracing) 
+                {
+                    Trace.WriteLine($"Лист '{OUTPUT_REPORT_WORKSHEET02_NAME}' создан.");
+                    await Task.Delay(100);
+                }
             }
  
             // Make overruns report
@@ -438,11 +450,29 @@ namespace TableAnalizer.Objects.Managers
                 FillingСellsWithData(false, ref overrunsOutputReportSheet, in actualData, targetCells); 
                 SetupTableHeader(in targetCells, ref overrunsOutputReportSheet);
                 AddFilterAndAccentInWorkSheet(ref overrunsOutputReportSheet, in rangeForGrouping); 
+
+                if(isTracing) 
+                {
+                    Trace.WriteLine($"Лист '{OUTPUT_REPORT_WORKSHEET03_NAME}' создан.");
+                    await Task.Delay(100);
+                }
             }
 
             // Save work
-            SaveReceivedData(FileManager.OutputClientReportFilePath, ref outputPackage);
+            var isSaveWork = false;
+            if(SaveReceivedData(FileManager.OutputClientReportFilePath, ref outputPackage)) 
+            {
+                isSaveWork = true;
+                if(isTracing) 
+                {
+                    Trace.WriteLine($"Сохранение новой книги по указанному пути завершено.");
+                    await Task.Delay(100);
+                }
+            }
+
             outputPackage.Dispose();
+
+            return isSaveWork;
         }
 
         private static IEnumerable<List<int>>? GetRangeForGrouping(in TargetCell[] targetCells)
@@ -594,12 +624,14 @@ namespace TableAnalizer.Objects.Managers
         /// Saves received data to an Excel workbook file.
         /// </summary>
         /// <param name="path">Directory to save file.</param>
-        public static void SaveReceivedData(string path, ref ExcelPackage package)
+        public static bool SaveReceivedData(string path, ref ExcelPackage package)
         {
             FileStream? fileStream = File.Create(path);
             fileStream.Close();
 
             File.WriteAllBytes(path, package.GetAsByteArray());
+
+            return File.Exists(path);
         }
 
         /// <summary>
