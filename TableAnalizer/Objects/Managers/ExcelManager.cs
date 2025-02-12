@@ -424,6 +424,8 @@ namespace TableAnalizer.Objects.Managers
                 throw;
             }
             
+            Trace.WriteLine("Hello!");
+
             SetupTableHeader(in targetCells, ref mainOutputReportSheet);
             AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, in rangeForGrouping);
 
@@ -567,6 +569,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var targetCell in targetCells)
                 {   
+
                     object? value = null;
 
                     switch (targetCell.ParsingTypeCode)
@@ -638,6 +641,8 @@ namespace TableAnalizer.Objects.Managers
                     }
                 }
                 rowIndex++;
+                if(isTracing)
+                    Trace.WriteLine(rowIndex);
             }
 
             if(isTracing)
@@ -676,6 +681,9 @@ namespace TableAnalizer.Objects.Managers
             // Apply font settings 
             tableCell.Style.Font.Size = targetCell.CellSettings.TextSize;
             tableCell.Style.Font.Bold = targetCell.CellSettings.IsTextBold;
+
+            // Set text color
+            tableCell.Style.Font.Color.SetColor(targetCell.CellSettings.TextСolor);
 
             // Checking predicate condition
             if(targetCell.ValueСheckingPredicate is not null) 

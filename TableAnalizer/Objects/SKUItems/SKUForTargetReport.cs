@@ -219,7 +219,7 @@ namespace TableAnalizer.Objects.SKUItems
             // Калькуляция пересоров 
             if (!isRawReport)
             {
-                CalcResorts(sku, resortFromSkusValues);
+                //CalcResorts(sku, resortFromSkusValues);
             }
 
             // Расчет недовозов от склада

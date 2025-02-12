@@ -113,7 +113,7 @@ namespace TableAnalizer.Objects.SKUItems
 
                     //  выкупы
                     case ransomsKey:
-                        if (SplitStringIntoSubstrings(substrings.Last(), new string [] {comaSeparator}, out string[]? mpStrings) &&
+                        if (SplitStringIntoSubstrings(substrings.Last(), [comaSeparator], out string[]? mpStrings) &&
                             mpStrings != null)
                         {
                             var mpString = mpStrings.First().Trim().ToLower();

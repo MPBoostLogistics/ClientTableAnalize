@@ -25,6 +25,10 @@ internal class Program
     private static bool? isRawReport = null;
     private static bool isMulty;
     private static readonly bool isTracing = true;
+    private static readonly int tracingDelay = 1000;
+
+    private const string TRACE_INFO_FLAG = "[INFO]: "; 
+    private const string TRACE_ERROR_FLAG = "[ERROR]: "; 
     #endregion
 
     #region Properties 
@@ -40,12 +44,12 @@ internal class Program
 
         Trace.Listeners.Add(new ConsoleTraceListener());
 
-        await AnalyzeСlientReports(1000);
+        await Analyze(1000);
 
         Trace.Flush();
     }
     
-    private static async Task AnalyzeСlientReports(int delay)
+    private static async Task Analyze(int delay)
     {
         ConsoleKey[] allowedConsoleKeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
 
@@ -71,7 +75,7 @@ internal class Program
         {
             Console.WriteLine("Выберите допустимую клавишу.");
             await Task.Delay(delay);
-            await AnalyzeСlientReports(delay);
+            await Analyze(delay);
         } 
         else 
         {
@@ -108,12 +112,11 @@ internal class Program
 
         if(isRawReport is null) 
         {
-            throw new ArgumentNullException(nameof(isRawReport));
+            throw new Exception(nameof(isRawReport));
         } 
         else 
         {
-            Trace.WriteLine("Report analysis task has started.");
-            await Task.Delay(delay);
+            await TracingProgramExecution(TRACE_INFO_FLAG, "Report analysis task has started.");
             await Task.Run(() => reportTask);
         }
             
@@ -434,7 +437,7 @@ internal class Program
             await Exit();
     }
 
-    private static async Task<int> GetDeadlineDaysFromConsole(int delay)  
+    private static async Task<int> GetDeadlineDaysFromConsole()  
     {
         int minNumber = 14, maxNumber = 45;
 
@@ -448,9 +451,8 @@ internal class Program
         } 
         else 
         {
-            await Report("Неверное значание, повторите попытку.");
-            await Task.Delay(delay);
-            return await GetDeadlineDaysFromConsole(delay);
+            await TracingProgramExecution(TRACE_ERROR_FLAG, "Invalid value, please try again.");
+            return await GetDeadlineDaysFromConsole();
         }
     }
 
@@ -511,55 +513,84 @@ internal class Program
         }
     }
     
-    private static async Task<List<SourceSKUReportFileKey>?> GetDataFromConsole(bool isMulty, int delay = 1500) 
+    private static async Task<List<SourceSKUReportFileKey>?> GetDataFromConsole(bool isMulty) 
     {
         // Get deadline days
         while(skuManager.DeadlineDays <= 0) 
         {
-            Task<int> deadLineDaysTask = GetDeadlineDaysFromConsole(delay);
+            Task<int> deadLineDaysTask = GetDeadlineDaysFromConsole();
             await Task.Run(() => deadLineDaysTask);
             deadLineDaysTask.Wait();
             skuManager.SetDeadlineDays(deadLineDaysTask.Result);
         }
-        Trace.WriteLine($"Deadline set, days: {skuManager.DeadlineDays}");
-        await Task.Delay(1000);
+        await TracingProgramExecution(TRACE_INFO_FLAG, $"Deadline set, days: {skuManager.DeadlineDays}");
 
         // Get source reports path
         DirectoryInfo? getSourceReportDirInfo = null;
         while(getSourceReportDirInfo is null) 
         {
-            Task<DirectoryInfo?> getSourceReportsPathTask = GetSourceReportsPathFromConsole(delay);
+            Task<DirectoryInfo?> getSourceReportsPathTask = GetSourceReportsPathFromConsole(tracingDelay);
             await Task.Run(() => getSourceReportsPathTask);
             getSourceReportsPathTask.Wait();
             getSourceReportDirInfo = getSourceReportsPathTask.Result;
         } 
         Console.Clear();
-        Trace.WriteLine($"Reports path: {getSourceReportDirInfo.FullName}");
-        await Task.Delay(1000);
+        await TracingProgramExecution(TRACE_INFO_FLAG, $"Reports path: {getSourceReportDirInfo.Name}");
 
         // Availability necessary reports
         List<SourceSKUReportFileKey>? existingKeys = null;
         while(existingKeys is null) 
         {
-            Task<List<SourceSKUReportFileKey>?> availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, isMulty, delay);
+            Task<(List<SourceSKUReportFileKey>? keys, string message, bool isError)>?  availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, isMulty, isTracing, tracingDelay);
             await Task.Run(() => availabilityNecessaryTask);
             availabilityNecessaryTask.Wait();
-            existingKeys = availabilityNecessaryTask.Result;
+            existingKeys = availabilityNecessaryTask.Result.keys;
+
+            if(availabilityNecessaryTask.Result.isError) 
+            {
+                ConsoleAppService.ConsoleAppExit(availabilityNecessaryTask.Result.message);
+            } 
+            else 
+            {
+                await TracingProgramExecution(TRACE_INFO_FLAG, availabilityNecessaryTask.Result.message);
+            }
         }
 
         // Get a "raw" report or not
         while(isRawReport is null) 
         {
-            Task<bool> getCreateRawReportTask = GetCreateRawReportFromConsole(delay);
+            Task<bool> getCreateRawReportTask = GetCreateRawReportFromConsole(tracingDelay);
             await Task.Run(() => getCreateRawReportTask);
             getCreateRawReportTask.Wait();
             isRawReport = getCreateRawReportTask.Result;
         }
         Console.Clear();
-        Trace.WriteLine($"This is raw report: {isRawReport}");
-        await Task.Delay(1000);
+
+        await TracingProgramExecution(TRACE_INFO_FLAG, $"This is raw report: {isRawReport}");
 
         return existingKeys; 
+    }
+
+    private static async Task TracingProgramExecution(string flag, string message) 
+    {
+        if(isTracing) 
+        {
+            switch (flag) 
+            {
+                case TRACE_INFO_FLAG:
+                    Console.ForegroundColor = ConsoleColor.DarkBlue;
+                    break;
+                case TRACE_ERROR_FLAG:
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    break;
+                default:
+                    break;
+            }
+
+            Trace.WriteLine($"{flag}{message}");
+            await Task.Delay(tracingDelay);
+            Console.ResetColor();
+        }
     }
     #endregion
 }

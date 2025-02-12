@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
+using CSharpHelpers.Services;
 using TableAnalizer.Objects.SKUItems;
 
 namespace TableAnalizer.Objects.Managers
@@ -56,26 +57,40 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <param name="reportsPath">Directory with client reports.</param>
         /// <returns>List of existing keys as Task result.</returns>
-        public async Task<List<SourceSKUReportFileKey>?> ChecksAvailabilityNecessaryFiles(string reportsPath, bool isMulty, int delay)
+        public async Task<(List<SourceSKUReportFileKey>? keys, string message, bool isError)> ChecksAvailabilityNecessaryFiles(string reportsPath, bool isMulty, bool isTracing, int tracingDelay)
         {
-            ManagerReachedEventArgs? args = null;
+            List<SourceSKUReportFileKey> existingKeys = [];
+            string message = string.Empty;
+            bool isError = false;
 
             try
             {
-                Task<int> getFilesTask = GetReportFiles(reportsPath, isMulty, delay);
+                Task<(int count, string message, bool isError)> getFilesTask = GetReportFiles(reportsPath, isMulty, tracingDelay);
                 await Task.Run(() => getFilesTask);
                 getFilesTask.Wait();
-   
-                var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, isMulty, delay);
+
+                var getReportFilesResult = getFilesTask.Result;
+
+                if(getReportFilesResult.count == 0 || getReportFilesResult.isError) 
+                {
+                    ConsoleAppService.ConsoleAppExit(getReportFilesResult.message);
+                } 
+                else if(isTracing)
+                {
+                    Trace.WriteLine(getReportFilesResult.message);
+                    await Task.Delay(tracingDelay);
+                }
+
+                var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out existingKeys, isMulty, tracingDelay);
                 
                 if(!success) 
                 {
                     switch (isMulty)
                     {
                         case true:
-                            await Task.Delay(delay);
-                            args = new("There is not enough reports (>1) to generate a summary.", delay, true);
-                            return null;
+                            message = "There is not enough reports (>1) to generate a summary.";
+                            isError = true;
+                            break;
                         case false:
                             switch(lostKeys.Count > 0) 
                             {
@@ -85,32 +100,24 @@ namespace TableAnalizer.Objects.Managers
 
                                     foreach (var lostKey in lostKeys)
                                         lostKeysBuilder.Append(string.Concat(lostKey, !Equals(lostKey, lastKey) ? ", " : ". "));
-
-                                    await Task.Delay(delay);
-                                    args = new(lostKeysBuilder.ToString(), delay, true);
-                                    return null;
+                                    message = lostKeysBuilder.ToString();
+                                    isError = true;
+                                    break;
     
                                 case false:
-                                    return null;
+                                    break;
                             }
+                            break;
                     }
-                }
-                else 
-                {
-                    return existingKeys;
                 }
             }
             catch (Exception ex)
             {
-                await Task.Delay(100);
-                args = new($"Data error: {ex.Message}\n", 2000, true);
-                return null;
+                message = $"Data error: {ex.Message}\n";
+                isError = true;
             }
-            finally
-            {
-                if (args is not null)
-                    OnManagerReached(args);
-            }
+      
+            return (existingKeys, message, isError);
         }
 
         /// <summary>
@@ -119,20 +126,21 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="dirPathString">Directory path string.</param>
         /// <returns>Number of files transferred for analysis.</returns>
         /// <exception cref="Exception">Exception for empty directory without files.</exception>
-        /// <remarks><i>New version, tested</i></remarks>
-        public async Task<int> GetReportFiles(string dirPathString, bool isMulty, int delay)
+        public async Task<(int count, string message, bool error)> GetReportFiles(string dirPathString, bool isMulty, int delay)
         {
-            ManagerReachedEventArgs? args = default;
+            var count = 0;
+            StringBuilder message = new();
+            var error = false;
 
             var files = GetFilesFromDirectory(dirPathString, EXCEL_FILE_EXTENSION);
             if (files is null || !files.Any())
             {
-                args = new ManagerReachedEventArgs("Directory with files for processing does not exist or is empty, check it.", delay, false);
+                message.Append("Directory with files for processing does not exist or is empty, check it.");
+                error = true;
             }
             else
             {
-                Trace.WriteLine($"Number of files in dir with ext \"{EXCEL_FILE_EXTENSION}s\": {files!.Count()}");
-                await Task.Delay(delay);
+                message.Append($"\nNumber of files in dir with ext \"{EXCEL_FILE_EXTENSION}s\": {files!.Count()}");
 
                 foreach (var fileInfo in files!)
                 {
@@ -171,21 +179,21 @@ namespace TableAnalizer.Objects.Managers
                     }
                     catch (Exception ex)
                     {
-                        args = new($"Error SourceReportFileForSKU create: {ex.Message}", delay, true);
-                        throw;
+                        message.Append($"\nError SourceReportFileForSKU create: {ex.Message}");
+                        error = true;
                     }
                 }
 
-                string readinessMessage = string.Empty;
-
                 if (isMulty)
                 {
+                    count = ReportsPathsMultyReport.Count;
                     var logins = string.Join(",", ReportsPathsMultyReport.Keys);
-                    readinessMessage = string.Concat($"Логины клиентов: {logins}\n", $"{ReportsPathsMultyReport.Count} файлов (-ла) готово к обработке.\n");
+                    message.Append($"\nClient logins: {logins}\n{ReportsPathsMultyReport.Count} file(s) ready for processing.");
                 }
                 else
                 {
-                    readinessMessage = string.Concat($"Логин клиента: {ClientLogin}\n", $"{ReportsPathsSingleReport.Count} файлов (-ла) готово к обработке.\n");
+                    count = ReportsPathsSingleReport.Count;
+                    message.Append($"\nClient login: {ClientLogin}\n{ReportsPathsSingleReport.Count} file(s) ready for processing.");
                 }
 
                 try
@@ -197,25 +205,22 @@ namespace TableAnalizer.Objects.Managers
 
                     if (!string.IsNullOrEmpty(clientOutputPath))
                     {
-                        readinessMessage = string.Concat(readinessMessage, $"Directory for target report: {clientOutputPath}");
+                        message.Append($"\nDirectory for target report: {clientOutputPath}");
                     }
                     else
                     {
-                        throw new Exception("Path to dir for working with client can`t be an empty string!");
+                        message.Append("\nPath to dir for working with client can`t be an empty string!");
+                        error = true;
                     }
                 }
                 catch (System.Exception ex)
                 {
-                    args = new($"DefineDirInfoForClientTargetReports Error: {ex.Message}", delay, true);
-                    throw;
+                    message.Append($"\nDefineDirInfoForClientTargetReports Error:\n{ex.Message}");
+                    error = true;
                 }
-
-                args = new(readinessMessage, 500, false);
             }
 
-            if (args != null) OnManagerReached(args);
-
-            return files is null || !files.Any() ? 0 : ReportsPathsSingleReport.Count;
+            return(count, message.ToString(), error);
         }
 
         /// <summary>
@@ -271,7 +276,6 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <param name="lostKeys">A collection of required file keys that were not provided.</param>
         /// <returns>Logical flag for performing an operation.</returns>
-        /// <remarks><i>New version, tested</i></remarks>
         public bool IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, bool isMulty, int delay)
         {
             existingKeys = lostKeys = new([]);
