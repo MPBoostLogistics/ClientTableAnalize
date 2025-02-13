@@ -11,6 +11,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using CSharpHelpers.Services;
 using OfficeOpenXml;
 using TableAnalizer.Objects;
@@ -44,7 +45,7 @@ internal class Program
 
         Trace.Listeners.Add(new ConsoleTraceListener());
 
-        await Analyze(1000);
+        await Analyze(tracingDelay);
 
         Trace.Flush();
     }
@@ -116,7 +117,7 @@ internal class Program
         } 
         else 
         {
-            await TracingProgramExecution(TRACE_INFO_FLAG, "Report analysis task has started.");
+            await TracingProgramExecution(new("Report analysis task has started...", false, false));
             await Task.Run(() => reportTask);
         }
             
@@ -264,19 +265,15 @@ internal class Program
             // Report 
             var completedMessage = $"Отчет логистики сохранен по пути: {ReportFileManager.OutputClientReportFilePath}\n";
             goodByMessage = string.Concat(completedMessage, goodByMessage);
-            await Report(goodByMessage, 2000, true);
+
+            // Exit 
+            await TracingProgramExecution(new(goodByMessage,false,true));
         }
         else
         {
-            await Report(string.Concat("Нет отчетов, доступных для анализа\n", goodByMessage), 2000, true);
+            // Error exit 
+            await TracingProgramExecution(new(string.Concat("Нет отчетов, доступных для анализа\n", goodByMessage), true, true));
         }
-
-            
-        if(isTracing) 
-        {
-            Trace.WriteLine("Exiting the program");
-        }
-        await Exit();
     }
 
     private static async Task AnalyzeMultiСlientReports(int delay) 
@@ -328,9 +325,8 @@ internal class Program
         // Report 
         var completedMessage = $"Отчет логистики сохранен по пути: {ReportFileManager.OutputClientReportFilePath}\n";
         goodByMessage = string.Concat(completedMessage, goodByMessage);
-        await Report(goodByMessage, 2000, true);
-
-        await Exit();
+        
+        await TracingProgramExecution(new(goodByMessage, false, true));
     }
 
     private static async Task<double> ReceivingAndProcessingData(SourceReportFileForSKU reportFile, bool isRawReport, bool isMulty, int delay) 
@@ -401,41 +397,7 @@ internal class Program
             Console.WriteLine($"Нет отчета по ключу {reportFileKey}");
             return 0;
         }
-    }
-
-    private static async Task Exit()
-    {
-        skuManager.ManagerReached -= Report;
-        excelManager.ManagerReached -= Report;
-        fileManager.ManagerReached -= Report;
-
-        await Task.Delay(500);
-
-        Environment.Exit(0);
-    }
-
-    private static void Report(object? sender, ManagerReachedEventArgs e)
-    {
-        Console.WriteLine();
-        Console.WriteLine(e.Message);
-        Console.WriteLine();
-
-        Task.Delay(e.Delay);
-
-        if (e.Exit)
-            Task.Run(Exit);
-    }
-
-    private static async Task Report(string message, int delay = 0, bool exit = false)
-    {
-        Console.WriteLine();
-        Console.WriteLine(message);
-
-        await Task.Delay(delay);
-
-        if (exit)
-            await Exit();
-    }
+    } 
 
     private static async Task<int> GetDeadlineDaysFromConsole()  
     {
@@ -451,7 +413,7 @@ internal class Program
         } 
         else 
         {
-            await TracingProgramExecution(TRACE_ERROR_FLAG, "Invalid value, please try again.");
+            await TracingProgramExecution(new("Invalid value, please try again.", true, false));
             return await GetDeadlineDaysFromConsole();
         }
     }
@@ -467,7 +429,7 @@ internal class Program
         switch (string.IsNullOrEmpty(reportsPathString))
         {
             case true:
-                await Report(reportsPathErrorMessage, delay, false);
+                await TracingProgramExecution(new(reportsPathErrorMessage, true, false));
                 return await GetSourceReportsPathFromConsole(delay);
             case false:
                 var isDirInfoSuccess = FileService.GetDirectoryInfo(reportsPathString, out reportsPathDirectoryInfo);
@@ -476,7 +438,7 @@ internal class Program
                     case true:
                         return reportsPathDirectoryInfo;
                     case false:
-                        await Report(reportsPathErrorMessage, delay, false);
+                        await TracingProgramExecution(new(reportsPathErrorMessage, true, false));
                         return await GetSourceReportsPathFromConsole(delay); 
                 }
         }
@@ -496,8 +458,7 @@ internal class Program
         switch (selectKey is null || !validkeys.Contains((ConsoleKey)selectKey)) 
         {
             case true:
-                await Report("Неверное значание, повторите попытку.");
-                await Task.Delay(delay);
+                await TracingProgramExecution(new("Invalid value, please try again.", true, false));
                 return await GetCreateRawReportFromConsole(delay);
             case false: 
                 switch((ConsoleKey)selectKey) 
@@ -523,7 +484,7 @@ internal class Program
             deadLineDaysTask.Wait();
             skuManager.SetDeadlineDays(deadLineDaysTask.Result);
         }
-        await TracingProgramExecution(TRACE_INFO_FLAG, $"Deadline set, days: {skuManager.DeadlineDays}");
+        await TracingProgramExecution(new($"Deadline set, days: {skuManager.DeadlineDays}", false, false));
 
         // Get source reports path
         DirectoryInfo? getSourceReportDirInfo = null;
@@ -535,7 +496,7 @@ internal class Program
             getSourceReportDirInfo = getSourceReportsPathTask.Result;
         } 
         Console.Clear();
-        await TracingProgramExecution(TRACE_INFO_FLAG, $"Reports path: {getSourceReportDirInfo.Name}");
+        await TracingProgramExecution(new($"Reports path: {getSourceReportDirInfo.Name}", false, false));
 
         // Availability necessary reports
         List<SourceSKUReportFileKey>? existingKeys = null;
@@ -553,7 +514,7 @@ internal class Program
             } 
             else 
             {
-                await TracingProgramExecution(TRACE_INFO_FLAG, availabilityNecessaryTask.Result.message);
+                await TracingProgramExecution(new(availabilityNecessaryTask.Result.message, false,false));
             }
         }
 
@@ -570,30 +531,45 @@ internal class Program
         }
         Console.Clear();
 
-        await TracingProgramExecution(TRACE_INFO_FLAG, $"This is raw report: {isRawReport}");
+        await TracingProgramExecution(new($"This is raw report: {isRawReport}", false, false));
 
         return existingKeys; 
     }
 
-    private static async Task TracingProgramExecution(string flag, string message) 
+
+    private static void Report(object? sender, ManagerReachedEventArgs e)
     {
+        Task.Run(async () => await TracingProgramExecution(e));
+    }
+    private static async Task TracingProgramExecution(ManagerReachedEventArgs args) 
+    {
+        string flag;
         if(isTracing) 
         {
-            switch (flag) 
+            switch (args.IsError) 
             {
-                case TRACE_INFO_FLAG:
+                case false:
                     Console.ForegroundColor = ConsoleColor.DarkBlue;
+                    flag = TRACE_INFO_FLAG;
                     break;
-                case TRACE_ERROR_FLAG:
+                case true:
                     Console.ForegroundColor = ConsoleColor.DarkRed;
-                    break;
-                default:
+                    flag = TRACE_ERROR_FLAG;
                     break;
             }
 
-            Trace.WriteLine($"{flag}{message}");
+            Trace.WriteLine($"{flag}{args.Message}");
             await Task.Delay(tracingDelay);
             Console.ResetColor();
+        }
+
+        if (args.IsExit) 
+        {
+            skuManager.ManagerReached -= Report;
+            excelManager.ManagerReached -= Report;
+            fileManager.ManagerReached -= Report;
+
+            ConsoleAppService.ConsoleAppExit(goodByMessage);
         }
     }
     #endregion

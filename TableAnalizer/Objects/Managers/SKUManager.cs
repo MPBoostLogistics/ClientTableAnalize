@@ -101,7 +101,7 @@ namespace TableAnalizer.Objects.Managers
             if (currentWorksheet is null)
             {
                 await Task.Delay(taskDelay);
-                OnManagerReached(new($"There is no worksheet named '{workSheetName}' in workbook file at key {reportFileKey}.", 2000, true));
+                OnManagerReached(new($"There is no worksheet named '{workSheetName}' in workbook file at key {reportFileKey}.",true, true));
                 return StopFuctionExecuting(ref stopwatch);
             }
 
@@ -187,7 +187,7 @@ namespace TableAnalizer.Objects.Managers
                 {
                     int skusWithPredicateCount = SKUs.GetValuesCount(predicateHandler.Invoke);
                     message = string.Concat(message, skusWithPredicateCount);
-                    OnManagerReached(new(message, 1000, false));
+                    OnManagerReached(new(message, false, false));
                 }
             }
 

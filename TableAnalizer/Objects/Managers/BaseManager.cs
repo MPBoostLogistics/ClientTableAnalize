@@ -76,7 +76,7 @@ namespace TableAnalizer.Objects.Managers
 
             if (obj is null)
             {
-                args = new ("TryGetPropertyValue: object is null.", 1000, true);
+                args = new ("TryGetPropertyValue: object is null.", true, true);
                 this.OnManagerReached(args);
                 return false;
             }
@@ -84,7 +84,7 @@ namespace TableAnalizer.Objects.Managers
             PropertyInfo? propertyInfo = typeof(TObj).GetProperty(propertyName);
             if (propertyInfo is null)
             {
-                args = new ($"TryGetPropertyValue: Property '{propertyName}' not found.", 1000, true);
+                args = new ($"TryGetPropertyValue: Property '{propertyName}' not found.", true, true);
                 this.OnManagerReached(args);
                 return false;
             }
@@ -97,7 +97,7 @@ namespace TableAnalizer.Objects.Managers
 
             if (propertyValue is not TType typedValue)
             {
-                args = new ($"Property '{propertyName}' is of type {propertyInfo.PropertyType}, got {typeof(TType)}.", 1000, true);
+                args = new ($"Property '{propertyName}' is of type {propertyInfo.PropertyType}, got {typeof(TType)}.", true, true);
                 this.OnManagerReached(args);
                 return false;
             }

@@ -222,8 +222,7 @@ namespace TableAnalizer.Objects.Managers
 
             if (!isMulty && ClientLogin is null)
             {
-                await Task.Delay(100);
-                args = new("Clint's login is not defined, so it is impossible to create a directory.", 2000, true);
+                args = new("Clint's login is not defined, so it is impossible to create a directory.", true, true);
                 OnManagerReached(args);
                 return null;
             }
@@ -233,7 +232,7 @@ namespace TableAnalizer.Objects.Managers
             if (DirInfoForClientTargetReports == null)
             {
                 await Task.Delay(100);
-                args = new("Clint's login is not defined, so it is impossible to create a directory.", 500, true);
+                args = new("Clint's login is not defined, so it is impossible to create a directory.", true, true);
                 OnManagerReached(args);
                 return null;
             }
@@ -244,7 +243,7 @@ namespace TableAnalizer.Objects.Managers
                 $"{DirInfoForClientTargetReports!.FullName}/ClientReport_{ClientLogin}_{dateTime}.xlsx" :
                 $"{DirInfoForClientTargetReports!.FullName}/ClientsReportSummary_{ClientLogin}_{dateTime}.xlsx";
 
-            args = new($"Directory for final reports:{DirInfoForClientTargetReports.FullName}\nClients target report file name:{OutputClientReportFilePath}", 1000, false);
+            args = new($"Directory for final reports:{DirInfoForClientTargetReports.FullName}\nClients target report file name:{OutputClientReportFilePath}", false, false);
             OnManagerReached(args);
 
             return DirInfoForClientTargetReports.FullName ?? null;

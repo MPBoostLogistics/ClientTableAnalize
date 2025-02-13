@@ -15,8 +15,6 @@ namespace TableAnalizerTest
             reportFileManager = new();
         }
 
-
-
         [Test, Order(1)]
         public async Task GetReportFiles() 
         {
@@ -24,10 +22,18 @@ namespace TableAnalizerTest
             // ...
 
             // act
-            Task<(int count, string message, bool error)> getReportFilesTask = reportFileManager.GetReportFiles(testSingleClientSourceDirectory!.FullName, false);
+            Task<(int count, string message, bool error)> getReportFilesTask = 
+                reportFileManager.GetReportFiles(testSingleClientSourceDirectory!.FullName, false);
+            await Task.Run(() => getReportFilesTask);
+            getReportFilesTask.Wait();
+            var (count, message, error) = getReportFilesTask.Result;
 
             // assert 
-            // ... 
+            Assert.Multiple(() =>
+            {
+                Assert.That(count, Is.EqualTo(7));
+                Assert.That(error, Is.False);
+            });
         }
     }
             // arrange
