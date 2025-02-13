@@ -392,11 +392,11 @@ namespace TableAnalizer.Objects.Managers
 
         public async Task<bool> MakeReports(List<SKUForTargetReports> skuForTargetReports, bool isRawReport, bool isTracing) 
         {
-            if(string.IsNullOrEmpty(FileManager.OutputClientReportFilePath)) 
+            if(string.IsNullOrEmpty(ReportFileManager.OutputClientReportFilePath)) 
                 throw new Exception("Output client report file path cannot be empty!");
 
-            var fileInfo = new FileInfo(FileManager.OutputClientReportFilePath) ?? throw new Exception("Fileinfo cannot be empty");
-            var outputPackage = new ExcelPackage(new FileInfo(FileManager.OutputClientReportFilePath)) ?? 
+            var fileInfo = new FileInfo(ReportFileManager.OutputClientReportFilePath) ?? throw new Exception("Fileinfo cannot be empty");
+            var outputPackage = new ExcelPackage(new FileInfo(ReportFileManager.OutputClientReportFilePath)) ?? 
                 throw new Exception("ExcelPackage for output reports cannot be created");
             
             var sheetName = string.Empty;
@@ -517,7 +517,7 @@ namespace TableAnalizer.Objects.Managers
                 Trace.WriteLine($"Сохраняю выполенную работу...");
             }
             var isSaveWork = false;
-            if(SaveReceivedData(FileManager.OutputClientReportFilePath, ref outputPackage)) 
+            if(SaveReceivedData(ReportFileManager.OutputClientReportFilePath, ref outputPackage)) 
             {
                 isSaveWork = true;
                 if(isTracing) 

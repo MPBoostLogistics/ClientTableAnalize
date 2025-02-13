@@ -10,7 +10,7 @@ using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public class SKUManager(ExcelManager excelReportManager) : BaseManager
+    public class SKUManager() : BaseManager
     {
         #region Variables and constants 
         private const bool IS_REMOVE_BRAND_FROM_NAME = false;

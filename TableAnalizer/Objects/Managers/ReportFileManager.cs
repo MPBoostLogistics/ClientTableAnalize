@@ -6,19 +6,14 @@ using TableAnalizer.Objects.SKUItems;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public class FileManager : BaseManager
+    public class ReportFileManager : BaseManager
     {
         #region Variables and constants 
-        // This will get the current WORKING directory (i.e. \bin\Debug)
-        protected readonly string workingDirectory = Environment.CurrentDirectory;
-        // This will get the current PROJECT directory
-
         private readonly static string _clientReportRegexPattern = @"(ClientReport_)\d+(_)+\d+(-)\d+(-)\d+(.xlsx)";
         private readonly Regex _clientReportRegex = new(_clientReportRegexPattern, RegexOptions.None, TimeSpan.FromSeconds(1));
         #endregion
 
         #region Properties
-        public string ProjectDirectory { get; }
 
         /// <summary>
         /// Dictionary, where key is the key of report file for a client of a certain type, and value is report file itself.
@@ -33,24 +28,7 @@ namespace TableAnalizer.Objects.Managers
         public static string OutputClientReportFilePath { get; private set; } = string.Empty;
         #endregion
 
-        #region Constructors 
-        public FileManager() : base()
-        {
-            // Get project directory
-            var getParentworkingDirectory = Directory.GetParent(workingDirectory) ?? throw new DirectoryNotFoundException();
-            ProjectDirectory = getParentworkingDirectory.Parent!.Parent!.FullName;
-        }
-        #endregion
-
         #region  Functionality
-        public static bool GetFileInfosFromDirInfoByExtensions(DirectoryInfo? dirInfo, out IEnumerable<FileInfo>? fileInfos, string ext)
-        {
-            fileInfos = from fileInfo in dirInfo?.GetFiles()
-                        where fileInfo.Name.EndsWith(ext)
-                        select fileInfo;
-
-            return fileInfos is not null && fileInfos.Any();
-        }
 
         /// <summary>
         /// Checks availability of necessary files for data analysis.
@@ -65,7 +43,7 @@ namespace TableAnalizer.Objects.Managers
 
             try
             {
-                Task<(int count, string message, bool isError)> getFilesTask = GetReportFiles(reportsPath, isMulty, tracingDelay);
+                Task<(int count, string message, bool isError)> getFilesTask = GetReportFiles(reportsPath, isMulty);
                 await Task.Run(() => getFilesTask);
                 getFilesTask.Wait();
 
@@ -123,17 +101,18 @@ namespace TableAnalizer.Objects.Managers
         /// <summary>
         /// Receives supplied files from directory.
         /// </summary>
-        /// <param name="dirPathString">Directory path string.</param>
+        /// <param name="dirPath">Directory path string.</param>
         /// <returns>Number of files transferred for analysis.</returns>
         /// <exception cref="Exception">Exception for empty directory without files.</exception>
-        public async Task<(int count, string message, bool error)> GetReportFiles(string dirPathString, bool isMulty, int delay)
+        public async Task<(int count, string message, bool error)> GetReportFiles(string dirPath, bool isMulty)
         {
             var count = 0;
             StringBuilder message = new();
             var error = false;
 
-            var files = GetFilesFromDirectory(dirPathString, EXCEL_FILE_EXTENSION);
-            if (files is null || !files.Any())
+            FileService.SearchFilesInDirectory(dirPath, out FileInfo[]? files, [EXCEL_FILE_EXTENSION]);
+
+            if (files is null || files.Length == 0)
             {
                 message.Append("Directory with files for processing does not exist or is empty, check it.");
                 error = true;
@@ -357,39 +336,6 @@ namespace TableAnalizer.Objects.Managers
                 }
             }
             return success;
-        }
-
-        /// <summary>
-        /// Gets the FileInfo collection for client reporting files.
-        /// </summary>
-        /// <param name="dirPathString">Path string to directory to search for files.</param>
-        /// <param name="ext">File extensions.</param>
-        /// <returns>Сollection for client reporting files.</returns>
-        /// <exception cref="DirectoryNotFoundException">Exception: Directory at spec path was not found.</exception>
-        /// <exception cref="Exception">Exception: Cannot create DirectoryInfo for directory specified in path.</exception>
-        /// <remarks><i>New version, tested</i></remarks>
-        public static IEnumerable<FileInfo>? GetFilesFromDirectory(string dirPathString, string? ext = null)
-        {
-            if(dirPathString.Contains('\'')) 
-            {
-                dirPathString = dirPathString.Replace("'", "");
-            }
-
-            if (!Directory.Exists(dirPathString))
-                throw new DirectoryNotFoundException($"Directory at path {dirPathString} was not found.");
-
-            var dirInfo = new DirectoryInfo(dirPathString) ?? throw new Exception($"Cannot make DirectoryInfo path {dirPathString}");
-
-            if (ext == null)
-            {
-                return dirInfo.GetFiles(); ;
-            }
-            else
-            {
-                return from fileInfo in dirInfo.GetFiles()
-                       where fileInfo.Name.EndsWith(EXCEL_FILE_EXTENSION)
-                       select fileInfo;
-            }
         }
 
         /// ???        

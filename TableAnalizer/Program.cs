@@ -25,16 +25,16 @@ internal class Program
     private static bool? isRawReport = null;
     private static bool isMulty;
     private static readonly bool isTracing = true;
-    private static readonly int tracingDelay = 1000;
+    private static readonly int tracingDelay = 1500;
 
     private const string TRACE_INFO_FLAG = "[INFO]: "; 
     private const string TRACE_ERROR_FLAG = "[ERROR]: "; 
     #endregion
 
     #region Properties 
-    private static readonly FileManager fileManager = new();
+    private static readonly ReportFileManager fileManager = new();
     private static readonly ExcelManager excelManager = new();
-    private static readonly SKUManager skuManager = new(excelManager);
+    private static readonly SKUManager skuManager = new();
     #endregion
 
     #region Functionality
@@ -231,9 +231,9 @@ internal class Program
             // Delete old logistic report 
             if(isTracing) 
             {
-                Trace.WriteLine($"Удаляю старый файлы по пути {FileManager.OutputClientReportFilePath}...");
+                Trace.WriteLine($"Удаляю старый файлы по пути {ReportFileManager.OutputClientReportFilePath}...");
             }
-            if(FileService.DeleteFileAtPath(FileManager.OutputClientReportFilePath)) 
+            if(FileService.DeleteFileAtPath(ReportFileManager.OutputClientReportFilePath)) 
             {
                 Trace.WriteLine("Старые файлы удалены.");
             } 
@@ -262,7 +262,7 @@ internal class Program
             makeReportTask.Wait();
 
             // Report 
-            var completedMessage = $"Отчет логистики сохранен по пути: {FileManager.OutputClientReportFilePath}\n";
+            var completedMessage = $"Отчет логистики сохранен по пути: {ReportFileManager.OutputClientReportFilePath}\n";
             goodByMessage = string.Concat(completedMessage, goodByMessage);
             await Report(goodByMessage, 2000, true);
         }
@@ -314,7 +314,7 @@ internal class Program
         additionalTask?.Wait();
 
         // Delete old report 
-        FileService.DeleteFileAtPath(FileManager.OutputClientReportFilePath);
+        FileService.DeleteFileAtPath(ReportFileManager.OutputClientReportFilePath);
 
         // Make new report 
         Task<List<SKUForTargetReports>>? skusForTargetReportTask = skuManager.MakeSkusForTargetReport((bool)isRawReport!, isMulty, delay);
@@ -326,7 +326,7 @@ internal class Program
         saveWorkTask.Wait();
 
         // Report 
-        var completedMessage = $"Отчет логистики сохранен по пути: {FileManager.OutputClientReportFilePath}\n";
+        var completedMessage = $"Отчет логистики сохранен по пути: {ReportFileManager.OutputClientReportFilePath}\n";
         goodByMessage = string.Concat(completedMessage, goodByMessage);
         await Report(goodByMessage, 2000, true);
 
@@ -439,13 +439,13 @@ internal class Program
 
     private static async Task<int> GetDeadlineDaysFromConsole()  
     {
-        int minNumber = 14, maxNumber = 45;
+        var deadlineRange = Enumerable.Range(14, 32);
 
-        string deadLineDaysTitleMessage = $"Введите срок дедлайна для клиента и нажмите 'Enter'\n(положительное целое число, отличное от {minNumber} до {maxNumber}): ";
+        string deadLineDaysTitleMessage = $"Введите срок дедлайна для клиента и нажмите 'Enter'\n(положительное целое число, отличное от {deadlineRange.First()} до {deadlineRange.Last()}): ";
         
         string? numberString = ConsoleAppService.GetUserStringFromConsole(deadLineDaysTitleMessage);
         
-        if(int.TryParse(numberString, out int numberResult) && numberResult > minNumber && numberResult <= maxNumber) 
+        if(int.TryParse(numberString, out int numberResult) && deadlineRange.Contains(numberResult)) 
         {
             return numberResult;
         } 
@@ -541,7 +541,8 @@ internal class Program
         List<SourceSKUReportFileKey>? existingKeys = null;
         while(existingKeys is null) 
         {
-            Task<(List<SourceSKUReportFileKey>? keys, string message, bool isError)>?  availabilityNecessaryTask = fileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, isMulty, isTracing, tracingDelay);
+            Task<(List<SourceSKUReportFileKey>? keys, string message, bool isError)>?  availabilityNecessaryTask = 
+                fileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, isMulty, isTracing, tracingDelay);
             await Task.Run(() => availabilityNecessaryTask);
             availabilityNecessaryTask.Wait();
             existingKeys = availabilityNecessaryTask.Result.keys;
@@ -555,6 +556,9 @@ internal class Program
                 await TracingProgramExecution(TRACE_INFO_FLAG, availabilityNecessaryTask.Result.message);
             }
         }
+
+        Console.WriteLine("!!!");
+        Console.ReadLine();
 
         // Get a "raw" report or not
         while(isRawReport is null) 
