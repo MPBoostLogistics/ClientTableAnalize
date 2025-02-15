@@ -1,0 +1,11 @@
+{
+    "Messages": {
+      "GoodbyMessage": "\nСпасибо за использование программы.",
+      "TraceInfoFlag": "[INFO]: ",
+      "TraceErrorFlag": "[ERROR]: "
+    },
+    "Numbers": {
+      "TracingDelay": 1500
+    }
+
+  }

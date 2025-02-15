@@ -11,8 +11,8 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using CSharpHelpers.Services;
+using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using TableAnalizer.Objects;
 using TableAnalizer.Objects.Managers;
@@ -22,14 +22,14 @@ internal class Program
 {
     #region Variables and constants
     private static readonly Version? AppVersion = Assembly.GetExecutingAssembly().GetName().Version;
-    private static string goodByMessage = "\n Спасибо за использование программы. Хорошего дня!";
+    private static string goodByMessage = string.Empty;
     private static bool? isRawReport = null;
     private static bool isMulty;
     private static readonly bool isTracing = true;
-    private static readonly int tracingDelay = 1500;
+    private static int TracingDelay { get; set; } = 0;
 
-    private const string TRACE_INFO_FLAG = "[INFO]: "; 
-    private const string TRACE_ERROR_FLAG = "[ERROR]: "; 
+    private static string TraceInfoFlag { get; set; } = string.Empty;
+    private static string TraceErrorFlag { get; set; } = string.Empty;
     #endregion
 
     #region Properties 
@@ -41,15 +41,39 @@ internal class Program
     #region Functionality
     private static async Task Main(string[] args)
     {
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        SetAppConfig();
 
-        Trace.Listeners.Add(new ConsoleTraceListener());
+        // ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-        await Analyze(tracingDelay);
+        // Trace.Listeners.Add(new ConsoleTraceListener());
 
-        Trace.Flush();
+        // await Analyze(tracingDelay);
+
+        // Trace.Flush();
+
     }
-    
+
+    private static void SetAppConfig()
+    {
+        if (FileService.GetProjectDirectory(out DirectoryInfo? projectDirectory)
+                    && projectDirectory != null)
+        {
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(projectDirectory.FullName)
+                .AddJsonFile("config.json", optional: false);
+
+            IConfiguration config = builder.Build();
+
+            IConfigurationSection? messagesSection = config.GetSection("Messages");
+            goodByMessage = messagesSection.GetValue<string>("GoodbyMessage");
+            TraceInfoFlag = messagesSection.GetValue<string>("TraceInfoFlag");
+            TraceErrorFlag = messagesSection.GetValue<string>("TraceErrorFlag");
+
+            IConfigurationSection? numbersSection = config.GetSection("Numbers");
+            TracingDelay = numbersSection.GetValue<int>("TracingDelay");
+        }
+    }
+
     private static async Task Analyze(int delay)
     {
         ConsoleKey[] allowedConsoleKeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
@@ -490,7 +514,7 @@ internal class Program
         DirectoryInfo? getSourceReportDirInfo = null;
         while(getSourceReportDirInfo is null) 
         {
-            Task<DirectoryInfo?> getSourceReportsPathTask = GetSourceReportsPathFromConsole(tracingDelay);
+            Task<DirectoryInfo?> getSourceReportsPathTask = GetSourceReportsPathFromConsole(TracingDelay);
             await Task.Run(() => getSourceReportsPathTask);
             getSourceReportsPathTask.Wait();
             getSourceReportDirInfo = getSourceReportsPathTask.Result;
@@ -502,29 +526,17 @@ internal class Program
         List<SourceSKUReportFileKey>? existingKeys = null;
         while(existingKeys is null) 
         {
-            Task<(List<SourceSKUReportFileKey>? keys, string message, bool isError)>?  availabilityNecessaryTask = 
-                fileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, isMulty, isTracing, tracingDelay);
+            Task<List<SourceSKUReportFileKey>?>  availabilityNecessaryTask = 
+                fileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, isMulty, isTracing, TracingDelay);
             await Task.Run(() => availabilityNecessaryTask);
             availabilityNecessaryTask.Wait();
-            existingKeys = availabilityNecessaryTask.Result.keys;
-
-            if(availabilityNecessaryTask.Result.isError) 
-            {
-                ConsoleAppService.ConsoleAppExit(availabilityNecessaryTask.Result.message);
-            } 
-            else 
-            {
-                await TracingProgramExecution(new(availabilityNecessaryTask.Result.message, false,false));
-            }
+            existingKeys = availabilityNecessaryTask.Result;
         }
-
-        Console.WriteLine("!!!");
-        Console.ReadLine();
-
+        
         // Get a "raw" report or not
         while(isRawReport is null) 
         {
-            Task<bool> getCreateRawReportTask = GetCreateRawReportFromConsole(tracingDelay);
+            Task<bool> getCreateRawReportTask = GetCreateRawReportFromConsole(TracingDelay);
             await Task.Run(() => getCreateRawReportTask);
             getCreateRawReportTask.Wait();
             isRawReport = getCreateRawReportTask.Result;
@@ -550,16 +562,16 @@ internal class Program
             {
                 case false:
                     Console.ForegroundColor = ConsoleColor.DarkBlue;
-                    flag = TRACE_INFO_FLAG;
+                    flag = TraceInfoFlag;
                     break;
                 case true:
                     Console.ForegroundColor = ConsoleColor.DarkRed;
-                    flag = TRACE_ERROR_FLAG;
+                    flag = TraceErrorFlag;
                     break;
             }
 
             Trace.WriteLine($"{flag}{args.Message}");
-            await Task.Delay(tracingDelay);
+            await Task.Delay(TracingDelay);
             Console.ResetColor();
         }
 

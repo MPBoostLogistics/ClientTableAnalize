@@ -22,17 +22,15 @@ namespace TableAnalizerTest
             // ...
 
             // act
-            Task<(int count, string message, bool error)> getReportFilesTask = 
+            Task<int> getReportFilesTask = 
                 reportFileManager.GetReportFiles(testSingleClientSourceDirectory!.FullName, false);
             await Task.Run(() => getReportFilesTask);
             getReportFilesTask.Wait();
-            var (count, message, error) = getReportFilesTask.Result;
 
             // assert 
             Assert.Multiple(() =>
             {
-                Assert.That(count, Is.EqualTo(7));
-                Assert.That(error, Is.False);
+                Assert.That(getReportFilesTask.Result, Is.EqualTo(7));
             });
         }
     }

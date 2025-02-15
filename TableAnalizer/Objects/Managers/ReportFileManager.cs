@@ -35,7 +35,7 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <param name="reportsPath">Directory with client reports.</param>
         /// <returns>List of existing keys as Task result.</returns>
-        public async Task<(List<SourceSKUReportFileKey>? keys, string message, bool isError)> ChecksAvailabilityNecessaryFiles(string reportsPath, bool isMulty, bool isTracing, int tracingDelay)
+        public async Task<List<SourceSKUReportFileKey>?> ChecksAvailabilityNecessaryFiles(string reportsPath, bool isMulty, bool isTracing, int tracingDelay)
         {
             List<SourceSKUReportFileKey> existingKeys = [];
             string message = string.Empty;
@@ -43,21 +43,16 @@ namespace TableAnalizer.Objects.Managers
 
             try
             {
-                Task<(int count, string message, bool isError)> getFilesTask = GetReportFiles(reportsPath, isMulty);
+                Task<int> getFilesTask = GetReportFiles(reportsPath, isMulty);
                 await Task.Run(() => getFilesTask);
                 getFilesTask.Wait();
 
                 var getReportFilesResult = getFilesTask.Result;
 
-                if(getReportFilesResult.count == 0 || getReportFilesResult.isError) 
+                if(getFilesTask.Result == 0) 
                 {
-                    ConsoleAppService.ConsoleAppExit(getReportFilesResult.message);
+                    OnManagerReached(new(string.Empty, true, true));
                 } 
-                else if(isTracing)
-                {
-                    Trace.WriteLine(getReportFilesResult.message);
-                    await Task.Delay(tracingDelay);
-                }
 
                 var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out existingKeys, isMulty, tracingDelay);
                 
@@ -94,8 +89,10 @@ namespace TableAnalizer.Objects.Managers
                 message = $"Data error: {ex.Message}\n";
                 isError = true;
             }
+
+            OnManagerReached(new(message, isError, false));
       
-            return (existingKeys, message, isError);
+            return existingKeys;
         }
 
         /// <summary>
@@ -104,18 +101,18 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="dirPath">Directory path string.</param>
         /// <returns>Number of files transferred for analysis.</returns>
         /// <exception cref="Exception">Exception for empty directory without files.</exception>
-        public async Task<(int count, string message, bool error)> GetReportFiles(string dirPath, bool isMulty)
+        public async Task<int> GetReportFiles(string dirPath, bool isMulty)
         {
             var count = 0;
             StringBuilder message = new();
-            var error = false;
+            var isError = false;
 
             FileService.SearchFilesInDirectory(dirPath, out FileInfo[]? files, [EXCEL_FILE_EXTENSION]);
 
             if (files is null || files.Length == 0)
             {
                 message.Append("Directory with files for processing does not exist or is empty, check it.");
-                error = true;
+                isError = true;
             }
             else
             {
@@ -159,7 +156,7 @@ namespace TableAnalizer.Objects.Managers
                     catch (Exception ex)
                     {
                         message.Append($"\nError SourceReportFileForSKU create: {ex.Message}");
-                        error = true;
+                        isError = true;
                     }
                 }
 
@@ -189,17 +186,20 @@ namespace TableAnalizer.Objects.Managers
                     else
                     {
                         message.Append("\nPath to dir for working with client can`t be an empty string!");
-                        error = true;
+                        isError = true;
                     }
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     message.Append($"\nDefineDirInfoForClientTargetReports Error:\n{ex.Message}");
-                    error = true;
+                    isError = true;
                 }
             }
 
-            return(count, message.ToString(), error);
+            ManagerReachedEventArgs args = new(message.ToString(), isError, false);
+            OnManagerReached(args);
+
+            return count;
         }
 
         /// <summary>
