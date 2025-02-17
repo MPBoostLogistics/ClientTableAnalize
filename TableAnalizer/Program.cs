@@ -33,7 +33,7 @@ internal class Program
     #endregion
 
     #region Properties 
-    private static readonly ReportFileManager fileManager = new();
+    private static readonly ReportFileManager reportFileManager = new();
     private static readonly ExcelManager excelManager = new();
     private static readonly SKUManager skuManager = new();
     #endregion
@@ -78,7 +78,7 @@ internal class Program
     {
         ConsoleKey[] allowedConsoleKeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
 
-        fileManager.ManagerReached += Report;
+        reportFileManager.ManagerReached += Report;
         excelManager.ManagerReached += Report;
         skuManager.ManagerReached += Report;
 
@@ -146,7 +146,7 @@ internal class Program
         }
             
         reportTask?.Wait();
-        fileManager.ManagerReached -= Report;
+        reportFileManager.ManagerReached -= Report;
         excelManager.ManagerReached -= Report;
         skuManager.ManagerReached -= Report;
     }
@@ -304,7 +304,7 @@ internal class Program
     {   
         // Create and run analize task
         List<Task> summaryTasksList = [];
-        foreach(var (key, value) in fileManager.ReportsPathsMultyReport) 
+        foreach(var (key, value) in reportFileManager.ReportsPathsMultyReport) 
         {
             summaryTasksList.Add(ReceivingAndProcessingData(value, (bool)isRawReport!, isMulty, delay));
         }
@@ -325,10 +325,10 @@ internal class Program
 
         // Additional tasks
         Task<double>? additionalTask = null;
-        if (fileManager.AdditionalPathsMultyReport is not null && !(bool)isRawReport!)
+        if (reportFileManager.AdditionalPathsMultyReport is not null && !(bool)isRawReport!)
         {
             Trace.WriteLine($"isMulty {isMulty}");
-            additionalTask = ReceivingAndProcessingData(fileManager.AdditionalPathsMultyReport, (bool)isRawReport!, isMulty, delay);
+            additionalTask = ReceivingAndProcessingData(reportFileManager.AdditionalPathsMultyReport, (bool)isRawReport!, isMulty, delay);
             await Task.Run(async () => await additionalTask);
         }
 
@@ -383,7 +383,7 @@ internal class Program
         SourceReportFileForSKU? reportFile;
         if(existingReportFile == null) 
         {
-            var getReportFileTask = fileManager.GetReportFile(reportFileKey);
+            var getReportFileTask = reportFileManager.GetReportFile(reportFileKey);
             await Task.Run(async () => await getReportFileTask);
             getReportFileTask.Wait();
 
@@ -527,7 +527,7 @@ internal class Program
         while(existingKeys is null) 
         {
             Task<List<SourceSKUReportFileKey>?>  availabilityNecessaryTask = 
-                fileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, isMulty, isTracing, TracingDelay);
+                reportFileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, isMulty, isTracing, TracingDelay);
             await Task.Run(() => availabilityNecessaryTask);
             availabilityNecessaryTask.Wait();
             existingKeys = availabilityNecessaryTask.Result;
@@ -579,7 +579,7 @@ internal class Program
         {
             skuManager.ManagerReached -= Report;
             excelManager.ManagerReached -= Report;
-            fileManager.ManagerReached -= Report;
+            reportFileManager.ManagerReached -= Report;
 
             ConsoleAppService.ConsoleAppExit(goodByMessage);
         }

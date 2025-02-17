@@ -1,13 +1,16 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Reflection;
+using CSharpHelpers.Services;
+using Microsoft.Extensions.Configuration;
 
 namespace TableAnalizer.Objects.Managers
 {
     public class BaseManager 
     {
         #region Variables and constants 
-        public const string EXCEL_FILE_EXTENSION = ".xlsx";
+        public readonly string[] validFileExtensions = [];
+        internal IConfigurationRoot? config;
         #endregion Variables and constant
 
         #region Properties 
@@ -44,7 +47,41 @@ namespace TableAnalizer.Objects.Managers
         #endregion Events
 
         #region Constuctor and destructors
-        protected BaseManager() { }
+        protected BaseManager() 
+        {
+            BuildConfig();
+
+            IConfigurationSection? collectionSessions = config!.GetSection("Collections");
+            validFileExtensions = collectionSessions.GetValue<string[]>("validFileExtensions");
+        }
+
+        public virtual void BuildConfig()
+        {
+            if (FileService.GetProjectDirectory(out DirectoryInfo? projectDirectory)
+                    && projectDirectory != null)
+            {
+                string? configFileName;
+                if(IsRunningFromNUnit)
+                    configFileName = "testConfig.json";
+                else
+                    configFileName = "config.json";
+
+                if(!string.IsNullOrEmpty(configFileName)) 
+                {
+                    Trace.WriteLine($"\n{configFileName}");
+
+                    config = new ConfigurationBuilder()
+                        .SetBasePath(projectDirectory.FullName)
+                        //.AddUserSecrets<BaseManager>()
+                        .AddJsonFile(configFileName, optional: false)
+                        .Build();
+                } 
+                else 
+                {
+                    throw new Exception("Config json filename is null");
+                }
+            }
+        }
         #endregion
 
         #region Functionality
@@ -106,6 +143,14 @@ namespace TableAnalizer.Objects.Managers
 
             return true;
         }
+        
+        private static readonly bool IsRunningFromNUnit = 
+            AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Any(a => a != null &&
+                    !string.IsNullOrEmpty(a.FullName) &&
+                    a.FullName.ToLowerInvariant().StartsWith("nunit.framework"));
+        
         #endregion Functionality
         
     }

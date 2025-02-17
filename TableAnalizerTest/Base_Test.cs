@@ -1,13 +1,15 @@
 using System.Diagnostics;
 using CSharpHelpers.Services;
+using Microsoft.Extensions.Configuration;
 
 namespace TableAnalizerTest
 {
     public class Base_Test
     {
         #region Variables and constants 
-        private const string TEST_SOURCE_PATH_SINGLE_NAME = "TestSingleClientSourceFiles";
-        private const string TEST_TARGET_PATH_NAME = "TestSingleClientTargetFiles";
+        internal IConfigurationRoot? testConfig;
+        private string? TestSourcePathSingleName;
+        private string? TestTargetPathSingleName;
         internal DirectoryInfo? testSingleClientSourceDirectory;
         internal DirectoryInfo? testSingleClientTargetDirectory;
 
@@ -19,20 +21,22 @@ namespace TableAnalizerTest
         [OneTimeSetUp]
         public virtual void Start() 
         {
-            isMulty = false;
-            deadlineDays = 14;
+            BuildConfigTest();
+
+            IConfigurationSection? settingsSessions = testConfig!.GetSection("Settings");
+            TestSourcePathSingleName = settingsSessions.GetValue<string>("TestSourcePathSingleName");
+            TestTargetPathSingleName = settingsSessions.GetValue<string>("TestTargetPathSingleName");
+            isMulty = settingsSessions.GetValue<bool>("isMulty");
+            deadlineDays = settingsSessions.GetValue<int>("DefaultDeadlineDays");
 
             if(FileService.GetProjectDirectory(out DirectoryInfo? directoryInfo) && directoryInfo is not null) 
-            {
-                var testSoucePath = Path.Combine(directoryInfo.FullName, TEST_SOURCE_PATH_SINGLE_NAME);
+            { 
+                var testSoucePath = Path.Combine(directoryInfo.FullName, TestSourcePathSingleName);
                 FileService.GetDirectoryInfo(testSoucePath, out testSingleClientSourceDirectory, true);
 
-                var testTargetPath = Path.Combine(directoryInfo.FullName, TEST_TARGET_PATH_NAME);
+                var testTargetPath = Path.Combine(directoryInfo.FullName, TestTargetPathSingleName);
                 FileService.GetDirectoryInfo(testTargetPath, out testSingleClientTargetDirectory, true);
             }
-
-            isMulty = false;
-            deadlineDays = 21;
 
             Trace.Listeners.Add(new ConsoleTraceListener());
         }
@@ -53,6 +57,31 @@ namespace TableAnalizerTest
         {
             Trace.Flush();
         }
+        
+        internal void BuildConfigTest() 
+        {
+            if (FileService.GetProjectDirectory(out DirectoryInfo? projectDirectory)
+                    && projectDirectory != null)
+            {
+                string? configFileName = "testConfig.json";
+
+                if(!string.IsNullOrEmpty(configFileName)) 
+                {
+                    Trace.WriteLine($"\n{configFileName}");
+
+                    testConfig = new ConfigurationBuilder()
+                        .SetBasePath(projectDirectory.FullName)
+                        //.AddUserSecrets<BaseManager>()
+                        .AddJsonFile(configFileName, optional: false)
+                        .Build();
+                } 
+                else 
+                {
+                    throw new Exception("Config json filename is null");
+                }
+            }
+        }
+        
         #endregion
         
     }

@@ -6,6 +6,10 @@
     },
     "Numbers": {
       "TracingDelay": 1500
+    },
+    "Collections": 
+    {
+      "validFileExtensions" : [".xls", ".xlsx"]
     }
 
   }

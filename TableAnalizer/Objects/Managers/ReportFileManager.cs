@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 using CSharpHelpers.Services;
 using TableAnalizer.Objects.SKUItems;
@@ -43,7 +42,7 @@ namespace TableAnalizer.Objects.Managers
 
             try
             {
-                Task<int> getFilesTask = GetReportFiles(reportsPath, isMulty);
+                Task<int> getFilesTask = GetReportFiles(reportsPath, isMulty, validFileExtensions);
                 await Task.Run(() => getFilesTask);
                 getFilesTask.Wait();
 
@@ -95,19 +94,14 @@ namespace TableAnalizer.Objects.Managers
             return existingKeys;
         }
 
-        /// <summary>
-        /// Receives supplied files from directory.
-        /// </summary>
-        /// <param name="dirPath">Directory path string.</param>
-        /// <returns>Number of files transferred for analysis.</returns>
-        /// <exception cref="Exception">Exception for empty directory without files.</exception>
-        public async Task<int> GetReportFiles(string dirPath, bool isMulty)
+
+        public async Task<int> GetReportFiles(string dirPath, bool isMulty, string[] validFileExtensions)
         {
             var count = 0;
             StringBuilder message = new();
             var isError = false;
 
-            FileService.SearchFilesInDirectory(dirPath, out FileInfo[]? files, [EXCEL_FILE_EXTENSION]);
+            FileService.SearchFilesInDirectory(dirPath, out FileInfo[]? files, validFileExtensions);
 
             if (files is null || files.Length == 0)
             {
@@ -116,7 +110,7 @@ namespace TableAnalizer.Objects.Managers
             }
             else
             {
-                message.Append($"\nNumber of files in dir with ext \"{EXCEL_FILE_EXTENSION}s\": {files!.Count()}");
+                message.Append($"\nNumber of files in dir with ext \"{validFileExtensions?.ToString()}\": {files!.Length}");
 
                 foreach (var fileInfo in files!)
                 {
