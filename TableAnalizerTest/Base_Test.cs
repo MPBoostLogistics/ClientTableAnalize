@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
+using TableAnalizer.Objects.Managers;
 
 namespace TableAnalizerTest
 {
@@ -12,6 +13,13 @@ namespace TableAnalizerTest
         private string? TestTargetPathSingleName;
         internal DirectoryInfo? testSingleClientSourceDirectory;
         internal DirectoryInfo? testSingleClientTargetDirectory;
+
+        internal ReportFileManager reportFileManager;   
+
+        internal int reportSourceFilesForSingleClientSum;
+        internal ExcelManager excelManager; 
+        internal string[] validFileExtensions = []; 
+
 
         private bool isMulty; 
         private int deadlineDays;
@@ -27,7 +35,10 @@ namespace TableAnalizerTest
             TestSourcePathSingleName = settingsSessions.GetValue<string>("TestSourcePathSingleName");
             TestTargetPathSingleName = settingsSessions.GetValue<string>("TestTargetPathSingleName");
             isMulty = settingsSessions.GetValue<bool>("isMulty");
-            deadlineDays = settingsSessions.GetValue<int>("DefaultDeadlineDays");
+
+            IConfigurationSection? numberSessions = testConfig!.GetSection("Numbers");
+            deadlineDays = numberSessions.GetValue<int>("defaultDeadlineDays");
+            reportSourceFilesForSingleClientSum = numberSessions.GetValue<int>("reportSourceFilesForSingleClientSum");
 
             if(FileService.GetProjectDirectory(out DirectoryInfo? directoryInfo) && directoryInfo is not null) 
             { 
@@ -38,7 +49,17 @@ namespace TableAnalizerTest
                 FileService.GetDirectoryInfo(testTargetPath, out testSingleClientTargetDirectory, true);
             }
 
+            reportFileManager = new();
+            validFileExtensions = reportFileManager.validFileExtensions;
+
+            excelManager = new();
+
             Trace.Listeners.Add(new ConsoleTraceListener());
+
+            Task<int> getReportFilesTask = 
+                reportFileManager.GetSourceReportFiles(testSingleClientSourceDirectory!.FullName, false, validFileExtensions);
+            Task.Run(() => getReportFilesTask);
+            getReportFilesTask.Wait();
         }
 
         [Test, Order(0)]
@@ -58,7 +79,7 @@ namespace TableAnalizerTest
             Trace.Flush();
         }
         
-        internal void BuildConfigTest() 
+        private void BuildConfigTest() 
         {
             if (FileService.GetProjectDirectory(out DirectoryInfo? projectDirectory)
                     && projectDirectory != null)

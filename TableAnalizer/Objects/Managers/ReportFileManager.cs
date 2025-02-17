@@ -17,7 +17,7 @@ namespace TableAnalizer.Objects.Managers
         /// <summary>
         /// Dictionary, where key is the key of report file for a client of a certain type, and value is report file itself.
         /// </summary>
-        public Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> ReportsPathsSingleReport { get; private set; } = [];
+        public Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> ReportsPathsSingle { get; private set; } = [];
         public Dictionary<string, SourceReportFileForSKU> ReportsPathsMultyReport { get; private set; } = new();
         
         public SourceReportFileForSKU? AdditionalPathsMultyReport { get; private set; }
@@ -42,7 +42,7 @@ namespace TableAnalizer.Objects.Managers
 
             try
             {
-                Task<int> getFilesTask = GetReportFiles(reportsPath, isMulty, validFileExtensions);
+                Task<int> getFilesTask = GetSourceReportFiles(reportsPath, isMulty, validFileExtensions);
                 await Task.Run(() => getFilesTask);
                 getFilesTask.Wait();
 
@@ -94,8 +94,14 @@ namespace TableAnalizer.Objects.Managers
             return existingKeys;
         }
 
-
-        public async Task<int> GetReportFiles(string dirPath, bool isMulty, string[] validFileExtensions)
+        /// <summary>
+        /// Get source report files.
+        /// </summary>
+        /// <param name="dirPath">Directory for receiving reports.</param>
+        /// <param name="isSummaryReport">Flag whether the report is a summary report.</param>
+        /// <param name="validFileExtensions"Collection of valid file extensions.</param>
+        /// <returns>Number of report files received.</returns>
+        public async Task<int> GetSourceReportFiles(string dirPath, bool isSummaryReport, string[] validFileExtensions)
         {
             var count = 0;
             StringBuilder message = new();
@@ -116,12 +122,12 @@ namespace TableAnalizer.Objects.Managers
                 {
                     try
                     {
-                        var sorceReportFile = new SourceReportFileForSKU(fileInfo, isMulty);
+                        var sorceReportFile = new SourceReportFileForSKU(fileInfo, isSummaryReport);
                         var key = sorceReportFile.ReportKey;
 
                         if (sorceReportFile != null && key.HasValue)
                         {
-                            switch (isMulty)
+                            switch (isSummaryReport)
                             {
                                 case true:
                                     // Additional for multy report
@@ -137,7 +143,7 @@ namespace TableAnalizer.Objects.Managers
                                     }
                                     break;
                                 case false:
-                                    ReportsPathsSingleReport[key.Value] = sorceReportFile;
+                                    ReportsPathsSingle[key.Value] = sorceReportFile;
 
                                     // Save login
                                     if (sorceReportFile?.Login != null)
@@ -154,7 +160,7 @@ namespace TableAnalizer.Objects.Managers
                     }
                 }
 
-                if (isMulty)
+                if (isSummaryReport)
                 {
                     count = ReportsPathsMultyReport.Count;
                     var logins = string.Join(",", ReportsPathsMultyReport.Keys);
@@ -162,13 +168,13 @@ namespace TableAnalizer.Objects.Managers
                 }
                 else
                 {
-                    count = ReportsPathsSingleReport.Count;
-                    message.Append($"\nClient login: {ClientLogin}\n{ReportsPathsSingleReport.Count} file(s) ready for processing.");
+                    count = ReportsPathsSingle.Count;
+                    message.Append($"\nClient login: {ClientLogin}\n{ReportsPathsSingle.Count} file(s) ready for processing.");
                 }
 
                 try
                 {
-                    var clientOutputPathTask = DefineDirInfoForClientTargetReports(isMulty);
+                    var clientOutputPathTask = DefineDirInfoForClientTargetReports(isSummaryReport);
                     await Task.Run(async () => await clientOutputPathTask);
                     clientOutputPathTask.Wait();
                     var clientOutputPath = clientOutputPathTask.Result;
@@ -197,13 +203,12 @@ namespace TableAnalizer.Objects.Managers
         }
 
         /// <summary>
-        /// Returns info about report file by key.
+        /// Get source report file for one client.
         /// </summary>
         /// <param name="key">Key to search for report file in dict.</param>
         /// <returns>SourceReportFileForSKU as Task (optional).</returns>
-        /// <remarks><i>New version.</i></remarks>
-        public async Task<SourceReportFileForSKU?> GetReportFile(SourceSKUReportFileKey key) =>
-            await Task.Run(() => ReportsPathsSingleReport.TryGetValue(key, out var reportFile) ? reportFile : null);
+        public async Task<SourceReportFileForSKU?> GetSourceReportForSingleClient(SourceSKUReportFileKey key) =>
+            await Task.Run(() => ReportsPathsSingle.TryGetValue(key, out var reportFile) ? reportFile : null);
 
         /// <summary>
         /// Define directory for client report output.
@@ -264,21 +269,21 @@ namespace TableAnalizer.Objects.Managers
             }
             else
             {
-                var isContainsKeyRansomsWB = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.RansomsWB);
-                var isContainsKeyRansomsOZ = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.RansomsOZ);
+                var isContainsKeyRansomsWB = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.RansomsWB);
+                var isContainsKeyRansomsOZ = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.RansomsOZ);
                 bool isRansomsExisting = isContainsKeyRansomsWB || isContainsKeyRansomsOZ;
 
-                var isContainsKeyStorageWB = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.RemainingWB);
-                var isContainsKeyStorageOZ = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.RemainingOZ);
+                var isContainsKeyStorageWB = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.RemainingWB);
+                var isContainsKeyStorageOZ = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.RemainingOZ);
                 bool isRemainingExisting = isContainsKeyStorageWB || isContainsKeyStorageOZ;
 
-                var isContainsKeyShipped = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.Shipped);
+                var isContainsKeyShipped = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.Shipped);
 
-                var isContainsKeyTransfer = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.Transfer);
+                var isContainsKeyTransfer = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.Transfer);
 
-                var isContainsWriteOffShortages = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.WriteOffShortages);
+                var isContainsWriteOffShortages = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.WriteOffShortages);
 
-                var isContainsAdditional = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.Additional);
+                var isContainsAdditional = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.Additional);
 
                 success = isRansomsExisting && isRemainingExisting && isContainsWriteOffShortages;
 

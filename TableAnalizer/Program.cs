@@ -383,7 +383,7 @@ internal class Program
         SourceReportFileForSKU? reportFile;
         if(existingReportFile == null) 
         {
-            var getReportFileTask = reportFileManager.GetReportFile(reportFileKey);
+            var getReportFileTask = reportFileManager.GetSourceReportForSingleClient(reportFileKey);
             await Task.Run(async () => await getReportFileTask);
             getReportFileTask.Wait();
 

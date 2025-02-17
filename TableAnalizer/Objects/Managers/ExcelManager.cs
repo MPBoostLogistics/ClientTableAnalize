@@ -310,11 +310,6 @@ namespace TableAnalizer.Objects.Managers
         #endregion
 
         #region Constructors && destructors
-        public ExcelManager() 
-        {
-            // ... 
-        }
-
         ~ExcelManager()
         {
             foreach (var excelPackage in ExcelPackages)
@@ -335,7 +330,6 @@ namespace TableAnalizer.Objects.Managers
         // <param name="key">Specified key.</param>
         // <param name="fileInfo">Specified FileInfo.</param>
         // <returns>Existing ExcelPackage (optional).</returns>
-        // <remarks><i>New version, tested</i></remarks>
         public static ExcelPackage? CreateExcelPackage(SourceSKUReportFileKey key, FileInfo fileInfo)
         {
             if (!GetExcelPackageByKey(key, out ExcelPackage? package) && package is null)

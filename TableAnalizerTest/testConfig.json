@@ -11,8 +11,9 @@
       "isMulty": false 
     },
     "Numbers": {
-      "DefaultDeadlineDays" : 14,
-      "TracingDelay": 1500
+      "defaultDeadlineDays" : 14,
+      "TracingDelay": 1500,
+      "reportSourceFilesForSingleClientSum": 7
     },
     "Collections": 
     {
