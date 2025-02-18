@@ -1,48 +1,59 @@
 ﻿using System.Drawing;
-using TableAnalizer.Enums;
 using OfficeOpenXml.Style;
 
 namespace TableAnalizer.Objects.Parsing
 {
+    public class TargetCellSettings 
+    {
+        public Color TextСolor { get; }
+        public Color? CellFillColor { get; private set; }
+        public bool IsTextBold { get; }
+        public int TextSize { get; }
+        public ExcelFillStyle ExcelFillStyle { get; private set; }
+
+        public TargetCellSettings(Color textСolor, int textSize, Color? cellFillColor,  bool isTextBold = false)
+        {
+            TextСolor = textСolor;
+            TextSize = textSize;
+            IsTextBold = isTextBold;
+
+            SetCellFillColor(cellFillColor);
+        }
+
+        public void SetCellFillColor(Color? color) 
+        {
+            switch(color is null) 
+            {
+                case true:
+                    ExcelFillStyle = ExcelFillStyle.None;
+                    break;
+                case false:
+                    ExcelFillStyle = ExcelFillStyle.Solid;
+                    CellFillColor = color;
+                    break;
+            }
+        } 
+    }
+
     /// <summary>
     /// Represents the result cell for an Excel table.
     /// </summary>
-    /// <remarks><i>New version.</i></remarks>
-    public readonly struct TargetCell
+    public readonly struct TargetCell(int colNumber, string colName, double colWidth, string format,
+        bool wrapTextInHeader, int textRotationInHeader, string propertyName, ParsingTypeCode parsingTypeCode,
+        Predicate<int>? valueСheckingPredicate, TargetCellSettings targetCellSettings, int groupCellsFromCurrent = 0)
     {
         #region Properties
-        public int ColNumber { get; }
-        public string ColName { get; }
-        public double ColumnWidth { get; }
-        public string Format { get; }
-        public bool WrapTextInHeader { get; }
-        public int TextRotationInHeader { get; }
-        public string PropertyName { get;}
-        public ParsingTypeCode ParsingTypeCode { get; }
-        public ExcelFillStyle ExcelFillStyle { get; }
-        public readonly Predicate<int>? ValueСheckingPredicate; 
-        public Color HighlightTextСolor { get; } = ColorTranslator.FromHtml("#72bcd4");
-        public bool IsBoldFont { get; }
-
-        #endregion
-
-        #region Constructors
-        public TargetCell(int colNumber, string colName, double colWidth, string format, 
-            bool wrapTextInHeader, int textRotationInHeader, string propertyName, ParsingTypeCode parsingTypeCode, 
-            ExcelFillStyle excelFillStyle, Predicate<int>? valueСheckingPredicate, bool isBoldFont = false)
-        {
-            ColNumber = colNumber;
-            ColName = colName;
-            ColumnWidth = colWidth;
-            Format = format;
-            WrapTextInHeader = wrapTextInHeader;
-            TextRotationInHeader = textRotationInHeader;
-            PropertyName = propertyName;
-            ParsingTypeCode = parsingTypeCode;
-            ExcelFillStyle = excelFillStyle;
-            ValueСheckingPredicate = valueСheckingPredicate;
-            IsBoldFont = isBoldFont;
-        }
+        public int ColNumber { get; } = colNumber;
+        public string ColName { get; } = colName;
+        public double ColumnWidth { get; } = colWidth;
+        public string Format { get; } = format;
+        public bool WrapTextInHeader { get; } = wrapTextInHeader;
+        public int TextRotationInHeader { get; } = textRotationInHeader;
+        public string PropertyName { get; } = propertyName;
+        public ParsingTypeCode ParsingTypeCode { get; } = parsingTypeCode;
+        public readonly Predicate<int>? ValueСheckingPredicate = valueСheckingPredicate; 
+        public readonly TargetCellSettings CellSettings { get; } = targetCellSettings;
+        public int GroupCellsFromCurrentCount { get; } = groupCellsFromCurrent;
         #endregion
     }
 }

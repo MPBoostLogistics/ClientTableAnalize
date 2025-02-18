@@ -1,7 +1,7 @@
-using TableAnalizer.Enums;
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUDummiesBalance;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.Repositories
 //https://learn.microsoft.com/en-us/dotnet/standard/collections/thread-safe/how-to-add-and-remove-items
@@ -13,7 +13,6 @@ namespace TableAnalizer.Objects.Repositories
             if (Entiies.TryGetValue(id, out SKU? retrievedValue) && retrievedValue is not null)
             {
                 SKU? newValue = CreateNewSKU(retrievedValue, item, isMulty);
-
                 return newValue is not null && Entiies.TryUpdate(id, newValue, retrievedValue);
             }
             else
@@ -22,7 +21,7 @@ namespace TableAnalizer.Objects.Repositories
             }
         }
 
-        private static SKU CreateNewSKU(SKU retriveValue, SKU newValue, bool isMulty) 
+        private static SKU CreateNewSKU(SKU retriveValue, SKU newValue, bool isSummary) 
         {
             // Marketplace 
             Marketplace? marketplace = null;
@@ -75,25 +74,25 @@ namespace TableAnalizer.Objects.Repositories
                     {
                         var retrieveOnWay = retriveValue.SKURansomsBalance!.SKURansomsOnWay; 
                         var newValueOnWay = newValue.SKURansomsBalance!.SKURansomsOnWay; 
-                        int? onWay = isMulty || !Equals(retrieveOnWay, newValueOnWay)? 
+                        int? onWay = isSummary || !Equals(retrieveOnWay, newValueOnWay)? 
                             retrieveOnWay + newValueOnWay :
                             retrieveOnWay;
                         
                         var retrieveCancelled = retriveValue.SKURansomsBalance!.SKURansomsCanceled; 
                         var newValueCancelled = newValue.SKURansomsBalance!.SKURansomsCanceled; 
-                        int? canceled = isMulty || !Equals(retrieveCancelled, newValueCancelled)?
+                        int? canceled = isSummary || !Equals(retrieveCancelled, newValueCancelled)?
                             retrieveCancelled + newValueCancelled :
                             retrieveCancelled;
                         
                         var retrieveDelivered = retriveValue.SKURansomsBalance!.SKURansomsDelivered; 
                         var newValueDelivered = newValue.SKURansomsBalance!.SKURansomsDelivered; 
-                        int? delivered = isMulty || !Equals(retrieveDelivered, newValueDelivered)?
+                        int? delivered = isSummary || !Equals(retrieveDelivered, newValueDelivered)?
                             retrieveDelivered + newValueDelivered :
                             retrieveDelivered;
                         
                         var retrieveWithDrawn = retriveValue.SKURansomsBalance!.SKURansomsWithDrawn; 
                         var newValueWithDrawn = newValue.SKURansomsBalance!.SKURansomsWithDrawn; 
-                        int? withDrawn = isMulty || !Equals(retrieveWithDrawn, newValueWithDrawn) ?
+                        int? withDrawn = isSummary || !Equals(retrieveWithDrawn, newValueWithDrawn) ?
                             retrieveWithDrawn + newValueWithDrawn :
                             retrieveWithDrawn;
 
@@ -126,29 +125,37 @@ namespace TableAnalizer.Objects.Repositories
                         // Приход
                         var retriveReceipt = retriveValue.SKURemainingBalance!.SKUReceipt; 
                         var newReceipt = newValue.SKURemainingBalance!.SKUReceipt; 
-                        int skuReceipt = isMulty && Equals(retriveReceipt, newReceipt) ?
+                        int skuReceipt = isSummary && Equals(retriveReceipt, newReceipt) ?
                             retriveReceipt :
                             !Equals(retriveReceipt, newReceipt) ? 
                                 retriveReceipt + newReceipt : 
                                 retriveReceipt; 
 
-                        // Расход 
+                        // Расход товаром 
                         var retriveShipped = retriveValue.SKURemainingBalance!.SKUShipped; 
                         var newShipped = newValue.SKURemainingBalance!.SKUShipped;   
-                        int skuShipped = isMulty || !Equals(retriveShipped, newShipped)? 
+                        int skuShipped = isSummary || !Equals(retriveShipped, newShipped)? 
                             retriveShipped + newShipped : 
                             retriveShipped;
+
+                        // Передача товаров
+                        var retriveTransfered = retriveValue.SKURemainingBalance!.SKUTransfered; 
+                        var newTransfered = newValue.SKURemainingBalance!.SKUTransfered;   
+                        int skuTransfered = isSummary || !Equals(retriveTransfered, newTransfered)? 
+                            retriveTransfered + newTransfered : 
+                            retriveTransfered;
+
 
                         // Остаток
                         var retriveRemaining = retriveValue.SKURemainingBalance!.SKURemaining; 
                         var newRemaining = newValue.SKURemainingBalance!.SKURemaining;  
-                        int skuRemaining = isMulty || Equals(retriveRemaining, newRemaining) ?
+                        int skuRemaining = isSummary || Equals(retriveRemaining, newRemaining) ?
                             retriveRemaining : 
                             !Equals(retriveRemaining, newRemaining) ? 
                                 retriveRemaining + newRemaining : 
                                 retriveRemaining;
 
-                        skuRemainingBalance = new SKURemainingBalance(skuNumber, brandAndName, skuReceipt,skuShipped, skuRemaining);
+                        skuRemainingBalance = new SKURemainingBalance(skuNumber, brandAndName, skuReceipt,skuShipped, skuTransfered, skuRemaining);
                     }
 
                     break;
@@ -189,11 +196,7 @@ namespace TableAnalizer.Objects.Repositories
 
                     if(newValue.SKUCompensationBalance is not null) 
                     {
-                        int count = newValue.SKUCompensationBalance.Count;
-                        double sum = newValue.SKUCompensationBalance.Sum;
-                        string? comment = newValue.SKUCompensationBalance.Comments;
-
-                        skuCompensationBalance!.Update(count, sum, comment);
+                        skuCompensationBalance!.Update(newValue.SKUCompensationBalance.CompensationItems);
                     }
 
                     break;
@@ -211,30 +214,11 @@ namespace TableAnalizer.Objects.Repositories
 
                     if(newValue.SKUResortBalance is not null) 
                     {
-                        var resortSKUsInNewValue = newValue.SKUResortBalance.ResortSKUs;
+                        var resortSKUsInNewValue = newValue.SKUResortBalance.SKUsToResort;
                         if(resortSKUsInNewValue is not null && resortSKUsInNewValue.Count > 0) 
                         {
                             skuResortBalance!.Update(resortSKUsInNewValue);
                         }
-                    }
-                    break;
-            }
-
-            // SKUDummiesBalance
-            SKUDummiesBalance? skuDummiesBalance = null;
-            switch(retriveValue.SKUDummiesBalance is not null, newValue.SKUDummiesBalance is not null) 
-            {
-                case (false,true):
-                    skuDummiesBalance = newValue.SKUDummiesBalance;
-                    break;
-
-                case (true,true): case (true,false):
-
-                    skuDummiesBalance = retriveValue.SKUDummiesBalance;
-
-                    if(newValue.SKUDummiesBalance is not null) 
-                    {
-                        skuDummiesBalance!.Update(newValue.SKUDummiesBalance.Count);
                     }
                     break;
             }
@@ -276,7 +260,7 @@ namespace TableAnalizer.Objects.Repositories
             bool isParallel = retriveValue.IsParallelSKU || newValue.IsParallelSKU;
 
             return new SKU(marketplace, skuNumber, skuBrand, skuName, skuRansomsBalance, 
-                skuRemainingBalance, skuWriteOffBalance, skuCompensationBalance, skuResortBalance!, skuDummiesBalance, averagePrice, maxRansomsDate, deadlineDays, isParallel);
+                skuRemainingBalance, skuWriteOffBalance, skuCompensationBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays, isParallel);
         }
     }
 }

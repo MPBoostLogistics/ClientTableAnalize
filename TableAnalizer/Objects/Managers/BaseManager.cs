@@ -1,13 +1,16 @@
 using System.Diagnostics;
+using System.Drawing;
 using System.Reflection;
-using TableAnalizer.Enums;
+using CSharpHelpers.Services;
+using Microsoft.Extensions.Configuration;
 
 namespace TableAnalizer.Objects.Managers
 {
     public class BaseManager 
     {
         #region Variables and constants 
-        public const string EXCEL_FILE_EXTENSION = ".xlsx";
+        public readonly string[] validFileExtensions = [];
+        internal IConfigurationRoot? config;
         #endregion Variables and constant
 
         #region Properties 
@@ -17,14 +20,14 @@ namespace TableAnalizer.Objects.Managers
         /// Сollection of colors to indicate status of mutual settlements with clients.
         /// </summary>
         /// <remarks><i>New version</i></remarks>
-        public Dictionary<SKUSellmentStatus, System.Drawing.Color> Colors { get; } = new()
+        public Dictionary<SKUSellmentStatus, Color> Colors { get; } = new()
         {
-            {SKUSellmentStatus.FullSet, System.Drawing.ColorTranslator.FromHtml("#98fb98")},
-            {SKUSellmentStatus.InWork, System.Drawing.ColorTranslator.FromHtml("#ffd700")},
-            {SKUSellmentStatus.OnSearchWarehouseAndPoints, System.Drawing.ColorTranslator.FromHtml("#f08080")},
-            {SKUSellmentStatus.OnSearchWarehouse, System.Drawing.ColorTranslator.FromHtml("#ffa07a")},
-            {SKUSellmentStatus.OnSearchPoints, System.Drawing.ColorTranslator.FromHtml("#ffc4ad")},
-            {SKUSellmentStatus.Unknown, System.Drawing.ColorTranslator.FromHtml("#add8e6")}
+            {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#EAF6F5")},                    // #EAF6F5
+            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fef4e2")},                     // #fef4e2
+            {SKUSellmentStatus.OnSearchWarehouseAndPoints, ColorTranslator.FromHtml("#ffe2d3")}, // #ffe2d3
+            {SKUSellmentStatus.OnSearchWarehouse, ColorTranslator.FromHtml("#ffe1d2")},          // #ffe1d2
+            {SKUSellmentStatus.OnSearchPoints, ColorTranslator.FromHtml("#ffe7db")},             // #ffe7db
+            {SKUSellmentStatus.Unknown, ColorTranslator.FromHtml("#eef5f9")}                     // #eef5f9
         };
         #endregion Properties
 
@@ -44,7 +47,39 @@ namespace TableAnalizer.Objects.Managers
         #endregion Events
 
         #region Constuctor and destructors
-        protected BaseManager() { }
+        protected BaseManager() 
+        {
+            BuildConfig();
+
+            IConfigurationSection? collectionSessions = config!.GetSection("Collections");
+            validFileExtensions = collectionSessions.GetValue<string[]>("validFileExtensions");
+        }
+
+        public virtual void BuildConfig()
+        {
+            if (FileService.GetProjectDirectory(out DirectoryInfo? projectDirectory)
+                    && projectDirectory != null)
+            {
+                string? configFileName;
+                if(IsRunningFromNUnit)
+                    configFileName = "testConfig.json";
+                else
+                    configFileName = "config.json";
+
+                if(!string.IsNullOrEmpty(configFileName)) 
+                {
+                    config = new ConfigurationBuilder()
+                        .SetBasePath(projectDirectory.FullName)
+                        //.AddUserSecrets<BaseManager>()
+                        .AddJsonFile(configFileName, optional: false)
+                        .Build();
+                } 
+                else 
+                {
+                    throw new Exception("Config json filename is null");
+                }
+            }
+        }
         #endregion
 
         #region Functionality
@@ -67,25 +102,6 @@ namespace TableAnalizer.Objects.Managers
             stopwatch.Stop();
             return stopwatch.ElapsedMilliseconds / 1000;
         }
-        #endregion Functionality
-
-        // Из старой реалиазции
-        private static string FormСorrectPath(string path)
-        {
-            var copy = path;
-
-            // Clear "\"
-            var charArray = copy.Trim().ToList();
-            for (int i = 0; i < charArray.Count; i++)
-            {
-                if (charArray[i] == '\u005c') charArray.RemoveAt(i);
-            }
-
-            copy = new string(charArray.ToArray());
-
-            // Add "/"
-            return $"/{copy}";
-        }
 
         public bool TryGetPropertyValue<TType, TObj>(TObj obj, string propertyName, out TType? value)
         {
@@ -95,7 +111,7 @@ namespace TableAnalizer.Objects.Managers
 
             if (obj is null)
             {
-                args = new ("TryGetPropertyValue: object is null.", 1000, true);
+                args = new ("TryGetPropertyValue: object is null.", true, true);
                 this.OnManagerReached(args);
                 return false;
             }
@@ -103,7 +119,7 @@ namespace TableAnalizer.Objects.Managers
             PropertyInfo? propertyInfo = typeof(TObj).GetProperty(propertyName);
             if (propertyInfo is null)
             {
-                args = new ($"TryGetPropertyValue: Property '{propertyName}' not found.", 1000, true);
+                args = new ($"TryGetPropertyValue: Property '{propertyName}' not found.", true, true);
                 this.OnManagerReached(args);
                 return false;
             }
@@ -116,7 +132,7 @@ namespace TableAnalizer.Objects.Managers
 
             if (propertyValue is not TType typedValue)
             {
-                args = new ($"Property '{propertyName}' is of type {propertyInfo.PropertyType}, got {typeof(TType)}.", 1000, true);
+                args = new ($"Property '{propertyName}' is of type {propertyInfo.PropertyType}, got {typeof(TType)}.", true, true);
                 this.OnManagerReached(args);
                 return false;
             }
@@ -125,7 +141,15 @@ namespace TableAnalizer.Objects.Managers
 
             return true;
         }
-
+        
+        private static readonly bool IsRunningFromNUnit = 
+            AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Any(a => a != null &&
+                    !string.IsNullOrEmpty(a.FullName) &&
+                    a.FullName.ToLowerInvariant().StartsWith("nunit.framework"));
+        
+        #endregion Functionality
         
     }
 }

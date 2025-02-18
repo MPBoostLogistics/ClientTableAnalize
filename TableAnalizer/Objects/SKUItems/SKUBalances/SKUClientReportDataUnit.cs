@@ -1,9 +1,8 @@
-using TableAnalizer.Enums;
 using TableAnalizer.Objects.Parsing;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances
 {
-    public class SKUClientReportDataUnit : ParsingRowEntity 
+    public class SKUClientReportDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements) 
     {
         #region Properties
         public Marketplace SKUMp { get; set; } 
@@ -19,13 +18,9 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         public int SKURansomsWithDrawn { get; set; } 
         public int SKUReceipt { get; set; } 
         public int SKUShipped { get; set; } 
-        public int SKURemaining { get; set; } 
+        public int SKUTransferDataUnit { get; set; } 
+        public int SKURemaining { get; set; }
         #endregion Properties
-
-        #region Constructors
-        public SKUClientReportDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : base(parsingElements) {}
-        #endregion Constructors
-
     }
 }
     

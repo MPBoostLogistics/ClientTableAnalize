@@ -8,8 +8,7 @@ namespace TableAnalizer.Objects.Repositories
         {
             if (Entiies.TryGetValue(id, out List<ParsingRowEntity>? retrievedValue) && retrievedValue is not null)
             {
-                List<ParsingRowEntity> newValue = new(retrievedValue);
-                newValue.AddRange(item);
+                List<ParsingRowEntity> newValue = [.. retrievedValue, .. item];
                 return Entiies.TryUpdate(id, retrievedValue, newValue); 
             }
             else

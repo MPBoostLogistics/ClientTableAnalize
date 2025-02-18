@@ -1,23 +1,17 @@
 using TableAnalizer.Objects.Parsing;
 
-namespace TableAnalizer.Objects.SKUItems.SKUBalances 
+namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance 
 {
     /// <summary>
     /// Resort data unit for forming SKUResortBalance.
     /// </summary>
-    /// <remarks><i>New version</i></remarks>
-    public class SKUResortDataUnit : ParsingRowEntity
+    public class SKUResortDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
-        public int SKUNumber { get; set;}
-        public int ResortSKUNumber { get; set;}
-        public int ResortSKUCount { get; set; }
+        public int SKUFromResortNumber { get; set;}
+        public int SKUToResortNumber { get; set;}
+        public int SKUToResortNumberCount { get; set; }
         public string? ResortComment { get; set;}
         #endregion Properties
-
-        #region Constructors
-        public SKUResortDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : base(parsingElements){}
-        
-        #endregion Constructors
     }
 }

@@ -1,4 +1,4 @@
-namespace TableAnalizer.Enums
+namespace TableAnalizer.Objects
 {
     public enum Marketplace { WB, OZ }
 
@@ -34,7 +34,7 @@ namespace TableAnalizer.Enums
         WriteOffShortages,  // списание недростач общее 
         Additional,          // недостачи, пересорты и пустышки
         Shipped,             // расходы товаром 
-        Transfer,            // перемещение (на фулфилмент) 
+        Transfered,            // перемещение (на фулфилмент) 
         Client               // клиентский отчет
     }
 
@@ -45,10 +45,10 @@ namespace TableAnalizer.Enums
         RemainingWB,        // приходы и остатки WB
         RemainingOZ,        // приходы и остатки OZ
         Shipped,            // расходы товаром 
+        Transfered,         // передано товаров (на производство)
         WriteOffShortages,  // списание недростач общее 
         Compensation,       // оплаченные недостачи
-        Resort,             // пересорты
-        Dummies             // пустышки  
+        Resort,             // пересорты 
     }
 
     public enum SKURansomsStatus
@@ -70,11 +70,50 @@ namespace TableAnalizer.Enums
         SellmentStatus              // 6
     }
 
-    enum SourceCellsType 
+    public enum SourceCellsType 
     {
         Required,
         Filtration,
         NonFiltration
     }
 
+    public enum SKUResortBalanceTarget 
+    {
+        /// <summary>
+        /// Возможен пересорт в 1С (приходы)
+        /// </summary>
+        MaybeResortIn1CReceipt, 
+        /// <summary>
+        /// Создан пересорт в 1С (приходы)
+        /// </summary>
+        ResortIn1CReceipt,
+        /// <summary>
+        /// Возможен пересорт в 1С
+        /// </summary>
+        MaybeResortIn1C,
+        /// <summary>
+        /// Создан пересорт в 1С
+        /// </summary>
+        ResortIn1C,
+        /// <summary>
+        /// Концептуальный
+        /// </summary>
+        Conceptual,
+        /// <summary>
+        /// Нет решения 
+        /// </summary>
+        NoSolution      
+    }
+
+    public enum CompensationTarget 
+    {
+        /// <summary>
+        /// Компенсация от склада
+        /// </summary>
+        Warehouse, 
+        /// <summary>
+        /// Компенсация от точек
+        /// </summary>
+        PickupPoint
+    }
 }

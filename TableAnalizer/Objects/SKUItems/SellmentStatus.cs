@@ -1,5 +1,3 @@
-using TableAnalizer.Enums;
-
 namespace TableAnalizer.Objects.SKUItems
 {
      public class SellmentStatus 

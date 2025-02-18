@@ -1,68 +1,244 @@
-namespace TableAnalizer.Objects.SKUItems.SKUBalances
+using System.Diagnostics;
+using System.Text;
+
+namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 {
+    public class ResortBalanceUnit (SKUResortBalanceTarget balanceTarget)
+    {
+        public SKUResortBalanceTarget BalanceTarget { get; } = balanceTarget;
+
+        public Dictionary<int ,int> ResortTo { get; private set; } = []; 
+
+        public void Update(int sku, int sum) 
+        {
+            if(ResortTo.TryGetValue(sku, out int value)) 
+            {
+                value += sum;
+                ResortTo[sku] = value;
+            }
+            else 
+            {
+                ResortTo[sku] = sum;
+            }
+        }
+    }
+
     public class SKUResortBalance
     {
+        #region Variables and constants
+        public const string MAYBE_RESORT_1C_RECEIPT_NAME = "Возможен пересорт в 1С (приходы)";  
+        public const string RESORT_1C_RECEIPT_NAME = "Создан пересорт в 1С (приходы)";  
+        public const string MAYBE_RESORT_1C_NAME = "Возможен пересорт в 1С";  
+        public const string RESORT_1C_NAME = "Создан пересорт в 1С";  
+        public const string CONCEPLUAL_NAME = "Концептуальный";    
+        public const string NO_SOLUTION_NAME = "Нет решения"; 
+        #endregion
+
         #region Properties
-        public int SKUNumber { get; private set; }
-        public readonly Dictionary<int, int> ResortSKUs = new(); // Key: resort SKUNumber, Value: resort Count
+        /// <summary>
+        /// Sku FROM WHICH re-sorting is what was <b>not delivered</b> and is <b>written off</b> in 1C system
+        /// </summary>
+        public int SKUFromResortNumber { get; private set; }
+        /// <summary>
+        /// SKUs FOR WHICH re-sorting - what was <b>re-graded</b> and <b>entered</b> into 1C system: key - sku to resort: value - target of resorting, count.
+        /// </summary>
+        public readonly Dictionary<int, Dictionary<SKUResortBalanceTarget, int>> SKUsToResort = []; 
         public string ResortComment { get; private set; } = string.Empty;
         
         #endregion Properties
 
+        //public delegate bool FindSkusInBalanceDelegate((SKUResortBalanceTarget target, int count) item); 
+
         #region Constructors
-        public SKUResortBalance(int skuNumber, List<SKUResortDataUnit> skuResortDataUnits)
+        public SKUResortBalance(int skuFromResortNumber, List<SKUResortDataUnit> skuToResortUnits)
         {
-            SKUNumber = skuNumber;
-            Update(skuResortDataUnits);
+            SKUFromResortNumber = skuFromResortNumber;
+            Update(skuToResortUnits);
         }
         #endregion
 
         #region Functionality
         public void Update(List<SKUResortDataUnit> skuResortDataUnits) 
         {
+            static void SkippedProcedureMessage() 
+            {
+                Trace.WriteLine("Entry for re-sort must contain a correct comment.\nSkipped.");
+            }
+
             foreach (var skuResortDataUnit in skuResortDataUnits)
             {
-                var key = skuResortDataUnit.ResortSKUNumber;
-                var count = skuResortDataUnit.ResortSKUCount;
-      
+                // If there is no comment, entry is skipped
+                if(string.IsNullOrEmpty(skuResortDataUnit.ResortComment)) 
+                {
+                    SkippedProcedureMessage();
+                    continue;
+                }
 
-                UpdateResortSKUs(key, count);
+                if(!CheckEqualsSkus(skuResortDataUnit))
+                {
+                    continue;
+                }
+
+                // Get key and target
+                var skuToResortKey = skuResortDataUnit.SKUToResortNumber;
+                SKUResortBalanceTarget skuResortBalanceTarget;
+
+                switch (skuResortDataUnit.ResortComment!.Trim())
+                {
+                    case MAYBE_RESORT_1C_RECEIPT_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.MaybeResortIn1CReceipt;
+                        break;
+                    case RESORT_1C_RECEIPT_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.ResortIn1CReceipt;
+                        break;
+                    case MAYBE_RESORT_1C_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.MaybeResortIn1C;
+                        break;
+                    case RESORT_1C_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.ResortIn1C;
+                        break;
+                    case CONCEPLUAL_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.Conceptual;
+                        break;
+                    case NO_SOLUTION_NAME:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.NoSolution;
+                        break;
+                    default:
+                        SkippedProcedureMessage();
+                        continue;
+                }
+
+                if (SKUsToResort.TryGetValue(skuToResortKey, out Dictionary<SKUResortBalanceTarget, int>? value))
+                {
+                    var resortDict = value;
+                    if (resortDict.TryGetValue(skuResortBalanceTarget, out int count))
+                    {
+                        var resortCountByTarget = count + skuResortDataUnit.SKUToResortNumberCount;
+                        resortDict[skuResortBalanceTarget] = resortCountByTarget;
+                    }
+                    else
+                    {
+                        resortDict[skuResortBalanceTarget] = skuResortDataUnit.SKUToResortNumberCount;
+                    }
+
+                    SKUsToResort[skuToResortKey] = resortDict;
+                }
+                else
+                {
+                    SKUsToResort[skuToResortKey] = new Dictionary<SKUResortBalanceTarget, int>()
+                    {
+                        {skuResortBalanceTarget, skuResortDataUnit.SKUToResortNumberCount}
+                    };
+                }
             }
         }
-        
-        public void Update(Dictionary<int, int> newValues) 
+
+        private bool CheckEqualsSkus(SKUResortDataUnit skuResortDataUnit)
         {
-            foreach (var (key, value) in newValues)
+            // If balance and resortFrom articles are not equal, entry is skipped.
+            if (!int.Equals(SKUFromResortNumber, skuResortDataUnit.SKUFromResortNumber))
             {
-                UpdateResortSKUs(key, value);
+                Trace.WriteLine($"Balance ({SKUFromResortNumber}) and resortFrom ({skuResortDataUnit.SKUFromResortNumber}) skus number are not equal. Skipped.");
+                return false;
+            }
+            else 
+            {
+                return true;
             }
         }
 
-        private void UpdateResortSKUs(int resortSKUNumber, int resortCount) 
-        {
-            ResortSKUs[resortSKUNumber] = ResortSKUs.TryGetValue(resortSKUNumber, out int resortSKUCount) ? 
-                resortSKUCount + resortCount : 
-                resortCount; 
+        public void Update(Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortSKUsInNewValues) 
+        {       
+            if(resortSKUsInNewValues is null || resortSKUsInNewValues.Count == 0) return;
+
+            foreach (var resortSKUsInNewValue in resortSKUsInNewValues)
+            {
+                var resortSKUsInNewValueKey = resortSKUsInNewValue.Key;
+                if (SKUsToResort.TryGetValue(resortSKUsInNewValueKey, out Dictionary<SKUResortBalanceTarget, int>? value)) 
+                {
+                    var resortDict = value;
+
+                    foreach (var item in resortSKUsInNewValue.Value)
+                    {
+                        var skuResortBalanceTarget = item.Key;
+                        if (resortDict.TryGetValue(skuResortBalanceTarget, out int count))
+                        {
+                            var resortCountByTarget = count + item.Value;
+                            resortDict[skuResortBalanceTarget] = resortCountByTarget;
+                        }
+                        else
+                        {
+                            resortDict[skuResortBalanceTarget] = item.Value;
+                        }
+
+                        SKUsToResort[resortSKUsInNewValueKey] = resortDict;
+                    }
+                } 
+                else 
+                {
+                    SKUsToResort[resortSKUsInNewValueKey] = resortSKUsInNewValue.Value;
+                }
+            }
         }
 
-        public void AddСommentToBalance() 
+        public (int sum, string comment)? FindSkusInBalanceBy(SKUResortBalanceTarget target) 
         {
-           foreach (var resortSKU in ResortSKUs)
-           {
-                var resortSku = resortSKU.Key;
-                var resortSkuCount = resortSKU.Value;
+            var resortBalanceUnit = GetSkusResortToSum(target);
+            if(resortBalanceUnit.ResortTo.Count == 0) return null;
 
-                var comment = $"\nПересорт на {resortSku} ({resortSkuCount})";
-                comment = ResortSKUs.Values.Last() != resortSKU.Value ? 
-                    string.Concat(comment, ", ") : 
-                    string.Concat(comment, ".");
+            var comment = string.Empty;
 
-                ResortComment = string.IsNullOrEmpty(ResortComment) ? 
-                    comment :
-                    string.Concat(ResortComment, "\n", comment);
-           }
+            StringBuilder stringBuilder = new();
+
+            // Исходящие пересорты
+            switch(target) 
+            {
+                case SKUResortBalanceTarget.ResortIn1CReceipt:
+                    stringBuilder.Append("Пересортица прихода (1C, исходящий, вычтен из \"Склад: Приход товаром\"):\n");
+                    break;
+                case SKUResortBalanceTarget.ResortIn1C:
+                    stringBuilder.Append("Пересортица расхода на др. артикулы (1C, вычтено из \"Склад: Склад: Приход товаром\" и \"Склад: Склад: Расход товаром\"):\n");
+                    break;
+                case SKUResortBalanceTarget.Conceptual:
+                    stringBuilder.Append("Пересортица расхода (баланс, добавлено в \"Склад: Списано пересортицей, товаров\"):\n");
+                    break;
+                default:
+                    stringBuilder.Append("Нераспознанный пересорт:\n");
+                    break;
+            }
+
+            foreach (var item in resortBalanceUnit.ResortTo)
+            {
+                stringBuilder.Append($"{item.Key}, шт - {item.Value}");
+                if(resortBalanceUnit.ResortTo.Keys.Last() != item.Key) 
+                {
+                    stringBuilder.Append(", ");
+                }
+            }
+
+            // Result
+            comment = stringBuilder.ToString();
+            var sum = resortBalanceUnit.ResortTo.Aggregate(0, (acc, i) => acc + i.Value);
+            return (sum, comment);
         }
-        
+
+        public ResortBalanceUnit GetSkusResortToSum(SKUResortBalanceTarget target) 
+        {
+            var resort = new ResortBalanceUnit(target);
+            foreach (var sku in SKUsToResort)
+            {
+                foreach ((SKUResortBalanceTarget t, int s) in sku.Value)
+                {
+                    if(t == target) 
+                    {
+                        resort.Update(sku.Key, s);
+                    }
+                }
+            }
+
+            return resort;
+        }
+
         #endregion
     }
 }

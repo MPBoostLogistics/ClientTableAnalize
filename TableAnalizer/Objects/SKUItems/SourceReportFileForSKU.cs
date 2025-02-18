@@ -1,5 +1,3 @@
-using TableAnalizer.Enums;
-
 namespace TableAnalizer.Objects.SKUItems
 {
     public class SourceReportFileForSKU
@@ -11,7 +9,7 @@ namespace TableAnalizer.Objects.SKUItems
         const string ransomsKey = "отчет";
         const string writeOffShortagesKey = "списание";
         const string shippedKey = "расходы";
-        const string transferKey = "перемещение";
+        const string transferKey = "перемещения";
         const string receivedRemainingKey = "приходы";
         const string additionalKey = "дополнительный";
         const string clientReportlKey = "clientreport";
@@ -37,21 +35,20 @@ namespace TableAnalizer.Objects.SKUItems
                 fileName = fileName.TrimStart('~','$');
             }
 
-            if (SplitStringIntoSubstrings(fileName, new string[] { SPACE_SEPARATOR, LOW_LINE_SEPARATOR }, out string[]? substrings) &&
+            if (SplitStringIntoSubstrings(fileName, [SPACE_SEPARATOR, LOW_LINE_SEPARATOR], out string[]? substrings) &&
                 substrings is not null)
             {
-                // Юсупов расходы 22052024.xlsx                  3
-                // Юсупов дополнительный 220224.xlsx             3
+                // дополнительный 30012925.xlsx                  2
+
+                // 89003000879 расходы 22052024.xlsx                  3
                 // Общее списание 230124.xlsx                    3
-                // Башорин перемещение 190724.xlsx               3
+                // 89003000879 перемещения 190724.xlsx               3
                 // ClientReport 79687978888 03-12-2024           3
 
-                // Отчет по клиенту +79164372997 (WB).xlsx       5
                 // Отчет по клиенту +79164372997 (Ozon).xlsx     5
                 
-
-                // Юсупов приходы и остатки 220524 (WB).xlsx     6
-                // Юсупов приходы и остатки 220524 (Ozon).xlsx   6
+                // 89003000879 приходы и остатки 220524 (WB).xlsx     6
+                // 89003000879 приходы и остатки 220524 (Ozon).xlsx   6
 
                 int keyIndex;
                 switch (substrings.Length)
@@ -73,6 +70,7 @@ namespace TableAnalizer.Objects.SKUItems
                 }
 
                 string keyString  = substrings[keyIndex].Trim().ToLower();
+
                 switch (keyString)
                 {
                     // дополнительный
@@ -114,7 +112,7 @@ namespace TableAnalizer.Objects.SKUItems
 
                     //  выкупы
                     case ransomsKey:
-                        if (SplitStringIntoSubstrings(substrings.Last(), new string [] {comaSeparator}, out string[]? mpStrings) &&
+                        if (SplitStringIntoSubstrings(substrings.Last(), [comaSeparator], out string[]? mpStrings) &&
                             mpStrings != null)
                         {
                             var mpString = mpStrings.First().Trim().ToLower();
@@ -139,7 +137,7 @@ namespace TableAnalizer.Objects.SKUItems
 
                     // перемещение на фулфилмент
                     case transferKey:
-                        ReportKey = SourceSKUReportFileKey.Transfer;
+                        ReportKey = SourceSKUReportFileKey.Transfered;
                         break; 
                     
                     // клиентский отчет
@@ -167,7 +165,6 @@ namespace TableAnalizer.Objects.SKUItems
         /// <param name="separators">Array of string separators.</param>
         /// <param name="substrings">An array of substrings derived from source string.</param>
         /// <returns>Logical flag for performing an operation.</returns>
-        /// <remarks><i>New version, tested</i></remarks>
         public static bool SplitStringIntoSubstrings(string sourceString, string[] separators, out string[]? substrings)
         {
             substrings = null;

@@ -1,0 +1,22 @@
+{
+    "Messages": {
+      "GoodbyMessage": "\nСпасибо за использование программы.",
+      "TraceInfoFlag": "[INFO]: ",
+      "TraceErrorFlag": "[ERROR]: "
+    },
+    "Settings" : 
+    {
+      "TestSourcePathSingleName" : "TestSingleClientSourceFiles",
+      "TestTargetPathSingleName" : "TestSingleClientTargetFiles",
+      "isMulty": false 
+    },
+    "Numbers": {
+      "defaultDeadlineDays" : 14,
+      "TracingDelay": 1500,
+      "reportSourceFilesForSingleClientSum": 7
+    },
+    "Collections": 
+    {
+      "validFileExtensions" : [".xls", ".xlsx"]
+    }
+}

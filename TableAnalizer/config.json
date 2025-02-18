@@ -1,0 +1,15 @@
+{
+    "Messages": {
+      "GoodbyMessage": "\nThank you for using the program.\nHave a productive day!",
+      "TraceInfoFlag": "[INFO]: ",
+      "TraceErrorFlag": "[ERROR]: "
+    },
+    "Numbers": {
+      "TracingDelay": 1100
+    },
+    "Collections": 
+    {
+      "validFileExtensions" : [".xls", ".xlsx"]
+    }
+
+  }

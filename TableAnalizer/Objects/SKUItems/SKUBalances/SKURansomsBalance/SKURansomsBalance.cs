@@ -1,6 +1,4 @@
-﻿using TableAnalizer.Enums;
-
-namespace TableAnalizer.Objects.SKUItems.SKUBalances  
+﻿namespace TableAnalizer.Objects.SKUItems.SKUBalances  
 {
     /// <summary>
     ///  Client's ransoms balance.

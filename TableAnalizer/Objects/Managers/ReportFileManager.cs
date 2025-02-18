@@ -1,139 +1,133 @@
-﻿
-using System.Reflection.Metadata;
+﻿using System.Text;
 using System.Text.RegularExpressions;
-using TableAnalizer.Enums;
+using CSharpHelpers.Services;
 using TableAnalizer.Objects.SKUItems;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public class FileManager : BaseManager
+    public class ReportFileManager : BaseManager
     {
         #region Variables and constants 
-        // This will get the current WORKING directory (i.e. \bin\Debug)
-        protected readonly string workingDirectory = Environment.CurrentDirectory;
-        // This will get the current PROJECT directory
-
         private readonly static string _clientReportRegexPattern = @"(ClientReport_)\d+(_)+\d+(-)\d+(-)\d+(.xlsx)";
         private readonly Regex _clientReportRegex = new(_clientReportRegexPattern, RegexOptions.None, TimeSpan.FromSeconds(1));
         #endregion
 
         #region Properties
-        public string ProjectDirectory { get; }
 
         /// <summary>
         /// Dictionary, where key is the key of report file for a client of a certain type, and value is report file itself.
         /// </summary>
-        public Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> ReportsPathsSingleReport { get; private set; } = new();
+        public Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> ReportsPathsSingle { get; private set; } = [];
         public Dictionary<string, SourceReportFileForSKU> ReportsPathsMultyReport { get; private set; } = new();
         
-        public SourceReportFileForSKU? AdditionalPathsMultyReport {get; private set;}
+        public SourceReportFileForSKU? AdditionalPathsMultyReport { get; private set; }
         
         public static DirectoryInfo? DirInfoForClientTargetReports { get; private set; }
         public static string? InputReportsFilePath { get; set; } = string.Empty;
         public static string OutputClientReportFilePath { get; private set; } = string.Empty;
         #endregion
 
-        #region Constructors 
-        public FileManager() : base()
-        {
-            // Get project directory
-            var getParentworkingDirectory = Directory.GetParent(workingDirectory) ?? throw new DirectoryNotFoundException();
-            ProjectDirectory = getParentworkingDirectory.Parent!.Parent!.FullName;
-        }
-        #endregion
-
         #region  Functionality
-        public static bool GetFileInfosFromDirInfoByExtensions(DirectoryInfo? dirInfo, out IEnumerable<FileInfo>? fileInfos, string ext)
-        {
-            fileInfos = from fileInfo in dirInfo?.GetFiles()
-                        where fileInfo.Name.EndsWith(ext)
-                        select fileInfo;
-
-            return fileInfos is not null && fileInfos.Any();
-        }
 
         /// <summary>
         /// Checks availability of necessary files for data analysis.
         /// </summary>
         /// <param name="reportsPath">Directory with client reports.</param>
         /// <returns>List of existing keys as Task result.</returns>
-        public async Task<List<SourceSKUReportFileKey>?> ChecksAvailabilityNecessaryFiles(string reportsPath, bool isMulty)
+        public async Task<List<SourceSKUReportFileKey>?> ChecksAvailabilityNecessaryFiles(string reportsPath, bool isSummary, bool isTracing, int tracingDelay)
         {
-            ManagerReachedEventArgs? args = null;
+            List<SourceSKUReportFileKey> existingKeys = [];
+            string message = string.Empty;
+            bool isError = false;
 
             try
             {
-                var fileCount = GetReportFiles(reportsPath, isMulty);
-                var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, isMulty);
+                Task<int> getFilesTask = GetSourceReportFiles(reportsPath, isSummary, validFileExtensions);
+                await Task.Run(() => getFilesTask);
+                getFilesTask.Wait();
 
-                if(!success && isMulty) 
+                var getReportFilesResult = getFilesTask.Result;
+
+                if(getFilesTask.Result == 0) 
                 {
-                    await Task.Delay(100);
-                    args = new("Нет необходимого количества отчетов (>1) для формирования сводного", 2000, true);
-                    return null;
+                    OnManagerReached(new(string.Empty, true, true));
                 } 
-                else 
+
+                var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out existingKeys, isSummary, tracingDelay);
+                
+                if(!success) 
                 {
-                    if (!success || lostKeys.Count > 0)
+                    switch (isSummary)
                     {
-                        var lastKey = lostKeys.Last();
-                        var lostKeysString = string.Empty;
+                        case true:
+                            message = "There is not enough reports (>1) to generate a summary.";
+                            isError = true;
+                            break;
+                        case false:
+                            switch(lostKeys.Count > 0) 
+                            {
+                                case true:
+                                    var lastKey = lostKeys.Last();
+                                    StringBuilder lostKeysBuilder = new("Mandatory data for analysis not provided: ");
 
-                        foreach (var lostKey in lostKeys)
-                            lostKeysString = string.Concat(lostKeysString, lostKey, !Equals(lostKey, lastKey) ? ", " : ". ");
-
-                        await Task.Delay(100);
-                        args = new(string.Concat("Не предоставлены обязательные данные для анализа: ", lostKeysString), 2000, true);
-                        return null;
-                    }
-                    else
-                    {
-                        return existingKeys;
+                                    foreach (var lostKey in lostKeys)
+                                        lostKeysBuilder.Append(string.Concat(lostKey, !Equals(lostKey, lastKey) ? ", " : ". "));
+                                    message = lostKeysBuilder.ToString();
+                                    isError = true;
+                                    break;
+    
+                                case false:
+                                    break;
+                            }
+                            break;
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                await Task.Delay(100);
-                args = new(string.Concat($"Ошибка данных: {ex.Message}", "\n"), 2000, true);
-                return null;
+                message = $"Data error: {ex.Message}\n";
+                isError = true;
             }
-            finally
-            {
-                if (args is not null)
-                    OnManagerReached(args);
-            }
+
+            OnManagerReached(new(message, isError, false));
+      
+            return existingKeys;
         }
 
         /// <summary>
-        /// Receives supplied files from directory.
+        /// Get source report files.
         /// </summary>
-        /// <param name="dirPathString">Directory path string.</param>
-        /// <returns>Number of files transferred for analysis.</returns>
-        /// <exception cref="Exception">Exception for empty directory without files.</exception>
-        /// <remarks><i>New version, tested</i></remarks>
-        public async Task<int> GetReportFiles(string dirPathString, bool isMulty)
+        /// <param name="dirPath">Directory for receiving reports.</param>
+        /// <param name="isSummaryReport">Flag whether the report is a summary report.</param>
+        /// <param name="validFileExtensions"Collection of valid file extensions.</param>
+        /// <returns>Number of report files received.</returns>
+        public async Task<int> GetSourceReportFiles(string dirPath, bool isSummaryReport, string[] validFileExtensions)
         {
-            ManagerReachedEventArgs? args = default;
+            var count = 0;
+            StringBuilder message = new();
+            var isError = false;
 
-            var files = GetFilesFromDirectory(dirPathString, EXCEL_FILE_EXTENSION);
+            FileService.SearchFilesInDirectory(dirPath, out FileInfo[]? files, validFileExtensions);
 
-            if (files is null || !files.Any())
+            if (files is null || files.Length == 0)
             {
-                args = new ManagerReachedEventArgs("Directory with files for processing does not exist or is empty, check it.", 1000, false);
+                message.Append("Directory with files for processing does not exist or is empty, check it.");
+                isError = true;
             }
             else
             {
+                message.Append($"\nNumber of files in dir with ext \"{validFileExtensions?.ToString()}\": {files!.Length}");
+
                 foreach (var fileInfo in files!)
                 {
                     try
                     {
-                        var sorceReportFile = new SourceReportFileForSKU(fileInfo, isMulty);
+                        var sorceReportFile = new SourceReportFileForSKU(fileInfo, isSummaryReport);
                         var key = sorceReportFile.ReportKey;
 
                         if (sorceReportFile != null && key.HasValue)
                         {
-                            switch (isMulty)
+                            switch (isSummaryReport)
                             {
                                 case true:
                                     // Additional for multy report
@@ -149,8 +143,7 @@ namespace TableAnalizer.Objects.Managers
                                     }
                                     break;
                                 case false:
-                                    // Save filePath by key 
-                                    ReportsPathsSingleReport[key.Value] = sorceReportFile;
+                                    ReportsPathsSingle[key.Value] = sorceReportFile;
 
                                     // Save login
                                     if (sorceReportFile?.Login != null)
@@ -160,98 +153,96 @@ namespace TableAnalizer.Objects.Managers
                             }
                         }
                     }
-                    catch (System.Exception ex)
+                    catch (Exception ex)
                     {
-                        args = new($"{ex.Message}", 500, true);
-                        throw;
+                        message.Append($"\nError SourceReportFileForSKU create: {ex.Message}");
+                        isError = true;
                     }
                 }
 
-                string readinessMessage = string.Empty;
-
-                if (isMulty)
+                if (isSummaryReport)
                 {
+                    count = ReportsPathsMultyReport.Count;
                     var logins = string.Join(",", ReportsPathsMultyReport.Keys);
-                    readinessMessage = string.Concat($"Логины клиентов: {logins}\n", $"{ReportsPathsMultyReport.Count} файлов (-ла) готово к обработке.\n");
+                    message.Append($"\nClient logins: {logins}\n{ReportsPathsMultyReport.Count} file(s) ready for processing.");
                 }
                 else
                 {
-                    readinessMessage = string.Concat($"Логин клиента: {ClientLogin}\n", $"{ReportsPathsSingleReport.Count} файлов (-ла) готово к обработке.\n");
+                    count = ReportsPathsSingle.Count;
+                    message.Append($"\nClient login: {ClientLogin}\n{ReportsPathsSingle.Count} file(s) ready for processing.");
                 }
 
                 try
                 {
-                    var clientOutputPathTask = DefineDirInfoForClientTargetReports(isMulty);
+                    var clientOutputPathTask = DefineDirInfoForClientTargetReports(isSummaryReport);
                     await Task.Run(async () => await clientOutputPathTask);
                     clientOutputPathTask.Wait();
                     var clientOutputPath = clientOutputPathTask.Result;
 
                     if (!string.IsNullOrEmpty(clientOutputPath))
                     {
-                        readinessMessage = string.Concat(readinessMessage, $"Директория для работы с клиентом: {clientOutputPath}");
+                        message.Append($"\nDirectory for target report: {clientOutputPath}");
                     }
                     else
                     {
-                        throw new Exception("Путь к диретории для работы с клиентом не может быть пустой строкой!");
+                        message.Append("\nPath to dir for working with client can`t be an empty string!");
+                        isError = true;
                     }
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
-                    args = new($"{ex.Message}", 500, true);
-                    throw;
+                    message.Append($"\nDefineDirInfoForClientTargetReports Error:\n{ex.Message}");
+                    isError = true;
                 }
-
-                args = new(readinessMessage, 500, false);
             }
 
-            if (args != null) OnManagerReached(args);
+            ManagerReachedEventArgs args = new(message.ToString(), isError, false);
+            OnManagerReached(args);
 
-            return files is null || !files.Any() ? 0 : ReportsPathsSingleReport.Count;
+            return count;
         }
 
         /// <summary>
-        /// Returns info about report file by key.
+        /// Get source report file for one client.
         /// </summary>
         /// <param name="key">Key to search for report file in dict.</param>
         /// <returns>SourceReportFileForSKU as Task (optional).</returns>
-        /// <remarks><i>New version.</i></remarks>
-        public async Task<SourceReportFileForSKU?> GetReportFile(SourceSKUReportFileKey key) =>
-            await Task.Run(() => ReportsPathsSingleReport.TryGetValue(key, out var reportFile) ? reportFile : null);
+        public async Task<SourceReportFileForSKU?> GetSourceReportForSingleClient(SourceSKUReportFileKey key) =>
+            await Task.Run(() => ReportsPathsSingle.TryGetValue(key, out var reportFile) ? reportFile : null);
 
         /// <summary>
         /// Define directory for client report output.
         /// </summary>
         /// <returns>Path string to directory to save data.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public async Task<string?> DefineDirInfoForClientTargetReports(bool isMulty = false)
+        public async Task<string?> DefineDirInfoForClientTargetReports(bool isSummary = false)
         {
             ManagerReachedEventArgs args;
 
-            if (!isMulty && ClientLogin is null)
+            if (!isSummary && ClientLogin is null)
             {
-                await Task.Delay(100);
-                args = new("Clint's login is not defined, so it is impossible to create a directory.", 2000, true);
+                args = new("Clint's login is not defined, so it is impossible to create a directory.", true, true);
                 OnManagerReached(args);
                 return null;
             }
 
-            DirInfoForClientTargetReports = GetDirectoryInfo(PathKey.MPBoostClients, !isMulty ? ClientLogin : string.Join(",", ReportsPathsMultyReport.Keys));
+            DirInfoForClientTargetReports = GetDirectoryInfo(PathKey.MPBoostClients, !isSummary ? ClientLogin : string.Join(",", ReportsPathsMultyReport.Keys));
 
             if (DirInfoForClientTargetReports == null)
             {
                 await Task.Delay(100);
-                args = new("Clint's login is not defined, so it is impossible to create a directory.", 500, true);
+                args = new("Clint's login is not defined, so it is impossible to create a directory.", true, true);
                 OnManagerReached(args);
                 return null;
             }
 
             var dateTime = DateTime.Now.ToString("dd-MM-yyyy");
 
-            OutputClientReportFilePath = !isMulty ?
+            OutputClientReportFilePath = !isSummary ?
                 $"{DirInfoForClientTargetReports!.FullName}/ClientReport_{ClientLogin}_{dateTime}.xlsx" :
                 $"{DirInfoForClientTargetReports!.FullName}/ClientsReportSummary_{ClientLogin}_{dateTime}.xlsx";
 
-            args = new($"Directory for final reports:{DirInfoForClientTargetReports.FullName}\nClients target report file name:{OutputClientReportFilePath}", 1000, false);
+            args = new($"Directory for final reports:{DirInfoForClientTargetReports.FullName}\nClients target report file name:{OutputClientReportFilePath}", false, false);
             OnManagerReached(args);
 
             return DirInfoForClientTargetReports.FullName ?? null;
@@ -262,43 +253,37 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <param name="lostKeys">A collection of required file keys that were not provided.</param>
         /// <returns>Logical flag for performing an operation.</returns>
-        /// <remarks><i>New version, tested</i></remarks>
-        public bool IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, bool isMulty)
+        public bool IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, bool isSummary, int delay)
         {
-            existingKeys = new(Array.Empty<SourceSKUReportFileKey>());
-            lostKeys = new(Array.Empty<SourceSKUReportFileKey>());
-
+            existingKeys = lostKeys = new([]);
             bool success = false;
 
-            if (isMulty)
+            if (isSummary)
             {
                 IEnumerable<KeyValuePair<string, SourceReportFileForSKU>>? matchingReport = 
                     from item in ReportsPathsMultyReport
                     where _clientReportRegex.Match(item.Value.FileInfo.Name).Success
-                    select item;
+                    select item;    
 
                 success = matchingReport.Count() > 1;
-
-                if(ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.Additional))
-                    existingKeys.Add(SourceSKUReportFileKey.Additional);
             }
             else
             {
-                var isContainsKeyRansomsWB = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.RansomsWB);
-                var isContainsKeyRansomsOZ = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.RansomsOZ);
+                var isContainsKeyRansomsWB = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.RansomsWB);
+                var isContainsKeyRansomsOZ = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.RansomsOZ);
                 bool isRansomsExisting = isContainsKeyRansomsWB || isContainsKeyRansomsOZ;
 
-                var isContainsKeyStorageWB = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.RemainingWB);
-                var isContainsKeyStorageOZ = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.RemainingOZ);
+                var isContainsKeyStorageWB = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.RemainingWB);
+                var isContainsKeyStorageOZ = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.RemainingOZ);
                 bool isRemainingExisting = isContainsKeyStorageWB || isContainsKeyStorageOZ;
 
-                var isContainsKeyShipped = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.Shipped);
+                var isContainsKeyShipped = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.Shipped);
 
-                var isContainsKeyTransfer = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.Transfer);
+                var isContainsKeyTransfer = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.Transfered);
 
-                var isContainsWriteOffShortages = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.WriteOffShortages);
+                var isContainsWriteOffShortages = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.WriteOffShortages);
 
-                var isContainsAdditional = ReportsPathsSingleReport.ContainsKey(SourceSKUReportFileKey.Additional);
+                var isContainsAdditional = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.Additional);
 
                 success = isRansomsExisting && isRemainingExisting && isContainsWriteOffShortages;
 
@@ -320,7 +305,7 @@ namespace TableAnalizer.Objects.Managers
                         existingKeys.Add(SourceSKUReportFileKey.Shipped);
 
                     if (isContainsKeyTransfer)
-                        existingKeys.Add(SourceSKUReportFileKey.Transfer);
+                        existingKeys.Add(SourceSKUReportFileKey.Transfered);
 
                     existingKeys.Add(SourceSKUReportFileKey.WriteOffShortages);
 
@@ -349,48 +334,6 @@ namespace TableAnalizer.Objects.Managers
                 }
             }
             return success;
-        }
-
-        /// <summary>
-        /// Gets the FileInfo collection for client reporting files.
-        /// </summary>
-        /// <param name="dirPathString">Path string to directory to search for files.</param>
-        /// <param name="ext">File extensions.</param>
-        /// <returns>Сollection for client reporting files.</returns>
-        /// <exception cref="DirectoryNotFoundException">Exception: Directory at spec path was not found.</exception>
-        /// <exception cref="Exception">Exception: Cannot create DirectoryInfo for directory specified in path.</exception>
-        /// <remarks><i>New version, tested</i></remarks>
-        public static IEnumerable<FileInfo>? GetFilesFromDirectory(string dirPathString, string? ext = null)
-        {
-            if(dirPathString.Contains('\'')) 
-            {
-                dirPathString = dirPathString.Replace("'", "");
-            }
-
-            if (!Directory.Exists(dirPathString))
-                throw new DirectoryNotFoundException($"Directory at path {dirPathString} was not found.");
-
-            var dirInfo = new DirectoryInfo(dirPathString) ?? throw new Exception($"Cannot make DirectoryInfo path {dirPathString}");
-
-            if (ext == null)
-            {
-                return dirInfo.GetFiles(); ;
-            }
-            else
-            {
-                return from fileInfo in dirInfo.GetFiles()
-                       where fileInfo.Name.EndsWith(EXCEL_FILE_EXTENSION)
-                       select fileInfo;
-            }
-        }
-
-        // TODO: Описать функционал 
-        public static bool DeleteExistingFile(string path)
-        {
-            if (File.Exists(path))
-                File.Delete(path);
-
-            return !File.Exists(path);
         }
 
         /// ???        
@@ -422,9 +365,9 @@ namespace TableAnalizer.Objects.Managers
 
         public static DirectoryInfo? GetDirectoryInfo(PathKey pathKey, string? login = null, string[]? logins = null)
         {
-            DirectoryInfo? result = null;
             string directoryName = string.Empty;
 
+            DirectoryInfo? result;
             switch (string.IsNullOrEmpty(login), logins is null)
             {
                 case (true, true):
@@ -463,6 +406,6 @@ namespace TableAnalizer.Objects.Managers
 
             return result;
         }
-         #endregion
+        #endregion
     }
 }

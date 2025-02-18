@@ -1,5 +1,3 @@
-using TableAnalizer.Enums;
-
 namespace TableAnalizer.Objects.Parsing
 {
     public class ItemForParsing 

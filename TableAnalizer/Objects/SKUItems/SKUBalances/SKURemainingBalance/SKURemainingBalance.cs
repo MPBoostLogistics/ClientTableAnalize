@@ -9,11 +9,22 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         #region Properties
         public int SKUNumber { get; private set; } = default;
         public string SKUBrandAndName { get; private set; } = string.Empty;
-        public int SKUReceipt { get; private set; } = 0;   // Приход товаров
-        public int SKUShipped { get; private set; } = 0;   // Расход товаров
-        public int SKURemaining { get; private set; } = 0; // Остаток товаров 
-        public bool IsOnlyShipped => SKUShipped > 0 && SKUReceipt == 0 && SKURemaining == 0;
-        public bool IsOnlyReceiptAndRemaining  => SKUShipped == 0 && (SKUReceipt > 0 || SKURemaining > 0);
+        /// <summary>
+        /// Number of goods received at the warehouse.
+        /// </summary>
+        public int SKUReceipt { get; private set; } = 0;  
+        /// <summary>
+        /// Number of goods delivered to the customer.
+        /// </summary>
+        public int SKUShipped { get; private set; } = 0;  
+        /// <summary>
+        /// Number of goods transferred to production.
+        /// </summary>
+        public int SKUTransfered { get; private set; } = 0;   
+        /// <summary>
+        /// Number of goods remaining in the warehouse.
+        /// </summary>
+        public int SKURemaining { get; private set; } = 0; 
         #endregion
 
         #region Constructors
@@ -37,14 +48,23 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
                 .Aggregate(0, (acc, unit) => acc + unit.SKUShippedCount);
         }
 
+        // For create from SKUTransferDataUnit collection.
+        public SKURemainingBalance(int skuNumber, List<SKUTransferDataUnit> skuTransferedDataUnits)
+        {
+            SKUNumber = skuNumber;
+            SKUTransfered = skuTransferedDataUnits
+                .Aggregate(0, (acc, unit) => acc + unit.SKUTransferedCount);
+        }
+
         // For create new balance from repo.
-         public SKURemainingBalance(int number, string brandAndName, int receipt, int shipped, int remaining) 
+         public SKURemainingBalance(int number, string brandAndName, int receipt, int shipped, int transfered, int remaining) 
          {
             SKUNumber = number;
             SKUBrandAndName = brandAndName;
 
             SKUReceipt = receipt;
             SKUShipped = shipped;
+            SKUTransfered = transfered;
             SKURemaining = remaining;
          }
 

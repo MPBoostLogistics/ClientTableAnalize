@@ -1,12 +1,11 @@
 using TableAnalizer.Objects.Parsing;
 
-namespace TableAnalizer.Objects.SKUItems.SKUBalances
+namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance
 {
     /// <summary>
     /// Compensation data unit for forming SKUCompensationBalance.
     /// </summary>
-    /// <remarks><i>New version</i></remarks>
-    public class SKUCompensationDataUnit : ParsingRowEntity
+    public class SKUCompensationDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
         public int SKUNumber { get; set;}                  // Артикул товара
@@ -14,9 +13,5 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         public double CompensationSum { get; set;}         // Сумма недостачи  
         public string? CompensationComment { get; set;}    // Комментарий (опционально)
         #endregion
-
-        #region Constructors
-        public SKUCompensationDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : base(parsingElements) {}
-        #endregion Constructors
     }
 }
