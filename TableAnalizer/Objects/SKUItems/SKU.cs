@@ -152,11 +152,7 @@ namespace TableAnalizer.Objects.SKUItems
             SKUName = dataUnit.SKUName ?? string.Empty;
 
             SKURansomsBalance = new SKURansomsBalance (dataUnit.SKURansomsOnWay, dataUnit.SKURansomsCanceled, dataUnit.SKURansomsDelivered, dataUnit.SKURansomsWithDrawn);
- 
-            SKURemainingBalance = new SKURemainingBalance(dataUnit.SKUNumber, SKUName, dataUnit.SKUReceipt, dataUnit.SKUShipped, dataUnit.SKURemaining);
-            
-            Trace.WriteLine($"SKURemainingBalance: {SKURemainingBalance}");
-            Task.Delay(1500);
+            SKURemainingBalance = new SKURemainingBalance(dataUnit.SKUNumber, SKUName, dataUnit.SKUReceipt, dataUnit.SKUShipped, dataUnit.SKUTransferDataUnit, dataUnit.SKURemaining);
             
             SKUWriteOffBalance = null;
             SKUCompensationBalance = null;
@@ -167,26 +163,6 @@ namespace TableAnalizer.Objects.SKUItems
 
             DeadLineDays = deadlineDays;
         }
-
-        public override string ToString() =>
-            $"{SKUNumber} ({Marketplace}): '{SKUBrand} / {SKUName}', {AveragePrice}. Date: {MaxRansomsDate}\n{SKURansomsBalance}";
-
-        #endregion
-
-        #region Functionality
-
-        // public void Update(SKUCompensationBalance skuCompensationBalance) 
-        // {
-        //     if(skuCompensationBalance is null) 
-        //     {
-        //         SKUCompensationBalance = skuCompensationBalance;
-        //     } 
-        //     else 
-        //     {
-        //         skuCompensationBalance.Update(skuCompensationBalance.Count, skuCompensationBalance.Sum);
-        //     }
-        // }
-
         #endregion
     }
 }

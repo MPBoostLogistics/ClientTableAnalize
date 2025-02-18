@@ -45,20 +45,24 @@ namespace TableAnalizer.Objects.SKUItems
         /// <summary>
         /// Склад: Компенсация (точки)
         /// </summary>                       
-        private int skuPaidWarehouse = 0;
+        private readonly int skuPaidWarehouse = 0;
         /// <summary>
         /// Склад: Компенсация (склад)
         /// </summary>                       
-        private int skuPaidPoints = 0; 
+        private readonly int skuPaidPoints = 0; 
 
         /// <summary>
-        /// Склад: общий расход (товаром, компенсацией, пересортом) 
+        /// Склад: общий расход (товаром, передачей на фулфилмент, компенсацией, пересортом) 
         /// </summary>
-        public int SKUTotalСonsumption => SKUShipped + SKUResort + SKUPaid;
+        public int SKUTotalСonsumption => SKUShipped + SKUTransfered + SKUResort + SKUPaid;
         /// <summary>
         /// Склад: Расход товаром
         /// </summary>
         public int SKUShipped { get; set; }     
+        /// <summary>
+        /// Склад: Передано товаром (фулфилмент)
+        /// </summary>
+        public int SKUTransfered { get; set; } 
         /// <summary>
         /// Склад: Расход компенсацией (склад)
         /// </summary>                       
@@ -170,17 +174,12 @@ namespace TableAnalizer.Objects.SKUItems
             {
                 var receipt = sku.SKURemainingBalance.SKUReceipt;
                 var writeOff = sku.SKUWriteOffBalance?.SKUWriteOff;
-
-                if(writeOff is not null && writeOff > 0) 
-                {
-                    Trace.WriteLine($"writeOff - {writeOff}");
-                    Task.Delay(traceDelay);
-                }
                 
                 // Удаляем приходы из расхода по списанию
                 SKUReceiptGoods = writeOff.HasValue ? receipt - writeOff.Value : receipt;
 
                 SKUShipped = sku.SKURemainingBalance.SKUShipped;
+                SKUTransfered = sku.SKURemainingBalance.SKUTransfered;
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
             } 
 
@@ -216,19 +215,19 @@ namespace TableAnalizer.Objects.SKUItems
             // Расчет недовозов от точек
             CalculateDalay(SKUSellmentStatus.OnSearchPoints);
 
-            // Калькуляция пересоров 
+            // Калькуляция пересортов 
             if (!isRawReport)
             {
-                //CalcResorts(sku, resortFromSkusValues);
+                CalcResorts(sku, resortFromSkusValues);
             }
 
             // Расчет недовозов от склада
             CalculateDalay(SKUSellmentStatus.OnSearchWarehouse);
 
             // Расчет перерасходов
-            if(SKUShipped > SKURansomsWaiting) 
+            if((SKUShipped + SKUTransfered) > SKURansomsWaiting) 
             {
-                SKUOverrunsCount = SKUShipped - SKURansomsWaiting - SKUResort;
+                SKUOverrunsCount = SKUShipped - SKUTransfered - SKURansomsWaiting - SKUResort;
             }
 
             // Установка статуса взаморасчетов 

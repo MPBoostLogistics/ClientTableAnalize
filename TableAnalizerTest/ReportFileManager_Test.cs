@@ -29,7 +29,7 @@ namespace TableAnalizerTest
         [TestCase(SourceSKUReportFileKey.WriteOffShortages, true)]
         [TestCase(SourceSKUReportFileKey.Additional, true)]
         [TestCase(SourceSKUReportFileKey.Client, false)]
-        [TestCase(SourceSKUReportFileKey.Transfer, false)]
+        [TestCase(SourceSKUReportFileKey.Transfered, false)]
         public void GetSourceReportForSingleClient_Test(SourceSKUReportFileKey key, bool isExist) 
         {
             //assert 

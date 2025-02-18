@@ -88,8 +88,6 @@ namespace TableAnalizerTest
 
                 if(!string.IsNullOrEmpty(configFileName)) 
                 {
-                    Trace.WriteLine($"\n{configFileName}");
-
                     testConfig = new ConfigurationBuilder()
                         .SetBasePath(projectDirectory.FullName)
                         //.AddUserSecrets<BaseManager>()

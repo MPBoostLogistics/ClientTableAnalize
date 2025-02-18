@@ -35,7 +35,7 @@ internal class Program
     #region Properties 
     private static readonly ReportFileManager reportFileManager = new();
     private static readonly ExcelManager excelManager = new();
-    private static readonly SKUManager skuManager = new();
+    private static readonly SKUManager skuManager = new(excelManager);
     #endregion
 
     #region Functionality
@@ -43,13 +43,13 @@ internal class Program
     {
         SetAppConfig();
 
-        // ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-        // Trace.Listeners.Add(new ConsoleTraceListener());
+        Trace.Listeners.Add(new ConsoleTraceListener());
 
-        // await Analyze(tracingDelay);
+        await Analyze(TracingDelay);
 
-        // Trace.Flush();
+        Trace.Flush();
 
     }
 
@@ -238,9 +238,9 @@ internal class Program
             }
 
             // Transfer task
-            if (existingKeys.Contains(SourceSKUReportFileKey.Transfer))
+            if (existingKeys.Contains(SourceSKUReportFileKey.Transfered))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Transfer, delay);
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Transfered, delay);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -256,16 +256,15 @@ internal class Program
             // Delete old logistic report 
             if(isTracing) 
             {
-                Trace.WriteLine($"Удаляю старый файлы по пути {ReportFileManager.OutputClientReportFilePath}...");
+                await TracingProgramExecution(new($"Deleting old files at path {ReportFileManager.OutputClientReportFilePath}...", false,false));
             }
             if(FileService.DeleteFileAtPath(ReportFileManager.OutputClientReportFilePath)) 
             {
-                Trace.WriteLine("Старые файлы удалены.");
+                await TracingProgramExecution(new("Old files have been deleted.", false,false));
             } 
             else 
             {
-                Trace.WriteLine("Ошибка в удалении старых файлов.");
-                await Task.Delay(delay);
+                await TracingProgramExecution(new("Error deleting old files.", true,true));
             }
             
             Task<List<SKUForTargetReports>>? skusForTargetReportTask = skuManager.MakeSkusForTargetReport((bool)isRawReport!, isMulty, delay);
@@ -274,21 +273,13 @@ internal class Program
 
             if(isTracing) 
             {
-                Trace.WriteLine($"Артикулов для итогового отчета: {skusForTargetReportTask.Result.Count}.");
+                await TracingProgramExecution(new($"Articles for final report: {skusForTargetReportTask.Result.Count}.", false, false));
             }
 
             // Save work 
-            if(isTracing) 
-            {
-                Trace.WriteLine("Сохраняю текущую работу по отчету...");
-            }
             Task<bool>? makeReportTask = excelManager.MakeReports(skusForTargetReportTask.Result, (bool)isRawReport,isTracing);
             await Task.Run(() => makeReportTask);
             makeReportTask.Wait();
-
-            // Report 
-            var completedMessage = $"Отчет логистики сохранен по пути: {ReportFileManager.OutputClientReportFilePath}\n";
-            goodByMessage = string.Concat(completedMessage, goodByMessage);
 
             // Exit 
             await TracingProgramExecution(new(goodByMessage,false,true));
@@ -327,7 +318,6 @@ internal class Program
         Task<double>? additionalTask = null;
         if (reportFileManager.AdditionalPathsMultyReport is not null && !(bool)isRawReport!)
         {
-            Trace.WriteLine($"isMulty {isMulty}");
             additionalTask = ReceivingAndProcessingData(reportFileManager.AdditionalPathsMultyReport, (bool)isRawReport!, isMulty, delay);
             await Task.Run(async () => await additionalTask);
         }
@@ -397,7 +387,7 @@ internal class Program
         if (reportFile is not null)
         {
             // Make ExcelPackage
-            ExcelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
+            excelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
 
             // Receiving and processing data
             Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData(reportFileKey, (bool)isRawReport!, delay, null, isMulty);
@@ -408,7 +398,7 @@ internal class Program
             }
   
             // Dispose package
-            if(ExcelManager.GetExcelPackageByKey(reportFileKey, out ExcelPackage? existingPackage)) 
+            if(excelManager.GetExcelPackageByKey(reportFileKey, out ExcelPackage? existingPackage)) 
             {
                 existingPackage?.Dispose();
             }
@@ -418,7 +408,7 @@ internal class Program
         }
         else
         {
-            Console.WriteLine($"Нет отчета по ключу {reportFileKey}");
+            await TracingProgramExecution(new($"No report for key: {reportFileKey}", true, true));
             return 0;
         }
     } 

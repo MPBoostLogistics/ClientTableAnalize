@@ -34,7 +34,7 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <param name="reportsPath">Directory with client reports.</param>
         /// <returns>List of existing keys as Task result.</returns>
-        public async Task<List<SourceSKUReportFileKey>?> ChecksAvailabilityNecessaryFiles(string reportsPath, bool isMulty, bool isTracing, int tracingDelay)
+        public async Task<List<SourceSKUReportFileKey>?> ChecksAvailabilityNecessaryFiles(string reportsPath, bool isSummary, bool isTracing, int tracingDelay)
         {
             List<SourceSKUReportFileKey> existingKeys = [];
             string message = string.Empty;
@@ -42,7 +42,7 @@ namespace TableAnalizer.Objects.Managers
 
             try
             {
-                Task<int> getFilesTask = GetSourceReportFiles(reportsPath, isMulty, validFileExtensions);
+                Task<int> getFilesTask = GetSourceReportFiles(reportsPath, isSummary, validFileExtensions);
                 await Task.Run(() => getFilesTask);
                 getFilesTask.Wait();
 
@@ -53,11 +53,11 @@ namespace TableAnalizer.Objects.Managers
                     OnManagerReached(new(string.Empty, true, true));
                 } 
 
-                var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out existingKeys, isMulty, tracingDelay);
+                var success = IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out existingKeys, isSummary, tracingDelay);
                 
                 if(!success) 
                 {
-                    switch (isMulty)
+                    switch (isSummary)
                     {
                         case true:
                             message = "There is not enough reports (>1) to generate a summary.";
@@ -215,18 +215,18 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <returns>Path string to directory to save data.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public async Task<string?> DefineDirInfoForClientTargetReports(bool isMulty = false)
+        public async Task<string?> DefineDirInfoForClientTargetReports(bool isSummary = false)
         {
             ManagerReachedEventArgs args;
 
-            if (!isMulty && ClientLogin is null)
+            if (!isSummary && ClientLogin is null)
             {
                 args = new("Clint's login is not defined, so it is impossible to create a directory.", true, true);
                 OnManagerReached(args);
                 return null;
             }
 
-            DirInfoForClientTargetReports = GetDirectoryInfo(PathKey.MPBoostClients, !isMulty ? ClientLogin : string.Join(",", ReportsPathsMultyReport.Keys));
+            DirInfoForClientTargetReports = GetDirectoryInfo(PathKey.MPBoostClients, !isSummary ? ClientLogin : string.Join(",", ReportsPathsMultyReport.Keys));
 
             if (DirInfoForClientTargetReports == null)
             {
@@ -238,7 +238,7 @@ namespace TableAnalizer.Objects.Managers
 
             var dateTime = DateTime.Now.ToString("dd-MM-yyyy");
 
-            OutputClientReportFilePath = !isMulty ?
+            OutputClientReportFilePath = !isSummary ?
                 $"{DirInfoForClientTargetReports!.FullName}/ClientReport_{ClientLogin}_{dateTime}.xlsx" :
                 $"{DirInfoForClientTargetReports!.FullName}/ClientsReportSummary_{ClientLogin}_{dateTime}.xlsx";
 
@@ -253,12 +253,12 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <param name="lostKeys">A collection of required file keys that were not provided.</param>
         /// <returns>Logical flag for performing an operation.</returns>
-        public bool IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, bool isMulty, int delay)
+        public bool IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys, bool isSummary, int delay)
         {
             existingKeys = lostKeys = new([]);
             bool success = false;
 
-            if (isMulty)
+            if (isSummary)
             {
                 IEnumerable<KeyValuePair<string, SourceReportFileForSKU>>? matchingReport = 
                     from item in ReportsPathsMultyReport
@@ -279,7 +279,7 @@ namespace TableAnalizer.Objects.Managers
 
                 var isContainsKeyShipped = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.Shipped);
 
-                var isContainsKeyTransfer = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.Transfer);
+                var isContainsKeyTransfer = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.Transfered);
 
                 var isContainsWriteOffShortages = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.WriteOffShortages);
 
@@ -305,7 +305,7 @@ namespace TableAnalizer.Objects.Managers
                         existingKeys.Add(SourceSKUReportFileKey.Shipped);
 
                     if (isContainsKeyTransfer)
-                        existingKeys.Add(SourceSKUReportFileKey.Transfer);
+                        existingKeys.Add(SourceSKUReportFileKey.Transfered);
 
                     existingKeys.Add(SourceSKUReportFileKey.WriteOffShortages);
 
@@ -365,9 +365,9 @@ namespace TableAnalizer.Objects.Managers
 
         public static DirectoryInfo? GetDirectoryInfo(PathKey pathKey, string? login = null, string[]? logins = null)
         {
-            DirectoryInfo? result = null;
             string directoryName = string.Empty;
 
+            DirectoryInfo? result;
             switch (string.IsNullOrEmpty(login), logins is null)
             {
                 case (true, true):

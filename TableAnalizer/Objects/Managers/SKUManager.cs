@@ -14,6 +14,7 @@ namespace TableAnalizer.Objects.Managers
     {
         #region Variables and constants 
         private const bool IS_REMOVE_BRAND_FROM_NAME = false;
+        private readonly ExcelManager? excelManager;
         #endregion
 
         #region Properties 
@@ -22,6 +23,7 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuRansomsBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuRemainingBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuShippedBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<int, List<ParsingRowEntity>> SkuTransferedBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuWriteOffBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; } = new ParsingRowEntityRepo();
@@ -46,6 +48,13 @@ namespace TableAnalizer.Objects.Managers
         private delegate bool FindSkusWithPredicate(SKU sku);
         private FindSkusWithPredicate? predicateHandler;
 
+        #endregion
+
+        #region Constructors
+        public SKUManager(ExcelManager excelManager) : this()
+        {
+            this.excelManager = excelManager;
+        }
         #endregion
 
         #region Functionality
@@ -97,7 +106,7 @@ namespace TableAnalizer.Objects.Managers
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             // Get source excel worksheet by name
-            ExcelWorksheet? currentWorksheet = ExcelManager.GetExcelWorksheetByName(workSheetName, reportFileKey, taskDelay, excelPackage).Result ;
+            ExcelWorksheet? currentWorksheet = excelManager?.GetExcelWorksheetByName(workSheetName, reportFileKey, taskDelay, excelPackage).Result ;
             if (currentWorksheet is null)
             {
                 await Task.Delay(taskDelay);
@@ -133,6 +142,7 @@ namespace TableAnalizer.Objects.Managers
                 static bool FindSkusWithRansoms(SKU sku) => sku.SKURansomsBalance != null;
                 static bool FindSkusWithRemaining(SKU sku) => sku.SKURemainingBalance != null;
                 static bool FindSkusWithShipped(SKU sku) => sku.SKURemainingBalance?.SKUShipped != null;
+                static bool FindSkusWithTransfered(SKU sku) => sku.SKURemainingBalance?.SKUTransfered != null;
                 static bool FindSkusWithWriteOff(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOff > 0;
                 static bool FindSkusWithCompensation(SKU sku) => sku.SKUCompensationBalance != null;
                 static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
@@ -169,10 +179,16 @@ namespace TableAnalizer.Objects.Managers
                                 break;
                         };
                         break;
-                    case SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer:
+                    case SourceSKUReportFileKey.Shipped:
                         predicateHandler = FindSkusWithShipped;
                         message = "Артикулов в расходе со склада: ";
                         break;
+
+                    case SourceSKUReportFileKey.Transfered:
+                        predicateHandler = FindSkusWithTransfered;
+                        message = "Артикулов в передаче со склада (на фулфилмент): ";
+                        break;
+                    
 
                     case SourceSKUReportFileKey.WriteOffShortages:
                         predicateHandler = FindSkusWithWriteOff;
@@ -206,7 +222,7 @@ namespace TableAnalizer.Objects.Managers
             bool isRansoms = reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ;
             bool isRemaining = reportFileKey == SourceSKUReportFileKey.RemainingWB || reportFileKey == SourceSKUReportFileKey.RemainingOZ;
             bool isShipped = reportFileKey == SourceSKUReportFileKey.Shipped;
-            bool isTransfer = reportFileKey == SourceSKUReportFileKey.Transfer;
+            bool isTransfered = reportFileKey == SourceSKUReportFileKey.Transfered;
             bool isWriteOff = reportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
@@ -246,7 +262,7 @@ namespace TableAnalizer.Objects.Managers
                     SkuRemainingBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             } 
-            else if(isShipped || isTransfer) 
+            else if(isShipped) 
             {
                 var skuShippedDataUnits = from rowWithRawData in rowsWithRawData
                                             let unit = new SKUShippedDataUnit(rowWithRawData)
@@ -262,6 +278,22 @@ namespace TableAnalizer.Objects.Managers
                     SkuShippedBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             } 
+            else if (isTransfered) 
+            {
+                var skuTransferedDataUnits = from rowWithRawData in rowsWithRawData
+                                             let unit = new SKUTransferDataUnit(rowWithRawData)
+                                             group unit by unit.SKUNumber 
+                                             into unitGroup  
+                                             select unitGroup;
+                
+                foreach (var group in skuTransferedDataUnits)
+                {
+                    var list = (((List<SKUTransferDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ?? 
+                        throw new InvalidCastException("Невозможно привести List<SKUTransferDataUnit> к List<ParsingRowEntity>");
+                    
+                    SkuTransferedBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                }
+            }
             else if(isWriteOff) 
             {
                 var skuWriteOffDataUnits = from rowWithRawData in rowsWithRawData
@@ -344,7 +376,8 @@ namespace TableAnalizer.Objects.Managers
             {
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => SkuRansomsBalanceUnits.Count(),
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => SkuRemainingBalanceUnits.Count(),
-                SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer => SkuShippedBalanceUnits.Count(),
+                SourceSKUReportFileKey.Shipped  => SkuShippedBalanceUnits.Count(),
+                SourceSKUReportFileKey.Transfered => SkuTransferedBalanceUnits.Count(),
                 SourceSKUReportFileKey.WriteOffShortages => SkuWriteOffBalanceUnits.Count(),
                 SourceSKUReportFileKey.Additional => workSheetName switch 
                 {
@@ -369,7 +402,7 @@ namespace TableAnalizer.Objects.Managers
             bool isRansoms = skuReportFileKey == SourceSKUReportFileKey.RansomsWB || skuReportFileKey == SourceSKUReportFileKey.RansomsOZ;
             bool isRemaining = skuReportFileKey == SourceSKUReportFileKey.RemainingWB || skuReportFileKey == SourceSKUReportFileKey.RemainingOZ;
             bool isShipped = skuReportFileKey == SourceSKUReportFileKey.Shipped;
-            bool isTransfer = skuReportFileKey == SourceSKUReportFileKey.Transfer;
+            bool isTransfered = skuReportFileKey == SourceSKUReportFileKey.Transfered;
             bool isWriteOff = skuReportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResorts = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
@@ -386,8 +419,10 @@ namespace TableAnalizer.Objects.Managers
                    parsingEntityCollection = SkuRansomsBalanceUnits,
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ =>
                     parsingEntityCollection = SkuRemainingBalanceUnits,
-                SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer =>
+                SourceSKUReportFileKey.Shipped =>
                     parsingEntityCollection = SkuShippedBalanceUnits,  
+                SourceSKUReportFileKey.Transfered =>
+                    parsingEntityCollection = SkuTransferedBalanceUnits,  
                 SourceSKUReportFileKey.WriteOffShortages =>
                     parsingEntityCollection = SkuWriteOffBalanceUnits, 
                 SourceSKUReportFileKey.Additional => workSheetName switch 
@@ -438,10 +473,18 @@ namespace TableAnalizer.Objects.Managers
                         SKURemainingBalance remainingBalance = new(skuNumber, skuBrandName, units.ToList());
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance, IS_REMOVE_BRAND_FROM_NAME));
                     } 
-                    else if (isShipped || isTransfer)
+                    else if (isShipped)
                     {
                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUShippedDataUnit>().ToList()) ??
                             throw new InvalidCastException("Cannot cast collection to IList<SKUShippedDataUnit>.");
+                        
+                        SKURemainingBalance remainingBalance = new(skuNumber, units.ToList());
+                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance, IS_REMOVE_BRAND_FROM_NAME));
+                    } 
+                    else if (isTransfered) 
+                    {
+                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUTransferDataUnit>().ToList()) ??
+                            throw new InvalidCastException("Cannot cast collection to IList<SKUTransferDataUnit>.");
                         
                         SKURemainingBalance remainingBalance = new(skuNumber, units.ToList());
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance, IS_REMOVE_BRAND_FROM_NAME));

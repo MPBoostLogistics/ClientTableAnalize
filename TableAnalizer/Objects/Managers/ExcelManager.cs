@@ -121,8 +121,8 @@ namespace TableAnalizer.Objects.Managers
 
         public static List<SourceColumn> TransferSourceCells { get; } = new()
         {
-            new(4, nameof(SKUShippedDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
-            new(34, nameof(SKUShippedDataUnit.SKUShippedCount), ParsingTypeCode.IntTypeCode, true)
+            new(4, nameof(SKUTransferDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(34, nameof(SKUTransferDataUnit.SKUTransferedCount), ParsingTypeCode.IntTypeCode, true)
         };
 
         public static List<SourceColumn> CompensationSourceCells { get; } = new()
@@ -167,6 +167,7 @@ namespace TableAnalizer.Objects.Managers
             new(12, nameof(SKUClientReportDataUnit.SKURansomsWithDrawn), ParsingTypeCode.IntTypeCode, true),
             new(14, nameof(SKUClientReportDataUnit.SKUReceipt), ParsingTypeCode.IntTypeCode, true),
             new(16, nameof(SKUClientReportDataUnit.SKUShipped), ParsingTypeCode.IntTypeCode, true),
+            new(17, nameof(SKUClientReportDataUnit.SKUTransferDataUnit), ParsingTypeCode.IntTypeCode, true),
             new(19, nameof(SKUClientReportDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, true)
         ];
 
@@ -219,41 +220,44 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: accentTargetCellSettings),
             new (colNumber: 16, colName: "Склад: Расход товаром", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName: nameof(SKUForTargetReports.SKUShipped) ,
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings, 3),
-            new (colNumber: 17, colName: "Склад: Расход компенсацией", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings, 4),
+            new (colNumber: 17, colName: "Склад: Передано на фулфилмент", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 90, propertyName: nameof(SKUForTargetReports.SKUTransfered) ,
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),    
+            new (colNumber: 18, colName: "Склад: Расход компенсацией", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKUPaid),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 18, colName: "Склад: Расход пересортом", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 19, colName: "Склад: Расход пересортом", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKUResort),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 19, colName: "Склад: Остаток товаров", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 20, colName: "Склад: Остаток товаров", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKURemaining),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 20, colName: "Комментарий к пересортами", colWidth: 32, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 21, colName: "Комментарий к пересортами", colWidth: 32, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUResortsComment),
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 21, colName: "Задержка довоза, всего", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 22, colName: "Задержка довоза, всего", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayTotal),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: accentTargetCellSettings),
-            new (colNumber: 22, colName: "Задержка довоза от точек, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 23, colName: "Задержка довоза от точек, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayPoints),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings, 4),
-            new (colNumber: 23, colName: "Задержка довоза от точек, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
+            new (colNumber: 24, colName: "Задержка довоза от точек, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayPointsSum),
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 24, colName: "Задержка довоза от склада, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 25, colName: "Задержка довоза от склада, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayStorage),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 25, colName: "Задержка довоза от склада, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
+            new (colNumber: 26, colName: "Задержка довоза от склада, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayStorageSum),
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 26, colName: "Перерасход, кол-во", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 27, colName: "Перерасход, кол-во", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUOverrunsCount),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: accentTargetCellSettings),
-            new (colNumber: 27, colName: "Перерасход, сумма руб.", colWidth: 14, format: DOUBLE_CELL_FORMAT,
+            new (colNumber: 28, colName: "Перерасход, сумма руб.", colWidth: 14, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUOverrunsSum),
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 28, colName: "Комментарий к артикулу", colWidth: 50, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 29, colName: "Комментарий к артикулу", colWidth: 50, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUComment),
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
         ];
@@ -330,7 +334,7 @@ namespace TableAnalizer.Objects.Managers
         // <param name="key">Specified key.</param>
         // <param name="fileInfo">Specified FileInfo.</param>
         // <returns>Existing ExcelPackage (optional).</returns>
-        public static ExcelPackage? CreateExcelPackage(SourceSKUReportFileKey key, FileInfo fileInfo)
+        public ExcelPackage? CreateExcelPackage(SourceSKUReportFileKey key, FileInfo fileInfo)
         {
             if (!GetExcelPackageByKey(key, out ExcelPackage? package) && package is null)
             {
@@ -347,7 +351,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="key">ExcelPackage search key.</param>
         /// <param name="package">ExcelPackage or null.</param>
         /// <returns>Boolean flag of operation.</returns>
-        public static bool GetExcelPackageByKey(SourceSKUReportFileKey key, out ExcelPackage? package)
+        public bool GetExcelPackageByKey(SourceSKUReportFileKey key, out ExcelPackage? package)
         {
             package = null;
 
@@ -358,7 +362,7 @@ namespace TableAnalizer.Objects.Managers
             }
             catch (System.Exception ex)
             {
-                Trace.WriteLine(ex.Message);
+                OnManagerReached(new($"{ex.Message}", true, true));
                 return false;
             }
 
@@ -376,7 +380,7 @@ namespace TableAnalizer.Objects.Managers
             workSheetNames = reportFileKey switch
             {
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => [RANSOMS_WORKSHEET_NAME],
-                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfer or SourceSKUReportFileKey.WriteOffShortages => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
+                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ or SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfered or SourceSKUReportFileKey.WriteOffShortages => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
                 SourceSKUReportFileKey.Additional => [COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
                 SourceSKUReportFileKey.Client => [OUTPUT_REPORT_MAINREPORT_NAME],
                 _ => null,
@@ -414,27 +418,15 @@ namespace TableAnalizer.Objects.Managers
             }
             catch (System.Exception ex)
             {
-                Trace.WriteLine(ex.Message);
-                throw;
+                OnManagerReached(new($"{ex.Message}", true, true));
             }
-            
-            Trace.WriteLine("Hello!");
 
             SetupTableHeader(in targetCells, ref mainOutputReportSheet);
             AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, in rangeForGrouping);
-
-            if(isTracing) 
-            {
-                Trace.WriteLine($"Лист '{OUTPUT_REPORT_MAINREPORT_NAME}' создан.");
-            }
             
             // Make delay report
             if(!isRawReport) 
             {
-                if(isTracing) 
-                {
-                    Trace.WriteLine($"Создаю лист '{OUTPUT_REPORT_DELAYREPORT_NAME}'...");
-                }
                 actualData = [.. skuForTargetReports
                     .Where(el => el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.OnSearchPoints || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouseAndPoints))];
                 sheetName = OUTPUT_REPORT_DELAYREPORT_NAME;
@@ -453,28 +445,17 @@ namespace TableAnalizer.Objects.Managers
                 }
                 catch (System.Exception ex)
                 {
-                    Trace.WriteLine(ex.Message);
-                    throw;
+                    OnManagerReached(new($"{ex.Message}", true, true));
                 }
 
                 
                 SetupTableHeader(in targetCells, ref delayOutputReportSheet);
                 AddFilterAndAccentInWorkSheet(ref delayOutputReportSheet, in rangeForGrouping); 
-
-                if(isTracing) 
-                {
-                    Trace.WriteLine($"Лист '{OUTPUT_REPORT_DELAYREPORT_NAME}' создан.");
-                }
             }
  
             // Make overruns report
             if(!isRawReport) 
             {
-                if(isTracing) 
-                {
-                    Trace.WriteLine($"Создаю лист '{OUTPUT_REPORT_OVERRUNSREPORT_NAME}'...");
-                }
-
                 actualData = [.. skuForTargetReports
                             .Where(el => el.SKUOverrunsSum > 0.00)];
                 sheetName = OUTPUT_REPORT_OVERRUNSREPORT_NAME;
@@ -491,24 +472,19 @@ namespace TableAnalizer.Objects.Managers
                 }
                 catch (System.Exception ex)
                 {
-                    Trace.WriteLine(ex.Message);
-                    throw;
+                    OnManagerReached(new($"{ex.Message}", true, true));
                 }
                 
                 
                 SetupTableHeader(in targetCells, ref overrunsOutputReportSheet);
                 AddFilterAndAccentInWorkSheet(ref overrunsOutputReportSheet, in rangeForGrouping); 
-
-                if(isTracing) 
-                {
-                    Trace.WriteLine($"Лист '{OUTPUT_REPORT_OVERRUNSREPORT_NAME}' создан.");
-                }
             }
 
             // Save work
             if(isTracing) 
             {
-                Trace.WriteLine($"Сохраняю выполенную работу...");
+                ManagerReachedEventArgs args = new($"Saving the work done...", false, false);
+                OnManagerReached(args);
             }
             var isSaveWork = false;
             if(SaveReceivedData(ReportFileManager.OutputClientReportFilePath, ref outputPackage)) 
@@ -516,20 +492,12 @@ namespace TableAnalizer.Objects.Managers
                 isSaveWork = true;
                 if(isTracing) 
                 {
-                    Trace.WriteLine($"Сохранение новой книги по указанному пути завершено.");
+                    ManagerReachedEventArgs args = new($"Saving the new Excel workbook to the specified path is complete.", false, false);
+                    OnManagerReached(args);
                 }
             } 
-            else 
-            {
-                if(isTracing) 
-                {
-                    Trace.WriteLine($"Ошибка в сохранении работы.");
-                }
-            }
 
             outputPackage.Dispose();
-
-            await Task.Delay(1000);
 
             return isSaveWork;
         }
@@ -545,10 +513,12 @@ namespace TableAnalizer.Objects.Managers
         public Task<ExcelWorksheet> FillingСellsWithData(bool isMainReport, ExcelWorksheet worksheet, List<SKUForTargetReports> skusForTargetReport, TargetCell[] targetCells, bool isTracing, int recordIndex = 1)
         {
             var result = worksheet;
-
-            if(isTracing)
-                Trace.WriteLine($"Fill in Excel sheet with the name '{result.Name}'...");
-
+            if(isTracing) 
+            {
+                ManagerReachedEventArgs args = new($"Fill in Excel sheet with the name '{result.Name}'...", false, false);
+                OnManagerReached(args);
+            }
+            
             // Get status column number
             int? statusColNumber = null;
             if(isMainReport) 
@@ -625,8 +595,7 @@ namespace TableAnalizer.Objects.Managers
                         }
                         catch (Exception ex)
                         {
-                            Trace.WriteLine(ex.Message);
-                            throw;
+                            OnManagerReached(new($"{ex.Message}", true, true));
                         }
                     } 
                     else 
@@ -635,12 +604,13 @@ namespace TableAnalizer.Objects.Managers
                     }
                 }
                 rowIndex++;
-                if(isTracing)
-                    Trace.WriteLine(rowIndex);
             }
 
             if(isTracing)
-                Trace.WriteLine($"Excel sheet named '{result.Name}'is filled with data.");
+            {
+                ManagerReachedEventArgs args = new($"Excel sheet named '{result.Name}'is filled with data.", false, false);
+                OnManagerReached(args);
+            }
             
             return Task.Run(() => result);
         }
@@ -736,7 +706,10 @@ namespace TableAnalizer.Objects.Managers
             worksheet.DefaultRowHeight = DEFAULT_TABLE_ROW_HEIGHT;
             worksheet.DefaultColWidth = DEFAULT_TABLE_COL_WIDTH;
 
-            if(isTracing)
+            if(isTracing) 
+            {
+
+            }
                 Trace.WriteLine($"Excel sheet named '{worksheet.Name}' created.");
         }
 
@@ -809,35 +782,24 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="key">Key for searching ExcelPackage in internal dictionary.</param>
         /// <param name="worksheet">Found Excel worksheet or null.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public static async Task<ExcelWorksheet?> GetExcelWorksheetByName(string name, SourceSKUReportFileKey key, int taskDelay, ExcelPackage? excelPackage = null)  
+        public async Task<ExcelWorksheet?> GetExcelWorksheetByName(string name, SourceSKUReportFileKey key, int taskDelay, ExcelPackage? excelPackage = null)  
         {
-            Trace.WriteLine($"");
             await Task.Delay(taskDelay);
 
             if(excelPackage is null) 
             {
                 try
                 {
-                    if(GetExcelPackageByKey(key, out ExcelPackage? package) && package is not null) 
-                    {
-                        Console.ForegroundColor = ConsoleColor.DarkGray;
-                        Trace.WriteLine(name);
-                        await Task.Delay(taskDelay);
-                        Console.ResetColor();
-
-                        return package.Workbook.Worksheets[name];
-                    } 
-                    else 
-                    {
-                        return null;
-                    }
+                    return GetExcelPackageByKey(key, out ExcelPackage? package) && package is not null ? 
+                        package.Workbook.Worksheets[name] : 
+                        null;
                     
                 }
                 catch (System.Exception ex)
                 {
-                    Trace.WriteLine(ex.Message);
-                    await Task.Delay(1500);
-                    throw;
+                    ManagerReachedEventArgs args = new($"{ex.Message}", true, true);
+                    OnManagerReached(args);
+                    return null;
                 }
                
             } 
@@ -1037,8 +999,8 @@ namespace TableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => new(3) { new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
                                                      new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME), new(RemainingThirdRoomSourceCells, THIRD_ROOM_NAME, (LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))},
                 SourceSKUReportFileKey.WriteOffShortages => new(1) {new (WriteOffShortagesSourceCells)},
-                SourceSKUReportFileKey.Shipped => new(1) { new(ShippedSourceCells) },
-                SourceSKUReportFileKey.Transfer => new(1) { new(TransferSourceCells) },
+                SourceSKUReportFileKey.Shipped => [new(ShippedSourceCells)],
+                SourceSKUReportFileKey.Transfered => [new(TransferSourceCells)],
                 SourceSKUReportFileKey.Additional => workSheetName switch
                 {
                     COMPENSATION_REPORT_WORKSHEET_NAME => new(1) { new(CompensationSourceCells) },
@@ -1093,10 +1055,9 @@ namespace TableAnalizer.Objects.Managers
             List<RangeSourceReportRows> outputRanges = new();
 
             // Get existing keys from templates 
-            List<string>? keysInTemplateList = rangeSourceReportRows
+            List<string>? keysInTemplateList = [.. rangeSourceReportRows
                 .Where(el => !string.IsNullOrEmpty(el.Key))
-                .Select(el => el.Key!)
-                .ToList();
+                .Select(el => el.Key!)];
 
             // Get existing elements in table by key
             List<(string key, int index)> existingElements = new();

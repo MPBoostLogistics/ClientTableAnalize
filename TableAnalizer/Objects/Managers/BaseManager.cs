@@ -68,8 +68,6 @@ namespace TableAnalizer.Objects.Managers
 
                 if(!string.IsNullOrEmpty(configFileName)) 
                 {
-                    Trace.WriteLine($"\n{configFileName}");
-
                     config = new ConfigurationBuilder()
                         .SetBasePath(projectDirectory.FullName)
                         //.AddUserSecrets<BaseManager>()

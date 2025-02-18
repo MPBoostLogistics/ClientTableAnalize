@@ -34,7 +34,7 @@ namespace TableAnalizer.Objects
         WriteOffShortages,  // списание недростач общее 
         Additional,          // недостачи, пересорты и пустышки
         Shipped,             // расходы товаром 
-        Transfer,            // перемещение (на фулфилмент) 
+        Transfered,            // перемещение (на фулфилмент) 
         Client               // клиентский отчет
     }
 
@@ -45,6 +45,7 @@ namespace TableAnalizer.Objects
         RemainingWB,        // приходы и остатки WB
         RemainingOZ,        // приходы и остатки OZ
         Shipped,            // расходы товаром 
+        Transfered,         // передано товаров (на производство)
         WriteOffShortages,  // списание недростач общее 
         Compensation,       // оплаченные недостачи
         Resort,             // пересорты 

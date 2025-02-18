@@ -1,11 +1,11 @@
 {
     "Messages": {
-      "GoodbyMessage": "\nСпасибо за использование программы.",
+      "GoodbyMessage": "\nThank you for using the program.\nHave a productive day!",
       "TraceInfoFlag": "[INFO]: ",
       "TraceErrorFlag": "[ERROR]: "
     },
     "Numbers": {
-      "TracingDelay": 1500
+      "TracingDelay": 1100
     },
     "Collections": 
     {
