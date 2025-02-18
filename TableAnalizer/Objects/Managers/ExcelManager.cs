@@ -368,6 +368,34 @@ namespace TableAnalizer.Objects.Managers
 
         }
 
+        private Task<bool> MakeReportTask(in ExcelPackage outputPackage, string sheetName, TargetCell[] targetCells, List<List<int>>? rangeForGrouping, List<SKUForTargetReports> actualData, bool isTracing) 
+        {
+            Color sheetColor = sheetName == OUTPUT_REPORT_MAINREPORT_NAME ? 
+                Colors[SKUSellmentStatus.FullSet] : 
+                sheetName == OUTPUT_REPORT_DELAYREPORT_NAME ? 
+                    Colors[SKUSellmentStatus.OnSearchPoints] : 
+                    Colors[SKUSellmentStatus.Unknown];
+
+
+            // Create excel worksheet
+            CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? outputReportSheet, sheetColor, isTracing);
+
+            try
+            {
+                FillingСellsWithData(sheetName == OUTPUT_REPORT_MAINREPORT_NAME, outputReportSheet, actualData, targetCells, isTracing); 
+            }
+            catch (System.Exception ex)
+            {
+                OnManagerReached(new($"{ex.Message}", true, true));
+                return Task.Run(()=> false);
+            }
+
+            SetupTableHeader(in targetCells, ref outputReportSheet);
+            AddFilterAndAccentInWorkSheet(ref outputReportSheet, in rangeForGrouping);
+
+            return Task.Run(()=> true);
+        }
+
         /// <summary>
         /// Returns name of sheet in Excel workbook.
         /// </summary>
@@ -388,98 +416,64 @@ namespace TableAnalizer.Objects.Managers
             return workSheetNames is not null && workSheetNames.Any();
         }
 
-        public async Task<bool> MakeReports(List<SKUForTargetReports> skuForTargetReports, bool isRawReport, bool isTracing) 
+        public Task<bool> MakeReports(List<SKUForTargetReports> skuForTargetReports, bool isRawReport, bool isTracing) 
         {
             if(string.IsNullOrEmpty(ReportFileManager.OutputClientReportFilePath)) 
-                throw new Exception("Output client report file path cannot be empty!");
-
+            {
+                ManagerReachedEventArgs args = new("Output client report file path cannot be empty.", true, true);
+                return Task.Run(() => false);
+            }
+                
             var fileInfo = new FileInfo(ReportFileManager.OutputClientReportFilePath) ?? throw new Exception("Fileinfo cannot be empty");
-            var outputPackage = new ExcelPackage(new FileInfo(ReportFileManager.OutputClientReportFilePath)) ?? 
-                throw new Exception("ExcelPackage for output reports cannot be created");
-            
-            var sheetName = string.Empty;
-            TargetCell[] targetCells = [];
-            List<SKUForTargetReports> actualData = [];
-            List<List<int>>? rangeForGrouping;
+            var outputPackage = new ExcelPackage(new FileInfo(ReportFileManager.OutputClientReportFilePath));
+            if(outputPackage is null) 
+            {
+                ManagerReachedEventArgs args = new("ExcelPackage for output reports cannot be created.", true, true);
+                return Task.Run(() => false);
+            }
+
+            List<SKUForTargetReports> actualData = skuForTargetReports;
+            List<List<int>>? rangeForGrouping = GetRangeForGrouping(in cellsReportingMain)?.ToList();
 
             // Make main report
-            sheetName = OUTPUT_REPORT_MAINREPORT_NAME;
-            targetCells = cellsReportingMain;
-            rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
-            actualData = skuForTargetReports;
-            CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? mainOutputReportSheet, Colors[SKUSellmentStatus.FullSet], isTracing);
-            
-            try
-            {
-                var fillingСellsWithDataTask = FillingСellsWithData(sheetName == OUTPUT_REPORT_MAINREPORT_NAME, mainOutputReportSheet, actualData, targetCells, isTracing); 
-                await Task.Run(() => fillingСellsWithDataTask);
-                fillingСellsWithDataTask.Wait();
-                mainOutputReportSheet = fillingСellsWithDataTask.Result;
-            }
-            catch (System.Exception ex)
-            {
-                OnManagerReached(new($"{ex.Message}", true, true));
-            }
+            Task<bool> makeReportTaskMain = MakeReportTask(in outputPackage, OUTPUT_REPORT_MAINREPORT_NAME, cellsReportingMain, rangeForGrouping, actualData, isTracing);
+            Task.Run(() => makeReportTaskMain);
+            makeReportTaskMain.Wait();
 
-            SetupTableHeader(in targetCells, ref mainOutputReportSheet);
-            AddFilterAndAccentInWorkSheet(ref mainOutputReportSheet, in rangeForGrouping);
-            
             // Make delay report
+            Task<bool>? makeReportTaskDelay = null;
             if(!isRawReport) 
             {
                 actualData = [.. skuForTargetReports
                     .Where(el => el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.OnSearchPoints || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouseAndPoints))];
-                sheetName = OUTPUT_REPORT_DELAYREPORT_NAME;
-                targetCells = cellsReportingDelays;
-                rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
-                CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? delayOutputReportSheet, Colors[SKUSellmentStatus.OnSearchWarehouse], isTracing);
-
-                try
-                {
-                    var fillingСellsWithDataTask = FillingСellsWithData(sheetName == OUTPUT_REPORT_MAINREPORT_NAME, delayOutputReportSheet, actualData, targetCells, isTracing); 
-                    await Task.Run(() => fillingСellsWithDataTask);
-                    fillingСellsWithDataTask.Wait();
-
-                    delayOutputReportSheet = fillingСellsWithDataTask.Result;
-
-                }
-                catch (System.Exception ex)
-                {
-                    OnManagerReached(new($"{ex.Message}", true, true));
-                }
-
+                rangeForGrouping = GetRangeForGrouping(in cellsReportingDelays)?.ToList();
+               
+                makeReportTaskDelay = MakeReportTask(in outputPackage, OUTPUT_REPORT_DELAYREPORT_NAME, cellsReportingDelays, rangeForGrouping, actualData, isTracing);
                 
-                SetupTableHeader(in targetCells, ref delayOutputReportSheet);
-                AddFilterAndAccentInWorkSheet(ref delayOutputReportSheet, in rangeForGrouping); 
             }
+            if(makeReportTaskDelay is not null) 
+            {
+                Task.Run(() => makeReportTaskDelay);
+                makeReportTaskDelay.Wait();
+            }
+
  
             // Make overruns report
+            Task<bool>? makeReportTaskOverruns = null;
             if(!isRawReport) 
             {
                 actualData = [.. skuForTargetReports
                             .Where(el => el.SKUOverrunsSum > 0.00)];
-                sheetName = OUTPUT_REPORT_OVERRUNSREPORT_NAME;
-                targetCells = cellsReportingOverruns;
-                rangeForGrouping = GetRangeForGrouping(in targetCells)?.ToList();
-                CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? overrunsOutputReportSheet, Colors[SKUSellmentStatus.Unknown], isTracing);
-                
-                try
-                {
-                    var fillingСellsWithDataTask =  FillingСellsWithData(sheetName == OUTPUT_REPORT_MAINREPORT_NAME, overrunsOutputReportSheet, actualData, targetCells, isTracing); 
-                    await Task.Run(() => fillingСellsWithDataTask);
-                    fillingСellsWithDataTask.Wait();
-                    overrunsOutputReportSheet = fillingСellsWithDataTask.Result;
-                }
-                catch (System.Exception ex)
-                {
-                    OnManagerReached(new($"{ex.Message}", true, true));
-                }
-                
-                
-                SetupTableHeader(in targetCells, ref overrunsOutputReportSheet);
-                AddFilterAndAccentInWorkSheet(ref overrunsOutputReportSheet, in rangeForGrouping); 
+                rangeForGrouping = GetRangeForGrouping(in cellsReportingOverruns)?.ToList();
+                makeReportTaskOverruns = MakeReportTask(in outputPackage, OUTPUT_REPORT_OVERRUNSREPORT_NAME, cellsReportingOverruns, rangeForGrouping, actualData, isTracing);
             }
 
+            if(makeReportTaskOverruns is not null) 
+            {
+                Task.Run(() => makeReportTaskOverruns);
+                makeReportTaskOverruns.Wait();
+            }
+            
             // Save work
             if(isTracing) 
             {
@@ -499,7 +493,7 @@ namespace TableAnalizer.Objects.Managers
 
             outputPackage.Dispose();
 
-            return isSaveWork;
+            return Task.Run(() => isSaveWork);;
         }
 
         private static IEnumerable<List<int>>? GetRangeForGrouping(in TargetCell[] targetCells)
@@ -510,7 +504,7 @@ namespace TableAnalizer.Objects.Managers
                     select range.ToList();
         }
 
-        public Task<ExcelWorksheet> FillingСellsWithData(bool isMainReport, ExcelWorksheet worksheet, List<SKUForTargetReports> skusForTargetReport, TargetCell[] targetCells, bool isTracing, int recordIndex = 1)
+        public ExcelWorksheet FillingСellsWithData(bool isMainReport, ExcelWorksheet worksheet, List<SKUForTargetReports> skusForTargetReport, TargetCell[] targetCells, bool isTracing, int recordIndex = 1)
         {
             var result = worksheet;
             if(isTracing) 
@@ -587,20 +581,19 @@ namespace TableAnalizer.Objects.Managers
                     if (value is not null)
                     {
                         // Set value for cell 
-                        ExcelRange tableCell = result.Cells[rowIndex, targetCell.ColNumber] ?? 
-                            throw new Exception($"tableCell for rowIndex {rowIndex} && colNumber {targetCell.ColNumber} is NULL!");
-                        try
+                        ExcelRange? tableCell = result.Cells[rowIndex, targetCell.ColNumber]; 
+                        if(tableCell is not null) 
                         {
-                            ApplySettingsToTableCell(ref tableCell, value, targetCell, isMainReport, skuForTargetReport.FillColor, statusColNumber);
-                        }
-                        catch (Exception ex)
+                            ApplySettingsToTableCell(ref tableCell!, value, targetCell, isMainReport, skuForTargetReport.FillColor, statusColNumber);
+                        } 
+                        else 
                         {
-                            OnManagerReached(new($"{ex.Message}", true, true));
+                            OnManagerReached(new($"Table cell for rowIndex {rowIndex} && column number {targetCell.ColNumber} is null.", true, true));
                         }
                     } 
                     else 
                     {
-                        throw new Exception($"When filling in the cells on sheet, the value for '{targetCell.ColName}' turned out to be NULL!");
+                        OnManagerReached(new($"When filling in the cells on sheet, the value for '{targetCell.ColName}' turned out to be null.", true, true));
                     }
                 }
                 rowIndex++;
@@ -612,7 +605,7 @@ namespace TableAnalizer.Objects.Managers
                 OnManagerReached(args);
             }
             
-            return Task.Run(() => result);
+            return result;
         }
 
         private static void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell, bool isMainReport, Color statusColor, int? statusColNumber) 
@@ -705,12 +698,6 @@ namespace TableAnalizer.Objects.Managers
             worksheet.TabColor = tabColor;
             worksheet.DefaultRowHeight = DEFAULT_TABLE_ROW_HEIGHT;
             worksheet.DefaultColWidth = DEFAULT_TABLE_COL_WIDTH;
-
-            if(isTracing) 
-            {
-
-            }
-                Trace.WriteLine($"Excel sheet named '{worksheet.Name}' created.");
         }
 
         private static void SetupTableHeader(in TargetCell[] resultCells, ref ExcelWorksheet worksheet, double headerRowHeight = HEADER_TABLE_ROW_HEIGHT)

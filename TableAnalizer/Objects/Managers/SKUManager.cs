@@ -217,7 +217,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="rowsWithRawData">List of raw data dictionaries.</param>
         /// <returns>Number of keys in final dictionary.</returns>
         /// <exception cref="ArgumentException">Exception when passing an empty dictionary.</exception>
-        public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData, bool isMulty, bool isRawReport)
+        public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData, bool isSummary, bool isRawReport)
         {
             bool isRansoms = reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ;
             bool isRemaining = reportFileKey == SourceSKUReportFileKey.RemainingWB || reportFileKey == SourceSKUReportFileKey.RemainingOZ;
@@ -367,7 +367,7 @@ namespace TableAnalizer.Objects.Managers
                     foreach (var item in skuUnit)
                     {
                         SKU sku = new(item, DeadlineDays);
-                        SKUs.RetrieveAndUpdateOrAddValue(sku.SKUNumber, sku, isMulty);
+                        SKUs.RetrieveAndUpdateOrAddValue(sku.SKUNumber, sku, isSummary);
                     }
                 }
             }
@@ -635,8 +635,9 @@ namespace TableAnalizer.Objects.Managers
             }
 
             await Task.Delay(10); // dummy 
-            
-            return skuForTargetReports;
+
+            return [.. skuForTargetReports
+                .OrderByDescending(p => p.SKUDate)];
         }
         
         #endregion

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Text;
 using TableAnalizer.Interfaces;
+
 namespace TableAnalizer.Objects.SKUItems
 {
     public class SKUForTargetReports : IColorable
@@ -198,44 +199,42 @@ namespace TableAnalizer.Objects.SKUItems
             // Article analysis
             AnalizeSKU(sku, isRawReport, isMulty, traceDelay, resortFromSkusValues);
         }
-        private void SetSellmentStatus(SKUSellmentStatus skuSellmentStatus) 
-        {
-            SellmentStatus = new SellmentStatus(skuSellmentStatus);
-            FillColor = SellmentStatus.StatusColor;
-        }
+        
+        #endregion
 
-        private void AnalizeSKU(SKU sku, bool isRawReport, bool isMulty, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
+        #region Functionslity
+        private void AnalizeSKU(SKU sku, bool isRawReport, bool isSummary, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
         {
-            // Установка неопределенного статуса 
+            // Setting status to undefined
             SetSellmentStatus(SKUSellmentStatus.Unknown);
 
-            // Проверка компенсаций
+            // Checking compensation
             SetCompensation();
 
-            // Расчет недовозов от точек
+            // Calculation of shortages from points
             CalculateDalay(SKUSellmentStatus.OnSearchPoints);
 
-            // Калькуляция пересортов 
+            // Calculation of resorts
             if (!isRawReport)
             {
                 CalcResorts(sku, resortFromSkusValues);
             }
 
-            // Расчет недовозов от склада
+            // Calculation of shortages from the warehouse
             CalculateDalay(SKUSellmentStatus.OnSearchWarehouse);
 
-            // Расчет перерасходов
+            // Calculation of overruns
             if((SKUShipped + SKUTransfered) > SKURansomsWaiting) 
             {
                 SKUOverrunsCount = SKUShipped - SKUTransfered - SKURansomsWaiting - SKUResort;
             }
 
-            // Установка статуса взаморасчетов 
+            // Setting the status of inter-accounts
             SetStatus();
 
             // Информация для пересортов (склад)
             // - если это не сводный расчет и сырой отчет
-            if(!isMulty && isRawReport) 
+            if(!isSummary && isRawReport) 
             {
                 GetInfoForResort();
             }
@@ -308,7 +307,7 @@ namespace TableAnalizer.Objects.SKUItems
             // Фикация исходящих пересортов 
             if (sku.SKUResortBalance is not null)
             {
-                // Переcорты прихода, списанные в 1С
+                // Переcорты приходов (проведено в 1С)
                 var resortIn1CReceiptItems = sku.SKUResortBalance.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortIn1CReceipt);
                 if (resortIn1CReceiptItems.HasValue && resortIn1CReceiptItems.Value.sum > 0)
                 {
@@ -318,7 +317,7 @@ namespace TableAnalizer.Objects.SKUItems
                             SKUResortsComment += resortIn1CReceiptItems.Value.comment;
                 }
 
-                // Переcорты расхода, списанные в 1С
+                // Переcорты расходов (проведено в 1С)
                 var resortIn1CItems = sku.SKUResortBalance.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortIn1C);
                 if (resortIn1CItems.HasValue && resortIn1CItems.Value.sum > 0)
                 {
@@ -419,6 +418,14 @@ namespace TableAnalizer.Objects.SKUItems
                 } 
             }
         }
+        
+        private void SetSellmentStatus(SKUSellmentStatus skuSellmentStatus) 
+        {
+            SellmentStatus = new SellmentStatus(skuSellmentStatus);
+            FillColor = SellmentStatus.StatusColor;
+        }
+        
+        
         #endregion 
     }
 }

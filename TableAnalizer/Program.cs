@@ -47,10 +47,13 @@ internal class Program
 
         Trace.Listeners.Add(new ConsoleTraceListener());
 
-        await Analyze(TracingDelay);
+        var analizeTask = Analyze(TracingDelay);
+        await Task.Run(() => analizeTask);
+        analizeTask.Wait();
 
-        Trace.Flush();
-
+        var exitTask = TracingProgramExecution(new(goodByMessage,false,true));
+        await Task.Run(() => exitTask);
+        exitTask.Wait();
     }
 
     private static void SetAppConfig()
@@ -258,13 +261,11 @@ internal class Program
             {
                 await TracingProgramExecution(new($"Deleting old files at path {ReportFileManager.OutputClientReportFilePath}...", false,false));
             }
-            if(FileService.DeleteFileAtPath(ReportFileManager.OutputClientReportFilePath)) 
+
+            if(File.Exists(ReportFileManager.OutputClientReportFilePath)) 
             {
+                File.Delete(ReportFileManager.OutputClientReportFilePath);
                 await TracingProgramExecution(new("Old files have been deleted.", false,false));
-            } 
-            else 
-            {
-                await TracingProgramExecution(new("Error deleting old files.", true,true));
             }
             
             Task<List<SKUForTargetReports>>? skusForTargetReportTask = skuManager.MakeSkusForTargetReport((bool)isRawReport!, isMulty, delay);
@@ -277,17 +278,15 @@ internal class Program
             }
 
             // Save work 
-            Task<bool>? makeReportTask = excelManager.MakeReports(skusForTargetReportTask.Result, (bool)isRawReport,isTracing);
+            List<SKUForTargetReports> skuForTargetReports = skusForTargetReportTask.Result;
+            var makeReportTask = excelManager.MakeReports(skuForTargetReports, (bool)isRawReport, isTracing);
             await Task.Run(() => makeReportTask);
             makeReportTask.Wait();
-
-            // Exit 
-            await TracingProgramExecution(new(goodByMessage,false,true));
         }
         else
         {
             // Error exit 
-            await TracingProgramExecution(new(string.Concat("Нет отчетов, доступных для анализа\n", goodByMessage), true, true));
+            await TracingProgramExecution(new(string.Concat("There are no reports available for analysis.\n", goodByMessage), true, true));
         }
     }
 
@@ -571,7 +570,7 @@ internal class Program
             excelManager.ManagerReached -= Report;
             reportFileManager.ManagerReached -= Report;
 
-            ConsoleAppService.ConsoleAppExit(goodByMessage);
+            Trace.Flush();
         }
     }
     #endregion
