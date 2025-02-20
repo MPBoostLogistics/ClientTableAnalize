@@ -10,9 +10,27 @@ using TableAnalizer.Objects.SKUItems.SKUBalances;
 using System.Threading.Tasks;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
+using IronSoftware.Abstractions;
 
 namespace TableAnalizer.Objects.Managers
 {
+    public class AttentionCell 
+    {
+        public int ColumnNumber { get; }
+        public int FontSize { get;} = 14;
+        public bool IsTextBold { get; } = true;
+        public string Comment { get; private set; } = string.Empty;
+
+        public AttentionCell(int columnNumber, string comment)
+        {
+            ColumnNumber = columnNumber;
+            Comment = comment;
+        }
+
+       // public void UpdateComment(string message) => Comment += $"\n{message}";
+    }
+
+
     public class ExcelManager : BaseManager
     {
         #region Constants && variables
@@ -187,7 +205,7 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 5, colName: "Средняя цена, руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0,  nameof(SKUForTargetReports.SKUPrice),
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode,  valueСheckingPredicate: (int x) => x > 0, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode,  valueСheckingPredicate: x => x > 0, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 6, colName: "Дата последнего заказа", colWidth: 13, format: DATE_CELL_FORNAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUDate),
                 parsingTypeCode: ParsingTypeCode.DataOnlyTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
@@ -232,7 +250,7 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 20, colName: "Склад: Остаток товаров", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, propertyName:  nameof(SKUForTargetReports.SKURemaining),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate:  x => x < 0, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 21, colName: "Комментарий к пересортами", colWidth: 32, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, propertyName:  nameof(SKUForTargetReports.SKUResortsComment),
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
@@ -311,9 +329,22 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode,valueСheckingPredicate: (int x) => x == 0, targetCellSettings: defaultTargetCellSettings)
         ];
         
+        private readonly int sellmentStatusColomnNumber;
+        private readonly int skuReceiptGoodsColumnNumber;
+        private readonly int skuRemainingColumnNumber;
+
         #endregion
 
         #region Constructors && destructors
+        public ExcelManager()
+        {
+            sellmentStatusColomnNumber = cellsReportingMain
+                .First(el => el.PropertyName == nameof(SKUForTargetReports.SellmentStatusString)).ColNumber;
+            skuReceiptGoodsColumnNumber = cellsReportingMain
+                .First(el => el.PropertyName == nameof(SKUForTargetReports.SKUReceiptGoods)).ColNumber;
+            skuRemainingColumnNumber = cellsReportingMain
+                .First(el => el.PropertyName == nameof(SKUForTargetReports.SKURemaining)).ColNumber;
+        }
         ~ExcelManager()
         {
             foreach (var excelPackage in ExcelPackages)
@@ -512,14 +543,6 @@ namespace TableAnalizer.Objects.Managers
                 ManagerReachedEventArgs args = new($"Fill in Excel sheet with the name '{result.Name}'...", false, false);
                 OnManagerReached(args);
             }
-            
-            // Get status column number
-            int? statusColNumber = null;
-            if(isMainReport) 
-            {
-                statusColNumber = cellsReportingMain
-                    .Single(cl => cl.PropertyName == nameof(SKUForTargetReports.SellmentStatusString)).ColNumber;
-            }
 
             int rowIndex = recordIndex + 1;
 
@@ -582,10 +605,13 @@ namespace TableAnalizer.Objects.Managers
                     {
                         // Set value for cell 
                         ExcelRange? tableCell = result.Cells[rowIndex, targetCell.ColNumber]; 
-                        if(tableCell is not null) 
+                        AttentionCell? attentionCell = null;
+                        if(tableCell is not null)
                         {
-                            ApplySettingsToTableCell(ref tableCell!, value, targetCell, isMainReport, skuForTargetReport.FillColor, statusColNumber);
-                        } 
+                            SetAttentionToCell(in skuForTargetReport, in tableCell, out attentionCell);
+
+                            ApplySettingsToTableCell(ref tableCell!, value, targetCell, isMainReport, skuForTargetReport.FillColor, attentionCell);
+                        }
                         else 
                         {
                             OnManagerReached(new($"Table cell for rowIndex {rowIndex} && column number {targetCell.ColNumber} is null.", true, true));
@@ -608,13 +634,28 @@ namespace TableAnalizer.Objects.Managers
             return result;
         }
 
-        private static void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell, bool isMainReport, Color statusColor, int? statusColNumber) 
+        private void SetAttentionToCell(in SKUForTargetReports skuForTargetReport, in ExcelRange tableCell, out AttentionCell? attentionCell)
+        {
+            attentionCell = null;
+
+            if (tableCell.Start.Column == skuReceiptGoodsColumnNumber && skuForTargetReport.SKUIncreasedReceiptGoods > 0)
+            {
+                attentionCell = new AttentionCell(skuReceiptGoodsColumnNumber, "Приход больше ожидания");
+            }
+
+            if (tableCell.Start.Column == skuRemainingColumnNumber && skuForTargetReport.SKURemaining < 0)
+            {
+                attentionCell = new AttentionCell(skuRemainingColumnNumber, "Отрицательный остаток на складе");
+            }
+        }
+
+        private void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell, bool isMainReport, Color statusColor, AttentionCell? attentionCell) 
         {
             // Add value to cell 
             tableCell.Value = value;
             
-            // Get color for status 
-            if(isMainReport && statusColNumber != null && tableCell.Start.Column == statusColNumber) 
+            // Get color for status column
+            if(isMainReport && tableCell.Start.Column == sellmentStatusColomnNumber) 
             {
                 tableCell.Style.Fill.SetBackground(statusColor);
             }   
@@ -636,30 +677,23 @@ namespace TableAnalizer.Objects.Managers
             }
 
             // Apply font settings 
-            tableCell.Style.Font.Size = targetCell.CellSettings.TextSize;
-            tableCell.Style.Font.Bold = targetCell.CellSettings.IsTextBold;
-
-            // Set text color
-            tableCell.Style.Font.Color.SetColor(targetCell.CellSettings.TextСolor);
-
-            // Checking predicate condition
-            if(targetCell.ValueСheckingPredicate is not null) 
+            if(attentionCell != null && tableCell.Start.Column == attentionCell.ColumnNumber) 
             {
-                int? cheking = value is double ? Convert.ToInt32(value) : value is int v ? v : null;
-                if(cheking.HasValue && !targetCell.ValueСheckingPredicate(cheking.Value)) 
+                tableCell.Style.Font.Size = attentionCell.FontSize;
+                tableCell.Style.Font.Bold = attentionCell.IsTextBold;
+                tableCell.Style.Font.Color.SetColor(Color.Red);
+
+                if(!string.IsNullOrEmpty(attentionCell.Comment)) 
                 {
-                    tableCell.Style.Font.Color.SetColor(accentTextColor);
-                } 
-                else 
-                {
-                    tableCell.Style.Font.Color.SetColor(targetCell.CellSettings.TextСolor);
+                    tableCell.AddComment(attentionCell.Comment);
                 }
             } 
             else 
             {
+                tableCell.Style.Font.Size = targetCell.CellSettings.FontSize;
+                tableCell.Style.Font.Bold = targetCell.CellSettings.IsTextBold;
                 tableCell.Style.Font.Color.SetColor(targetCell.CellSettings.TextСolor);
             }
-
         }
 
         /// <summary>

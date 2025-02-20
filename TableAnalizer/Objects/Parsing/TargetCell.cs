@@ -8,13 +8,13 @@ namespace TableAnalizer.Objects.Parsing
         public Color TextСolor { get; }
         public Color? CellFillColor { get; private set; }
         public bool IsTextBold { get; }
-        public int TextSize { get; }
+        public int FontSize { get; }
         public ExcelFillStyle ExcelFillStyle { get; private set; }
 
         public TargetCellSettings(Color textСolor, int textSize, Color? cellFillColor,  bool isTextBold = false)
         {
             TextСolor = textСolor;
-            TextSize = textSize;
+            FontSize = textSize;
             IsTextBold = isTextBold;
 
             SetCellFillColor(cellFillColor);

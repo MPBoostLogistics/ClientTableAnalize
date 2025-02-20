@@ -38,7 +38,7 @@ namespace TableAnalizer.Objects.SKUItems
         /// <summary>
         /// Положительная разница между приходом и ожиданием 
         /// </summary>
-        private int SKUIncreasedReceiptGoods => 
+        public int SKUIncreasedReceiptGoods => 
             SKUReceiptGoods > SKURansomsWaiting ? 
             SKUReceiptGoods - SKURansomsWaiting : 
             0;
@@ -292,13 +292,6 @@ namespace TableAnalizer.Objects.SKUItems
             if (SKUIncreasedReceiptGoods > 0)
             {
                 SKUComment = $"Приход товарами больше ожидания на: {Math.Abs(SKUReceiptGoods - SKURansomsWaiting)}";
-            }
-
-            // Отрицательный остаток товаров на складе: инфо для склада в комментарий и остаток = 0
-            if (int.IsNegative(SKURemaining))
-            {
-                SKUComment = $"Передано клиенту с пересортами: {Math.Abs(SKURemaining)}";
-                SKURemaining = 0;
             }
         }
 
