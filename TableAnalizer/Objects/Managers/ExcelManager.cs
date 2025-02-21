@@ -153,10 +153,10 @@ namespace TableAnalizer.Objects.Managers
 
         public static List<SourceColumn> ResortSourceCells { get; } = new()
         {
-            new(1, nameof(SKUResortDataUnit.SKUFromResortNumber), ParsingTypeCode.IntTypeCode, true),
-            new(2, nameof(SKUResortDataUnit.SKUToResortNumber), ParsingTypeCode.IntTypeCode, true),
-            new(3, nameof(SKUResortDataUnit.SKUToResortNumberCount), ParsingTypeCode.IntTypeCode, true),
-            new(4, nameof(SKUResortDataUnit.ResortComment), ParsingTypeCode.StringTypeCode, false)
+            new(2, nameof(SKUResortDataUnit.SKUFromResortNumber), ParsingTypeCode.IntTypeCode, true),
+            new(8, nameof(SKUResortDataUnit.SKUToResortNumber), ParsingTypeCode.IntTypeCode, true),
+            new(14, nameof(SKUResortDataUnit.SKUToResortNumberCount), ParsingTypeCode.IntTypeCode, true),
+            new(17, nameof(SKUResortDataUnit.ResortComment), ParsingTypeCode.StringTypeCode, false)
         };
 
         public static List<SourceColumn> ParellelSkusSourceCells { get; } = new()

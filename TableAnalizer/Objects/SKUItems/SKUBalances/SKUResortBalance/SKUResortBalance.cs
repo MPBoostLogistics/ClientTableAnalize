@@ -194,13 +194,13 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             switch(target) 
             {
                 case SKUResortBalanceTarget.ResortIn1CReceipt:
-                    stringBuilder.Append("Пересортица прихода (1C, исходящий, вычтен из \"Склад: Приход товаром\"):\n");
+                    stringBuilder.Append("Пересортица прихода на др.арт. (1C, вычтен из \"Склад: Приход товаром\"):\n");
                     break;
                 case SKUResortBalanceTarget.ResortIn1C:
-                    stringBuilder.Append("Пересортица расхода на др. артикулы (1C, вычтено из \"Склад: Склад: Приход товаром\" и \"Склад: Склад: Расход товаром\"):\n");
+                    stringBuilder.Append("Пересортица расхода на др.арт. (1C, вычтено из \"Склад: Склад: Приход товаром\" и \"Склад: Склад: Расход товаром\"):\n");
                     break;
                 case SKUResortBalanceTarget.Conceptual:
-                    stringBuilder.Append("Пересортица расхода (баланс, добавлено в \"Склад: Списано пересортицей, товаров\"):\n");
+                    stringBuilder.Append("Пересортица расхода на др.арт. (баланс, вычтено из \"Склад: Склад: Приход товаром\" и \"Склад: Склад: Расход товаром\"):\n");
                     break;
                 default:
                     stringBuilder.Append("Нераспознанный пересорт:\n");
