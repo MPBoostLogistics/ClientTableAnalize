@@ -14,22 +14,13 @@ using IronSoftware.Abstractions;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public class AttentionCell 
+    public class AttentionCell(int columnNumber, string comment)
     {
-        public int ColumnNumber { get; }
+        public int ColumnNumber { get; } = columnNumber;
         public int FontSize { get;} = 14;
         public bool IsTextBold { get; } = true;
-        public string Comment { get; private set; } = string.Empty;
-
-        public AttentionCell(int columnNumber, string comment)
-        {
-            ColumnNumber = columnNumber;
-            Comment = comment;
-        }
-
-       // public void UpdateComment(string message) => Comment += $"\n{message}";
+        public string Comment { get; private set; } = comment;
     }
-
 
     public class ExcelManager : BaseManager
     {
@@ -330,6 +321,7 @@ namespace TableAnalizer.Objects.Managers
         ];
         
         private readonly int sellmentStatusColomnNumber;
+        private readonly int skuTotalConsumptionColumnNumber;
         private readonly int skuReceiptGoodsColumnNumber;
         private readonly int skuRemainingColumnNumber;
 
@@ -340,6 +332,8 @@ namespace TableAnalizer.Objects.Managers
         {
             sellmentStatusColomnNumber = cellsReportingMain
                 .First(el => el.PropertyName == nameof(SKUForTargetReports.SellmentStatusString)).ColNumber;
+            skuTotalConsumptionColumnNumber = cellsReportingMain
+                .First(el => el.PropertyName == nameof(SKUForTargetReports.SKUTotalСonsumption)).ColNumber;
             skuReceiptGoodsColumnNumber = cellsReportingMain
                 .First(el => el.PropertyName == nameof(SKUForTargetReports.SKUReceiptGoods)).ColNumber;
             skuRemainingColumnNumber = cellsReportingMain
@@ -640,12 +634,17 @@ namespace TableAnalizer.Objects.Managers
 
             if (tableCell.Start.Column == skuReceiptGoodsColumnNumber && skuForTargetReport.SKUIncreasedReceiptGoods > 0)
             {
-                attentionCell = new AttentionCell(skuReceiptGoodsColumnNumber, "Приход больше ожидания");
+                attentionCell = new AttentionCell(skuReceiptGoodsColumnNumber, $"Приход больше\nожидания: {skuForTargetReport.SKUIncreasedReceiptGoods}");
             }
 
             if (tableCell.Start.Column == skuRemainingColumnNumber && skuForTargetReport.SKURemaining < 0)
             {
-                attentionCell = new AttentionCell(skuRemainingColumnNumber, "Отрицательный остаток на складе");
+                attentionCell = new AttentionCell(skuRemainingColumnNumber, "Отриц. остаток\nна складе");
+            }
+
+            if (tableCell.Start.Column == skuTotalConsumptionColumnNumber && skuForTargetReport.TotalСonsumptionGreaterThanReceiptWithoutAddons > 0)
+            {
+                attentionCell = new AttentionCell(skuTotalConsumptionColumnNumber, $"Общий расход\nбольше прихода\n(без компенсаций\nи пересортов): {skuForTargetReport.TotalСonsumptionGreaterThanReceiptWithoutAddons}");
             }
         }
 
@@ -685,7 +684,13 @@ namespace TableAnalizer.Objects.Managers
 
                 if(!string.IsNullOrEmpty(attentionCell.Comment)) 
                 {
-                    tableCell.AddComment(attentionCell.Comment);
+                    var comment = tableCell.AddComment(attentionCell.Comment);
+                    comment.Font.Bold = false;
+                    tableCell.Style.Font.Size = attentionCell.FontSize - 2;
+                    comment.Font.Color = Color.Black;
+                    comment.VerticalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignVerticalVml.Center;
+                    comment.HorizontalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignHorizontalVml.Left;
+                    comment.AutoFit = true;
                 }
             } 
             else 

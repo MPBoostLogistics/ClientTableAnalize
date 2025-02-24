@@ -148,6 +148,16 @@ namespace TableAnalizer.Objects.SKUItems
 
         public Color FillColor { get; set;}
 
+        /// <summary>
+        /// Положительна разница между общим расходом и приходом 
+        // (при том, что не было компенсаций или пересортов)
+        /// </summary>
+        public int TotalСonsumptionGreaterThanReceiptWithoutAddons => 
+            SKUTotalСonsumption > SKUReceiptGoods && SKUTotalСonsumption - SKUReceiptGoods > (SKUPaid + SKUResort) ? 
+                SKUTotalСonsumption - SKUReceiptGoods - SKUPaid - SKUResort : 
+                0;
+
+
         #endregion
 
         #region Constructors
