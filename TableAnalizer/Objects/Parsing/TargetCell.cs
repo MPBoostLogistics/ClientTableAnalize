@@ -39,7 +39,7 @@ namespace TableAnalizer.Objects.Parsing
     /// Represents the result cell for an Excel table.
     /// </summary>
     public readonly struct TargetCell(int colNumber, string colName, double colWidth, string format,
-        bool wrapTextInHeader, int textRotationInHeader, string propertyName, ParsingTypeCode parsingTypeCode,
+        bool wrapTextInHeader, int textRotationInHeader, string textCommentInHeader, string propertyName, ParsingTypeCode parsingTypeCode,
         Predicate<int>? valueСheckingPredicate, TargetCellSettings targetCellSettings, int groupCellsFromCurrent = 0)
     {
         #region Properties
@@ -49,6 +49,7 @@ namespace TableAnalizer.Objects.Parsing
         public string Format { get; } = format;
         public bool WrapTextInHeader { get; } = wrapTextInHeader;
         public int TextRotationInHeader { get; } = textRotationInHeader;
+        public string TextCommentInHeader { get; } = textCommentInHeader;
         public string PropertyName { get; } = propertyName;
         public ParsingTypeCode ParsingTypeCode { get; } = parsingTypeCode;
         public readonly Predicate<int>? ValueСheckingPredicate = valueСheckingPredicate; 

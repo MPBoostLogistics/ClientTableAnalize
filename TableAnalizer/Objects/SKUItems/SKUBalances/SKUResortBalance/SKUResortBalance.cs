@@ -200,7 +200,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
                     stringBuilder.Append("Пересортица расхода на др.арт. (1C, вычтено из \"Склад: Склад: Приход товаром\" и \"Склад: Склад: Расход товаром\"):\n");
                     break;
                 case SKUResortBalanceTarget.Conceptual:
-                    stringBuilder.Append("Пересортица расхода на др.арт. (баланс, вычтено из \"Склад: Склад: Приход товаром\" и \"Склад: Склад: Расход товаром\"):\n");
+                    stringBuilder.Append("Пересортица расхода на др.арт. (баланс, добавлено в \"Склад: Расход пересортом\"):\n");
                     break;
                 default:
                     stringBuilder.Append("Нераспознанный пересорт:\n");

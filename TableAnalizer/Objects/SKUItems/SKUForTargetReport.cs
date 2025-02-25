@@ -52,6 +52,13 @@ namespace TableAnalizer.Objects.SKUItems
         /// </summary>                       
         private readonly int skuPaidPoints = 0; 
 
+        private string skuPaidComment = string.Empty;
+        public string SKUPaidComment 
+        { 
+            get => skuPaidComment;
+            set => skuPaidComment = string.IsNullOrEmpty(skuPaidComment) ? skuPaidComment = value : skuPaidComment += $"\n{value}" ;
+        }
+
         /// <summary>
         /// Склад: общий расход (товаром, передачей на фулфилмент, компенсацией, пересортом) 
         /// </summary>
@@ -112,7 +119,7 @@ namespace TableAnalizer.Objects.SKUItems
         /// </summary>
         public double SKUDeliveryDelayStorageSum => SKUDeliveryDelayStorage > 0 && isDeadline ? SKUDeliveryDelayStorage * SKUPrice : 0.00;
 
-        public string skuResortsComment = string.Empty;
+        private string skuResortsComment = string.Empty;
         /// <summary>
         /// Комментарий к пересортами
         /// </summary>
@@ -139,24 +146,16 @@ namespace TableAnalizer.Objects.SKUItems
         // Is Parrales sku
         private bool IsParallelSku {get ;set;}
 
-        private string skuComment = string.Empty;
-        public string SKUComment 
-        { 
-            get => skuComment;
-            set => skuComment = string.IsNullOrEmpty(skuComment) ? skuComment = value : skuComment += $"\n{value}" ;
-        }
-
         public Color FillColor { get; set;}
 
         /// <summary>
         /// Положительна разница между общим расходом и приходом 
-        // (при том, что не было компенсаций или пересортов)
+        /// (c учетом компенсации и перерасходов)
         /// </summary>
-        public int TotalСonsumptionGreaterThanReceiptWithoutAddons => 
-            SKUTotalСonsumption > SKUReceiptGoods && SKUTotalСonsumption - SKUReceiptGoods > (SKUPaid + SKUResort) ? 
-                SKUTotalСonsumption - SKUReceiptGoods - SKUPaid - SKUResort : 
-                0;
-
+        public int TotalConsumptionIsGreaterReceipt => 
+            SKUTotalСonsumption > (SKUReceiptGoods + SKUPaid + SKUResort) ? 
+            SKUTotalСonsumption - SKUReceiptGoods : 
+            0;
 
         #endregion
 
@@ -229,7 +228,7 @@ namespace TableAnalizer.Objects.SKUItems
             // Calculation of resorts
             if (!isRawReport)
             {
-                CalcResorts(sku, resortFromSkusValues);
+                CalculateResorts(sku, resortFromSkusValues);
 
                 // Calculation of shortages from points (повторно)
                 CalculateDalay(SKUSellmentStatus.OnSearchPoints);
@@ -282,7 +281,7 @@ namespace TableAnalizer.Objects.SKUItems
                 paidSB.Append($"- от точек (добавлено в \"Склад: Приход товаром\" и \"Склад: Расход компенсацией\"): {skuPaidPoints}\n");
             }
 
-            SKUComment = paidSB.ToString();
+            SKUPaidComment = paidSB.ToString();
         }
 
         private void CalculateDalay(SKUSellmentStatus sellmentStatus) 
@@ -300,7 +299,7 @@ namespace TableAnalizer.Objects.SKUItems
             }
         }
 
-        private void CalcResorts(SKU sku, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
+        private void CalculateResorts(SKU sku, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
         {
             // Фикация исходящих пересортов 
             if (sku.SKUResortBalance is not null)
@@ -328,8 +327,9 @@ namespace TableAnalizer.Objects.SKUItems
                 var conceptualItems = sku.SKUResortBalance.FindSkusInBalanceBy(SKUResortBalanceTarget.Conceptual);
                 if (conceptualItems.HasValue && conceptualItems.Value.sum > 0)
                 {
-                    SKUReceiptGoods -=  conceptualItems.Value.sum;
-                    SKUShipped -= conceptualItems.Value.sum;
+                    // SKUReceiptGoods -=  conceptualItems.Value.sum;
+                    // SKUShipped -= conceptualItems.Value.sum;
+                    SKUResort += conceptualItems.Value.sum;
                     SKUResortsComment = conceptualItems.Value.comment;
                 }
             }
@@ -382,10 +382,12 @@ namespace TableAnalizer.Objects.SKUItems
                 var skuAndSumsByResortConceprualSum = skuAndSumsByResortConceprual?.Aggregate(0, (acc, i) => acc + i.sum);
                 if(skuAndSumsByResortConceprual is not null && skuAndSumsByResortConceprual.Any())  
                 {
-                    SKUResort += (int)skuAndSumsByResortConceprualSum!;   // Добавляется в Склад: Расход пересортом
+                    //SKUResort += (int)skuAndSumsByResortConceprualSum!;   // Добавляется в Склад: Расход пересортом
+                    SKUReceiptGoods -= (int)skuAndSumsByResortConceprualSum!;
+                    SKUShipped -= (int)skuAndSumsByResortConceprualSum!;    // Вычитается из Склад: Расход товаром
 
                     // Обновление комментария
-                    StringBuilder goodsResortsSb = new("\nПересортица расхода от др. арт. (баланс, добавлено в \"Склад: Расход пересортом\",\n");
+                    StringBuilder goodsResortsSb = new("\nПересортица расхода от др. арт. (баланс, вычтено из \"Склад: Расход товаром\",\n");
                     foreach (var (sk, su) in skuAndSumsByResortConceprual)
                     {
                         goodsResortsSb.Append($"{sk} шт.:{su}, ");
