@@ -177,7 +177,7 @@ namespace TableAnalizer.Objects.Managers
             new(14, nameof(SKUClientReportDataUnit.SKUReceipt), ParsingTypeCode.IntTypeCode, true),
             new(16, nameof(SKUClientReportDataUnit.SKUShipped), ParsingTypeCode.IntTypeCode, true),
             new(17, nameof(SKUClientReportDataUnit.SKUTransferDataUnit), ParsingTypeCode.IntTypeCode, true),
-            new(19, nameof(SKUClientReportDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, true)
+            new(22, nameof(SKUClientReportDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, true)
         ];
 
         public TargetCell[] cellsReportingMain =
@@ -269,11 +269,17 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 29, colName: "Перерасход, сумма руб.", colWidth: 14, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUOverrunsSum),
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x == 0, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 30, colName: "Инфо для склада: положительная разница прихода и ожидания", colWidth: 18, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "При наличии положительных значений\nпересмотрите задержки довозов от ПВЗ по перекрестным артикулам", propertyName:  nameof(SKUForTargetReports.SKUIncreasedReceiptGoods),
+            new (colNumber: 30, colName: "Инфо: + разница прихода и ожидания", colWidth: 18, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "При наличии положительных значений\nпересмотрите задержки довозов от ПВЗ по перекрестным артикулам", propertyName:  nameof(SKUForTargetReports.PositiveDifferenceRecieptAndWaiting),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 31, colName: "Инфо для склада: положительная разница общего расхода и прихода", colWidth: 18, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "c учетом компенсации и перерасходов", propertyName:  nameof(SKUForTargetReports.TotalConsumptionIsGreaterReceipt),
+            new (colNumber: 31, colName: "Инфо: - разница прихода и ожидания", colWidth: 18, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "При наличии положительных значений\nсбалансируйте приходы", propertyName:  nameof(SKUForTargetReports.NegativeDifferenceRecieptAndWaiting),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 32, colName: "Инфо: + разница общего расхода и прихода с аддонами", colWidth: 18, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "c учетом компенсации и перерасходов", propertyName:  nameof(SKUForTargetReports.PositiveDifferenceTotalConsumptionAndRecieptWithAddons),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 33, colName: "Инфо: + разница общего расхода и прихода без аддонов", colWidth: 18, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "общие показатели", propertyName:  nameof(SKUForTargetReports.PositiveDifferenceTotalConsumptionAndRecieptWithoutAddons),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, targetCellSettings: defaultTargetCellSettings),
         ];
         public TargetCell[] cellsReportingDelays =
@@ -326,35 +332,27 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode,valueСheckingPredicate: x => x == 0, targetCellSettings: defaultTargetCellSettings)
         ];
         
-        private readonly int sellmentStatusColomnNumber;
-        private readonly int skuIncreasedReceiptGoodsСolNumber;
-        private readonly int skuTotalConsumptionIsGreaterReceipt;
-
-
-        private readonly int skuTotalConsumptionColumnNumber;
-        private readonly int skuReceiptGoodsColumnNumber;
-        private readonly int skuRemainingColumnNumber;
+        private readonly int sellmentStatusColomnNum;
+        private readonly int positiveDifferenceRecieptAndWaitingColNum;
+        private readonly int negativeDifferenceRecieptAndWaitingColNum;
+        private readonly int skuPositiveDifferenceTotalConsumptionAndRecieptWithAddonsColNum;
+        private readonly int skuPositiveDifferenceTotalConsumptionAndRecieptWithoutAddonsColNum;
 
         #endregion
 
         #region Constructors && destructors
         public ExcelManager()
         {
-            sellmentStatusColomnNumber = cellsReportingMain
+            sellmentStatusColomnNum = cellsReportingMain
                 .First(el => el.PropertyName == nameof(SKUForTargetReports.SellmentStatusString)).ColNumber;
-            skuIncreasedReceiptGoodsСolNumber = cellsReportingMain
-                .First(el => el.PropertyName == nameof(SKUForTargetReports.SKUIncreasedReceiptGoods)).ColNumber;
-            skuTotalConsumptionIsGreaterReceipt = cellsReportingMain
-                .First(el => el.PropertyName == nameof(SKUForTargetReports.TotalConsumptionIsGreaterReceipt)).ColNumber;
-
-            // ... 
-            
-            skuTotalConsumptionColumnNumber = cellsReportingMain
-                .First(el => el.PropertyName == nameof(SKUForTargetReports.SKUTotalСonsumption)).ColNumber;
-            skuReceiptGoodsColumnNumber = cellsReportingMain
-                .First(el => el.PropertyName == nameof(SKUForTargetReports.SKUReceiptGoods)).ColNumber;
-            skuRemainingColumnNumber = cellsReportingMain
-                .First(el => el.PropertyName == nameof(SKUForTargetReports.SKURemaining)).ColNumber;
+            positiveDifferenceRecieptAndWaitingColNum = cellsReportingMain
+                .First(el => el.PropertyName == nameof(SKUForTargetReports.PositiveDifferenceRecieptAndWaiting)).ColNumber;
+            negativeDifferenceRecieptAndWaitingColNum = cellsReportingMain
+                .First(el => el.PropertyName == nameof(SKUForTargetReports.NegativeDifferenceRecieptAndWaiting)).ColNumber;
+            skuPositiveDifferenceTotalConsumptionAndRecieptWithAddonsColNum = cellsReportingMain
+                .First(el => el.PropertyName == nameof(SKUForTargetReports.PositiveDifferenceTotalConsumptionAndRecieptWithAddons)).ColNumber;
+            skuPositiveDifferenceTotalConsumptionAndRecieptWithoutAddonsColNum = cellsReportingMain
+                .First(el => el.PropertyName == nameof(SKUForTargetReports.PositiveDifferenceTotalConsumptionAndRecieptWithoutAddons)).ColNumber;
         }
         ~ExcelManager()
         {
@@ -650,14 +648,24 @@ namespace TableAnalizer.Objects.Managers
             attentionCell = null;
             var colNumber = tableCell.Start.Column;
 
-            if (colNumber == skuIncreasedReceiptGoodsСolNumber && skuForTargetReport.SKUIncreasedReceiptGoods > 0)
+            if (colNumber == positiveDifferenceRecieptAndWaitingColNum && skuForTargetReport.PositiveDifferenceRecieptAndWaiting > 0)
             {
-                attentionCell = new AttentionCell(skuIncreasedReceiptGoodsСolNumber, $"Приход больше\nожидания: {skuForTargetReport.SKUIncreasedReceiptGoods}");
+                attentionCell = new AttentionCell(positiveDifferenceRecieptAndWaitingColNum, $"Приход больше\nожидания: {skuForTargetReport.PositiveDifferenceRecieptAndWaiting}");
             }
 
-            if (colNumber == skuTotalConsumptionIsGreaterReceipt && skuForTargetReport.TotalConsumptionIsGreaterReceipt > 0)
+            if (colNumber == negativeDifferenceRecieptAndWaitingColNum && skuForTargetReport.NegativeDifferenceRecieptAndWaiting > 0)
             {
-                attentionCell = new AttentionCell(skuIncreasedReceiptGoodsСolNumber, $"Общий расход больше\nприхода: {skuForTargetReport.TotalConsumptionIsGreaterReceipt}");
+                attentionCell = new AttentionCell(negativeDifferenceRecieptAndWaitingColNum, $"Ожидание больше\nприхода: {skuForTargetReport.NegativeDifferenceRecieptAndWaiting}");
+            }
+
+            if (colNumber == skuPositiveDifferenceTotalConsumptionAndRecieptWithAddonsColNum && skuForTargetReport.PositiveDifferenceTotalConsumptionAndRecieptWithAddons > 0)
+            {
+                attentionCell = new AttentionCell(skuPositiveDifferenceTotalConsumptionAndRecieptWithAddonsColNum, $"Общий расход больше\nприхода: {skuForTargetReport.PositiveDifferenceTotalConsumptionAndRecieptWithAddons}");
+            }
+
+            if (colNumber == skuPositiveDifferenceTotalConsumptionAndRecieptWithoutAddonsColNum && skuForTargetReport.PositiveDifferenceTotalConsumptionAndRecieptWithoutAddons > 0)
+            {
+                attentionCell = new AttentionCell(skuPositiveDifferenceTotalConsumptionAndRecieptWithoutAddonsColNum, $"Общий расход больше\nприхода: {skuForTargetReport.PositiveDifferenceTotalConsumptionAndRecieptWithoutAddons}");
             }
 
             // if (tableCell.Start.Column == skuReceiptGoodsColumnNumber && skuForTargetReport.SKUIncreasedReceiptGoods > 0)
@@ -682,7 +690,7 @@ namespace TableAnalizer.Objects.Managers
             tableCell.Value = value;
             
             // Get color for status column
-            if(isMainReport && tableCell.Start.Column == sellmentStatusColomnNumber) 
+            if(isMainReport && tableCell.Start.Column == sellmentStatusColomnNum) 
             {
                 tableCell.Style.Fill.SetBackground(statusColor);
             }   

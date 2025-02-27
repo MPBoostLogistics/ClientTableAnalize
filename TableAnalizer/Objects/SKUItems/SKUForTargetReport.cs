@@ -38,9 +38,35 @@ namespace TableAnalizer.Objects.SKUItems
         /// <summary>
         /// Положительная разница между приходом и ожиданием 
         /// </summary>
-        public int SKUIncreasedReceiptGoods => 
+        public int PositiveDifferenceRecieptAndWaiting => 
             SKUReceiptGoods > SKURansomsWaiting ? 
             SKUReceiptGoods - SKURansomsWaiting : 
+            0;
+        
+        /// <summary>
+        /// Отрицательная разница между приходом и ожиданием 
+        /// (только при полном расчете)
+        /// </summary>
+        public int NegativeDifferenceRecieptAndWaiting => 
+            SKUReceiptGoods < SKURansomsWaiting && SellmentStatus.Status == SKUSellmentStatus.FullSet ? 
+            SKURansomsWaiting - SKUReceiptGoods : 
+            0;
+
+        /// <summary>
+        /// Положительна разница между общим расходом и приходом 
+        /// (c учетом компенсации и перерасходов)
+        /// </summary>
+        public int PositiveDifferenceTotalConsumptionAndRecieptWithAddons => 
+            SKUTotalСonsumption > (SKUReceiptGoods + SKUPaid + SKUResort) ? 
+            SKUTotalСonsumption - SKUReceiptGoods : 
+            0;
+
+        /// <summary>
+        /// Положительна разница между общим расходом и приходом 
+        /// </summary>
+        public int PositiveDifferenceTotalConsumptionAndRecieptWithoutAddons => 
+            SKUTotalСonsumption > SKUReceiptGoods ? 
+            SKUTotalСonsumption - SKUReceiptGoods : 
             0;
 
         /// <summary>
@@ -148,14 +174,7 @@ namespace TableAnalizer.Objects.SKUItems
 
         public Color FillColor { get; set;}
 
-        /// <summary>
-        /// Положительна разница между общим расходом и приходом 
-        /// (c учетом компенсации и перерасходов)
-        /// </summary>
-        public int TotalConsumptionIsGreaterReceipt => 
-            SKUTotalСonsumption > (SKUReceiptGoods + SKUPaid + SKUResort) ? 
-            SKUTotalСonsumption - SKUReceiptGoods : 
-            0;
+ 
 
         #endregion
 
@@ -329,7 +348,12 @@ namespace TableAnalizer.Objects.SKUItems
                 {
                     // SKUReceiptGoods -=  conceptualItems.Value.sum;
                     // SKUShipped -= conceptualItems.Value.sum;
-                    SKUResort += conceptualItems.Value.sum;
+
+                    //if(SKUTotalСonsumption + conceptualItems.Value.sum <=  SKUReceiptGoods ) 
+                    //{
+                        SKUResort += conceptualItems.Value.sum;
+                    //}
+
                     SKUResortsComment = conceptualItems.Value.comment;
                 }
             }
@@ -387,10 +411,10 @@ namespace TableAnalizer.Objects.SKUItems
                     SKUShipped -= (int)skuAndSumsByResortConceprualSum!;    // Вычитается из Склад: Расход товаром
 
                     // Обновление комментария
-                    StringBuilder goodsResortsSb = new("\nПересортица расхода от др. арт. (баланс, вычтено из \"Склад: Расход товаром\",\n");
+                    StringBuilder goodsResortsSb = new("\nПересортица расхода от др. арт. (баланс, вычтено из \"Склад: Приход товаром\" и \"Склад: Расход товаром\": \n");
                     foreach (var (sk, su) in skuAndSumsByResortConceprual)
                     {
-                        goodsResortsSb.Append($"{sk} шт.:{su}, ");
+                        goodsResortsSb.Append($"{sk} шт.:{su} ");
                     }
 
                     SKUResortsComment = goodsResortsSb.ToString();
