@@ -116,4 +116,9 @@ namespace TableAnalizer.Objects
         /// </summary>
         PickupPoint
     }
+
+    public enum TargetReportType
+    {
+        Main, Delay, Overruns, Analytics
+    }
 }

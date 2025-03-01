@@ -25,11 +25,13 @@ internal class Program
     private static string goodByMessage = string.Empty;
     private static bool? isRawReport = null;
     private static bool isMulty;
-    private static readonly bool isTracing = true;
-    private static int TracingDelay { get; set; } = 0;
+    private static bool isTracing;
+    private static int TracingDelay { get; set; }
 
     private static string TraceInfoFlag { get; set; } = string.Empty;
     private static string TraceErrorFlag { get; set; } = string.Empty;
+
+    private static bool? isInternalReport = null;
     #endregion
 
     #region Properties 
@@ -66,6 +68,9 @@ internal class Program
                 .AddJsonFile("config.json", optional: false);
 
             IConfiguration config = builder.Build();
+
+            IConfigurationSection? flagsSection = config.GetSection("Flags");
+            isTracing = flagsSection.GetValue<bool>("isTracing");
 
             IConfigurationSection? messagesSection = config.GetSection("Messages");
             goodByMessage = messagesSection.GetValue<string>("GoodbyMessage");
@@ -279,7 +284,7 @@ internal class Program
 
             // Save work 
             List<SKUForTargetReports> skuForTargetReports = skusForTargetReportTask.Result;
-            var makeReportTask = excelManager.MakeReports(skuForTargetReports, (bool)isRawReport, isTracing);
+            var makeReportTask = excelManager.MakeReports(skuForTargetReports, (bool)isRawReport, isTracing, (bool)isInternalReport!);
             await Task.Run(() => makeReportTask);
             makeReportTask.Wait();
         }
@@ -331,7 +336,7 @@ internal class Program
         await Task.Run(() => skusForTargetReportTask);
         skusForTargetReportTask.Wait();
         
-        var saveWorkTask = excelManager.MakeReports(skusForTargetReportTask.Result, (bool)isRawReport, isTracing);
+        var saveWorkTask = excelManager.MakeReports(skusForTargetReportTask.Result, (bool)isRawReport, isTracing, (bool)isInternalReport!);
         await Task.Run(() => saveWorkTask);
         saveWorkTask.Wait();
 
@@ -486,6 +491,36 @@ internal class Program
                 }
         }
     }
+
+     private static async Task<bool> GetCreateInternalReportFromConsole(int delay)
+    {
+        StringBuilder rawReportStringBuilder = new("Do you want to create a \"internal\" report?\n");
+        rawReportStringBuilder.Append($"1: Yes\n");
+        rawReportStringBuilder.Append($"2: No\n");
+        rawReportStringBuilder.Append($"ESC: Exit\n");
+        var createRawReportString = rawReportStringBuilder.ToString();
+
+        ConsoleKey[] validkeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
+        ConsoleKey? selectKey = ConsoleAppService.GetUserKeyFromConsole(createRawReportString);
+        
+        switch (selectKey is null || !validkeys.Contains((ConsoleKey)selectKey)) 
+        {
+            case true:
+                await TracingProgramExecution(new("Invalid value, please try again.", true, false));
+                return await GetCreateInternalReportFromConsole(delay);
+            case false: 
+                switch((ConsoleKey)selectKey) 
+                {
+                    case ConsoleKey.D1:
+                        return true;
+                    case ConsoleKey.Escape:
+                        ConsoleAppService.ConsoleAppExit(goodByMessage);
+                        return false;
+                    default:
+                        return false;
+                }
+        }
+    }
     
     private static async Task<List<SourceSKUReportFileKey>?> GetDataFromConsole(bool isMulty) 
     {
@@ -532,7 +567,17 @@ internal class Program
         }
         Console.Clear();
 
-        await TracingProgramExecution(new($"This is raw report: {isRawReport}", false, false));
+        // Get a "inner" report or not
+        while(isInternalReport is null) 
+        {
+            Task<bool> getCreateInnerReportTask = GetCreateInternalReportFromConsole(TracingDelay);
+            await Task.Run(() => getCreateInnerReportTask);
+            getCreateInnerReportTask.Wait();
+            isInternalReport = getCreateInnerReportTask.Result;
+        }
+        Console.Clear();
+
+        await TracingProgramExecution(new($"This is internal report: {isInternalReport}", false, false));
 
         return existingKeys; 
     }
