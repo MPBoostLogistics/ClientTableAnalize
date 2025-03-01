@@ -121,4 +121,9 @@ namespace TableAnalizer.Objects
     {
         Main, Delay, Overruns, Analytics
     }
+
+    public enum TypesFormulas 
+    {
+        Sum
+    }
 }

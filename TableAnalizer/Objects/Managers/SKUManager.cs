@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using TableAnalizer.Interfaces;
 using TableAnalizer.Objects.Parsing;
@@ -10,11 +11,11 @@ using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public class SKUManager() : BaseManager
+    public class SKUManager(IConfiguration config, ExcelManager excelManager) : BaseManager(config)
     {
         #region Variables and constants 
         private const bool IS_REMOVE_BRAND_FROM_NAME = false;
-        private readonly ExcelManager? excelManager;
+        private readonly ExcelManager? excelManager = excelManager;
         #endregion
 
         #region Properties 
@@ -48,13 +49,6 @@ namespace TableAnalizer.Objects.Managers
         private delegate bool FindSkusWithPredicate(SKU sku);
         private FindSkusWithPredicate? predicateHandler;
 
-        #endregion
-
-        #region Constructors
-        public SKUManager(ExcelManager excelManager) : this()
-        {
-            this.excelManager = excelManager;
-        }
         #endregion
 
         #region Functionality

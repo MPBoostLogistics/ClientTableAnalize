@@ -11,6 +11,10 @@
     "Numbers": {
       "TracingDelay": 350
     },
+    "Formulas": 
+    {
+      "SumFormula" : "SUM"
+    },
     "Collections": 
     {
       "validFileExtensions" : [".xls", ".xlsx"]
