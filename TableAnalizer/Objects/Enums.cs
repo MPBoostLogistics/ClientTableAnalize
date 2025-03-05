@@ -80,29 +80,9 @@ namespace TableAnalizer.Objects
     public enum SKUResortBalanceTarget 
     {
         /// <summary>
-        /// Возможен пересорт в 1С (приходы)
+        /// Приход больше ожидания
         /// </summary>
-        MaybeResortIn1CReceipt, 
-        /// <summary>
-        /// Создан пересорт в 1С (приходы)
-        /// </summary>
-        ResortIn1CReceipt,
-        /// <summary>
-        /// Возможен пересорт в 1С
-        /// </summary>
-        MaybeResortIn1C,
-        /// <summary>
-        /// Создан пересорт в 1С
-        /// </summary>
-        ResortIn1C,
-        /// <summary>
-        /// Концептуальный
-        /// </summary>
-        Conceptual,
-        /// <summary>
-        /// Нет решения 
-        /// </summary>
-        NoSolution      
+        MoreReceiptThanWaiting,    
     }
 
     public enum CompensationTarget 
@@ -125,5 +105,17 @@ namespace TableAnalizer.Objects
     public enum TypesFormulas 
     {
         Sum
+    }
+
+    public enum TargetReportRecipientType 
+    {
+        /// <summary>
+        /// Внутренний отчет для работы.
+        /// </summary>
+        Internal, 
+        /// <summary>
+        /// Итоговый отчет для клтента.
+        /// </summary>
+        External
     }
 }

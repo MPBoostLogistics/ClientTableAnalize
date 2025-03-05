@@ -11,7 +11,7 @@ using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public class SKUManager(IConfiguration config, ExcelManager excelManager) : BaseManager(config)
+    public class SKUManager(IConfiguration config, int deadLineDays, ExcelManager excelManager) : BaseManager(config)
     {
         #region Variables and constants 
         private const bool IS_REMOVE_BRAND_FROM_NAME = false;
@@ -19,7 +19,7 @@ namespace TableAnalizer.Objects.Managers
         #endregion
 
         #region Properties 
-        public int DeadlineDays { get; private set; }
+        public int DeadlineDays { get; } = deadLineDays;
         public IRepository<int, SKU> SKUs { get; } = new SKURepo();
         public IRepository<int, List<ParsingRowEntity>> SkuRansomsBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuRemainingBalanceUnits { get; } = new ParsingRowEntityRepo();
@@ -52,12 +52,6 @@ namespace TableAnalizer.Objects.Managers
         #endregion
 
         #region Functionality
-
-        /// <summary>
-        /// Sets period before deadline when paying a client (in days).
-        /// </summary>
-        /// <param name="days">Period until deadline, days</param>
-        public void SetDeadlineDays(int days) => DeadlineDays = days;
 
         public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, bool isRawReport, int delay, ExcelPackage? excelPackage = null, bool isMulty = false)
         {            
@@ -529,12 +523,13 @@ namespace TableAnalizer.Objects.Managers
         { 
             int skuResortFromNumber = skuResortBalance.SKUFromResortNumber;
 
-            ResortBalanceUnit? writeOffResortIn1CReceiptItem = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortIn1CReceipt);
-            ResortBalanceUnit? writeOff1CResortItems = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortIn1C);
-            ResortBalanceUnit? conceptualResortItems = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.Conceptual);
+            ResortBalanceUnit? moreReceiptThanWaitingItem = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.MoreReceiptThanWaiting);
+            //ResortBalanceUnit? writeOffResortIn1CReceiptItem = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortIn1CReceipt);
+            //ResortBalanceUnit? writeOff1CResortItems = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortIn1C);
+            //ResortBalanceUnit? conceptualResortItems = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.Conceptual);
 
             List<ResortBalanceUnit>? skusResortToUnits = [];
-            skusResortToUnits.AddRange([writeOffResortIn1CReceiptItem, writeOff1CResortItems, conceptualResortItems]);
+            skusResortToUnits.AddRange([moreReceiptThanWaitingItem]);
 
             if (skusResortToUnits is not null && skusResortToUnits.Count != 0)
             {

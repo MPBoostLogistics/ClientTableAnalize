@@ -9,6 +9,7 @@
       "TraceErrorFlag": "[ERROR]: "
     },
     "Numbers": {
+      "DeadlineDays" : 14,
       "TracingDelay": 350
     },
     "Formulas": 

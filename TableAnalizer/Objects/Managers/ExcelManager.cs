@@ -540,7 +540,7 @@ namespace TableAnalizer.Objects.Managers
             return workSheetNames is not null && workSheetNames.Any();
         }
 
-        public async Task<bool> MakeReports(List<SKUForTargetReports> skuForTargetReports, bool isRawReport, bool isTracing, bool isInternalReport)
+        public async Task<bool> MakeReports(List<SKUForTargetReports> skuForTargetReports, bool isTracing, bool isInternalReport)
         {
             if (string.IsNullOrEmpty(ReportFileManager.OutputClientReportFilePath))
             {
@@ -566,7 +566,7 @@ namespace TableAnalizer.Objects.Managers
             targetReportTasksList.Add(MakeReportTask(in outputPackage, OUTPUT_REPORT_MAINREPORT_NAME, cellsReportingMain, rangeForGrouping, actualData, isTracing));
 
             // Make delay report
-            if (!isRawReport && !isInternalReport)
+            if (!isInternalReport)
             {
                 actualData = GetActualDataForTargetReportBy(TargetReportType.Delay, skuForTargetReports);
                 rangeForGrouping = GetRangeForGrouping(in cellsReportingDelays)?.ToList();
@@ -574,7 +574,7 @@ namespace TableAnalizer.Objects.Managers
             }
 
             // Make overruns report
-            if (!isRawReport && !isInternalReport)
+            if (!isInternalReport)
             {
                 actualData = GetActualDataForTargetReportBy(TargetReportType.Overruns, skuForTargetReports);
                 rangeForGrouping = GetRangeForGrouping(in cellsReportingOverruns)?.ToList();
