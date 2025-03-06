@@ -45,17 +45,23 @@ namespace TableAnalizer.Objects.Repositories
             {
                 (false, true) => newValue.SKUBrand,
                 (true, false) or (true, true) => retriveValue.SKUBrand,
-                _ => string.Empty,
+                (false, false) => "No brand"
             };
 
             // SKUName
             bool isRetriveValueIncludesSKUName = !string.IsNullOrEmpty(retriveValue.SKUName);
             bool isNewValueIncludesSKUName = !string.IsNullOrEmpty(newValue.SKUName);
+            
             string skuName = (isRetriveValueIncludesSKUName, isNewValueIncludesSKUName) switch
             {
                 (false, true) => newValue.SKUName,
                 (true, false) or (true, true) => retriveValue.SKUName,
-                _ => string.Empty,
+                (false, false) => (!string.IsNullOrEmpty(retriveValue.SKURemainingBalance?.SKUBrandAndName), !string.IsNullOrEmpty(newValue.SKURemainingBalance?.SKUBrandAndName)) switch
+                {
+                    (false, true) => newValue.SKURemainingBalance!.SKUBrandAndName,
+                    (true, false) or (true, true) => retriveValue.SKURemainingBalance!.SKUBrandAndName,
+                    _ => "No name"
+                }
             };
             
             // SKURansomsBalance

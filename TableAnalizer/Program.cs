@@ -5,9 +5,6 @@
 
 // Внедрить DI
 
-// /Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizerTest/testFiles
-// /Users/dmitrijsamarcev/Library/Mobile Documents/com~apple~CloudDocs/MPBoost/Клиенты/Юсупов 79164372997 13465
-
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
@@ -22,20 +19,27 @@ internal class Program
 {
     #region Variables and constants
     private static readonly Version? AppVersion = Assembly.GetExecutingAssembly().GetName().Version;
+    
+    private static int DeadlineDays { get; set; }
     private static string goodByMessage = string.Empty;
-    private static bool? isRawReport = null;
     private static bool isMulty;
-    private static readonly bool isTracing = true;
-    private static int TracingDelay { get; set; } = 0;
+    private static bool isTracing;
+    private static int TracingDelay { get; set; }
 
     private static string TraceInfoFlag { get; set; } = string.Empty;
     private static string TraceErrorFlag { get; set; } = string.Empty;
+
+    private static TargetReportRecipientType? ReportRecipientType { get; set; }
+
+    private static IConfiguration? config;
+
+    
     #endregion
 
     #region Properties 
-    private static readonly ReportFileManager reportFileManager = new();
-    private static readonly ExcelManager excelManager = new();
-    private static readonly SKUManager skuManager = new(excelManager);
+    private static ReportFileManager? reportFileManager;
+    private static ExcelManager? excelManager;
+    private static SKUManager? skuManager;
     #endregion
 
     #region Functionality
@@ -43,8 +47,20 @@ internal class Program
     {
         SetAppConfig();
 
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        if(config is not null) 
+        {
+            reportFileManager = new(config);
+            excelManager = new(config);
+            skuManager = new(config, DeadlineDays, excelManager);
+        }
+        else 
+        {
+            ManagerReachedEventArgs a = new("Error in assembling application configuration", true, true);
+            await TracingProgramExecution(a);
+        }
 
+        //ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+    
         Trace.Listeners.Add(new ConsoleTraceListener());
 
         var analizeTask = Analyze(TracingDelay);
@@ -65,7 +81,10 @@ internal class Program
                 .SetBasePath(projectDirectory.FullName)
                 .AddJsonFile("config.json", optional: false);
 
-            IConfiguration config = builder.Build();
+            config = builder.Build();
+
+            IConfigurationSection? flagsSection = config.GetSection("Flags");
+            isTracing = flagsSection.GetValue<bool>("isTracing");
 
             IConfigurationSection? messagesSection = config.GetSection("Messages");
             goodByMessage = messagesSection.GetValue<string>("GoodbyMessage");
@@ -74,6 +93,7 @@ internal class Program
 
             IConfigurationSection? numbersSection = config.GetSection("Numbers");
             TracingDelay = numbersSection.GetValue<int>("TracingDelay");
+            DeadlineDays = numbersSection.GetValue<int>("DeadlineDays");
         }
     }
 
@@ -81,9 +101,9 @@ internal class Program
     {
         ConsoleKey[] allowedConsoleKeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
 
-        reportFileManager.ManagerReached += Report;
-        excelManager.ManagerReached += Report;
-        skuManager.ManagerReached += Report;
+        reportFileManager!.ManagerReached += Report;
+        excelManager!.ManagerReached += Report;
+        skuManager!.ManagerReached += Report;
 
         var helloString = $"------------------------------------------------------------------\n" +
                           $"Отчет по взаиморасчетам с клиентами логистики\n\n" +
@@ -138,24 +158,19 @@ internal class Program
             }
         } 
 
-        if(isRawReport is null) 
-        {
-            throw new Exception(nameof(isRawReport));
-        } 
-        else 
-        {
-            await TracingProgramExecution(new("Report analysis task has started...", false, false));
-            await Task.Run(() => reportTask);
-        }
-            
+        await TracingProgramExecution(new("Report analysis task has started...", false, false));
+        await Task.Run(() => reportTask);
         reportTask?.Wait();
+
         reportFileManager.ManagerReached -= Report;
         excelManager.ManagerReached -= Report;
         skuManager.ManagerReached -= Report;
     }
 
-    private static async Task AnalyzeSingleСlientReports(List<SourceSKUReportFileKey>? existingKeys, int delay) 
+    private static async Task AnalyzeSingleСlientReports(List<SourceSKUReportFileKey>? existingKeys, int tracingDelay) 
     {
+        bool isInternalReport = ReportRecipientType.HasValue && ReportRecipientType.Value == TargetReportRecipientType.Internal;
+
         // Report analysis tasks
         if (existingKeys is not null && existingKeys.Count > 0)
         {
@@ -164,12 +179,12 @@ internal class Program
             Task[] ransomsTasks = [];
             if (existingKeys.Contains(SourceSKUReportFileKey.RansomsWB))
             {
-                ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsWB, delay));
+                ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsWB, tracingDelay, isInternalReport));
             }
 
             if (existingKeys.Contains(SourceSKUReportFileKey.RansomsOZ))
             {
-                ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsOZ, delay));
+                ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsOZ, tracingDelay, isInternalReport));
             }
 
             if (ransomsTasksList.Count != 0)
@@ -192,42 +207,37 @@ internal class Program
             }
 
             // Remaining tasks
-            List<Task> remainingTasksList = [];
-            Task[] remainingTasks = [];
-            if (existingKeys.Contains(SourceSKUReportFileKey.RemainingWB))
+            List<Task> balanceTasksList = [];
+            Task[] balanceTasks = [];
+            if (existingKeys.Contains(SourceSKUReportFileKey.Balance))
             {
-                remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingWB, delay));
+                balanceTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.Balance, tracingDelay, isInternalReport));
             }
 
-            if (existingKeys.Contains(SourceSKUReportFileKey.RemainingOZ))
+            if (balanceTasksList.Count != 0)
             {
-                remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingOZ, delay));
-            }
-
-            if (remainingTasksList.Count != 0)
-            {
-                remainingTasks = [.. remainingTasksList];
-                for (int i = 0; i < remainingTasks.Length; i++)
+                balanceTasks = [.. balanceTasksList];
+                for (int i = 0; i < balanceTasks.Length; i++)
                 {
-                    var currentTask = remainingTasks[i];
+                    var currentTask = balanceTasks[i];
                     if (currentTask is not null)
                     {
                         await Task.Run(async () => await currentTask);
                     }
                 }
 
-                Task.WaitAll(remainingTasks);
+                Task.WaitAll(balanceTasks);
             }
 
-            if (remainingTasks.Length != 0)
+            if (balanceTasks.Length != 0)
             {
-                Task.WaitAll(remainingTasks);
+                Task.WaitAll(balanceTasks);
             }
 
             // WriteOff task 
             if (existingKeys.Contains(SourceSKUReportFileKey.WriteOffShortages))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffShortages, delay);
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffShortages, tracingDelay, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -235,7 +245,7 @@ internal class Program
             // Shipped tasks
             if (existingKeys.Contains(SourceSKUReportFileKey.Shipped))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Shipped, delay);
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Shipped, tracingDelay, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -243,7 +253,7 @@ internal class Program
             // Transfer task
             if (existingKeys.Contains(SourceSKUReportFileKey.Transfered))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Transfered, delay);
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Transfered, tracingDelay, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -251,7 +261,7 @@ internal class Program
             // Additional tasks
             if (existingKeys.Contains(SourceSKUReportFileKey.Additional))
             {
-                var additionalTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Additional, delay);
+                var additionalTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Additional, tracingDelay, isInternalReport);
                 await Task.Run(async () => await additionalTask);
                 additionalTask.Wait();
             }
@@ -268,7 +278,7 @@ internal class Program
                 await TracingProgramExecution(new("Old files have been deleted.", false,false));
             }
             
-            Task<List<SKUForTargetReports>>? skusForTargetReportTask = skuManager.MakeSkusForTargetReport((bool)isRawReport!, isMulty, delay);
+            Task<List<SKUForTargetReports>>? skusForTargetReportTask = skuManager!.MakeSkusForTargetReport(isInternalReport, isMulty, tracingDelay);
             await Task.Run(() => skusForTargetReportTask);
             skusForTargetReportTask.Wait();
 
@@ -279,7 +289,7 @@ internal class Program
 
             // Save work 
             List<SKUForTargetReports> skuForTargetReports = skusForTargetReportTask.Result;
-            var makeReportTask = excelManager.MakeReports(skuForTargetReports, (bool)isRawReport, isTracing);
+            var makeReportTask = excelManager!.MakeReports(skuForTargetReports, isTracing, isInternalReport);
             await Task.Run(() => makeReportTask);
             makeReportTask.Wait();
         }
@@ -290,13 +300,15 @@ internal class Program
         }
     }
 
-    private static async Task AnalyzeMultiСlientReports(int delay) 
+    private static async Task AnalyzeMultiСlientReports(int tracingDelay) 
     {   
+        bool isInternalReport = ReportRecipientType.HasValue && ReportRecipientType.Value == TargetReportRecipientType.Internal;
+
         // Create and run analize task
         List<Task> summaryTasksList = [];
-        foreach(var (key, value) in reportFileManager.ReportsPathsMultyReport) 
+        foreach(var (key, value) in reportFileManager!.ReportsPathsMultyReport) 
         {
-            summaryTasksList.Add(ReceivingAndProcessingData(value, (bool)isRawReport!, isMulty, delay));
+            summaryTasksList.Add(ReceivingAndProcessingData(value, tracingDelay, isInternalReport, isMulty));
         }
 
         Console.Clear();
@@ -315,9 +327,9 @@ internal class Program
 
         // Additional tasks
         Task<double>? additionalTask = null;
-        if (reportFileManager.AdditionalPathsMultyReport is not null && !(bool)isRawReport!)
+        if (reportFileManager.AdditionalPathsMultyReport is not null && ReportRecipientType.HasValue)
         {
-            additionalTask = ReceivingAndProcessingData(reportFileManager.AdditionalPathsMultyReport, (bool)isRawReport!, isMulty, delay);
+            additionalTask = ReceivingAndProcessingData(reportFileManager.AdditionalPathsMultyReport, tracingDelay, isInternalReport, isMulty);
             await Task.Run(async () => await additionalTask);
         }
 
@@ -327,11 +339,11 @@ internal class Program
         FileService.DeleteFileAtPath(ReportFileManager.OutputClientReportFilePath);
 
         // Make new report 
-        Task<List<SKUForTargetReports>>? skusForTargetReportTask = skuManager.MakeSkusForTargetReport((bool)isRawReport!, isMulty, delay);
+        Task<List<SKUForTargetReports>>? skusForTargetReportTask = skuManager!.MakeSkusForTargetReport(isInternalReport, isMulty, tracingDelay);
         await Task.Run(() => skusForTargetReportTask);
         skusForTargetReportTask.Wait();
         
-        var saveWorkTask = excelManager.MakeReports(skusForTargetReportTask.Result, (bool)isRawReport, isTracing);
+        var saveWorkTask = excelManager!.MakeReports(skusForTargetReportTask.Result, isTracing, isInternalReport);
         await Task.Run(() => saveWorkTask);
         saveWorkTask.Wait();
 
@@ -342,7 +354,7 @@ internal class Program
         await TracingProgramExecution(new(goodByMessage, false, true));
     }
 
-    private static async Task<double> ReceivingAndProcessingData(SourceReportFileForSKU reportFile, bool isRawReport, bool isMulty, int delay) 
+    private static async Task<double> ReceivingAndProcessingData(SourceReportFileForSKU reportFile, int delay, bool isInternalReport, bool isMulty) 
     {
         if(reportFile.ReportKey is null) return 0.00;
 
@@ -350,7 +362,7 @@ internal class Program
         var package = new ExcelPackage(reportFile.FileInfo);
  
         // Receiving and processing data
-        Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData((SourceSKUReportFileKey)reportFile.ReportKey, isRawReport, delay, package, isMulty);
+        Task<double>? receivingAndProcessingDataTask = skuManager!.ReceivingAndProcessingData((SourceSKUReportFileKey)reportFile.ReportKey, isInternalReport, delay, package, isMulty);
         if(receivingAndProcessingDataTask is not null) 
         {
             await Task.Run(async () => await receivingAndProcessingDataTask);
@@ -365,14 +377,12 @@ internal class Program
     /// Receiving and processing data from seller reports.
     /// </summary>
     /// <param name="reportFileKey">Key of source file with report.</param>
-    /// <returns></returns>
-    /// <remarks><i>New version</i></remarks>
-    private static async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, int delay, SourceReportFileForSKU? existingReportFile = null, bool isMulty = false)
+    private static async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, int delay, bool isInternalReport, SourceReportFileForSKU? existingReportFile = null, bool isMulty = false)
     {
         SourceReportFileForSKU? reportFile;
         if(existingReportFile == null) 
         {
-            var getReportFileTask = reportFileManager.GetSourceReportForSingleClient(reportFileKey);
+            var getReportFileTask = reportFileManager!.GetSourceReportForSingleClient(reportFileKey);
             await Task.Run(async () => await getReportFileTask);
             getReportFileTask.Wait();
 
@@ -386,10 +396,10 @@ internal class Program
         if (reportFile is not null)
         {
             // Make ExcelPackage
-            excelManager.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
+            excelManager!.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
 
             // Receiving and processing data
-            Task<double>? receivingAndProcessingDataTask = skuManager.ReceivingAndProcessingData(reportFileKey, (bool)isRawReport!, delay, null, isMulty);
+            Task<double>? receivingAndProcessingDataTask = skuManager!.ReceivingAndProcessingData(reportFileKey, isInternalReport, delay, null, isMulty);
             if(receivingAndProcessingDataTask is not null) 
             {
                 await Task.Run(async () => await receivingAndProcessingDataTask);
@@ -412,24 +422,6 @@ internal class Program
         }
     } 
 
-    private static async Task<int> GetDeadlineDaysFromConsole()  
-    {
-        var deadlineRange = Enumerable.Range(14, 32);
-
-        string deadLineDaysTitleMessage = $"Введите срок дедлайна для клиента и нажмите 'Enter'\n(положительное целое число, отличное от {deadlineRange.First()} до {deadlineRange.Last()}): ";
-        
-        string? numberString = ConsoleAppService.GetUserStringFromConsole(deadLineDaysTitleMessage);
-        
-        if(int.TryParse(numberString, out int numberResult) && deadlineRange.Contains(numberResult)) 
-        {
-            return numberResult;
-        } 
-        else 
-        {
-            await TracingProgramExecution(new("Invalid value, please try again.", true, false));
-            return await GetDeadlineDaysFromConsole();
-        }
-    }
 
     private static async Task<DirectoryInfo?> GetSourceReportsPathFromConsole(int delay) 
     {
@@ -457,9 +449,41 @@ internal class Program
         }
     }
     
-    private static async Task<bool> GetCreateRawReportFromConsole(int delay)
+    private static async Task<TargetReportRecipientType?> GetTargetReportRecipientTypeFromConsole(int delay)
     {
-        StringBuilder rawReportStringBuilder = new("Do you want to create a \"raw\" report?\n");
+        StringBuilder rawReportStringBuilder = new("Select the report direction:\n");
+        rawReportStringBuilder.Append($"1: Internal (for internal work)\n");
+        rawReportStringBuilder.Append($"2: External (for client)\n");
+        rawReportStringBuilder.Append($"ESC: Exit\n");
+        var createRawReportString = rawReportStringBuilder.ToString();
+
+        ConsoleKey[] validkeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
+        ConsoleKey? selectKey = ConsoleAppService.GetUserKeyFromConsole(createRawReportString);
+        
+        switch (selectKey is null || !validkeys.Contains((ConsoleKey)selectKey)) 
+        {
+            case true:
+                await TracingProgramExecution(new("Invalid value, please try again.", true, false));
+                return await GetTargetReportRecipientTypeFromConsole(delay);
+            case false: 
+                switch((ConsoleKey)selectKey) 
+                {
+                    case ConsoleKey.D1:
+                        return TargetReportRecipientType.Internal;
+                    case ConsoleKey.D2:
+                        return TargetReportRecipientType.External;
+                    case ConsoleKey.Escape:
+                        ConsoleAppService.ConsoleAppExit(goodByMessage);
+                        return null;
+                    default:
+                        return null;
+                }
+        }
+    }
+
+     private static async Task<bool> GetCreateInternalReportFromConsole(int delay)
+    {
+        StringBuilder rawReportStringBuilder = new("Do you want to create a \"internal\" report?\n");
         rawReportStringBuilder.Append($"1: Yes\n");
         rawReportStringBuilder.Append($"2: No\n");
         rawReportStringBuilder.Append($"ESC: Exit\n");
@@ -472,7 +496,7 @@ internal class Program
         {
             case true:
                 await TracingProgramExecution(new("Invalid value, please try again.", true, false));
-                return await GetCreateRawReportFromConsole(delay);
+                return await GetCreateInternalReportFromConsole(delay);
             case false: 
                 switch((ConsoleKey)selectKey) 
                 {
@@ -489,15 +513,11 @@ internal class Program
     
     private static async Task<List<SourceSKUReportFileKey>?> GetDataFromConsole(bool isMulty) 
     {
-        // Get deadline days
-        while(skuManager.DeadlineDays <= 0) 
-        {
-            Task<int> deadLineDaysTask = GetDeadlineDaysFromConsole();
-            await Task.Run(() => deadLineDaysTask);
-            deadLineDaysTask.Wait();
-            skuManager.SetDeadlineDays(deadLineDaysTask.Result);
-        }
-        await TracingProgramExecution(new($"Deadline set, days: {skuManager.DeadlineDays}", false, false));
+        
+       
+
+
+        //await TracingProgramExecution(new($"Deadline set, days: {skuManager.DeadlineDays}", false, false));
 
         // Get source reports path
         DirectoryInfo? getSourceReportDirInfo = null;
@@ -516,23 +536,21 @@ internal class Program
         while(existingKeys is null) 
         {
             Task<List<SourceSKUReportFileKey>?>  availabilityNecessaryTask = 
-                reportFileManager.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, isMulty, isTracing, TracingDelay);
+                reportFileManager!.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, isMulty, isTracing, TracingDelay);
             await Task.Run(() => availabilityNecessaryTask);
             availabilityNecessaryTask.Wait();
             existingKeys = availabilityNecessaryTask.Result;
         }
         
-        // Get a "raw" report or not
-        while(isRawReport is null) 
+        // Select report direction
+        while(ReportRecipientType is null) 
         {
-            Task<bool> getCreateRawReportTask = GetCreateRawReportFromConsole(TracingDelay);
-            await Task.Run(() => getCreateRawReportTask);
-            getCreateRawReportTask.Wait();
-            isRawReport = getCreateRawReportTask.Result;
+            Task<TargetReportRecipientType?> getTargetReportRecipientTypeTask = GetTargetReportRecipientTypeFromConsole(TracingDelay);
+            await Task.Run(() => getTargetReportRecipientTypeTask);
+            getTargetReportRecipientTypeTask.Wait();
+            ReportRecipientType = getTargetReportRecipientTypeTask.Result;
         }
         Console.Clear();
-
-        await TracingProgramExecution(new($"This is raw report: {isRawReport}", false, false));
 
         return existingKeys; 
     }
@@ -566,9 +584,9 @@ internal class Program
 
         if (args.IsExit) 
         {
-            skuManager.ManagerReached -= Report;
-            excelManager.ManagerReached -= Report;
-            reportFileManager.ManagerReached -= Report;
+            skuManager!.ManagerReached -= Report;
+            excelManager!.ManagerReached -= Report;
+            reportFileManager!.ManagerReached -= Report;
 
             Trace.Flush();
         }

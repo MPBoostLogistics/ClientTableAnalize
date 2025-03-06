@@ -29,8 +29,10 @@ namespace TableAnalizer.Objects
     {
         RansomsWB,          // выкупы WB
         RansomsOZ,          // выкупы OZ
-        RemainingWB,        // приходы и остатки WB
-        RemainingOZ,        // приходы и остатки OZ
+        /// <summary>
+        /// Баланс (приходы и остатки)
+        /// </summary>
+        Balance,          
         WriteOffShortages,  // списание недростач общее 
         Additional,          // недостачи, пересорты и пустышки
         Shipped,             // расходы товаром 
@@ -80,29 +82,9 @@ namespace TableAnalizer.Objects
     public enum SKUResortBalanceTarget 
     {
         /// <summary>
-        /// Возможен пересорт в 1С (приходы)
+        /// Пересорттица товарами
         /// </summary>
-        MaybeResortIn1CReceipt, 
-        /// <summary>
-        /// Создан пересорт в 1С (приходы)
-        /// </summary>
-        ResortIn1CReceipt,
-        /// <summary>
-        /// Возможен пересорт в 1С
-        /// </summary>
-        MaybeResortIn1C,
-        /// <summary>
-        /// Создан пересорт в 1С
-        /// </summary>
-        ResortIn1C,
-        /// <summary>
-        /// Концептуальный
-        /// </summary>
-        Conceptual,
-        /// <summary>
-        /// Нет решения 
-        /// </summary>
-        NoSolution      
+        ResortingConsumption
     }
 
     public enum CompensationTarget 
@@ -115,5 +97,27 @@ namespace TableAnalizer.Objects
         /// Компенсация от точек
         /// </summary>
         PickupPoint
+    }
+
+    public enum TargetReportType
+    {
+        Main, Delay, Overruns, Analytics
+    }
+
+    public enum TypesFormulas 
+    {
+        Sum
+    }
+
+    public enum TargetReportRecipientType 
+    {
+        /// <summary>
+        /// Внутренний отчет для работы.
+        /// </summary>
+        Internal, 
+        /// <summary>
+        /// Итоговый отчет для клтента.
+        /// </summary>
+        External
     }
 }

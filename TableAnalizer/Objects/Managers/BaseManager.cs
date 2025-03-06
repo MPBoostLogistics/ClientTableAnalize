@@ -9,8 +9,9 @@ namespace TableAnalizer.Objects.Managers
     public class BaseManager 
     {
         #region Variables and constants 
-        public readonly string[] validFileExtensions = [];
-        internal IConfigurationRoot? config;
+        public string[] validFileExtensions = [];
+        internal IConfiguration config
+        ;
         #endregion Variables and constant
 
         #region Properties 
@@ -35,7 +36,6 @@ namespace TableAnalizer.Objects.Managers
         /// <summary>
         /// Manager event delegate.
         /// </summary>
-        /// <remarks><i>New version</i></remarks>
         public event EventHandler<ManagerReachedEventArgs>? ManagerReached;
 
         /// <summary>
@@ -47,42 +47,44 @@ namespace TableAnalizer.Objects.Managers
         #endregion Events
 
         #region Constuctor and destructors
-        protected BaseManager() 
+        protected BaseManager(IConfiguration config) 
         {
-            BuildConfig();
+            this.config = config;
 
-            IConfigurationSection? collectionSessions = config!.GetSection("Collections");
-            validFileExtensions = collectionSessions.GetValue<string[]>("validFileExtensions");
-        }
-
-        public virtual void BuildConfig()
-        {
-            if (FileService.GetProjectDirectory(out DirectoryInfo? projectDirectory)
-                    && projectDirectory != null)
-            {
-                string? configFileName;
-                if(IsRunningFromNUnit)
-                    configFileName = "testConfig.json";
-                else
-                    configFileName = "config.json";
-
-                if(!string.IsNullOrEmpty(configFileName)) 
-                {
-                    config = new ConfigurationBuilder()
-                        .SetBasePath(projectDirectory.FullName)
-                        //.AddUserSecrets<BaseManager>()
-                        .AddJsonFile(configFileName, optional: false)
-                        .Build();
-                } 
-                else 
-                {
-                    throw new Exception("Config json filename is null");
-                }
-            }
+            AddConfigVariables();
         }
         #endregion
 
         #region Functionality
+        protected virtual void AddConfigVariables()
+        {
+            IConfigurationSection? collectionSessions = config!.GetSection("Collections");
+            validFileExtensions = collectionSessions.GetValue<string[]>("validFileExtensions");
+
+            // if (FileService.GetProjectDirectory(out DirectoryInfo? projectDirectory)
+            //         && projectDirectory != null)
+            // {
+            //     string? configFileName;
+            //     if(IsRunningFromNUnit)
+            //         configFileName = "testConfig.json";
+            //     else
+            //         configFileName = "config.json";
+
+            //     if(!string.IsNullOrEmpty(configFileName)) 
+            //     {
+            //         config = new ConfigurationBuilder()
+            //             .SetBasePath(projectDirectory.FullName)
+            //             //.AddUserSecrets<BaseManager>()
+            //             .AddJsonFile(configFileName, optional: false)
+            //             .Build();
+            //     } 
+            //     else 
+            //     {
+            //         throw new Exception("Config json filename is null");
+            //     }
+            // }
+        }
+
         /// <summary>
         /// Raises a manager event with arguments.
         /// </summary>

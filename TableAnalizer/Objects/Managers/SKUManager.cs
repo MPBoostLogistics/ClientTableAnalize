@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using TableAnalizer.Interfaces;
 using TableAnalizer.Objects.Parsing;
@@ -10,15 +11,15 @@ using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public class SKUManager() : BaseManager
+    public class SKUManager(IConfiguration config, int deadLineDays, ExcelManager excelManager) : BaseManager(config)
     {
         #region Variables and constants 
         private const bool IS_REMOVE_BRAND_FROM_NAME = false;
-        private readonly ExcelManager? excelManager;
+        private readonly ExcelManager? excelManager = excelManager;
         #endregion
 
         #region Properties 
-        public int DeadlineDays { get; private set; }
+        public int DeadlineDays { get; } = deadLineDays;
         public IRepository<int, SKU> SKUs { get; } = new SKURepo();
         public IRepository<int, List<ParsingRowEntity>> SkuRansomsBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuRemainingBalanceUnits { get; } = new ParsingRowEntityRepo();
@@ -50,20 +51,7 @@ namespace TableAnalizer.Objects.Managers
 
         #endregion
 
-        #region Constructors
-        public SKUManager(ExcelManager excelManager) : this()
-        {
-            this.excelManager = excelManager;
-        }
-        #endregion
-
         #region Functionality
-
-        /// <summary>
-        /// Sets period before deadline when paying a client (in days).
-        /// </summary>
-        /// <param name="days">Period until deadline, days</param>
-        public void SetDeadlineDays(int days) => DeadlineDays = days;
 
         public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, bool isRawReport, int delay, ExcelPackage? excelPackage = null, bool isMulty = false)
         {            
@@ -157,8 +145,7 @@ namespace TableAnalizer.Objects.Managers
                         predicateHandler = FindSkusWithRansoms;
                         message = "Добавлено артикулов из выкупов: ";
                         break;
-                    case SourceSKUReportFileKey.RemainingWB:
-                    case SourceSKUReportFileKey.RemainingOZ:
+                    case SourceSKUReportFileKey.Balance:
                         predicateHandler = FindSkusWithRemaining;
                         message = "Добавлено артикулов из прихода и остатков на складе: ";
                         break;
@@ -220,7 +207,7 @@ namespace TableAnalizer.Objects.Managers
         public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData, bool isSummary, bool isRawReport)
         {
             bool isRansoms = reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ;
-            bool isRemaining = reportFileKey == SourceSKUReportFileKey.RemainingWB || reportFileKey == SourceSKUReportFileKey.RemainingOZ;
+            bool isRemaining = reportFileKey == SourceSKUReportFileKey.Balance;
             bool isShipped = reportFileKey == SourceSKUReportFileKey.Shipped;
             bool isTransfered = reportFileKey == SourceSKUReportFileKey.Transfered;
             bool isWriteOff = reportFileKey == SourceSKUReportFileKey.WriteOffShortages;
@@ -326,7 +313,7 @@ namespace TableAnalizer.Objects.Managers
                     SkuCompensationBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             }
-            else if(isResort && !isRawReport) 
+            else if(isResort) 
             {
                 var skuResortDataUnits = from rowWithRawData in rowsWithRawData
                                          let unit = new SKUResortDataUnit(rowWithRawData)
@@ -375,7 +362,7 @@ namespace TableAnalizer.Objects.Managers
             return reportFileKey switch
             {
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => SkuRansomsBalanceUnits.Count(),
-                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ => SkuRemainingBalanceUnits.Count(),
+                SourceSKUReportFileKey.Balance => SkuRemainingBalanceUnits.Count(),
                 SourceSKUReportFileKey.Shipped  => SkuShippedBalanceUnits.Count(),
                 SourceSKUReportFileKey.Transfered => SkuTransferedBalanceUnits.Count(),
                 SourceSKUReportFileKey.WriteOffShortages => SkuWriteOffBalanceUnits.Count(),
@@ -397,10 +384,10 @@ namespace TableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public async Task UpdateSKUsFromBalanceUnits(SourceSKUReportFileKey skuReportFileKey, string workSheetName, bool isRawReport)
         {
-            bool isWB = skuReportFileKey == SourceSKUReportFileKey.RansomsWB || skuReportFileKey == SourceSKUReportFileKey.RemainingWB;
-            bool isOZ = skuReportFileKey == SourceSKUReportFileKey.RansomsOZ || skuReportFileKey == SourceSKUReportFileKey.RemainingOZ;
+            bool isWB = skuReportFileKey == SourceSKUReportFileKey.RansomsWB || skuReportFileKey == SourceSKUReportFileKey.Balance;
+            bool isOZ = skuReportFileKey == SourceSKUReportFileKey.RansomsOZ || skuReportFileKey == SourceSKUReportFileKey.Balance;
             bool isRansoms = skuReportFileKey == SourceSKUReportFileKey.RansomsWB || skuReportFileKey == SourceSKUReportFileKey.RansomsOZ;
-            bool isRemaining = skuReportFileKey == SourceSKUReportFileKey.RemainingWB || skuReportFileKey == SourceSKUReportFileKey.RemainingOZ;
+            bool isRemaining = skuReportFileKey == SourceSKUReportFileKey.Balance;
             bool isShipped = skuReportFileKey == SourceSKUReportFileKey.Shipped;
             bool isTransfered = skuReportFileKey == SourceSKUReportFileKey.Transfered;
             bool isWriteOff = skuReportFileKey == SourceSKUReportFileKey.WriteOffShortages;
@@ -417,7 +404,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ =>
                    parsingEntityCollection = SkuRansomsBalanceUnits,
-                SourceSKUReportFileKey.RemainingWB or SourceSKUReportFileKey.RemainingOZ =>
+                SourceSKUReportFileKey.Balance =>
                     parsingEntityCollection = SkuRemainingBalanceUnits,
                 SourceSKUReportFileKey.Shipped =>
                     parsingEntityCollection = SkuShippedBalanceUnits,  
@@ -451,7 +438,7 @@ namespace TableAnalizer.Objects.Managers
                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKURansomsBalanceDataUnit>().ToList()) ??
                             throw new InvalidCastException("Cannot cast collection to IList<SKURansomsBalanceDataUnit>.");
 
-                        SKURansomsBalance ransomsBalance = new(units.ToList());
+                        SKURansomsBalance ransomsBalance = new([.. units]);
 
                         var skuMaxRansomDate = units
                             .Select(u => u.SKURansomDate)
@@ -508,7 +495,7 @@ namespace TableAnalizer.Objects.Managers
                         SKUCompensationBalance skuCompensationBalance = new(skuNumber, units.ToList());
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuCompensationBalance));
                     }
-                    else if(isResorts && !isRawReport)
+                    else if(isResorts)
                     {
                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUResortDataUnit>().ToList()) ??
                             throw new InvalidCastException("Cannot cast collection to IList<SKUResortDataUnit>.");
@@ -535,12 +522,10 @@ namespace TableAnalizer.Objects.Managers
         { 
             int skuResortFromNumber = skuResortBalance.SKUFromResortNumber;
 
-            ResortBalanceUnit? writeOffResortIn1CReceiptItem = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortIn1CReceipt);
-            ResortBalanceUnit? writeOff1CResortItems = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortIn1C);
-            ResortBalanceUnit? conceptualResortItems = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.Conceptual);
+            ResortBalanceUnit? resortingConsumptionItem = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortingConsumption);
 
             List<ResortBalanceUnit>? skusResortToUnits = [];
-            skusResortToUnits.AddRange([writeOffResortIn1CReceiptItem, writeOff1CResortItems, conceptualResortItems]);
+            skusResortToUnits.AddRange([resortingConsumptionItem]);
 
             if (skusResortToUnits is not null && skusResortToUnits.Count != 0)
             {

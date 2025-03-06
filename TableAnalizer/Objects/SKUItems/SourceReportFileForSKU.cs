@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace TableAnalizer.Objects.SKUItems
 {
     public class SourceReportFileForSKU
@@ -10,7 +12,6 @@ namespace TableAnalizer.Objects.SKUItems
         const string writeOffShortagesKey = "списание";
         const string shippedKey = "расходы";
         const string transferKey = "перемещения";
-        const string receivedRemainingKey = "приходы";
         const string additionalKey = "дополнительный";
         const string clientReportlKey = "clientreport";
         const string wbKey = "(wb)";
@@ -21,6 +22,15 @@ namespace TableAnalizer.Objects.SKUItems
         public SourceSKUReportFileKey? ReportKey { get; }
         public FileInfo FileInfo { get; }
         public string? Login { get; private set; }
+
+        // Regex
+        private const string BALANCE_REPORT_REGEX_PATTERN  = @"\d+\s+\bбаланс\b";
+        private static readonly Regex balanceReportRegex = new(BALANCE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1));
+        private const string ADDITIONAL_REPORT_REGEX_PATTERN  = @"\d+\s+\bдополнительный\b";
+        private static readonly Regex additionalReportRegex = new(ADDITIONAL_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1));
+         private const string SHIPPED_REPORT_REGEX_PATTERN  = @"\d+\s+\bрасходы\b";
+        private static readonly Regex shippedReportRegex = new(SHIPPED_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1));
+
         #endregion
 
         #region Constructors
@@ -35,126 +45,107 @@ namespace TableAnalizer.Objects.SKUItems
                 fileName = fileName.TrimStart('~','$');
             }
 
-            if (SplitStringIntoSubstrings(fileName, [SPACE_SEPARATOR, LOW_LINE_SEPARATOR], out string[]? substrings) &&
-                substrings is not null)
+            var balanceReportMatch = balanceReportRegex.Match(fileName.Trim());
+            var additionalReportMatch = additionalReportRegex.Match(fileName.Trim());
+            var shippedReportMatch = shippedReportRegex.Match(fileName.Trim());
+
+            if(balanceReportMatch is not null && balanceReportMatch.Success) 
             {
-                // дополнительный 30012925.xlsx                  2
-
-                // 89003000879 расходы 22052024.xlsx                  3
-                // Общее списание 230124.xlsx                    3
-                // 89003000879 перемещения 190724.xlsx               3
-                // ClientReport 79687978888 03-12-2024           3
-
-                // Отчет по клиенту +79164372997 (Ozon).xlsx     5
-                
-                // 89003000879 приходы и остатки 220524 (WB).xlsx     6
-                // 89003000879 приходы и остатки 220524 (Ozon).xlsx   6
-
-                int keyIndex;
-                switch (substrings.Length)
+                ReportKey = SourceSKUReportFileKey.Balance;
+            } 
+            else if(additionalReportMatch is not null && additionalReportMatch.Success) 
+            {
+                ReportKey = SourceSKUReportFileKey.Additional;
+            }
+            else if(shippedReportMatch is not null && shippedReportMatch.Success) 
+            {
+                ReportKey = SourceSKUReportFileKey.Shipped;
+            }
+            else 
+            {
+                if (SplitStringIntoSubstrings(fileName, [SPACE_SEPARATOR, LOW_LINE_SEPARATOR], out string[]? substrings) &&
+                    substrings is not null)
                 {
-                    case 3: case 6:
-                        switch(isMulty) 
-                        {
-                            case true:
-                                 keyIndex = 0;
-                                 break;
-                            case false:
-                                 keyIndex = 1;
-                                 break;
-                        }
-                        break;
-                    default:
-                        keyIndex = 0;
-                        break;
-                }
+                    // Общее списание 230124.xlsx                    3
+                    // 89003000879 перемещения 190724.xlsx           3
+                    // ClientReport 79687978888 03-12-2024           3
 
-                string keyString  = substrings[keyIndex].Trim().ToLower();
+                    // Отчет по клиенту +79164372997 (Ozon).xlsx     5
 
-                switch (keyString)
-                {
-                    // дополнительный
-                    case additionalKey:
-                        ReportKey = SourceSKUReportFileKey.Additional;
-                        break;
-
-                    // списание
-                    case writeOffShortagesKey:
-                        ReportKey = SourceSKUReportFileKey.WriteOffShortages;
-                        break;
-
-                    // расходы
-                    case shippedKey:
-                        ReportKey = SourceSKUReportFileKey.Shipped;
-                        break;
-
-                    // приходы и остатки
-                    case receivedRemainingKey:
-                        if (SplitStringIntoSubstrings(substrings.Last(), new string [] {comaSeparator}, out string[]? mps) &&
-                           mps != null)
-                        {
-                            var mpString = mps.First().Trim().ToLower();
-                            switch (mpString) 
+                    int keyIndex;
+                    switch (substrings.Length)
+                    {
+                        case 3: case 6:
+                            switch(isMulty) 
                             {
-                                case wbKey:
-                                    // Юсупов приходы и остатки 220324 (WB).xlsx
-                                    ReportKey = SourceSKUReportFileKey.RemainingWB;
+                                case true:
+                                    keyIndex = 0;
                                     break;
-                                case ozKey:
-                                    // Юсупов приходы и остатки 220324 (OZ).xlsx
-                                    ReportKey = SourceSKUReportFileKey.RemainingOZ;
+                                case false:
+                                    keyIndex = 1;
                                     break;
-                                default:
-                                    break;    
                             }
-                        }
-                        break;
+                            break;
+                        default:
+                            keyIndex = 0;
+                            break;
+                    }
 
-                    //  выкупы
-                    case ransomsKey:
-                        if (SplitStringIntoSubstrings(substrings.Last(), [comaSeparator], out string[]? mpStrings) &&
-                            mpStrings != null)
-                        {
-                            var mpString = mpStrings.First().Trim().ToLower();
-                            switch (mpString) 
+                    string keyString  = substrings[keyIndex].Trim().ToLower();
+
+                    switch (keyString)
+                    {
+                        // списание
+                        case writeOffShortagesKey:
+                            ReportKey = SourceSKUReportFileKey.WriteOffShortages;
+                            break;
+                            
+                        //  выкупы
+                        case ransomsKey:
+                            if (SplitStringIntoSubstrings(substrings.Last(), [comaSeparator], out string[]? mpStrings) &&
+                                mpStrings != null)
                             {
-                                case wbKey:
-                                    // Отчет по клиенту +79164372997 (WB).xlsx
-                                    ReportKey = SourceSKUReportFileKey.RansomsWB;
-                                    break;
-                                case ozKey:
-                                    // Отчет по клиенту +79164372997 (Ozon).xlsx
-                                    ReportKey = SourceSKUReportFileKey.RansomsOZ;
-                                    break;
-                                default:
-                                    break;    
+                                var mpString = mpStrings.First().Trim().ToLower();
+                                switch (mpString) 
+                                {
+                                    case wbKey:
+                                        // Отчет по клиенту +79164372997 (WB).xlsx
+                                        ReportKey = SourceSKUReportFileKey.RansomsWB;
+                                        break;
+                                    case ozKey:
+                                        // Отчет по клиенту +79164372997 (Ozon).xlsx
+                                        ReportKey = SourceSKUReportFileKey.RansomsOZ;
+                                        break;
+                                    default:
+                                        break;    
+                                }
                             }
-                        }
 
-                        if (Login is null && substrings[3] != null) 
-                            SaveСlientLogin(substrings[3]);
-                        break;
+                            if (Login is null && substrings[3] != null) 
+                                SaveСlientLogin(substrings[3]);
+                            break;
 
-                    // перемещение на фулфилмент
-                    case transferKey:
-                        ReportKey = SourceSKUReportFileKey.Transfered;
-                        break; 
-                    
-                    // клиентский отчет
-                    case clientReportlKey:
-                        ReportKey = SourceSKUReportFileKey.Client;
+                        // перемещение на фулфилмент
+                        case transferKey:
+                            ReportKey = SourceSKUReportFileKey.Transfered;
+                            break; 
+                        
+                        // клиентский отчет
+                        case clientReportlKey:
+                            ReportKey = SourceSKUReportFileKey.Client;
 
-                        if (Login is null && substrings[1] != null) 
-                            SaveСlientLogin(substrings[1]);
+                            if (Login is null && substrings[1] != null) 
+                                SaveСlientLogin(substrings[1]);
 
-                        break;
+                            break;
 
-                    default:
-                        break;
+                        default:
+                            break;
+                    }
                 }
 
                 if (!ReportKey.HasValue)
-                    throw new Exception($"Cannot determine match key for report file at path\n{fileName} for keystring {keyString}");
+                    throw new ArgumentException(nameof(ReportKey), $"Cannot determine match key for report file at path\n{fileName}.");
             }
         }
 
