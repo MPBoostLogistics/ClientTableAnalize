@@ -26,12 +26,8 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
     public class SKUResortBalance
     {
         #region Variables and constants
-        public const string MAYBE_RESORT_1C_RECEIPT_NAME = "Возможен пересорт в 1С (приходы)";  
-        public const string RESORT_1C_RECEIPT_NAME = "Создан пересорт в 1С (приходы)";  
-        public const string MAYBE_RESORT_1C_NAME = "Возможен пересорт в 1С";  
-        public const string RESORT_1C_NAME = "Создан пересорт в 1С";  
-        public const string CONCEPLUAL_NAME = "Концептуальный";    
-        public const string NO_SOLUTION_NAME = "Нет решения"; 
+        private const string RESORT_CONSUMPTION_KEY = "Пересортица расходов";
+        private const string RESORT_CONSUMPTION_FIRST_LINE = "Пересортица расхода на др.арт. (вычтен из \"Приход товаром\" и \"Расход товаром\"):\n";
         #endregion
 
         #region Properties
@@ -43,6 +39,9 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
         /// SKUs FOR WHICH re-sorting - what was <b>re-graded</b> and <b>entered</b> into 1C system: key - sku to resort: value - target of resorting, count.
         /// </summary>
         public readonly Dictionary<int, Dictionary<SKUResortBalanceTarget, int>> SKUsToResort = []; 
+        
+        public int MoreReceiptThanWaiting {get; private set;} = 0;
+        
         public string ResortComment { get; private set; } = string.Empty;
         
         #endregion Properties
@@ -85,23 +84,8 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 
                 switch (skuResortDataUnit.ResortComment!.Trim())
                 {
-                    case MAYBE_RESORT_1C_RECEIPT_NAME:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.MaybeResortIn1CReceipt;
-                        break;
-                    case RESORT_1C_RECEIPT_NAME:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.ResortIn1CReceipt;
-                        break;
-                    case MAYBE_RESORT_1C_NAME:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.MaybeResortIn1C;
-                        break;
-                    case RESORT_1C_NAME:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.ResortIn1C;
-                        break;
-                    case CONCEPLUAL_NAME:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.Conceptual;
-                        break;
-                    case NO_SOLUTION_NAME:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.NoSolution;
+                    case RESORT_CONSUMPTION_KEY:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.ResortingConsumption;
                         break;
                     default:
                         SkippedProcedureMessage();
@@ -181,31 +165,38 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             }
         }
 
-        public (int sum, string comment)? FindSkusInBalanceBy(SKUResortBalanceTarget target) 
+        public (int sum, string? comment)? FindSkusInBalanceBy(SKUResortBalanceTarget target) 
         {
             var resortBalanceUnit = GetSkusResortToSum(target);
             if(resortBalanceUnit.ResortTo.Count == 0) return null;
 
+            var sum = resortBalanceUnit.ResortTo.Aggregate(0, (acc, i) => acc + i.Value);
             var comment = string.Empty;
-
             StringBuilder stringBuilder = new();
 
             // Исходящие пересорты
             switch(target) 
             {
-                case SKUResortBalanceTarget.ResortIn1CReceipt:
-                    stringBuilder.Append("Пересортица прихода (1C, исходящий, вычтен из \"Склад: Приход товаром\"):\n");
-                    break;
-                case SKUResortBalanceTarget.ResortIn1C:
-                    stringBuilder.Append("Пересортица расхода на др. артикулы (1C, вычтено из \"Склад: Склад: Приход товаром\" и \"Склад: Склад: Расход товаром\"):\n");
-                    break;
-                case SKUResortBalanceTarget.Conceptual:
-                    stringBuilder.Append("Пересортица расхода (баланс, добавлено в \"Склад: Списано пересортицей, товаров\"):\n");
-                    break;
-                default:
-                    stringBuilder.Append("Нераспознанный пересорт:\n");
+                case SKUResortBalanceTarget.ResortingConsumption:
+                    stringBuilder.Append(RESORT_CONSUMPTION_FIRST_LINE);
                     break;
             }
+
+            // switch(target) 
+            // {
+            //     case SKUResortBalanceTarget.ResortIn1CReceipt:
+            //         stringBuilder.Append("Пересортица прихода на др.арт. (1C, вычтен из \"Склад: Приход товаром\"):\n");
+            //         break;
+            //     case SKUResortBalanceTarget.ResortIn1C:
+            //         stringBuilder.Append("Пересортица расхода на др.арт. (1C, вычтено из \"Склад: Склад: Приход товаром\" и \"Склад: Склад: Расход товаром\"):\n");
+            //         break;
+            //     case SKUResortBalanceTarget.Conceptual:
+            //         stringBuilder.Append("Пересортица расхода на др.арт. (баланс, добавлено в \"Склад: Расход пересортом\"):\n");
+            //         break;
+            //     default:
+            //         stringBuilder.Append("Нераспознанный пересорт:\n");
+            //         break;
+            // }
 
             foreach (var item in resortBalanceUnit.ResortTo)
             {
@@ -218,8 +209,8 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 
             // Result
             comment = stringBuilder.ToString();
-            var sum = resortBalanceUnit.ResortTo.Aggregate(0, (acc, i) => acc + i.Value);
             return (sum, comment);
+            
         }
 
         public ResortBalanceUnit GetSkusResortToSum(SKUResortBalanceTarget target) 

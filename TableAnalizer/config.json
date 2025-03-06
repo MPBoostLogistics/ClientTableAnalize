@@ -1,15 +1,23 @@
 {
+    "Flags": 
+    {
+      "isTracing": true
+    },
     "Messages": {
       "GoodbyMessage": "\nThank you for using the program.\nHave a productive day!",
       "TraceInfoFlag": "[INFO]: ",
       "TraceErrorFlag": "[ERROR]: "
     },
     "Numbers": {
-      "TracingDelay": 1100
+      "DeadlineDays" : 14,
+      "TracingDelay": 350
+    },
+    "Formulas": 
+    {
+      "SumFormula" : "SUM"
     },
     "Collections": 
     {
       "validFileExtensions" : [".xls", ".xlsx"]
     }
-
   }

@@ -1,11 +1,12 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
 using CSharpHelpers.Services;
+using Microsoft.Extensions.Configuration;
 using TableAnalizer.Objects.SKUItems;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public class ReportFileManager : BaseManager
+    public class ReportFileManager(IConfiguration config) : BaseManager(config)
     {
         #region Variables and constants 
         private readonly static string _clientReportRegexPattern = @"(ClientReport_)\d+(_)+\d+(-)\d+(-)\d+(.xlsx)";
@@ -25,6 +26,7 @@ namespace TableAnalizer.Objects.Managers
         public static DirectoryInfo? DirInfoForClientTargetReports { get; private set; }
         public static string? InputReportsFilePath { get; set; } = string.Empty;
         public static string OutputClientReportFilePath { get; private set; } = string.Empty;
+
         #endregion
 
         #region  Functionality
@@ -272,20 +274,13 @@ namespace TableAnalizer.Objects.Managers
                 var isContainsKeyRansomsWB = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.RansomsWB);
                 var isContainsKeyRansomsOZ = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.RansomsOZ);
                 bool isRansomsExisting = isContainsKeyRansomsWB || isContainsKeyRansomsOZ;
-
-                var isContainsKeyStorageWB = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.RemainingWB);
-                var isContainsKeyStorageOZ = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.RemainingOZ);
-                bool isRemainingExisting = isContainsKeyStorageWB || isContainsKeyStorageOZ;
-
+                var isContainsKeyBalance = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.Balance);
                 var isContainsKeyShipped = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.Shipped);
-
                 var isContainsKeyTransfer = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.Transfered);
-
                 var isContainsWriteOffShortages = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.WriteOffShortages);
-
                 var isContainsAdditional = ReportsPathsSingle.ContainsKey(SourceSKUReportFileKey.Additional);
 
-                success = isRansomsExisting && isRemainingExisting && isContainsWriteOffShortages;
+                success = isRansomsExisting && isContainsKeyBalance && isContainsWriteOffShortages;
 
                 if (success)
                 {
@@ -295,11 +290,8 @@ namespace TableAnalizer.Objects.Managers
                     if (isContainsKeyRansomsOZ)
                         existingKeys.Add(SourceSKUReportFileKey.RansomsOZ);
 
-                    if (isContainsKeyStorageWB)
-                        existingKeys.Add(SourceSKUReportFileKey.RemainingWB);
-
-                    if (isContainsKeyStorageOZ)
-                        existingKeys.Add(SourceSKUReportFileKey.RemainingOZ);
+                    if (isContainsKeyBalance)
+                        existingKeys.Add(SourceSKUReportFileKey.Balance);
 
                     if (isContainsKeyShipped)
                         existingKeys.Add(SourceSKUReportFileKey.Shipped);
@@ -320,11 +312,8 @@ namespace TableAnalizer.Objects.Managers
                     if (!isContainsKeyRansomsOZ)
                         lostKeys.Add(SourceSKUReportFileKey.RansomsOZ);
 
-                    if (!isContainsKeyStorageWB)
-                        lostKeys.Add(SourceSKUReportFileKey.RemainingWB);
-
-                    if (!isContainsKeyStorageOZ)
-                        lostKeys.Add(SourceSKUReportFileKey.RemainingOZ);
+                    if (!isContainsKeyBalance)
+                        lostKeys.Add(SourceSKUReportFileKey.Balance);
 
                     if (!isContainsKeyShipped)
                         lostKeys.Add(SourceSKUReportFileKey.Shipped);
@@ -340,6 +329,7 @@ namespace TableAnalizer.Objects.Managers
         static readonly string persDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
         /// ???
         static readonly string[] pathKeyNames = Enum.GetNames(typeof(PathKey));
+
 
         public static DirectoryInfo? CreateDirectoryInfo(PathKey pathKey, string? login = null)
         {
