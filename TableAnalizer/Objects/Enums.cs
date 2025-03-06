@@ -29,8 +29,10 @@ namespace TableAnalizer.Objects
     {
         RansomsWB,          // выкупы WB
         RansomsOZ,          // выкупы OZ
-        RemainingWB,        // приходы и остатки WB
-        RemainingOZ,        // приходы и остатки OZ
+        /// <summary>
+        /// Баланс (приходы и остатки)
+        /// </summary>
+        Balance,          
         WriteOffShortages,  // списание недростач общее 
         Additional,          // недостачи, пересорты и пустышки
         Shipped,             // расходы товаром 
@@ -80,9 +82,9 @@ namespace TableAnalizer.Objects
     public enum SKUResortBalanceTarget 
     {
         /// <summary>
-        /// Приход больше ожидания
+        /// Пересорттица товарами
         /// </summary>
-        MoreReceiptThanWaiting,    
+        ResortingConsumption
     }
 
     public enum CompensationTarget 

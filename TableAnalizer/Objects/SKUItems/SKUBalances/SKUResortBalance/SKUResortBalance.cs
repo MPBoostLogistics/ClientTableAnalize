@@ -26,7 +26,8 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
     public class SKUResortBalance
     {
         #region Variables and constants
-        private const string MORE_RECEIPT_THAT_WAITING_KEY = "Приход больше ожидания";
+        private const string RESORT_CONSUMPTION_KEY = "Пересортица расходов";
+        private const string RESORT_CONSUMPTION_FIRST_LINE = "Пересортица расхода на др.арт. (вычтен из \"Приход товаром\" и \"Расход товаром\"):\n";
         #endregion
 
         #region Properties
@@ -83,8 +84,8 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 
                 switch (skuResortDataUnit.ResortComment!.Trim())
                 {
-                    case MORE_RECEIPT_THAT_WAITING_KEY:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.MoreReceiptThanWaiting;
+                    case RESORT_CONSUMPTION_KEY:
+                        skuResortBalanceTarget = SKUResortBalanceTarget.ResortingConsumption;
                         break;
                     default:
                         SkippedProcedureMessage();
@@ -170,47 +171,46 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             if(resortBalanceUnit.ResortTo.Count == 0) return null;
 
             var sum = resortBalanceUnit.ResortTo.Aggregate(0, (acc, i) => acc + i.Value);
-            if(target == SKUResortBalanceTarget.MoreReceiptThanWaiting) 
+            var comment = string.Empty;
+            StringBuilder stringBuilder = new();
+
+            // Исходящие пересорты
+            switch(target) 
             {
-                return (sum, null);
-            } 
-            else 
-            {
-                var comment = string.Empty;
-
-                StringBuilder stringBuilder = new();
-
-                // Исходящие пересорты
-                // switch(target) 
-                // {
-                //     case SKUResortBalanceTarget.ResortIn1CReceipt:
-                //         stringBuilder.Append("Пересортица прихода на др.арт. (1C, вычтен из \"Склад: Приход товаром\"):\n");
-                //         break;
-                //     case SKUResortBalanceTarget.ResortIn1C:
-                //         stringBuilder.Append("Пересортица расхода на др.арт. (1C, вычтено из \"Склад: Склад: Приход товаром\" и \"Склад: Склад: Расход товаром\"):\n");
-                //         break;
-                //     case SKUResortBalanceTarget.Conceptual:
-                //         stringBuilder.Append("Пересортица расхода на др.арт. (баланс, добавлено в \"Склад: Расход пересортом\"):\n");
-                //         break;
-                //     default:
-                //         stringBuilder.Append("Нераспознанный пересорт:\n");
-                //         break;
-                // }
-
-                // foreach (var item in resortBalanceUnit.ResortTo)
-                // {
-                //     stringBuilder.Append($"{item.Key}, шт - {item.Value}");
-                //     if(resortBalanceUnit.ResortTo.Keys.Last() != item.Key) 
-                //     {
-                //         stringBuilder.Append(", ");
-                //     }
-                // }
-
-                // Result
-                //comment = stringBuilder.ToString();
-                //var sum = resortBalanceUnit.ResortTo.Aggregate(0, (acc, i) => acc + i.Value);
-                return (sum, comment);
+                case SKUResortBalanceTarget.ResortingConsumption:
+                    stringBuilder.Append(RESORT_CONSUMPTION_FIRST_LINE);
+                    break;
             }
+
+            // switch(target) 
+            // {
+            //     case SKUResortBalanceTarget.ResortIn1CReceipt:
+            //         stringBuilder.Append("Пересортица прихода на др.арт. (1C, вычтен из \"Склад: Приход товаром\"):\n");
+            //         break;
+            //     case SKUResortBalanceTarget.ResortIn1C:
+            //         stringBuilder.Append("Пересортица расхода на др.арт. (1C, вычтено из \"Склад: Склад: Приход товаром\" и \"Склад: Склад: Расход товаром\"):\n");
+            //         break;
+            //     case SKUResortBalanceTarget.Conceptual:
+            //         stringBuilder.Append("Пересортица расхода на др.арт. (баланс, добавлено в \"Склад: Расход пересортом\"):\n");
+            //         break;
+            //     default:
+            //         stringBuilder.Append("Нераспознанный пересорт:\n");
+            //         break;
+            // }
+
+            foreach (var item in resortBalanceUnit.ResortTo)
+            {
+                stringBuilder.Append($"{item.Key}, шт - {item.Value}");
+                if(resortBalanceUnit.ResortTo.Keys.Last() != item.Key) 
+                {
+                    stringBuilder.Append(", ");
+                }
+            }
+
+            // Result
+            comment = stringBuilder.ToString();
+            return (sum, comment);
+            
         }
 
         public ResortBalanceUnit GetSkusResortToSum(SKUResortBalanceTarget target) 

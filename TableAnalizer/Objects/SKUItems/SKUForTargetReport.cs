@@ -5,6 +5,11 @@ namespace TableAnalizer.Objects.SKUItems
 {
     public class SKUForTargetReports
     {
+        #region Fields
+        private const string RESORT_CONSUMPTION_FIRST_LINE = "Пересортица расхода от др.арт. (добавлен в \"Приход товаром\" и \"Расход пересортом\"):\n";
+
+        #endregion
+
         #region Properties
         #region Properties - Common
         public Marketplace? SKUmp { get; set; }
@@ -14,12 +19,12 @@ namespace TableAnalizer.Objects.SKUItems
         public double SKUPrice { get; set; }
         public DateOnly SKUDate { get; set; }
         private readonly bool isDeadline = false;
-        public SellmentStatus SellmentStatus { get; private set; }  = new SellmentStatus(SKUSellmentStatus.Unknown);
+        public SellmentStatus SellmentStatus { get; private set; } = new SellmentStatus(SKUSellmentStatus.Unknown);
         public string SellmentStatusString => SellmentStatus.StatusLabel;
 
         // Is Parrales sku
-        private bool IsParallelSku {get ;set;}
-        public Color FillColor { get; set;}
+        private bool IsParallelSku { get; set; }
+        public Color FillColor { get; set; }
 
         #endregion
         #region Properties - Ransoms
@@ -34,7 +39,7 @@ namespace TableAnalizer.Objects.SKUItems
         /// <summary>
         /// Склад: Ожидание
         /// </summary>
-        public int SKURansomsWaiting { get; set; }  
+        public int SKURansomsWaiting { get; set; }
 
         /// <summary>
         /// Приход от точек, всего
@@ -50,77 +55,79 @@ namespace TableAnalizer.Objects.SKUItems
         /// из них: Денежная компенсация
         /// </summary>
         public int SKUPaidPoints { get; set; } = 0;
-   
-         /// <summary>
+
+        /// <summary>
         /// Склад: Приход от точек меньше ожидания
         /// </summary>
-        public int LessReceiptThanWaiting => 
-            SKUReceiptTotal < SKURansomsWaiting ? 
-            SKURansomsWaiting - SKUReceiptTotal : 
+        public int LessReceiptThanWaiting =>
+            SKUReceiptTotal < SKURansomsWaiting ?
+            SKURansomsWaiting - SKUReceiptTotal :
             0;
-        
+
         /// <summary>
         /// Склад: Приход от точек больше ожидания
         /// </summary>
-        public int MoreReceiptThanWaiting => 
-            SKUReceiptTotal > SKURansomsWaiting ? 
-            SKUReceiptTotal - SKURansomsWaiting : 
+        public int MoreReceiptThanWaiting =>
+            SKUReceiptTotal > SKURansomsWaiting ?
+            SKUReceiptTotal - SKURansomsWaiting :
             0;
         #endregion
         #region Properties - Comments
-    
+
         private string skuResortsComment = string.Empty;
 
         /// <summary>
         /// Комментарий к пересортами
         /// </summary>
-        public string SKUResortsComment 
-        { 
+        public string SKUResortsComment
+        {
             get => skuResortsComment;
-            set => skuResortsComment = string.IsNullOrEmpty(skuResortsComment) ? skuResortsComment = value : skuResortsComment += $"\n{value}" ;
+            set => skuResortsComment = string.IsNullOrEmpty(skuResortsComment) ? skuResortsComment = value : skuResortsComment += $"\n{value}";
         }
         #endregion
-        #region Properties - Сonsumption
-        
+        #region Properties - Mutual settlement
+
         /// <summary>
         /// Общий взаиморасчет (товаром, передачей на фулфилмент, компенсацией склада, пересортом) 
         /// </summary>
         public int SKUMutualSettlement => SKUOutgoingProducts + SKUTransfered + SKUPaidWarehouse + SKUResort;
 
         /// <summary>
-        /// товарами
+        /// расход товарами
         /// </summary>
-        public int SKUOutgoingProducts { get; set; }     
+        public int SKUOutgoingProducts { get; set; }
 
         /// <summary>
         /// Склад: Передано товаром (фулфилмент)
         /// </summary>
-        public int SKUTransfered { get; set; } 
-     
+        public int SKUTransfered { get; set; }
+
         /// <summary>
         /// Склад: Денежная компенсация
         /// </summary>                       
-        public int SKUPaidWarehouse { get; set; } = 0;   
+        public int SKUPaidWarehouse { get; set; } = 0;
 
         /// <summary>
         /// Склад: расход пересортом                
         /// </summary>
-        public int SKUResort { get; set; }    
+        public int SKUResort { get; set; }
 
         /// <summary>
         /// Общий взаиморасчет меньше ожидания клиента
         /// </summary>
         public int LessMutualSettlementThanWaiting => 
             SKUMutualSettlement < SKURansomsWaiting ? 
-            SKURansomsWaiting - SKUMutualSettlement : 
+                SKURemaining > 0 ? 
+                SKURansomsWaiting - SKUMutualSettlement - SKURemaining : 
+                SKURansomsWaiting - SKUMutualSettlement : 
             0;
-        
+
         /// <summary>
         /// Общий взаиморасчет больше ожидания клиента
         /// </summary>
-        public int MoreMutualSettlementThanWaiting => 
-            SKUMutualSettlement > SKURansomsWaiting ? 
-            SKUMutualSettlement - SKURansomsWaiting : 
+        public int MoreMutualSettlementThanWaiting =>
+            SKUMutualSettlement > SKURansomsWaiting ?
+            SKUMutualSettlement - SKURansomsWaiting :
             0;
 
         #endregion
@@ -128,51 +135,51 @@ namespace TableAnalizer.Objects.SKUItems
         /// <summary>
         /// Склад: Остаток товаров
         /// </summary>
-        public int SKURemaining { get; set; } 
+        public int SKURemaining { get; set; }
         #endregion
         #region Properties - Delivery  
-         /// <summary>
+        /// <summary>
         /// Задержка довоза, всего
         /// </summary>
         public int SKUDeliveryDelayTotal => SKUDeliveryDelayPoints + SKUDeliveryDelayStorage;
-        
+
         private int skuDeliveryDelayPoints = 0;
         /// <summary>
         /// Задержка довоза от точек, кол-во
         /// </summary>
-        public int SKUDeliveryDelayPoints 
-        { 
+        public int SKUDeliveryDelayPoints
+        {
             get => skuDeliveryDelayPoints;
             set => skuDeliveryDelayPoints = value > 0 ? value : 0;
         }
         /// <summary>
         /// Задержка довоза от точек, сумма руб.
         /// </summary>
-        public double SKUDeliveryDelayPointsSum => 
-            SKUDeliveryDelayPoints > 0 && isDeadline ? 
-            SKUDeliveryDelayPoints * SKUPrice : 
+        public double SKUDeliveryDelayPointsSum =>
+            SKUDeliveryDelayPoints > 0 && isDeadline ?
+            SKUDeliveryDelayPoints * SKUPrice :
             0.00;
-        
+
         private int skuDeliveryDelayStorage = 0;
         /// <summary>
         /// Задержка довоза от склада, кол-во
         /// </summary>
-        public int SKUDeliveryDelayStorage 
-        { 
+        public int SKUDeliveryDelayStorage
+        {
             get => skuDeliveryDelayStorage;
             set => skuDeliveryDelayStorage = value > 0 ? value : 0;
         }
         /// <summary>
         /// Задержка довоза от склада, сумма руб.
         /// </summary>
-        public double SKUDeliveryDelayStorageSum => 
-            SKUDeliveryDelayStorage > 0 && isDeadline ? 
-            SKUDeliveryDelayStorage * SKUPrice : 
+        public double SKUDeliveryDelayStorageSum =>
+            SKUDeliveryDelayStorage > 0 && isDeadline ?
+            SKUDeliveryDelayStorage * SKUPrice :
             0.00;
 
         #endregion
         #region Properties - Overruns 
-        private int skuOverrunsCount = 0; 
+        private int skuOverrunsCount = 0;
         /// <summary>
         /// Перерасход, кол-во
         /// </summary>
@@ -180,17 +187,17 @@ namespace TableAnalizer.Objects.SKUItems
         {
             get => skuOverrunsCount;
             set => skuOverrunsCount = value > 0 ? value : 0;
-        }      
+        }
         /// <summary>
         /// Перерасход, сумма руб.
         /// </summary>              
-        public double SKUOverrunsSum => 
+        public double SKUOverrunsSum =>
             SKUOverrunsCount > 0 && isDeadline ?
-             SKUOverrunsCount * SKUPrice : 
+             SKUOverrunsCount * SKUPrice :
              0.00;
 
-        #endregion     
- 
+        #endregion
+
         #endregion
 
         #region Constructors
@@ -222,17 +229,17 @@ namespace TableAnalizer.Objects.SKUItems
             {
                 var receipt = sku.SKURemainingBalance.SKUReceipt;
                 var writeOff = sku.SKUWriteOffBalance?.SKUWriteOff;
-                
+
                 // Удаляем приходы из расхода по списанию
                 SKUReceiptGoods = writeOff.HasValue ? receipt - writeOff.Value : receipt;
 
                 SKUOutgoingProducts = sku.SKURemainingBalance.SKUShipped;
                 SKUTransfered = sku.SKURemainingBalance.SKUTransfered;
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
-            } 
+            }
 
             // Fill SKUCompensationBalance 
-            if (sku.SKUCompensationBalance is not null )
+            if (sku.SKUCompensationBalance is not null)
             {
                 SKUPaidWarehouse = sku.SKUCompensationBalance.CompensationItems
                     .Where(el => el.Key == CompensationTarget.Warehouse)
@@ -246,35 +253,31 @@ namespace TableAnalizer.Objects.SKUItems
             // Article analysis
             AnalizeSKU(sku, isRawReport, isMulty, traceDelay, resortFromSkusValues);
         }
-        
+
         #endregion
 
         #region Functionality
-        private void AnalizeSKU(SKU sku, bool isRawReport, bool isSummary, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
+        private void AnalizeSKU(SKU sku, bool isInteralReport, bool isSummary, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
         {
             // Setting status to undefined
             SetSellmentStatus(SKUSellmentStatus.Unknown);
 
             // Calculation of resorts
-            if (!isRawReport)
-            {
-                CalculateResorts(sku, resortFromSkusValues);
+            CalculateResorts(sku, resortFromSkusValues);
 
-                // Calculation of shortages from points (повторно)
-                CalculateDalay(SKUSellmentStatus.OnSearchPoints);
-            } 
-            else 
-            {
-                // Calculation of shortages from points
-                CalculateDalay(SKUSellmentStatus.OnSearchPoints);
-            }
+            // Compensation for goods receipts anomalies
+            if(!isInteralReport)
+                CompensationGoodsReceiptsAnomalies();
 
+            // Calculation of shortages from points 
+            CalculateDelay(SKUSellmentStatus.OnSearchPoints);
+      
             // Calculation of shortages from the warehouse
-            CalculateDalay(SKUSellmentStatus.OnSearchWarehouse);
+            CalculateDelay(SKUSellmentStatus.OnSearchWarehouse);
 
             // Calculation of overruns
             var totalСonsumptionWithoutResorts = SKUMutualSettlement - SKUResort;
-            if(totalСonsumptionWithoutResorts > SKURansomsWaiting) 
+            if (totalСonsumptionWithoutResorts > SKURansomsWaiting)
             {
                 SKUOverrunsCount = totalСonsumptionWithoutResorts - SKURansomsWaiting;
             }
@@ -283,12 +286,12 @@ namespace TableAnalizer.Objects.SKUItems
             SetStatus();
         }
 
-        private void CalculateDalay(SKUSellmentStatus sellmentStatus) 
+        private void CalculateDelay(SKUSellmentStatus sellmentStatus)
         {
-            switch(sellmentStatus) 
+            switch (sellmentStatus)
             {
                 case SKUSellmentStatus.OnSearchPoints:
-                    SKUDeliveryDelayPoints = SKUMutualSettlement >= SKURansomsWaiting ?  0 : SKURansomsWaiting - SKUReceiptTotal;
+                    SKUDeliveryDelayPoints = SKUMutualSettlement >= SKURansomsWaiting ? 0 : SKURansomsWaiting - SKUReceiptTotal;
                     break;
                 case SKUSellmentStatus.OnSearchWarehouse:
                     SKUDeliveryDelayStorage = SKURansomsWaiting - SKUDeliveryDelayPoints - SKUMutualSettlement;
@@ -300,55 +303,62 @@ namespace TableAnalizer.Objects.SKUItems
 
         private void CalculateResorts(SKU sku, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
         {
-            // Если остались значения на листе "Аналитика" в столбце "Приход больше ожидания" остались значения, 
-            // они вычитаются из прихода как аномльный приход.
-            var moreReceiptThanWaitingItems = sku.SKUResortBalance?.FindSkusInBalanceBy(SKUResortBalanceTarget.MoreReceiptThanWaiting);
-            if (moreReceiptThanWaitingItems.HasValue && moreReceiptThanWaitingItems.Value.sum > 0) 
+            // Фикация исходящих пересортов 
+            if (sku.SKUResortBalance is not null)
             {
-                SKUReceiptGoods -= moreReceiptThanWaitingItems.Value.sum;
+                // Исходящие: Пересорты расхода
+                var resortConsumptionItems = sku.SKUResortBalance?.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortingConsumption);
+                if (resortConsumptionItems.HasValue && resortConsumptionItems.Value.sum > 0)
+                {
+                    SKUOutgoingProducts -= resortConsumptionItems.Value.sum;
+
+                    if (resortConsumptionItems.Value.sum >= MoreReceiptThanWaiting)
+                    {
+                        SKUReceiptGoods -= resortConsumptionItems.Value.sum;
+                        if(int.IsNegative(SKUReceiptGoods)) 
+                        {
+                            SKUReceiptGoods = 0;
+                        }
+                    }
+
+                    SKUResortsComment += resortConsumptionItems.Value.comment;
+                }
             }
 
+            // Фикация входящих пересортов 
+            if (resortFromSkusValues is not null && resortFromSkusValues.Count > 0)
+            {
+                IEnumerable<(int sku, int sum)>? GetResortValuesBy(SKUResortBalanceTarget balanceTarget) =>
+                    from resortFromSkusValue in resortFromSkusValues
+                    from targetWithSum in resortFromSkusValue.Value
+                    where targetWithSum.Key == balanceTarget
+                    let skuAndSum = (sku: resortFromSkusValue.Key, sum: targetWithSum.Value)
+                    select skuAndSum;
 
-            // // Фикация исходящих пересортов 
-            // if (sku.SKUResortBalance is not null)
-            // {
-            //     // Переcорты приходов (проведено в 1С)
-            //     var resortIn1CReceiptItems = sku.SKUResortBalance.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortIn1CReceipt);
-            //     if (resortIn1CReceiptItems.HasValue && resortIn1CReceiptItems.Value.sum > 0)
-            //     {
-            //         //SKUReceiptGoods -= resortIn1CReceiptItems.Value.sum;
-            //         //SKUResortsComment = string.IsNullOrEmpty(SKUResortsComment) ?
-            //               //  resortIn1CReceiptItems.Value.comment :
-            //                // SKUResortsComment += resortIn1CReceiptItems.Value.comment;
-            //     }
 
-            //     // Переcорты расходов (проведено в 1С)
-            //     var resortIn1CItems = sku.SKUResortBalance.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortIn1C);
-            //     if (resortIn1CItems.HasValue && resortIn1CItems.Value.sum > 0)
-            //     {
-            //         SKUReceiptGoods -= resortIn1CItems.Value.sum;
-            //         SKUOutgoingProducts -= resortIn1CItems.Value.sum;
-            //         SKUResortsComment = resortIn1CItems.Value.comment;
-            //     }
+                // Исходящие: Пересорты расхода
+                var resortConsumptionItems = GetResortValuesBy(SKUResortBalanceTarget.ResortingConsumption);
+                var resortConsumptionItemsSum = resortConsumptionItems?.Aggregate(0, (acc, i) => acc + i.sum);
+                if (resortConsumptionItems is not null && resortConsumptionItems.Any() && resortConsumptionItemsSum > 0)
+                {
 
-            //     // Переcорты расходов (концептуальные, не проведено в 1С) 
-            //     var conceptualItems = sku.SKUResortBalance.FindSkusInBalanceBy(SKUResortBalanceTarget.Conceptual);
-            //     if (conceptualItems.HasValue && conceptualItems.Value.sum > 0)
-            //     {
-            //         // // SKUReceiptGoods -=  conceptualItems.Value.sum;
-            //         // // SKUShipped -= conceptualItems.Value.sum;
+                    SKUResort += (int)resortConsumptionItemsSum;
 
-            //         // //if(SKUTotalСonsumption + conceptualItems.Value.sum <=  SKUReceiptGoods ) 
-            //         // //{
-            //         //     SKUResort += conceptualItems.Value.sum;
-            //         // //}
+                    if(resortConsumptionItemsSum >= LessReceiptThanWaiting) 
+                    {
+                        SKUReceiptGoods += (int)resortConsumptionItemsSum;
+                    }
 
-            //         // SKUResortsComment = conceptualItems.Value.comment;
-            //     }
-            // }
+                    StringBuilder goodsResortsSb = new(RESORT_CONSUMPTION_FIRST_LINE);
+                    foreach (var (sk, su) in resortConsumptionItems)
+                    {
+                        goodsResortsSb.Append($"{sk} шт.:{su}, ");
+                    }
 
-            // // Фикация входящих пересортов 
-            // if (resortFromSkusValues is not null && resortFromSkusValues.Count > 0)
+                    SKUResortsComment = goodsResortsSb.ToString();
+                }
+
+            }
             // {
             //     IEnumerable<(int sku, int sum)>? GetResortValuesBy(SKUResortBalanceTarget balanceTarget)  => 
             //         from resortFromSkusValue in resortFromSkusValues
@@ -356,7 +366,7 @@ namespace TableAnalizer.Objects.SKUItems
             //         where targetWithSum.Key == balanceTarget
             //         let skuAndSum = (sku: resortFromSkusValue.Key, sum: targetWithSum.Value)
             //         select skuAndSum;
-                
+
             //     // Входящие пересорты: пересорты приходов (1С)
             //     var skuAndSumsByResortIn1CReceipt = GetResortValuesBy(SKUResortBalanceTarget.ResortIn1CReceipt);
             //     var skuAndSumsByResortIn1CReceiptSum = skuAndSumsByResortIn1CReceipt?.Aggregate(0, (acc, i) => acc + i.sum);
@@ -369,7 +379,7 @@ namespace TableAnalizer.Objects.SKUItems
             //         {
             //             resortIn1CReceiptSB.Append($"{sk} шт.:{su}, ");
             //         }
-                    
+
             //         SKUResortsComment = resortIn1CReceiptSB.ToString();
             //     }
 
@@ -414,13 +424,13 @@ namespace TableAnalizer.Objects.SKUItems
         private void SetStatus()
         {
             // Add status 
-            if(!isDeadline) 
+            if (!isDeadline)
             {
                 SetSellmentStatus(SKUSellmentStatus.InWork);
-            } 
-            else 
+            }
+            else
             {
-                switch(SKUDeliveryDelayPoints > 0, SKUDeliveryDelayStorage > 0) 
+                switch (SKUDeliveryDelayPoints > 0, SKUDeliveryDelayStorage > 0)
                 {
                     case (true, true):
                         SetSellmentStatus(SKUSellmentStatus.OnSearchWarehouseAndPoints);
@@ -434,17 +444,34 @@ namespace TableAnalizer.Objects.SKUItems
                     case (false, false):
                         SetSellmentStatus(SKUSellmentStatus.FullSet);
                         break;
-                } 
+                }
             }
         }
-        
-        private void SetSellmentStatus(SKUSellmentStatus skuSellmentStatus) 
+
+        private void SetSellmentStatus(SKUSellmentStatus skuSellmentStatus)
         {
             SellmentStatus = new SellmentStatus(skuSellmentStatus);
             FillColor = SellmentStatus.StatusColor;
         }
-        
-        
-        #endregion 
+
+        /// <summary>
+        /// Компенсация приходов товаров
+        /// </summary>
+        private void CompensationGoodsReceiptsAnomalies() 
+        {
+            /// Если приход меньше ожидания, но взаиморасчет больше или равен ожиданию
+            /// приход товаров уменьшается на эту разницу
+            if(LessReceiptThanWaiting > 0 && SKUMutualSettlement >= SKURansomsWaiting) 
+            {
+                SKUReceiptGoods -= LessReceiptThanWaiting;
+            }
+
+            /// Если приход больше ожидания, приход товаров уменьшается на эту разницу
+            if(MoreReceiptThanWaiting > 0) 
+            {
+                SKUReceiptGoods -= MoreReceiptThanWaiting;
+            }
+        }
+        #endregion
     }
 }

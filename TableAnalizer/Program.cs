@@ -32,6 +32,8 @@ internal class Program
     private static TargetReportRecipientType? ReportRecipientType { get; set; }
 
     private static IConfiguration? config;
+
+    
     #endregion
 
     #region Properties 
@@ -169,7 +171,6 @@ internal class Program
     {
         bool isInternalReport = ReportRecipientType.HasValue && ReportRecipientType.Value == TargetReportRecipientType.Internal;
 
-
         // Report analysis tasks
         if (existingKeys is not null && existingKeys.Count > 0)
         {
@@ -206,36 +207,31 @@ internal class Program
             }
 
             // Remaining tasks
-            List<Task> remainingTasksList = [];
-            Task[] remainingTasks = [];
-            if (existingKeys.Contains(SourceSKUReportFileKey.RemainingWB))
+            List<Task> balanceTasksList = [];
+            Task[] balanceTasks = [];
+            if (existingKeys.Contains(SourceSKUReportFileKey.Balance))
             {
-                remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingWB, tracingDelay, isInternalReport));
+                balanceTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.Balance, tracingDelay, isInternalReport));
             }
 
-            if (existingKeys.Contains(SourceSKUReportFileKey.RemainingOZ))
+            if (balanceTasksList.Count != 0)
             {
-                remainingTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RemainingOZ, tracingDelay, isInternalReport));
-            }
-
-            if (remainingTasksList.Count != 0)
-            {
-                remainingTasks = [.. remainingTasksList];
-                for (int i = 0; i < remainingTasks.Length; i++)
+                balanceTasks = [.. balanceTasksList];
+                for (int i = 0; i < balanceTasks.Length; i++)
                 {
-                    var currentTask = remainingTasks[i];
+                    var currentTask = balanceTasks[i];
                     if (currentTask is not null)
                     {
                         await Task.Run(async () => await currentTask);
                     }
                 }
 
-                Task.WaitAll(remainingTasks);
+                Task.WaitAll(balanceTasks);
             }
 
-            if (remainingTasks.Length != 0)
+            if (balanceTasks.Length != 0)
             {
-                Task.WaitAll(remainingTasks);
+                Task.WaitAll(balanceTasks);
             }
 
             // WriteOff task 
