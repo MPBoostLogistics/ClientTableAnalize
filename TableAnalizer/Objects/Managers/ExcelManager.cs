@@ -363,7 +363,7 @@ namespace TableAnalizer.Objects.Managers
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
             new (colNumber: 12, colName: "расход товарами", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUOutgoingProducts),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 6),
+            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 4),
             new (colNumber: 13, colName: "на фулфилмент", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUTransfered),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
@@ -373,16 +373,15 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 15, colName: "пересортами", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUResort),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 16, colName: "Расход меньше ожидания", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.LessMutualSettlementThanWaiting),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 17, colName: "Расход больше ожидания", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.MoreMutualSettlementThanWaiting),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-
-            new (colNumber: 18, colName: "Склад: Остаток по учету", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 16, colName: "Склад: Остаток по учету", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKURemaining),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
+            new (colNumber: 17, colName: "Взаиморасчет меньше ожидания", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
+            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.LessMutualSettlementThanWaiting),
+            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 18, colName: "Взаиморасчет больше ожидания", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
+            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.MoreMutualSettlementThanWaiting),
+            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
         ];
 
         private readonly int sellmentStatusColomnNum;

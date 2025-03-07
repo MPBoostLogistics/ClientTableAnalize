@@ -12,13 +12,16 @@ namespace TableAnalizer.Objects.SKUItems
         public static readonly DateOnly DATEONLY_DEFAULT = new(0001,01,01);
         public static readonly double AVERAGE_PRICE_DEFAULT = 0.00;
         public static readonly int DEADLINE_DAYS_DEFAULT = 30;
+
+        public const string DEFAULT_BRAND = "No brand";
+        public const string DEFAULT_NAME = "No brand";
         #endregion Variables and constants
 
         #region Properties
         public Marketplace? Marketplace { get; private set; }
         public int SKUNumber { get; }
-        public string SKUBrand { get; private set; } = string.Empty;
-        public string SKUName { get; private set; } = string.Empty;
+        public string SKUBrand { get; private set; } = DEFAULT_BRAND;
+        public string SKUName { get; private set; } = DEFAULT_NAME;
         public SKURansomsBalance? SKURansomsBalance { get; private set;}
         public SKURemainingBalance? SKURemainingBalance { get; private set;}
         public SKUWriteOffBalance? SKUWriteOffBalance { get; private set;}
@@ -55,26 +58,38 @@ namespace TableAnalizer.Objects.SKUItems
 
             SKURemainingBalance = skuRemainingBalance;
 
-            string[]? skuBrandAndName = skuRemainingBalance.SKUBrandAndName.Split('/');
+            string skuBrandAndNameString = skuRemainingBalance.SKUBrandAndName;
 
-            switch(skuBrandAndName.Length) 
+            // Если есть разделитель /
+            // biidi / Говорящая детские книга для малышей - Алфавит и цифры, Общая характеристика товара			
+            if(skuBrandAndNameString.Contains('/')) 
             {
-                case 1:
-                    SKUName = isRemoveBrandFromName ? skuBrandAndName[0].Trim() : skuRemainingBalance.SKUBrandAndName.Trim();
-                    break;
-                case 2: case 3: case 4:
-                    SKUBrand = skuBrandAndName[0].Trim();
-                    SKUName = isRemoveBrandFromName ? skuBrandAndName[1].Trim() : skuRemainingBalance.SKUBrandAndName.Trim(); 
-                    break;
-                default:
-                    break;
+                string[]? skuBrandAndName = skuRemainingBalance.SKUBrandAndName.Split('/');
+                
+                switch(skuBrandAndName.Length) 
+                {
+                    case 1:
+                        SKUName = isRemoveBrandFromName ? skuBrandAndName[0].Trim() : skuRemainingBalance.SKUBrandAndName.Trim();
+                        break;
+                    case 2: case 3: case 4:
+                        SKUBrand = skuBrandAndName[0].Trim();
+                        SKUName = isRemoveBrandFromName ? skuBrandAndName[1].Trim() : skuRemainingBalance.SKUBrandAndName.Trim(); 
+                        break;
+                    default:
+                        break;
+                }
+            } 
+            else 
+            {
+                SKUName = skuBrandAndNameString.Trim();
             }
+
 
             // Remove ", Общая характеристика товара"
             string[]? SKUNameWithOtherInfо = SKUName.Split(',');
             if(SKUNameWithOtherInfо.Last() == " Общая характеристика товара") 
             {
-                SKUNameWithOtherInfо = SKUNameWithOtherInfо.Take(SKUNameWithOtherInfо.Length - 1).ToArray();
+                SKUNameWithOtherInfо = [.. SKUNameWithOtherInfо.Take(SKUNameWithOtherInfо.Length - 1)];
                 SKUName = string.Join("", SKUNameWithOtherInfо);
             }
         }

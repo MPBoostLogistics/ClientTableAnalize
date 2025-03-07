@@ -39,29 +39,23 @@ namespace TableAnalizer.Objects.Repositories
             int skuNumber = retriveValue.SKUNumber;
             
             // SKUBrand
-            bool isRetriveValueIncludesSKUBrand = !string.IsNullOrEmpty(retriveValue.SKUBrand);
-            bool isNewValueIncludesSKUBrand = !string.IsNullOrEmpty(newValue.SKUBrand);
+            bool isRetriveValueIncludesSKUBrand = !string.IsNullOrEmpty(retriveValue.SKUBrand) && retriveValue.SKUBrand != SKU.DEFAULT_BRAND ;
+            bool isNewValueIncludesSKUBrand = !string.IsNullOrEmpty(newValue.SKUBrand) && newValue.SKUBrand != SKU.DEFAULT_BRAND;
             string skuBrand = (isRetriveValueIncludesSKUBrand, isNewValueIncludesSKUBrand) switch
             {
                 (false, true) => newValue.SKUBrand,
                 (true, false) or (true, true) => retriveValue.SKUBrand,
-                (false, false) => "No brand"
+                _ => SKU.DEFAULT_BRAND
             };
 
             // SKUName
-            bool isRetriveValueIncludesSKUName = !string.IsNullOrEmpty(retriveValue.SKUName);
-            bool isNewValueIncludesSKUName = !string.IsNullOrEmpty(newValue.SKUName);
-            
+            bool isRetriveValueIncludesSKUName = !string.IsNullOrEmpty(retriveValue.SKUName) && retriveValue.SKUName != SKU.DEFAULT_NAME;
+            bool isNewValueIncludesSKUName = !string.IsNullOrEmpty(newValue.SKUName) && newValue.SKUName != SKU.DEFAULT_NAME;
             string skuName = (isRetriveValueIncludesSKUName, isNewValueIncludesSKUName) switch
             {
                 (false, true) => newValue.SKUName,
                 (true, false) or (true, true) => retriveValue.SKUName,
-                (false, false) => (!string.IsNullOrEmpty(retriveValue.SKURemainingBalance?.SKUBrandAndName), !string.IsNullOrEmpty(newValue.SKURemainingBalance?.SKUBrandAndName)) switch
-                {
-                    (false, true) => newValue.SKURemainingBalance!.SKUBrandAndName,
-                    (true, false) or (true, true) => retriveValue.SKURemainingBalance!.SKUBrandAndName,
-                    _ => "No name"
-                }
+                 _ => SKU.DEFAULT_NAME
             };
             
             // SKURansomsBalance

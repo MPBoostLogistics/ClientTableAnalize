@@ -336,7 +336,7 @@ namespace TableAnalizer.Objects.SKUItems
                     select skuAndSum;
 
 
-                // Исходящие: Пересорты расхода
+                // Входящие: Пересорты расхода
                 var resortConsumptionItems = GetResortValuesBy(SKUResortBalanceTarget.ResortingConsumption);
                 var resortConsumptionItemsSum = resortConsumptionItems?.Aggregate(0, (acc, i) => acc + i.sum);
                 if (resortConsumptionItems is not null && resortConsumptionItems.Any() && resortConsumptionItemsSum > 0)
@@ -344,7 +344,7 @@ namespace TableAnalizer.Objects.SKUItems
 
                     SKUResort += (int)resortConsumptionItemsSum;
 
-                    if(resortConsumptionItemsSum >= LessReceiptThanWaiting) 
+                    if(SKUMutualSettlement >= SKURansomsWaiting && (int)resortConsumptionItemsSum >= LessReceiptThanWaiting) 
                     {
                         SKUReceiptGoods += (int)resortConsumptionItemsSum;
                     }

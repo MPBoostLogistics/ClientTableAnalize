@@ -28,8 +28,10 @@ namespace TableAnalizer.Objects.SKUItems
         private static readonly Regex balanceReportRegex = new(BALANCE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1));
         private const string ADDITIONAL_REPORT_REGEX_PATTERN  = @"\d+\s+\bдополнительный\b";
         private static readonly Regex additionalReportRegex = new(ADDITIONAL_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1));
-         private const string SHIPPED_REPORT_REGEX_PATTERN  = @"\d+\s+\bрасходы\b";
+        private const string SHIPPED_REPORT_REGEX_PATTERN  = @"\d+\s+\bрасходы\b";
         private static readonly Regex shippedReportRegex = new(SHIPPED_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1));
+        private const string TRANSFER_REPORT_REGEX_PATTERN  = @"\d+\s+\bперемещения\b";
+        private static readonly Regex transferReportRegex = new(TRANSFER_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1));
 
         #endregion
 
@@ -48,6 +50,7 @@ namespace TableAnalizer.Objects.SKUItems
             var balanceReportMatch = balanceReportRegex.Match(fileName.Trim());
             var additionalReportMatch = additionalReportRegex.Match(fileName.Trim());
             var shippedReportMatch = shippedReportRegex.Match(fileName.Trim());
+            var transferReportMatch = transferReportRegex.Match(fileName.Trim());
 
             if(balanceReportMatch is not null && balanceReportMatch.Success) 
             {
@@ -60,6 +63,10 @@ namespace TableAnalizer.Objects.SKUItems
             else if(shippedReportMatch is not null && shippedReportMatch.Success) 
             {
                 ReportKey = SourceSKUReportFileKey.Shipped;
+            }
+            else if(transferReportMatch is not null && transferReportMatch.Success) 
+            {
+                ReportKey = SourceSKUReportFileKey.Transfered;
             }
             else 
             {
@@ -124,12 +131,7 @@ namespace TableAnalizer.Objects.SKUItems
                             if (Login is null && substrings[3] != null) 
                                 SaveСlientLogin(substrings[3]);
                             break;
-
-                        // перемещение на фулфилмент
-                        case transferKey:
-                            ReportKey = SourceSKUReportFileKey.Transfered;
-                            break; 
-                        
+                            
                         // клиентский отчет
                         case clientReportlKey:
                             ReportKey = SourceSKUReportFileKey.Client;

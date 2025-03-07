@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using TableAnalizer.Interfaces;
@@ -45,7 +46,6 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <returns>Number of SKUs in collection.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public int SKUsCount() => SKUs.Count();
         private delegate bool FindSkusWithPredicate(SKU sku);
         private FindSkusWithPredicate? predicateHandler;
 
@@ -204,7 +204,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="rowsWithRawData">List of raw data dictionaries.</param>
         /// <returns>Number of keys in final dictionary.</returns>
         /// <exception cref="ArgumentException">Exception when passing an empty dictionary.</exception>
-        public int SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData, bool isSummary, bool isRawReport)
+        public async Task<int> SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData, bool isSummary, bool isRawReport)
         {
             bool isRansoms = reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ;
             bool isRemaining = reportFileKey == SourceSKUReportFileKey.Balance;
@@ -215,6 +215,8 @@ namespace TableAnalizer.Objects.Managers
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isParellel = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
             bool isClient = reportFileKey == SourceSKUReportFileKey.Client && workSheetName == ExcelManager.OUTPUT_REPORT_MAINREPORT_NAME;
+
+            //await Task.Delay(10); // dummy
 
             if (isRansoms)
             {
@@ -457,7 +459,7 @@ namespace TableAnalizer.Objects.Managers
 
                         var skuBrandName = units.First().SKUBrandAndName;
 
-                        SKURemainingBalance remainingBalance = new(skuNumber, skuBrandName, units.ToList());
+                        SKURemainingBalance remainingBalance = new(skuNumber, skuBrandName, [.. units]);
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(marketplace, skuNumber, remainingBalance, IS_REMOVE_BRAND_FROM_NAME));
                     } 
                     else if (isShipped)
