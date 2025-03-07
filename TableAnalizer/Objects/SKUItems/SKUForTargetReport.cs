@@ -233,7 +233,7 @@ namespace TableAnalizer.Objects.SKUItems
                 // Удаляем приходы из расхода по списанию
                 SKUReceiptGoods = writeOff.HasValue ? receipt - writeOff.Value : receipt;
 
-                SKUOutgoingProducts = sku.SKURemainingBalance.SKUShipped;
+                SKUOutgoingProducts = sku.SKURemainingBalance.SKUOutgoingProducts;
                 SKUTransfered = sku.SKURemainingBalance.SKUTransfered;
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
             }

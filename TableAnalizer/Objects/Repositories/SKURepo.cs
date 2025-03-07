@@ -62,43 +62,21 @@ namespace TableAnalizer.Objects.Repositories
             SKURansomsBalance? skuRansomsBalance = null;
             switch(retriveValue.SKURansomsBalance is not null, newValue.SKURansomsBalance is not null) 
             {
+                case (true,false):
+                    skuRansomsBalance = retriveValue.SKURansomsBalance;
+                    break;
+
                 case (false,true):
                     skuRansomsBalance = newValue.SKURansomsBalance;
                     break;
+                
+                case (true,true): 
+                    int? onWay = CombineIntValues(retriveValue.SKURansomsBalance!.SKURansomsOnWay, newValue.SKURansomsBalance!.SKURansomsOnWay, isSummary);
+                    int? canceled = CombineIntValues(retriveValue.SKURansomsBalance!.SKURansomsCanceled, newValue.SKURansomsBalance!.SKURansomsCanceled, isSummary);
+                    int? delivered = CombineIntValues(retriveValue.SKURansomsBalance!.SKURansomsDelivered, newValue.SKURansomsBalance!.SKURansomsDelivered, isSummary);
+                    int? withDrawn = CombineIntValues(retriveValue.SKURansomsBalance!.SKURansomsWithDrawn, newValue.SKURansomsBalance!.SKURansomsWithDrawn, isSummary);
 
-                case (true,true): case (true,false):
-
-                    skuRansomsBalance = retriveValue.SKURansomsBalance;
-
-                    if(newValue.SKURansomsBalance is not null) 
-                    {
-                        var retrieveOnWay = retriveValue.SKURansomsBalance!.SKURansomsOnWay; 
-                        var newValueOnWay = newValue.SKURansomsBalance!.SKURansomsOnWay; 
-                        int? onWay = isSummary || !Equals(retrieveOnWay, newValueOnWay)? 
-                            retrieveOnWay + newValueOnWay :
-                            retrieveOnWay;
-                        
-                        var retrieveCancelled = retriveValue.SKURansomsBalance!.SKURansomsCanceled; 
-                        var newValueCancelled = newValue.SKURansomsBalance!.SKURansomsCanceled; 
-                        int? canceled = isSummary || !Equals(retrieveCancelled, newValueCancelled)?
-                            retrieveCancelled + newValueCancelled :
-                            retrieveCancelled;
-                        
-                        var retrieveDelivered = retriveValue.SKURansomsBalance!.SKURansomsDelivered; 
-                        var newValueDelivered = newValue.SKURansomsBalance!.SKURansomsDelivered; 
-                        int? delivered = isSummary || !Equals(retrieveDelivered, newValueDelivered)?
-                            retrieveDelivered + newValueDelivered :
-                            retrieveDelivered;
-                        
-                        var retrieveWithDrawn = retriveValue.SKURansomsBalance!.SKURansomsWithDrawn; 
-                        var newValueWithDrawn = newValue.SKURansomsBalance!.SKURansomsWithDrawn; 
-                        int? withDrawn = isSummary || !Equals(retrieveWithDrawn, newValueWithDrawn) ?
-                            retrieveWithDrawn + newValueWithDrawn :
-                            retrieveWithDrawn;
-
-                        skuRansomsBalance = new (onWay, canceled, delivered, withDrawn);
-                    }
-
+                    skuRansomsBalance = new (onWay, canceled, delivered, withDrawn);
                     break;
             }
 
@@ -106,57 +84,29 @@ namespace TableAnalizer.Objects.Repositories
             SKURemainingBalance? skuRemainingBalance = null;
             switch(retriveValue.SKURemainingBalance is not null, newValue.SKURemainingBalance is not null) 
             {
+                case (true,false):
+                    skuRemainingBalance = retriveValue.SKURemainingBalance;
+                    break;
+
                 case (false,true):
                     skuRemainingBalance = newValue.SKURemainingBalance;
                     break;
+                
+                case (true,true): 
+                    
+                    string brandAndName = !string.IsNullOrEmpty(retriveValue.SKURemainingBalance!.SKUBrandAndName) ?
+                        retriveValue.SKURemainingBalance!.SKUBrandAndName :
+                            !string.IsNullOrEmpty(newValue.SKURemainingBalance!.SKUBrandAndName) ?
+                            newValue.SKURemainingBalance!.SKUBrandAndName :
+                            string.Empty;
 
-                case (true,true): case (true,false):
+                    int skuReceipt = CombineIntValues(retriveValue.SKURemainingBalance.SKUReceipt, newValue.SKURemainingBalance!.SKUReceipt, isSummary);
+                    int skuOutgoingProducts = CombineIntValues(retriveValue.SKURemainingBalance.SKUOutgoingProducts, newValue.SKURemainingBalance.SKUOutgoingProducts, isSummary);
+                    int skuTransfered = CombineIntValues(retriveValue.SKURemainingBalance.SKUTransfered, newValue.SKURemainingBalance.SKUTransfered, isSummary); 
+                    int skuRemaining = CombineIntValues(retriveValue.SKURemainingBalance.SKUTransfered, newValue.SKURemainingBalance.SKUTransfered, isSummary); 
 
-                    skuRemainingBalance = retriveValue.SKURemainingBalance;
-
-                    if(newValue.SKURemainingBalance is not null) 
-                    {
-                        string brandAndName = !string.IsNullOrEmpty(retriveValue.SKURemainingBalance!.SKUBrandAndName) ?
-                            retriveValue.SKURemainingBalance!.SKUBrandAndName : 
-                                !string.IsNullOrEmpty(newValue.SKURemainingBalance!.SKUBrandAndName) ? 
-                                newValue.SKURemainingBalance!.SKUBrandAndName : 
-                                string.Empty;
-
-                        // Приход
-                        var retriveReceipt = retriveValue.SKURemainingBalance!.SKUReceipt; 
-                        var newReceipt = newValue.SKURemainingBalance!.SKUReceipt; 
-                        int skuReceipt = isSummary && Equals(retriveReceipt, newReceipt) ?
-                            retriveReceipt :
-                            !Equals(retriveReceipt, newReceipt) ? 
-                                retriveReceipt + newReceipt : 
-                                retriveReceipt; 
-
-                        // Расход товаром 
-                        var retriveShipped = retriveValue.SKURemainingBalance!.SKUShipped; 
-                        var newShipped = newValue.SKURemainingBalance!.SKUShipped;   
-                        int skuShipped = isSummary || !Equals(retriveShipped, newShipped)? 
-                            retriveShipped + newShipped : 
-                            retriveShipped;
-
-                        // Передача товаров
-                        var retriveTransfered = retriveValue.SKURemainingBalance!.SKUTransfered; 
-                        var newTransfered = newValue.SKURemainingBalance!.SKUTransfered;   
-                        int skuTransfered = isSummary || !Equals(retriveTransfered, newTransfered)? 
-                            retriveTransfered + newTransfered : 
-                            retriveTransfered;
-
-
-                        // Остаток
-                        var retriveRemaining = retriveValue.SKURemainingBalance!.SKURemaining; 
-                        var newRemaining = newValue.SKURemainingBalance!.SKURemaining;  
-                        int skuRemaining = isSummary || Equals(retriveRemaining, newRemaining) ?
-                            retriveRemaining : 
-                            !Equals(retriveRemaining, newRemaining) ? 
-                                retriveRemaining + newRemaining : 
-                                retriveRemaining;
-
-                        skuRemainingBalance = new SKURemainingBalance(skuNumber, brandAndName, skuReceipt,skuShipped, skuTransfered, skuRemaining);
-                    }
+                    skuRemainingBalance = new SKURemainingBalance(skuNumber, brandAndName, skuReceipt, skuOutgoingProducts, skuTransfered, skuRemaining);
+                
 
                     break;
             }
@@ -186,19 +136,16 @@ namespace TableAnalizer.Objects.Repositories
             SKUCompensationBalance? skuCompensationBalance = null;
             switch(retriveValue.SKUCompensationBalance is not null, newValue.SKUCompensationBalance is not null) 
             {
+                 case (true,false):
+                    skuCompensationBalance = retriveValue.SKUCompensationBalance;
+                    break;
+
                 case (false,true):
                     skuCompensationBalance = newValue.SKUCompensationBalance;
                     break;
 
-                case (true,true): case (true,false):
-
-                    skuCompensationBalance = retriveValue.SKUCompensationBalance;
-
-                    if(newValue.SKUCompensationBalance is not null) 
-                    {
-                        skuCompensationBalance!.Update(newValue.SKUCompensationBalance.CompensationItems);
-                    }
-
+                case (true,true):
+                    skuCompensationBalance!.Update(newValue.SKUCompensationBalance!.CompensationItems);
                     break;
             }
 
@@ -261,6 +208,15 @@ namespace TableAnalizer.Objects.Repositories
 
             return new SKU(marketplace, skuNumber, skuBrand, skuName, skuRansomsBalance, 
                 skuRemainingBalance, skuWriteOffBalance, skuCompensationBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays, isParallel);
+        }
+
+        private static int CombineIntValues(int retriveValue, int newValue, bool isSummary)
+        {
+            return isSummary && retriveValue == newValue ?
+                retriveValue :
+                retriveValue != newValue ?
+                    retriveValue + newValue :
+                    retriveValue;
         }
     }
 }

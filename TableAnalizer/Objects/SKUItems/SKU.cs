@@ -167,7 +167,7 @@ namespace TableAnalizer.Objects.SKUItems
             SKUName = dataUnit.SKUName ?? string.Empty;
 
             SKURansomsBalance = new SKURansomsBalance (dataUnit.SKURansomsOnWay, dataUnit.SKURansomsCanceled, dataUnit.SKURansomsDelivered, dataUnit.SKURansomsWithDrawn);
-            SKURemainingBalance = new SKURemainingBalance(dataUnit.SKUNumber, SKUName, dataUnit.SKUReceipt, dataUnit.SKUShipped, dataUnit.SKUTransferDataUnit, dataUnit.SKURemaining);
+            SKURemainingBalance = new SKURemainingBalance(dataUnit.SKUNumber, SKUName, dataUnit.SKUReceiptGoods, dataUnit.SKUOutgoingProducts, dataUnit.SKUTransferDataUnit, dataUnit.SKURemaining);
             
             SKUWriteOffBalance = null;
             SKUCompensationBalance = null;

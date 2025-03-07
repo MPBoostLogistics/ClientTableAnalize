@@ -16,7 +16,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         /// <summary>
         /// Number of goods delivered to the customer.
         /// </summary>
-        public int SKUShipped { get; private set; } = 0;  
+        public int SKUOutgoingProducts { get; private set; } = 0;  
         /// <summary>
         /// Number of goods transferred to production.
         /// </summary>
@@ -44,7 +44,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         public SKURemainingBalance(int skuNumber, List<SKUShippedDataUnit> skuShippedDataUnits)
         {
             SKUNumber = skuNumber;
-            SKUShipped = skuShippedDataUnits
+            SKUOutgoingProducts = skuShippedDataUnits
                 .Aggregate(0, (acc, unit) => acc + unit.SKUShippedCount);
         }
 
@@ -63,7 +63,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
             SKUBrandAndName = brandAndName;
 
             SKUReceipt = receipt;
-            SKUShipped = shipped;
+            SKUOutgoingProducts = shipped;
             SKUTransfered = transfered;
             SKURemaining = remaining;
          }

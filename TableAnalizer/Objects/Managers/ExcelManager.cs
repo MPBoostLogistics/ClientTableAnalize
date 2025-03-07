@@ -170,10 +170,12 @@ namespace TableAnalizer.Objects.Managers
             new(10, nameof(SKUClientReportDataUnit.SKURansomsOnWay), ParsingTypeCode.IntTypeCode, true),
             new(11, nameof(SKUClientReportDataUnit.SKURansomsDelivered), ParsingTypeCode.IntTypeCode, true),
             new(12, nameof(SKUClientReportDataUnit.SKURansomsWithDrawn), ParsingTypeCode.IntTypeCode, true),
-            new(14, nameof(SKUClientReportDataUnit.SKUReceipt), ParsingTypeCode.IntTypeCode, true),
-            new(16, nameof(SKUClientReportDataUnit.SKUShipped), ParsingTypeCode.IntTypeCode, true),
-            new(17, nameof(SKUClientReportDataUnit.SKUTransferDataUnit), ParsingTypeCode.IntTypeCode, true),
-            new(22, nameof(SKUClientReportDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, true)
+            new(15, nameof(SKUClientReportDataUnit.SKUReceiptGoods), ParsingTypeCode.IntTypeCode, true),
+            new(16, nameof(SKUClientReportDataUnit.SKUPaidPoints), ParsingTypeCode.IntTypeCode, true),
+            new(18, nameof(SKUClientReportDataUnit.SKUOutgoingProducts), ParsingTypeCode.IntTypeCode, true),
+            new(19, nameof(SKUClientReportDataUnit.SKUTransferDataUnit), ParsingTypeCode.IntTypeCode, true),
+            new(20, nameof(SKUClientReportDataUnit.SKUPaidWarehouse), ParsingTypeCode.IntTypeCode, true),
+            new(23, nameof(SKUClientReportDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, true)
         ];
 
         public TargetCell[] cellsReportingMain =
@@ -486,7 +488,7 @@ namespace TableAnalizer.Objects.Managers
             return Task.Run(()=> true);
         }
 
-        private void CalculateFormulas(in TargetCell[] targetCells, ref ExcelWorksheet outputReportSheet)
+        private static void CalculateFormulas(in TargetCell[] targetCells, ref ExcelWorksheet outputReportSheet)
         {
             int firstRow = outputReportSheet.Dimension.Start.Row + 1;
             int endRow = outputReportSheet.Dimension.End.Row;
@@ -536,7 +538,7 @@ namespace TableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.Client => [OUTPUT_REPORT_MAINREPORT_NAME],
                 _ => null,
             };
-            return workSheetNames is not null && workSheetNames.Any();
+            return workSheetNames is not null && workSheetNames.Count != 0;
         }
 
         public async Task<bool> MakeReports(List<SKUForTargetReports> skuForTargetReports, bool isTracing, bool isInternalReport)

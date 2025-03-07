@@ -17,13 +17,13 @@ namespace TableAnalizerTest
             foreach (var reportsPath in reportFileManager.ReportsPathsSingle)
             {
                 keys.Add(reportsPath.Key);
-                ExcelManager.CreateExcelPackage(reportsPath.Key, reportsPath.Value.FileInfo);
+                excelManager.CreateExcelPackage(reportsPath.Key, reportsPath.Value.FileInfo);
             }
 
             // assert 
             foreach (var key in keys)
             {
-                ExcelManager.GetExcelPackageByKey(key, out ExcelPackage? package);
+                excelManager.GetExcelPackageByKey(key, out ExcelPackage? package);
                 Assert.That(package, Is.Not.Null);
             }
         }
