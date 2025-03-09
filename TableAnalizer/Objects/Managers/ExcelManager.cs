@@ -532,8 +532,8 @@ namespace TableAnalizer.Objects.Managers
         {
             workSheetNames = reportFileKey switch
             {
-                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => [RANSOMS_WORKSHEET_NAME],
-                SourceSKUReportFileKey.Balance or SourceSKUReportFileKey.Shipped or SourceSKUReportFileKey.Transfered or SourceSKUReportFileKey.WriteOffShortages => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
+                SourceSKUReportFileKey.Ransoms => [RANSOMS_WORKSHEET_NAME],
+                SourceSKUReportFileKey.Balance or SourceSKUReportFileKey.OutgoingProducts or SourceSKUReportFileKey.Transfered or SourceSKUReportFileKey.WriteOffShortages => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
                 SourceSKUReportFileKey.Additional => [COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
                 SourceSKUReportFileKey.Client => [OUTPUT_REPORT_MAINREPORT_NAME],
                 _ => null,
@@ -1173,11 +1173,11 @@ namespace TableAnalizer.Objects.Managers
         {
             rangeSourceReportRows = reportFileKey switch
             {
-                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => [new(RansomsSourceCells)],
+                SourceSKUReportFileKey.Ransoms => [new(RansomsSourceCells)],
                 SourceSKUReportFileKey.Balance => [ new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
                                                     new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME), new(RemainingThirdRoomSourceCells, THIRD_ROOM_NAME, (LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))],
                 SourceSKUReportFileKey.WriteOffShortages => [new (WriteOffShortagesSourceCells)],
-                SourceSKUReportFileKey.Shipped => [new(ShippedSourceCells)],
+                SourceSKUReportFileKey.OutgoingProducts => [new(ShippedSourceCells)],
                 SourceSKUReportFileKey.Transfered => [new(TransferSourceCells)],
                 SourceSKUReportFileKey.Additional => workSheetName switch
                 {

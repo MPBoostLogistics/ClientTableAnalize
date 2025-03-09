@@ -140,8 +140,7 @@ namespace TableAnalizer.Objects.Managers
 
                 switch (reportFileKey)
                 {
-                    case SourceSKUReportFileKey.RansomsWB:
-                    case SourceSKUReportFileKey.RansomsOZ:
+                    case SourceSKUReportFileKey.Ransoms:
                         predicateHandler = FindSkusWithRansoms;
                         message = "Добавлено артикулов из выкупов: ";
                         break;
@@ -166,7 +165,7 @@ namespace TableAnalizer.Objects.Managers
                                 break;
                         };
                         break;
-                    case SourceSKUReportFileKey.Shipped:
+                    case SourceSKUReportFileKey.OutgoingProducts:
                         predicateHandler = FindSkusWithShipped;
                         message = "Артикулов в расходе со склада: ";
                         break;
@@ -206,9 +205,9 @@ namespace TableAnalizer.Objects.Managers
         /// <exception cref="ArgumentException">Exception when passing an empty dictionary.</exception>
         public async Task<int> SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData, bool isSummary, bool isRawReport)
         {
-            bool isRansoms = reportFileKey == SourceSKUReportFileKey.RansomsWB || reportFileKey == SourceSKUReportFileKey.RansomsOZ;
+            bool isRansoms = reportFileKey == SourceSKUReportFileKey.Ransoms;
             bool isRemaining = reportFileKey == SourceSKUReportFileKey.Balance;
-            bool isShipped = reportFileKey == SourceSKUReportFileKey.Shipped;
+            bool isShipped = reportFileKey == SourceSKUReportFileKey.OutgoingProducts;
             bool isTransfered = reportFileKey == SourceSKUReportFileKey.Transfered;
             bool isWriteOff = reportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
@@ -363,9 +362,9 @@ namespace TableAnalizer.Objects.Managers
 
             return reportFileKey switch
             {
-                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ => SkuRansomsBalanceUnits.Count(),
+                SourceSKUReportFileKey.Ransoms => SkuRansomsBalanceUnits.Count(),
                 SourceSKUReportFileKey.Balance => SkuRemainingBalanceUnits.Count(),
-                SourceSKUReportFileKey.Shipped  => SkuShippedBalanceUnits.Count(),
+                SourceSKUReportFileKey.OutgoingProducts  => SkuShippedBalanceUnits.Count(),
                 SourceSKUReportFileKey.Transfered => SkuTransferedBalanceUnits.Count(),
                 SourceSKUReportFileKey.WriteOffShortages => SkuWriteOffBalanceUnits.Count(),
                 SourceSKUReportFileKey.Additional => workSheetName switch 
@@ -386,11 +385,9 @@ namespace TableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public async Task UpdateSKUsFromBalanceUnits(SourceSKUReportFileKey skuReportFileKey, string workSheetName, bool isRawReport)
         {
-            bool isWB = skuReportFileKey == SourceSKUReportFileKey.RansomsWB || skuReportFileKey == SourceSKUReportFileKey.Balance;
-            bool isOZ = skuReportFileKey == SourceSKUReportFileKey.RansomsOZ || skuReportFileKey == SourceSKUReportFileKey.Balance;
-            bool isRansoms = skuReportFileKey == SourceSKUReportFileKey.RansomsWB || skuReportFileKey == SourceSKUReportFileKey.RansomsOZ;
+            bool isRansoms = skuReportFileKey == SourceSKUReportFileKey.Ransoms;
             bool isRemaining = skuReportFileKey == SourceSKUReportFileKey.Balance;
-            bool isShipped = skuReportFileKey == SourceSKUReportFileKey.Shipped;
+            bool isShipped = skuReportFileKey == SourceSKUReportFileKey.OutgoingProducts;
             bool isTransfered = skuReportFileKey == SourceSKUReportFileKey.Transfered;
             bool isWriteOff = skuReportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
@@ -401,14 +398,14 @@ namespace TableAnalizer.Objects.Managers
             await Task.Delay(1);
 
             // Definition of a marketplace and collection
-            Marketplace marketplace = isWB ? Marketplace.WB : Marketplace.OZ;          
+            Marketplace marketplace = Marketplace.WB; // dummy       
             IRepository<int, List<ParsingRowEntity>>? parsingEntityCollection = skuReportFileKey switch
             {
-                SourceSKUReportFileKey.RansomsWB or SourceSKUReportFileKey.RansomsOZ =>
+                SourceSKUReportFileKey.Ransoms =>
                    parsingEntityCollection = SkuRansomsBalanceUnits,
                 SourceSKUReportFileKey.Balance =>
                     parsingEntityCollection = SkuRemainingBalanceUnits,
-                SourceSKUReportFileKey.Shipped =>
+                SourceSKUReportFileKey.OutgoingProducts =>
                     parsingEntityCollection = SkuShippedBalanceUnits,  
                 SourceSKUReportFileKey.Transfered =>
                     parsingEntityCollection = SkuTransferedBalanceUnits,  

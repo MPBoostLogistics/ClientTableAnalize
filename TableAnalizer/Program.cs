@@ -29,7 +29,7 @@ internal class Program
     private static string TraceInfoFlag { get; set; } = string.Empty;
     private static string TraceErrorFlag { get; set; } = string.Empty;
 
-    private static TargetReportRecipientType? ReportRecipientType { get; set; }
+
 
     private static IConfiguration? config;
 
@@ -99,139 +99,100 @@ internal class Program
 
     private static async Task Analyze(int delay)
     {
-        ConsoleKey[] allowedConsoleKeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
-
         reportFileManager!.ManagerReached += Report;
         excelManager!.ManagerReached += Report;
         skuManager!.ManagerReached += Report;
 
-        var helloString = $"------------------------------------------------------------------\n" +
-                          $"Отчет по взаиморасчетам с клиентами логистики\n\n" +
-                          $"Версия программы: {AppVersion}\n" +
-                          $"------------------------------------------------------------------\n" +
-                          "Выберите вариант отчета:\n" +
-                          "1: Персональный отчет по взаиморасчетам с клиентом логистики\n" +
-                          "2: Сводный отчет по взаиморасчетам c клиентами логистики\n" +
-                          "ESC: Выход из программы \n" +
-                          $"------------------------------------------------------------------";
-
         Console.Clear();
 
-        Task? reportTask = null;
-        ConsoleKey? selectKey = ConsoleAppService.GetUserKeyFromConsole(helloString);
-        if(selectKey is null || !allowedConsoleKeys.Contains((ConsoleKey)selectKey)) 
-        {
-            Console.WriteLine("Выберите допустимую клавишу.");
-            await Task.Delay(delay);
-            await Analyze(delay);
-        } 
-        else 
-        {
-            switch (selectKey)
-            {
-                case ConsoleKey.D1:
-                    isMulty = false;
-                    break;
-                case ConsoleKey.D2:
-                    isMulty = true;
-                    break;
-                case ConsoleKey.Escape:
-                    ConsoleAppService.ConsoleAppExit(goodByMessage);
-                    break;
-                default:
-                    break;
-            }
+        // Get data
+        Task<List<SourceSKUReportFileKey>?>? getDataFromConsoleTask = GetDataFromConsole();
+        await Task.Run(() => getDataFromConsoleTask);
+        getDataFromConsoleTask.Wait();
 
-            Task<List<SourceSKUReportFileKey>?>? getDataTask = GetDataFromConsole(isMulty);
-            await Task.Run(() => getDataTask);
-            getDataTask.Wait();
-            var keys = getDataTask.Result;
+        // Start analize
+        // await TracingProgramExecution(new("Report analysis task has started...", false, false));
+        // var analyzeСlientReportTask = AnalyzeСlientReport();
+        // await Task.Run(() => analyzeСlientReportTask);
+        // analyzeСlientReportTask?.Wait();
 
-            switch (isMulty)
-            {
-                case true:
-                    reportTask = AnalyzeMultiСlientReports(delay);
-                    break;
-                case false:
-                    reportTask = AnalyzeSingleСlientReports(keys, delay);
-                    break;
-            }
-        } 
+        await Task.Delay(5000);
 
-        await TracingProgramExecution(new("Report analysis task has started...", false, false));
-        await Task.Run(() => reportTask);
-        reportTask?.Wait();
 
         reportFileManager.ManagerReached -= Report;
         excelManager.ManagerReached -= Report;
         skuManager.ManagerReached -= Report;
     }
 
+    private static async Task<List<SourceSKUReportFileKey>?> GetDataFromConsole() 
+    {
+        // Get source reports path
+        DirectoryInfo? getSourceReportDirInfo = null;
+        while(getSourceReportDirInfo is null) 
+        {
+            Task<DirectoryInfo?> getSourceReportsPathTask = GetSourceReportsPathFromConsole(TracingDelay);
+            await Task.Run(() => getSourceReportsPathTask);
+            getSourceReportsPathTask.Wait();
+            getSourceReportDirInfo = getSourceReportsPathTask.Result;
+        } 
+        //Console.Clear();
+        await TracingProgramExecution(new($"Reports path: {getSourceReportDirInfo.Name}", false, false));
+
+        // Availability necessary reports
+        List<SourceSKUReportFileKey>? existingKeys = null;
+        while(existingKeys is null) 
+        {
+            Task<List<SourceSKUReportFileKey>?>  availabilityNecessaryTask = 
+                reportFileManager!.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName);
+            await Task.Run(() => availabilityNecessaryTask);
+            availabilityNecessaryTask.Wait();
+            existingKeys = availabilityNecessaryTask.Result;
+        }
+
+        await Task.Delay(1000);
+        Console.ReadLine();
+        
+        // Select report direction
+        while(ReportFileManager.ReportRecipientType is null) 
+        {
+            Task<TargetReportRecipientType?> getTargetReportRecipientTypeTask = GetTargetReportRecipientTypeFromConsole(TracingDelay);
+            await Task.Run(() => getTargetReportRecipientTypeTask);
+            getTargetReportRecipientTypeTask.Wait();
+            ReportFileManager.ReportRecipientType = getTargetReportRecipientTypeTask.Result;
+        }
+        Console.Clear();
+
+        return existingKeys; 
+    }
+
+    private static async Task AnalyzeСlientReport() 
+    {
+
+    }
+
+
+
+
+
     private static async Task AnalyzeSingleСlientReports(List<SourceSKUReportFileKey>? existingKeys, int tracingDelay) 
     {
-        bool isInternalReport = ReportRecipientType.HasValue && ReportRecipientType.Value == TargetReportRecipientType.Internal;
+        bool isInternalReport = ReportFileManager.ReportRecipientType.HasValue && ReportFileManager.ReportRecipientType.Value == TargetReportRecipientType.Internal;
 
         // Report analysis tasks
         if (existingKeys is not null && existingKeys.Count > 0)
         {
-            // Ransoms tasks
-            List<Task> ransomsTasksList = [];
-            Task[] ransomsTasks = [];
-            if (existingKeys.Contains(SourceSKUReportFileKey.RansomsWB))
-            {
-                ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsWB, tracingDelay, isInternalReport));
-            }
-
-            if (existingKeys.Contains(SourceSKUReportFileKey.RansomsOZ))
-            {
-                ransomsTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.RansomsOZ, tracingDelay, isInternalReport));
-            }
-
-            if (ransomsTasksList.Count != 0)
-            {
-                ransomsTasks = [.. ransomsTasksList];
-
-                for (int i = 0; i < ransomsTasks.Length; i++)
-                {
-                    var currentTask = ransomsTasks[i];
-                    if (currentTask is not null)
-                    {
-                        await Task.Run(async () => await currentTask);
-                    }
-                }
-            }
-
-            if (ransomsTasks.Length != 0)
-            {
-                Task.WaitAll(ransomsTasks);
-            }
+            // Ransoms task
+            Task ransomsTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Ransoms, tracingDelay, isInternalReport);
+            await Task.Run(async () => await ransomsTask);
+            ransomsTask.Wait();
 
             // Remaining tasks
-            List<Task> balanceTasksList = [];
-            Task[] balanceTasks = [];
+            Task balanceTask;
             if (existingKeys.Contains(SourceSKUReportFileKey.Balance))
             {
-                balanceTasksList.Add(ReceivingAndProcessingData(SourceSKUReportFileKey.Balance, tracingDelay, isInternalReport));
-            }
-
-            if (balanceTasksList.Count != 0)
-            {
-                balanceTasks = [.. balanceTasksList];
-                for (int i = 0; i < balanceTasks.Length; i++)
-                {
-                    var currentTask = balanceTasks[i];
-                    if (currentTask is not null)
-                    {
-                        await Task.Run(async () => await currentTask);
-                    }
-                }
-
-                Task.WaitAll(balanceTasks);
-            }
-
-            if (balanceTasks.Length != 0)
-            {
-                Task.WaitAll(balanceTasks);
+                balanceTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Balance, tracingDelay, isInternalReport);
+                await Task.Run(async () => await balanceTask);
+                balanceTask.Wait();
             }
 
             // WriteOff task 
@@ -243,9 +204,9 @@ internal class Program
             }
 
             // Shipped tasks
-            if (existingKeys.Contains(SourceSKUReportFileKey.Shipped))
+            if (existingKeys.Contains(SourceSKUReportFileKey.OutgoingProducts))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Shipped, tracingDelay, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.OutgoingProducts, tracingDelay, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -302,7 +263,7 @@ internal class Program
 
     private static async Task AnalyzeMultiСlientReports(int tracingDelay) 
     {   
-        bool isInternalReport = ReportRecipientType.HasValue && ReportRecipientType.Value == TargetReportRecipientType.Internal;
+        bool isInternalReport = ReportFileManager.ReportRecipientType.HasValue && ReportFileManager.ReportRecipientType.Value == TargetReportRecipientType.Internal;
 
         // Create and run analize task
         List<Task> summaryTasksList = [];
@@ -327,7 +288,7 @@ internal class Program
 
         // Additional tasks
         Task<double>? additionalTask = null;
-        if (reportFileManager.AdditionalPathsMultyReport is not null && ReportRecipientType.HasValue)
+        if (reportFileManager.AdditionalPathsMultyReport is not null && ReportFileManager.ReportRecipientType.HasValue)
         {
             additionalTask = ReceivingAndProcessingData(reportFileManager.AdditionalPathsMultyReport, tracingDelay, isInternalReport, isMulty);
             await Task.Run(async () => await additionalTask);
@@ -382,7 +343,7 @@ internal class Program
         SourceReportFileForSKU? reportFile;
         if(existingReportFile == null) 
         {
-            var getReportFileTask = reportFileManager!.GetSourceReportForSingleClient(reportFileKey);
+            var getReportFileTask = reportFileManager!.GetSourceReport(reportFileKey);
             await Task.Run(async () => await getReportFileTask);
             getReportFileTask.Wait();
 
@@ -511,51 +472,6 @@ internal class Program
         }
     }
     
-    private static async Task<List<SourceSKUReportFileKey>?> GetDataFromConsole(bool isMulty) 
-    {
-        
-       
-
-
-        //await TracingProgramExecution(new($"Deadline set, days: {skuManager.DeadlineDays}", false, false));
-
-        // Get source reports path
-        DirectoryInfo? getSourceReportDirInfo = null;
-        while(getSourceReportDirInfo is null) 
-        {
-            Task<DirectoryInfo?> getSourceReportsPathTask = GetSourceReportsPathFromConsole(TracingDelay);
-            await Task.Run(() => getSourceReportsPathTask);
-            getSourceReportsPathTask.Wait();
-            getSourceReportDirInfo = getSourceReportsPathTask.Result;
-        } 
-        Console.Clear();
-        await TracingProgramExecution(new($"Reports path: {getSourceReportDirInfo.Name}", false, false));
-
-        // Availability necessary reports
-        List<SourceSKUReportFileKey>? existingKeys = null;
-        while(existingKeys is null) 
-        {
-            Task<List<SourceSKUReportFileKey>?>  availabilityNecessaryTask = 
-                reportFileManager!.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName, isMulty, isTracing, TracingDelay);
-            await Task.Run(() => availabilityNecessaryTask);
-            availabilityNecessaryTask.Wait();
-            existingKeys = availabilityNecessaryTask.Result;
-        }
-        
-        // Select report direction
-        while(ReportRecipientType is null) 
-        {
-            Task<TargetReportRecipientType?> getTargetReportRecipientTypeTask = GetTargetReportRecipientTypeFromConsole(TracingDelay);
-            await Task.Run(() => getTargetReportRecipientTypeTask);
-            getTargetReportRecipientTypeTask.Wait();
-            ReportRecipientType = getTargetReportRecipientTypeTask.Result;
-        }
-        Console.Clear();
-
-        return existingKeys; 
-    }
-
-
     private static void Report(object? sender, ManagerReachedEventArgs e)
     {
         Task.Run(async () => await TracingProgramExecution(e));

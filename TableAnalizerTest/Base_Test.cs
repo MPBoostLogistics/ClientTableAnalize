@@ -18,10 +18,11 @@ namespace TableAnalizerTest
 
         internal int reportSourceFilesForSingleClientSum;
         internal ExcelManager excelManager; 
-        internal string[] validFileExtensions = []; 
 
+        internal FileInfo[] testSingleClientFileInfos = []; 
 
-        private bool isMulty; 
+        internal string? testSingleClientLogin;
+ 
         private int deadlineDays;
         #endregion
 
@@ -31,14 +32,24 @@ namespace TableAnalizerTest
         {
             BuildConfigTest();
 
-            IConfigurationSection? settingsSessions = testConfig!.GetSection("Settings");
-            TestSourcePathSingleName = settingsSessions.GetValue<string>("TestSourcePathSingleName");
-            TestTargetPathSingleName = settingsSessions.GetValue<string>("TestTargetPathSingleName");
-            isMulty = settingsSessions.GetValue<bool>("isMulty");
+             IConfigurationSection? stringsSessions = testConfig!
+                .GetSection("Strings");
+            testSingleClientLogin = stringsSessions
+                .GetValue<string>("TestSingleClientLogin");
 
-            IConfigurationSection? numberSessions = testConfig!.GetSection("Numbers");
-            deadlineDays = numberSessions.GetValue<int>("defaultDeadlineDays");
-            reportSourceFilesForSingleClientSum = numberSessions.GetValue<int>("reportSourceFilesForSingleClientSum");
+            IConfigurationSection? settingsSessions = testConfig!
+                .GetSection("Settings");
+            TestSourcePathSingleName = settingsSessions
+                .GetValue<string>("TestSourcePathSingleName");
+            TestTargetPathSingleName = settingsSessions
+                .GetValue<string>("TestTargetPathSingleName");
+
+            IConfigurationSection? numberSessions = testConfig!
+                .GetSection("Numbers");
+            deadlineDays = numberSessions
+                .GetValue<int>("defaultDeadlineDays");
+            reportSourceFilesForSingleClientSum = numberSessions
+                .GetValue<int>("reportSourceFilesForSingleClientSum");
 
             if(FileService.GetProjectDirectory(out DirectoryInfo? directoryInfo) && directoryInfo is not null) 
             { 
@@ -49,20 +60,28 @@ namespace TableAnalizerTest
                 FileService.GetDirectoryInfo(testTargetPath, out testSingleClientTargetDirectory, true);
             }
 
-            reportFileManager = new();
-            validFileExtensions = reportFileManager.validFileExtensions;
-
-            excelManager = new();
+            reportFileManager = new(testConfig);
+            excelManager = new(testConfig);
 
             Trace.Listeners.Add(new ConsoleTraceListener());
-
-            Task<int> getReportFilesTask = 
-                reportFileManager.GetSourceReportFiles(testSingleClientSourceDirectory!.FullName, false, validFileExtensions);
-            Task.Run(() => getReportFilesTask);
-            getReportFilesTask.Wait();
         }
 
         [Test, Order(0)]
+        public void GetSourceReportFilesTest() 
+        {
+
+            // arrange
+            FileService.SearchFilesInDirectory(testSingleClientSourceDirectory!.FullName, out testSingleClientFileInfos!, reportFileManager.ValidFileExtensions);
+
+            // act
+            // ...
+
+            // assert 
+            Assert.That(testSingleClientFileInfos, Is.Not.Null);
+            Assert.That(testSingleClientFileInfos, Has.Length.EqualTo(reportSourceFilesForSingleClientSum));
+        }
+
+        [Test, Order(1)]
         public void GetProjectDirectories_Test() 
         {
             // asserts
@@ -101,7 +120,6 @@ namespace TableAnalizerTest
             }
         }
         
-        #endregion
-        
+        #endregion   
     }
 }

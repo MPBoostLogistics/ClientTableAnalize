@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.Reflection;
-using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
 
 namespace TableAnalizer.Objects.Managers
@@ -9,13 +8,13 @@ namespace TableAnalizer.Objects.Managers
     public class BaseManager 
     {
         #region Variables and constants 
-        public string[] validFileExtensions = [];
+        public string[] ValidFileExtensions { get; } = [".xls", ".xlsx"];
         internal IConfiguration config
         ;
         #endregion Variables and constant
 
         #region Properties 
-        public string? ClientLogin { get; protected set; } = string.Empty;
+        public List<string> ClientLogins { get; protected set; }
 
         /// <summary>
         /// Сollection of colors to indicate status of mutual settlements with clients.
@@ -58,31 +57,7 @@ namespace TableAnalizer.Objects.Managers
         #region Functionality
         protected virtual void AddConfigVariables()
         {
-            IConfigurationSection? collectionSessions = config!.GetSection("Collections");
-            validFileExtensions = collectionSessions.GetValue<string[]>("validFileExtensions");
-
-            // if (FileService.GetProjectDirectory(out DirectoryInfo? projectDirectory)
-            //         && projectDirectory != null)
-            // {
-            //     string? configFileName;
-            //     if(IsRunningFromNUnit)
-            //         configFileName = "testConfig.json";
-            //     else
-            //         configFileName = "config.json";
-
-            //     if(!string.IsNullOrEmpty(configFileName)) 
-            //     {
-            //         config = new ConfigurationBuilder()
-            //             .SetBasePath(projectDirectory.FullName)
-            //             //.AddUserSecrets<BaseManager>()
-            //             .AddJsonFile(configFileName, optional: false)
-            //             .Build();
-            //     } 
-            //     else 
-            //     {
-            //         throw new Exception("Config json filename is null");
-            //     }
-            // }
+            // ...
         }
 
         /// <summary>

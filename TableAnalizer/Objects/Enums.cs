@@ -16,41 +16,33 @@ namespace TableAnalizer.Objects
         Unknown                     // Неопределенный
     }
 
-    public enum ArticeStorageIndex
-    {
-        GoodsExpected,      // Ожидаемое количество товаров на складе
-        GoodsReceived,      // Принято товаров
-        GoodsShipped,       // Отгружено товарами
-        GoodsRemaining,     // Остаток товаров на складе
-        WriteoffShortages   // Принято на склад и списано по недостачам
-    }
-
     public enum SourceSKUReportFileKey
     {
-        RansomsWB,          // выкупы WB
-        RansomsOZ,          // выкупы OZ
+        /// <summary>
+        /// Выкупы клиента
+        /// </summary>
+        Ransoms,
         /// <summary>
         /// Баланс (приходы и остатки)
         /// </summary>
-        Balance,          
-        WriteOffShortages,  // списание недростач общее 
-        Additional,          // недостачи, пересорты и пустышки
-        Shipped,             // расходы товаром 
-        Transfered,            // перемещение (на фулфилмент) 
+        Balance,      
+        /// <summary>
+        /// Списано недостач с точек
+        /// </summary>   
+        WriteOffShortages,
+        /// <summary>
+        /// Недостачи и пересорты
+        /// </summary>
+        Additional,    
+        /// <summary>
+        /// Расходы товаром. 
+        /// </summary>
+        OutgoingProducts,      
+        /// <summary>
+        /// Перемещния на фулфилмент
+        /// </summary>       
+        Transfered,            
         Client               // клиентский отчет
-    }
-
-    public enum SourceSKUReportKey
-    {
-        RansomsWB,          // выкупы WB
-        RansomsOZ,          // выкупы OZ
-        RemainingWB,        // приходы и остатки WB
-        RemainingOZ,        // приходы и остатки OZ
-        Shipped,            // расходы товаром 
-        Transfered,         // передано товаров (на производство)
-        WriteOffShortages,  // списание недростач общее 
-        Compensation,       // оплаченные недостачи
-        Resort,             // пересорты 
     }
 
     public enum SKURansomsStatus
