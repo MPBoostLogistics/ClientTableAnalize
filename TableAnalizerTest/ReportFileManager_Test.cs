@@ -2,7 +2,7 @@ using TableAnalizer.Objects;
 
 namespace TableAnalizerTest
 {
-    [Order(2)]
+    [Order(1)]
     public class ReportFileManager_Test : Base_Test
     {
         public override void Start()
@@ -10,22 +10,7 @@ namespace TableAnalizerTest
             base.Start();
         }
 
-        [Test, Order(1)]
-        public async Task GetReportSourceFilesForSingleClient_Test() 
-        {
-            // arrange
-            Assert.That(testSingleClientFileInfos, Has.Length.EqualTo(reportSourceFilesForSingleClientSum));
-
-            // act 
-            var getSourceReportFilesTask = reportFileManager.GetSourceReportFiles(testSingleClientFileInfos);
-            await Task.Run(() => getSourceReportFilesTask);
-            getSourceReportFilesTask.Wait();
-
-            // assert 
-            Assert.That(reportFileManager.ReportsPaths, Has.Count.EqualTo(reportSourceFilesForSingleClientSum));
-        }
-
-        [Order(2)]
+        [Order(1)]
         [TestCase(SourceSKUReportFileKey.Ransoms, true)]
         [TestCase(SourceSKUReportFileKey.Balance, true)]
         [TestCase(SourceSKUReportFileKey.OutgoingProducts, true)]
@@ -53,11 +38,17 @@ namespace TableAnalizerTest
         public void CheckingClientsLogin_Test() 
         {
             // assert 
-            Assert.That(testSingleClientLogin, Is.Not.Null);
-            Assert.That(testSingleClientLogin, Is.EqualTo("447849626195"));
-            Assert.That(reportFileManager.ClientLogins, Is.Not.Null);
-            Assert.That(reportFileManager.ClientLogins, Has.Count.EqualTo(1));
-            Assert.That(reportFileManager.ClientLogins.First(), Is.EqualTo(testSingleClientLogin));
+            
+            Assert.Multiple(() =>
+            {
+                Assert.That(testSingleClientLogin, Is.Not.Null);
+                Assert.That(testSingleClientLogin, Is.EqualTo("447849626195"));
+                Assert.That(reportFileManager.ClientLogins, Is.Not.Null);
+                Assert.That(reportFileManager.ClientLogins, Has.Count.EqualTo(1));
+                Assert.That(reportFileManager.ClientLogins.First(), Is.EqualTo(testSingleClientLogin));
+            });
+
+        
         }
     }
 }

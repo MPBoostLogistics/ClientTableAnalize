@@ -201,7 +201,7 @@ namespace TableAnalizer.Objects.SKUItems
         #endregion
 
         #region Constructors
-        public SKUForTargetReports(SKU sku, bool isRawReport, bool isMulty, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues = null)
+        public SKUForTargetReports(SKU sku, bool isInternalReport, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues = null)
         {
             SKUmp = sku.Marketplace;
             SKUNumber = sku.SKUNumber;
@@ -251,13 +251,13 @@ namespace TableAnalizer.Objects.SKUItems
             }
 
             // Article analysis
-            AnalizeSKU(sku, isRawReport, isMulty, traceDelay, resortFromSkusValues);
+            AnalizeSKU(sku, isInternalReport,  traceDelay, resortFromSkusValues);
         }
 
         #endregion
 
         #region Functionality
-        private void AnalizeSKU(SKU sku, bool isInteralReport, bool isSummary, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
+        private void AnalizeSKU(SKU sku, bool isInteralReport, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
         {
             // Setting status to undefined
             SetSellmentStatus(SKUSellmentStatus.Unknown);

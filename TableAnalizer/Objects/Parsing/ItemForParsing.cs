@@ -1,16 +1,11 @@
 namespace TableAnalizer.Objects.Parsing
 {
-    public class ItemForParsing 
+    public class ItemForParsing(string? value, ParsingTypeCode parsingTypeCode, bool isMaybeNullable = false)
     {
-        public string? Value { get;}
-        public ParsingTypeCode TypeCode { get;}
-        public bool IsMaybeNullable { get; }
-
-        public ItemForParsing(string? value, ParsingTypeCode parsingTypeCode, bool isMaybeNullable = false)
-        {
-            Value = value;
-            TypeCode = parsingTypeCode;
-            IsMaybeNullable = isMaybeNullable;
-        }
+        #region Properties
+        public string? Value { get; } = value;
+        public ParsingTypeCode TypeCode { get; } = parsingTypeCode;
+        public bool IsMaybeNullable { get; } = isMaybeNullable;
+        #endregion
     }
 }

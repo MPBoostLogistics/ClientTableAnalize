@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using TableAnalizer.Interfaces;
@@ -95,7 +94,11 @@ namespace TableAnalizer.Objects.Managers
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             // Get source excel worksheet by name
-            ExcelWorksheet? currentWorksheet = excelManager?.GetExcelWorksheetByName(workSheetName, reportFileKey, excelPackage).Result ;
+            var currentWorksheetTask = excelManager?.GetExcelWorksheetByName(workSheetName, reportFileKey, excelPackage) ;
+            await Task.Run(() => currentWorksheetTask);
+            currentWorksheetTask?.Wait();
+            var currentWorksheet = currentWorksheetTask?.Result;
+            
             if (currentWorksheet is null)
             {
                 OnManagerReached(new($"There is no worksheet named '{workSheetName}' in workbook file at key {reportFileKey}.",true, true));
@@ -222,16 +225,11 @@ namespace TableAnalizer.Objects.Managers
 
             if (isRansoms)
             {
-                Trace.Write("Yep!, ");
-
                 var skuRansomsBalanceDataUnits = from rowWithRawData in rowsWithRawData
                                                  let unit = new SKURansomsBalanceDataUnit(rowWithRawData)
                                                  group unit by unit.SKUNumber 
                                                  into unitGroup  
-                                                 select unitGroup;
-
-                Trace.WriteLine($"{skuRansomsBalanceDataUnits.Count()}");     
-                await Task.Delay(1000);            
+                                                 select unitGroup;       
 
                 foreach (var group in skuRansomsBalanceDataUnits)
                 {
@@ -239,18 +237,6 @@ namespace TableAnalizer.Objects.Managers
                         throw new InvalidCastException("Невозможно привести List<SKURansomsBalanceDataUnit> к List<ParsingRowEntity>");
 
                     var skuNumber = group.Key;
-
-                    StringBuilder stringBuilder = new($"\n{skuNumber}");
-                    foreach (var item in list)
-                    {
-                        stringBuilder.Append($"{item}");
-                    }
-
-                    ManagerReachedEventArgs args = new($"{stringBuilder.ToString()}", false, false);
-                    OnManagerReached(args);
-
-                    await Task.Delay(300);
-
                     SkuRansomsBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
                 }
 
@@ -606,21 +592,24 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        public async Task<List<SKUForTargetReports>> MakeSkusForTargetReport(bool isRawReport) 
+        public async Task<List<SKUForTargetReports>> MakeSkusForTargetReport() 
         {
             List<SKUForTargetReports> skuForTargetReports = [];
+
             foreach (var (_, targetSku) in SKUs.GetValuesList())
             {
+                if(targetSku is null) continue;
+
                 SKUForTargetReports newValue;
                 if(SKUToResorts.TryGetValue(targetSku.SKUNumber, out Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues) && 
                     resortFromSkusValues is not null &&
                     resortFromSkusValues.Count > 0) 
                 {
-                    newValue = new(targetSku, isRawReport, ClientLogins.Count > 1,  1000, resortFromSkusValues);
+                    newValue = new(targetSku, ReportFileManager.ClientLogins.Count > 1,  1000, resortFromSkusValues);
                 } 
                 else 
                 {
-                    newValue = new(targetSku, isRawReport, ClientLogins.Count > 1, 1000);
+                    newValue = new(targetSku, ReportFileManager.ClientLogins.Count > 1 , 1000);
                 }
                 
                 skuForTargetReports.Add(newValue);

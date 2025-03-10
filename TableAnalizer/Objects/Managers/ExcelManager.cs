@@ -89,7 +89,7 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         public static List<SourceColumn> RansomsSourceCells { get; } =
         [
-            new(1, nameof(SKURansomsBalanceDataUnit.ClientLogin), ParsingTypeCode.IntTypeCode, true),
+            new(1, nameof(SKURansomsBalanceDataUnit.SKUClientLogin), ParsingTypeCode.StringTypeCode, true),
 
             new(2, nameof(SKURansomsBalanceDataUnit.SKUMarketPlace), ParsingTypeCode.Marketplace, true),
             new(3, nameof(SKURansomsBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
@@ -343,7 +343,7 @@ namespace TableAnalizer.Objects.Managers
             wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUNumber),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 3, colName: "Номенклатура", colWidth: 50, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUName),
+            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUName),
             parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 4, colName: "Средняя цена товара, руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUPrice),
@@ -437,7 +437,7 @@ namespace TableAnalizer.Objects.Managers
             if (!GetExcelPackageByKey(key, out ExcelPackage? package) && package is null)
             {
                 ExcelPackage excelPackage = new(fileInfo);
-                ExcelPackages.Add(key, excelPackage);
+                ExcelPackages[key] = excelPackage;
             }
 
             GetExcelPackageByKey(key, out ExcelPackage? existingPackage);
@@ -960,7 +960,7 @@ namespace TableAnalizer.Objects.Managers
         /// <remarks><i>New version, tested</i></remarks>
         public async Task<ExcelWorksheet?> GetExcelWorksheetByName(string name, SourceSKUReportFileKey key, ExcelPackage excelPackage)  
         {
-            await Task.Delay(1000); // dummy
+            await Task.Delay(100); // dummy
 
             if(excelPackage is null) 
             {
@@ -977,7 +977,6 @@ namespace TableAnalizer.Objects.Managers
                     OnManagerReached(args);
                     return null;
                 }
-               
             } 
             else 
             {
@@ -1025,6 +1024,7 @@ namespace TableAnalizer.Objects.Managers
                     var getValuesFromRowTask = GetValuesFromRow(in workSheet, rowIndex, in currentSourceCells, out Dictionary<string, ItemForParsing>? values);
                     Task.Run(() => getValuesFromRowTask);
                     getValuesFromRowTask.Wait();
+                    
                     var getValuesFromRowTaskSuccess = getValuesFromRowTask.Result;
 
                     if (getValuesFromRowTaskSuccess && values is not null)
@@ -1077,9 +1077,6 @@ namespace TableAnalizer.Objects.Managers
 
                 var valueToString = value.ToString();
 
-                Trace.WriteLine(valueToString);
-                Task.Delay(100);
-
                 if (valueToString is not null)
                     values.Add(dataCell.Name, new(valueToString, dataCell.ParsingTypeCode, !dataCell.IsValueRequired));
             }
@@ -1092,9 +1089,9 @@ namespace TableAnalizer.Objects.Managers
         {
             foreach (var sourceCell in sourceCells)
             {
-                ExcelRange? address = workSheet.Cells[rowIndex, sourceCell.ColIndex];
-                if (address is null) return false;
-
+                ExcelRange? address = workSheet.Cells[rowIndex, sourceCell.ColIndex] ?? 
+                    throw new Exception($"ExcelRange (address) at row {rowIndex} and column {sourceCell.ColIndex} is null");
+                
                 var addressValue = address.Value;
                 if(addressValue is not null && !string.IsNullOrEmpty(addressValue.ToString())) 
                 {

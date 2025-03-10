@@ -8,13 +8,13 @@ namespace TableAnalizer.Objects.Managers
     public class BaseManager 
     {
         #region Variables and constants 
-        public string[] ValidFileExtensions { get; } = [".xls", ".xlsx"];
-        internal IConfiguration config
-        ;
+        
+        internal IConfiguration config;
         #endregion Variables and constant
 
         #region Properties 
-        public List<string> ClientLogins { get; protected set; }
+        public string[] ValidFileExtensions { get; } = [".xls", ".xlsx"];
+        public static List<string> ClientLogins { get; protected set;} = [];
 
         /// <summary>
         /// Сollection of colors to indicate status of mutual settlements with clients.

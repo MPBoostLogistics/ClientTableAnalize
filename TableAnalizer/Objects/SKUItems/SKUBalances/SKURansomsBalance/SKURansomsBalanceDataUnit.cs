@@ -8,7 +8,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     public class SKURansomsBalanceDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
-        public int ClientLogin { get; set; }
+        public string? SKUClientLogin { get; set; }
         public Marketplace SKUMarketPlace { get; set; }
         public int SKUNumber { get;  set; }
         public string? SKUBrandAndName { get; set; }

@@ -58,7 +58,7 @@ internal class Program
     
         Trace.Listeners.Add(new ConsoleTraceListener());
 
-        var analizeTask = Analyze(TracingDelay);
+        var analizeTask = Analyze();
         await Task.Run(() => analizeTask);
         analizeTask.Wait();
 
@@ -92,7 +92,7 @@ internal class Program
         }
     }
 
-    private static async Task Analyze(int delay)
+    private static async Task Analyze()
     {
         reportFileManager!.ManagerReached += Report;
         excelManager!.ManagerReached += Report;
@@ -223,7 +223,7 @@ internal class Program
             }
 
             // Make skus for target report
-            Task<List<SKUForTargetReports>>? skusForTargetReportTask = skuManager!.MakeSkusForTargetReport(isInternalReport);
+            Task<List<SKUForTargetReports>>? skusForTargetReportTask = skuManager!.MakeSkusForTargetReport();
             await Task.Run(() => skusForTargetReportTask);
             skusForTargetReportTask.Wait();
 
@@ -262,22 +262,31 @@ internal class Program
             // Make ExcelPackage
             var package = excelManager!.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
 
-            // Receiving and processing data
-            Task<double>? receivingAndProcessingDataTask = skuManager!.ReceivingAndProcessingData(reportFileKey, isInternalReport, package);
-            if(receivingAndProcessingDataTask is not null) 
+            if(package is not null) 
             {
-                await Task.Run(async () => await receivingAndProcessingDataTask);
-                receivingAndProcessingDataTask.Wait();
-            }
-  
-            // Dispose package
-            if(excelManager.GetExcelPackageByKey(reportFileKey, out ExcelPackage? existingPackage)) 
+                // Receiving and processing data
+                Task<double>? receivingAndProcessingDataTask = skuManager!.ReceivingAndProcessingData(reportFileKey, isInternalReport, package);
+                if(receivingAndProcessingDataTask is not null) 
+                {
+                    await Task.Run(async () => await receivingAndProcessingDataTask);
+                    receivingAndProcessingDataTask.Wait();
+                }
+    
+                // Dispose package
+                if(excelManager.GetExcelPackageByKey(reportFileKey, out ExcelPackage? existingPackage)) 
+                {
+                    existingPackage?.Dispose();
+                }
+
+                // Return time
+                return receivingAndProcessingDataTask?.Result ?? 0.00;
+            } 
+            else 
             {
-                existingPackage?.Dispose();
+                return 0.00;
             }
 
-            // Return time
-            return receivingAndProcessingDataTask?.Result ?? 0.00;
+           
         }
         else
         {

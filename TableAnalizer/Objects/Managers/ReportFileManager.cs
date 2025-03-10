@@ -10,12 +10,6 @@ namespace TableAnalizer.Objects.Managers
     public class ReportFileManager(IConfiguration config) : BaseManager(config)
     {
         #region Fields 
-
-
-
-        private readonly static string _clientReportRegexPattern = @"(ClientReport_)\d+(_)+\d+(-)\d+(-)\d+(.xlsx)";
-        private readonly Regex _clientReportRegex = new(_clientReportRegexPattern, RegexOptions.None, TimeSpan.FromSeconds(1));
-        
         private const string RANSOMS_SINGLE_REPORT_REGEX_01_PATTERN = @"Отчет\sвыкупов\sпо\sклиенту\s\W\d+";
         private const string RANSOMS_SINGLE_REPORT_REGEX_02_PATTERN = @"Отчет\sвыкупов\sпо\sклиенту\s\d+";
         private const string RANSOMS_MULTY_REPORT_REGEX_PATTERM = @"\bОтчет_выкупов_по_клиентам_\d+";
@@ -96,7 +90,6 @@ namespace TableAnalizer.Objects.Managers
             IConfigurationSection? stringSessions = config!.GetSection("Strings");
             logisticsReportFirstName = stringSessions.GetValue<string>("LogisticsReportFirstName");
         }
-
 
         /// <summary>
         /// Checks availability of necessary files for data analysis.

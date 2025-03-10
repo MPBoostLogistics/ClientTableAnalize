@@ -7,7 +7,7 @@ namespace TableAnalizerTest
 {
     public class Base_Test
     {
-        #region Variables and constants 
+        #region Fields
         internal IConfigurationRoot? testConfig;
         private string? TestSourcePathSingleName;
         private string? TestTargetPathSingleName;
@@ -92,8 +92,23 @@ namespace TableAnalizerTest
             });
         }
 
+        [Test, Order(2)]
+        public async Task GetReportSourceFilesForSingleClient_Test() 
+        {
+            // arrange
+            Assert.That(testSingleClientFileInfos, Has.Length.EqualTo(reportSourceFilesForSingleClientSum));
+
+            // act 
+            var getSourceReportFilesTask = reportFileManager.GetSourceReportFiles(testSingleClientFileInfos);
+            await Task.Run(() => getSourceReportFilesTask);
+            getSourceReportFilesTask.Wait();
+
+            // assert 
+            Assert.That(reportFileManager.ReportsPaths, Has.Count.EqualTo(reportSourceFilesForSingleClientSum));
+        }
+
         [OneTimeTearDown]
-        public void Finish() 
+        public virtual void Finish() 
         {
             Trace.Flush();
         }
