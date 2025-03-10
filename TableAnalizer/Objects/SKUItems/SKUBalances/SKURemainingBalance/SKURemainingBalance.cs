@@ -3,12 +3,10 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     /// <summary>
     ///  Client's remaining balance.
     /// </summary>
-    /// <remarks><i>New version, tested</i></remarks>
     public class SKURemainingBalance : IEquatable<SKURemainingBalance>
     {
         #region Properties
         public int SKUNumber { get; private set; } = default;
-        public string SKUBrandAndName { get; private set; } = string.Empty;
         /// <summary>
         /// Number of goods received at the warehouse.
         /// </summary>
@@ -29,10 +27,9 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
 
         #region Constructors
         // For create from SKURemainingBalanceDataUnit collection.
-        public SKURemainingBalance(int skuNumber, string skuBrandName, List<SKURemainingBalanceDataUnit> skuRemainingUnits)
+        public SKURemainingBalance(int skuNumber, List<SKURemainingBalanceDataUnit> skuRemainingUnits)
         {
             SKUNumber = skuNumber;
-            SKUBrandAndName = skuBrandName;
 
             SKUReceipt = skuRemainingUnits
                 .Aggregate(0, (acc, unit) => acc + unit.SKUReceipt);
@@ -57,10 +54,9 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         }
 
         // For create new balance from repo.
-         public SKURemainingBalance(int number, string brandAndName, int receipt, int shipped, int transfered, int remaining) 
+         public SKURemainingBalance(int number, int receipt, int shipped, int transfered, int remaining) 
          {
             SKUNumber = number;
-            SKUBrandAndName = brandAndName;
 
             SKUReceipt = receipt;
             SKUOutgoingProducts = shipped;

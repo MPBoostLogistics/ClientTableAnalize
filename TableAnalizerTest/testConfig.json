@@ -1,4 +1,8 @@
-{
+{ 
+    "Strings": 
+    {
+      "TestSingleClientLogin": "447849626195"
+    },
     "Messages": {
       "GoodbyMessage": "\nСпасибо за использование программы.",
       "TraceInfoFlag": "[INFO]: ",
@@ -13,7 +17,7 @@
     "Numbers": {
       "defaultDeadlineDays" : 14,
       "TracingDelay": 1500,
-      "reportSourceFilesForSingleClientSum": 7
+      "reportSourceFilesForSingleClientSum": 4
     },
     "Collections": 
     {

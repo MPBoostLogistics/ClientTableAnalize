@@ -37,12 +37,13 @@ namespace TableAnalizer.Objects.SKUItems
         #region Constructors && destructors
 
         // Constructor for ransoms
-        public SKU(Marketplace? marketplace, int skuNumber, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate, int deadlineDays)
+        public SKU(Marketplace? marketplace, int skuNumber, string skuBrandAndName, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate, int deadlineDays, bool isRemoveBrandFromName)
         {
-            SKUNumber = skuNumber;
-            SKUBrand = string.Empty; SKUName = string.Empty;
-
             Marketplace = marketplace;
+            SKUNumber = skuNumber;
+            ParsingSKUBrandAndName(skuBrandAndName, isRemoveBrandFromName);
+
+           
             SKURansomsBalance = skuRansomsBalance;
             AveragePrice = averagePrice;
             MaxRansomsDate = maxRansomsDate;
@@ -51,35 +52,36 @@ namespace TableAnalizer.Objects.SKUItems
         }
 
         // Constructor for remainingBalance 
-        public SKU(Marketplace? marketplace, int skuNumber, SKURemainingBalance skuRemainingBalance, bool isRemoveBrandFromName)
+        public SKU(int skuNumber, SKURemainingBalance skuRemainingBalance)
         {
-            Marketplace = marketplace;
             SKUNumber = skuNumber;
-
             SKURemainingBalance = skuRemainingBalance;
+        }
 
-            string skuBrandAndNameString = skuRemainingBalance.SKUBrandAndName;
-
+        private void ParsingSKUBrandAndName(string skuBrandAndNameString, bool isRemoveBrandFromName)
+        {
             // Если есть разделитель /
             // biidi / Говорящая детские книга для малышей - Алфавит и цифры, Общая характеристика товара			
-            if(skuBrandAndNameString.Contains('/')) 
+            if (skuBrandAndNameString.Contains('/'))
             {
-                string[]? skuBrandAndName = skuRemainingBalance.SKUBrandAndName.Split('/');
-                
-                switch(skuBrandAndName.Length) 
+                string[]? skuBrandAndName = skuBrandAndNameString.Split('/');
+
+                switch (skuBrandAndName.Length)
                 {
                     case 1:
-                        SKUName = isRemoveBrandFromName ? skuBrandAndName[0].Trim() : skuRemainingBalance.SKUBrandAndName.Trim();
+                        SKUName = isRemoveBrandFromName ? skuBrandAndName[0].Trim() : skuBrandAndNameString.Trim();
                         break;
-                    case 2: case 3: case 4:
+                    case 2:
+                    case 3:
+                    case 4:
                         SKUBrand = skuBrandAndName[0].Trim();
-                        SKUName = isRemoveBrandFromName ? skuBrandAndName[1].Trim() : skuRemainingBalance.SKUBrandAndName.Trim(); 
+                        SKUName = isRemoveBrandFromName ? skuBrandAndName[1].Trim() : skuBrandAndNameString.Trim();
                         break;
                     default:
                         break;
                 }
-            } 
-            else 
+            }
+            else
             {
                 SKUName = skuBrandAndNameString.Trim();
             }
@@ -87,7 +89,7 @@ namespace TableAnalizer.Objects.SKUItems
 
             // Remove ", Общая характеристика товара"
             string[]? SKUNameWithOtherInfо = SKUName.Split(',');
-            if(SKUNameWithOtherInfо.Last() == " Общая характеристика товара") 
+            if (SKUNameWithOtherInfо.Last() == " Общая характеристика товара")
             {
                 SKUNameWithOtherInfо = [.. SKUNameWithOtherInfо.Take(SKUNameWithOtherInfо.Length - 1)];
                 SKUName = string.Join("", SKUNameWithOtherInfо);
@@ -137,10 +139,9 @@ namespace TableAnalizer.Objects.SKUItems
         }
 
         // Constructor for writeOffBalance 
-        public SKU(int skuNumber, Marketplace marketplace, SKUWriteOffBalance writeOffBalance) 
+        public SKU(int skuNumber, SKUWriteOffBalance writeOffBalance) 
         {
             SKUNumber = skuNumber;
-            Marketplace = marketplace;
             SKUWriteOffBalance = writeOffBalance;
         }
 
@@ -159,25 +160,25 @@ namespace TableAnalizer.Objects.SKUItems
         }
 
         // Constructor for analize client report
-        public SKU(SKUClientReportDataUnit dataUnit, int deadlineDays) 
-        {
-            Marketplace = dataUnit.SKUMp;
-            SKUNumber = dataUnit.SKUNumber;
-            SKUBrand = dataUnit.SKUBrand ?? string.Empty;
-            SKUName = dataUnit.SKUName ?? string.Empty;
+        // public SKU(SKUClientReportDataUnit dataUnit, int deadlineDays) 
+        // {
+        //     Marketplace = dataUnit.SKUMp;
+        //     SKUNumber = dataUnit.SKUNumber;
+        //     SKUBrand = dataUnit.SKUBrand ?? string.Empty;
+        //     SKUName = dataUnit.SKUName ?? string.Empty;
 
-            SKURansomsBalance = new SKURansomsBalance (dataUnit.SKURansomsOnWay, dataUnit.SKURansomsCanceled, dataUnit.SKURansomsDelivered, dataUnit.SKURansomsWithDrawn);
-            SKURemainingBalance = new SKURemainingBalance(dataUnit.SKUNumber, SKUName, dataUnit.SKUReceiptGoods, dataUnit.SKUOutgoingProducts, dataUnit.SKUTransferDataUnit, dataUnit.SKURemaining);
+        //     SKURansomsBalance = new SKURansomsBalance (dataUnit.SKURansomsOnWay, dataUnit.SKURansomsCanceled, dataUnit.SKURansomsDelivered, dataUnit.SKURansomsWithDrawn, dataUnit.);
+        //     SKURemainingBalance = new SKURemainingBalance(dataUnit.SKUNumber, dataUnit.SKUReceiptGoods, dataUnit.SKUOutgoingProducts, dataUnit.SKUTransferDataUnit, dataUnit.SKURemaining);
             
-            SKUWriteOffBalance = null;
-            SKUCompensationBalance = null;
-            SKUResortBalance = null;
+        //     SKUWriteOffBalance = null;
+        //     SKUCompensationBalance = null;
+        //     SKUResortBalance = null;
 
-            AveragePrice = dataUnit.SKUPrice ?? 0.00;
-            MaxRansomsDate = dataUnit.SKURansomDate;
+        //     AveragePrice = dataUnit.SKUPrice ?? 0.00;
+        //     MaxRansomsDate = dataUnit.SKURansomDate;
 
-            DeadLineDays = deadlineDays;
-        }
+        //     DeadLineDays = deadlineDays;
+        // }
         #endregion
     }
 }

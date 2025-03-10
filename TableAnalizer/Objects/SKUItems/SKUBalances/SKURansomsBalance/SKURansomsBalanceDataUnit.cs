@@ -5,22 +5,22 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     /// <summary>
     /// Data unit for forming SKURansomsBalance.
     /// </summary>
-    public class SKURansomsBalanceDataUnit : ParsingRowEntity
+    public class SKURansomsBalanceDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
-        public int SKUNumber { get; private set; }
-        public SKURansomsStatus? SKURansomsStatus { get; private set; }
-        public double SKUCost { get; private set; }
-        public DateOnly SKURansomDate { get; private set; }
-        #endregion
+        public string? SKUClientLogin { get; set; }
+        public Marketplace SKUMarketPlace { get; set; }
+        public int SKUNumber { get;  set; }
+        public string? SKUBrandAndName { get; set; }
+        public double SKUAveragePrice { get;  set; }
+        public DateOnly SKULastPurchaseDate { get;  set; }
+        public int SKUTotalNumberPurchases { get; set; }
+        public int SKUInTransitNumberPurchases { get; set; }
+        public int SKUCancelledNumberPurchases { get; set; }
+        public int SKUDeliveredToPointsNumberPurchases { get; set; }
+        public int SKUPickedupFromPointsNumberPurchases { get; set; }
+        public int SKUUnknownNumberPurchases { get; set; }
 
-        #region  Constructors   
-        public SKURansomsBalanceDataUnit(in Dictionary<string, ItemForParsing> parsingElements) :
-            base(parsingElements) {}
-        override public string ToString() =>
-            $"number: {SKUNumber}, ransoms status: {SKURansomsStatus}, cost: {SKUCost}";
-        
         #endregion
-
     }
 }

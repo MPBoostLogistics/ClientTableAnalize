@@ -1,38 +1,54 @@
-using System.Diagnostics;
 using TableAnalizer.Objects;
-using TableAnalizer.Objects.Managers;
 
 namespace TableAnalizerTest
 {
-    [Order(2)]
+    [Order(1)]
     public class ReportFileManager_Test : Base_Test
     {
-
         public override void Start()
         {
             base.Start();
         }
 
-        [Test, Order(1)]
-        public void GetReportSourceFilesForSingleClient_Test() 
-        {
-            // assert 
-            Assert.That(reportFileManager.ReportsPathsSingle, Has.Count.EqualTo(reportSourceFilesForSingleClientSum));
-        }
-
-        [Order(2)]
-        [TestCase(SourceSKUReportFileKey.RansomsWB, true)]
-        [TestCase(SourceSKUReportFileKey.RansomsOZ, true)]
+        [Order(1)]
+        [TestCase(SourceSKUReportFileKey.Ransoms, true)]
         [TestCase(SourceSKUReportFileKey.Balance, true)]
-        [TestCase(SourceSKUReportFileKey.Shipped, true)]
+        [TestCase(SourceSKUReportFileKey.OutgoingProducts, true)]
         [TestCase(SourceSKUReportFileKey.WriteOffShortages, true)]
-        [TestCase(SourceSKUReportFileKey.Additional, true)]
+        [TestCase(SourceSKUReportFileKey.Additional, false)]
         [TestCase(SourceSKUReportFileKey.Client, false)]
         [TestCase(SourceSKUReportFileKey.Transfered, false)]
-        public void GetSourceReportForSingleClient_Test(SourceSKUReportFileKey key, bool isExist) 
+        public async Task ChecksAvailabilityNecessaryFiles_Test(SourceSKUReportFileKey key, bool isExisting) 
         {
-            //assert 
-            Assert.That(reportFileManager.ReportsPathsSingle.ContainsKey(key), Is.EqualTo(isExist));
+            // arrange
+            // ...
+
+            // act
+            var checksAvailabilityTask = reportFileManager.ChecksAvailabilityNecessaryFiles(testSingleClientSourceDirectory!.FullName);
+            await Task.Run(() => checksAvailabilityTask);
+            checksAvailabilityTask.Wait();
+            List<SourceSKUReportFileKey>? existingKeys = checksAvailabilityTask.Result;
+
+            // assert 
+            Assert.That(existingKeys, Is.Not.Null);
+            Assert.That(existingKeys.Contains(key), Is.EqualTo(isExisting));
+        }
+
+        [Test, Order(3)]
+        public void CheckingClientsLogin_Test() 
+        {
+            // assert 
+            
+            Assert.Multiple(() =>
+            {
+                Assert.That(testSingleClientLogin, Is.Not.Null);
+                Assert.That(testSingleClientLogin, Is.EqualTo("447849626195"));
+                Assert.That(reportFileManager.ClientLogins, Is.Not.Null);
+                Assert.That(reportFileManager.ClientLogins, Has.Count.EqualTo(1));
+                Assert.That(reportFileManager.ClientLogins.First(), Is.EqualTo(testSingleClientLogin));
+            });
+
+        
         }
     }
 }

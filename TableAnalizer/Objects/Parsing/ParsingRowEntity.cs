@@ -11,7 +11,7 @@ namespace TableAnalizer.Objects.Parsing
     {
         #region Variables and constants
         protected const string SPACE_SEPARATOR = "\u0020";
-        protected readonly List<TypeCode> baseTypeCodes = new() { TypeCode.Double, TypeCode.Int32, TypeCode.DateTime, TypeCode.String };
+        protected readonly List<TypeCode> baseTypeCodes = [TypeCode.Double, TypeCode.Int32, TypeCode.DateTime, TypeCode.String];
         #endregion
 
         #region Properties
@@ -168,7 +168,7 @@ namespace TableAnalizer.Objects.Parsing
                         } 
                         else 
                         {
-                            value = DateOnly.TryParseExact(valueString, IParsingRowEntity.DateOnlyFormats.ToArray(), out DateOnly dateOnlyValue) ? dateOnlyValue : null;
+                            value = DateOnly.TryParseExact(valueString, [.. IParsingRowEntity.DateOnlyFormats], out DateOnly dateOnlyValue) ? dateOnlyValue : null;
                         }
                     }
                     break;
@@ -189,10 +189,10 @@ namespace TableAnalizer.Objects.Parsing
 
                     value = valueString switch
                     {
-                        "Доставлен на ПВЗ" => SKURansomsStatus.Delivered,
-                        "Забран с ПВЗ" => SKURansomsStatus.WithDrawn,
+                        "Доставлен на ПВЗ" => SKURansomsStatus.DeliveredToPoints,
+                        "Забран с ПВЗ" => SKURansomsStatus.PickedupFromPoints,
                         "Отменен" => SKURansomsStatus.Canceled,
-                        "В пути" => SKURansomsStatus.OnWay,
+                        "В пути" => SKURansomsStatus.InTransit,
                         _ => throw new NotImplementedException()
                     };
 

@@ -5,16 +5,16 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     /// <summary>
     /// Shipped data unit for forming SKURemainingBalance.
     /// </summary>
-    /// <remarks><i>New version</i></remarks>
     public class SKUShippedDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
         public int SKUNumber { get; private set; }
-        public int SKUShippedCount { get; private set; }    // Расход товаров
+        public int SKUShippedCount { get; private set; }   
 
         #endregion
         #region  Constructors   
-        override public string ToString() => $"number: {SKUNumber}, shipped: {SKUShippedCount}";
+        override public string ToString() => 
+            $"SKUShippedDataUnit -> SKUNumber: {SKUNumber}, SKUShippedCount: {SKUShippedCount}";
         #endregion
     }
 }
