@@ -89,11 +89,20 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         public static List<SourceColumn> RansomsSourceCells { get; } =
         [
-            new(2, nameof(SKURansomsBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
-            new(7, nameof(SKURansomsBalanceDataUnit.SKURansomDate), ParsingTypeCode.DataOnlyTypeCode,true),
-            new(9, nameof(SKURansomsBalanceDataUnit.SKURansomsStatus), ParsingTypeCode.SKURansomsStatus, true),
-            new(10, "Логистика", ParsingTypeCode.StringTypeCode, true, LOGISTIC_FLAG),
-            new(14, nameof(SKURansomsBalanceDataUnit.SKUCost),  ParsingTypeCode.DoubleTypeCode, true)
+            new(1, nameof(SKURansomsBalanceDataUnit.ClientLogin), ParsingTypeCode.IntTypeCode, true),
+
+            new(2, nameof(SKURansomsBalanceDataUnit.SKUMarketPlace), ParsingTypeCode.Marketplace, true),
+            new(3, nameof(SKURansomsBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(4, nameof(SKURansomsBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
+            new(5, nameof(SKURansomsBalanceDataUnit.SKUAveragePrice), ParsingTypeCode.DoubleTypeCode, true),
+            new(6, nameof(SKURansomsBalanceDataUnit.SKULastPurchaseDate), ParsingTypeCode.DataOnlyTypeCode, true),
+
+            new(7, nameof(SKURansomsBalanceDataUnit.SKUTotalNumberPurchases), ParsingTypeCode.IntTypeCode, true),
+            new(8, nameof(SKURansomsBalanceDataUnit.SKUInTransitNumberPurchases), ParsingTypeCode.IntTypeCode, true),
+            new(9, nameof(SKURansomsBalanceDataUnit.SKUCancelledNumberPurchases), ParsingTypeCode.IntTypeCode, true),
+            new(10, nameof(SKURansomsBalanceDataUnit.SKUDeliveredToPointsNumberPurchases), ParsingTypeCode.IntTypeCode, true),
+            new(11, nameof(SKURansomsBalanceDataUnit.SKUPickedupFromPointsNumberPurchases), ParsingTypeCode.IntTypeCode, true),
+            new(12, nameof(SKURansomsBalanceDataUnit.SKUUnknownNumberPurchases), ParsingTypeCode.IntTypeCode, true),
         ];
 
         public static List<SourceColumn> RemainingFirstRoomSourceCells { get; } =
@@ -427,7 +436,8 @@ namespace TableAnalizer.Objects.Managers
         {
             if (!GetExcelPackageByKey(key, out ExcelPackage? package) && package is null)
             {
-                ExcelPackages.Add(key, new ExcelPackage(fileInfo));
+                ExcelPackage excelPackage = new(fileInfo);
+                ExcelPackages.Add(key, excelPackage);
             }
 
             GetExcelPackageByKey(key, out ExcelPackage? existingPackage);
@@ -763,18 +773,6 @@ namespace TableAnalizer.Objects.Managers
             return result;
         }
 
-        // private void SetAttentionToCell(in SKUForTargetReports skuForTargetReport, in ExcelRange tableCell, out AttentionCell? attentionCell)
-        // {
-        //     attentionCell = null;
-        //     var colNumber = tableCell.Start.Column;
-
-        //     // if (tableCell.Start.Column == skuReceiptGoodsColumnNumber && skuForTargetReport.SKUIncreasedReceiptGoods > 0)
-        //     // {
-        //     //     attentionCell = new AttentionCell(skuReceiptGoodsColumnNumber, $"Приход больше\nожидания: {skuForTargetReport.SKUIncreasedReceiptGoods}");
-        //     // }
-
-        // }
-
         private void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell, bool isMainReport, Color? statusColor) 
         {
             // Add value to cell 
@@ -960,9 +958,9 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="key">Key for searching ExcelPackage in internal dictionary.</param>
         /// <param name="worksheet">Found Excel worksheet or null.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public async Task<ExcelWorksheet?> GetExcelWorksheetByName(string name, SourceSKUReportFileKey key, int taskDelay, ExcelPackage? excelPackage = null)  
+        public async Task<ExcelWorksheet?> GetExcelWorksheetByName(string name, SourceSKUReportFileKey key, ExcelPackage excelPackage)  
         {
-            await Task.Delay(taskDelay);
+            await Task.Delay(1000); // dummy
 
             if(excelPackage is null) 
             {
@@ -1007,7 +1005,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="reportRowsRanges">List of ranges.</param>
         /// <exception cref="ArgumentException">Exceptions when there is a null range and a null range of rows in it.</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public static void GetRawDataFromExcelRows(in ExcelWorksheet workSheet, ref List<RangeSourceReportRows> reportRowsRanges)
+        public static Task GetRawDataFromExcelRows(in ExcelWorksheet workSheet, ref List<RangeSourceReportRows> reportRowsRanges)
         {
             // Iterating Ranges
             for (int i = 0; i < reportRowsRanges.Count; i++)
@@ -1024,14 +1022,20 @@ namespace TableAnalizer.Objects.Managers
                 {
                     var rowIndex = rowsIndexRange[j];
 
-                    if (GetValuesFromRow(in workSheet, rowIndex, in currentSourceCells, out Dictionary<string, ItemForParsing>? values) &&
-                        values is not null)
+                    var getValuesFromRowTask = GetValuesFromRow(in workSheet, rowIndex, in currentSourceCells, out Dictionary<string, ItemForParsing>? values);
+                    Task.Run(() => getValuesFromRowTask);
+                    getValuesFromRowTask.Wait();
+                    var getValuesFromRowTaskSuccess = getValuesFromRowTask.Result;
+
+                    if (getValuesFromRowTaskSuccess && values is not null)
                     {
                         reportRowsRange.SetValues(values);
                         reportRowsRanges![i] = reportRowsRange;
                     }
                 }
             }
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -1043,7 +1047,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="values">Dictionary of retrieved values by row.</param>
         /// <returns>Boolean flag for success of completed operation.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public static bool GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceColumn> sourceCells, out Dictionary<string, ItemForParsing>? values)
+        public static Task<bool> GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceColumn> sourceCells, out Dictionary<string, ItemForParsing>? values)
         {
             values = null;
 
@@ -1054,7 +1058,7 @@ namespace TableAnalizer.Objects.Managers
                 dataСellsNonFilters is null ||
                 dataСellsNonFilters!.Count == 0)
             {
-                return false;
+                return Task.Run(() => false);
             }
 
             // Getting values
@@ -1064,7 +1068,7 @@ namespace TableAnalizer.Objects.Managers
                 var value = workSheet.Cells[rowIndex, dataCell.ColIndex].Value;
 
                 if (value is null)
-                {
+                { 
                     if (dataCell.IsValueRequired)
                         throw new ArgumentException($"A table cell does not contain a <b>required value</b> for name: '{dataCell.Name}'");
                     else
@@ -1072,11 +1076,16 @@ namespace TableAnalizer.Objects.Managers
                 }
 
                 var valueToString = value.ToString();
+
+                Trace.WriteLine(valueToString);
+                Task.Delay(100);
+
                 if (valueToString is not null)
                     values.Add(dataCell.Name, new(valueToString, dataCell.ParsingTypeCode, !dataCell.IsValueRequired));
             }
 
-            return Equals(values?.Count, sourceCells.Count - filterCellsCount);
+            var success = values?.Count == sourceCells.Count - filterCellsCount;
+            return Task.Run(() => success);
         }
 
         private static bool CheckingPresenceAddressesInRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceColumn> sourceCells)
@@ -1190,7 +1199,7 @@ namespace TableAnalizer.Objects.Managers
                 _ => [],
             };
 
-            return rangeSourceReportRows.Any();
+            return rangeSourceReportRows.Count != 0;
         }
 
         /// <summary>
@@ -1200,7 +1209,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="rangeSourceReportRows">Range prototypes.</param>
         /// <param name="startRangeRowIndex">Start index.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public static void GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSourceReportRows, int startRangeRowIndex = 1)
+        public static Task GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSourceReportRows, int startRangeRowIndex = 1)
         {
             const int DEFAULT_STEP = 1;
 
@@ -1226,6 +1235,8 @@ namespace TableAnalizer.Objects.Managers
             {
                 CreateRowRange(in worksheet, ref rangeSourceReportRows, DEFAULT_STEP, rangeWithTermination?.TerminatingStringValue);
             }
+
+            return Task.CompletedTask;
         }
 
         private static void CreateRowRange(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSourceReportRows, int DEFAULT_STEP, (string rowStringKey, int offset)? termination)
@@ -1335,25 +1346,6 @@ namespace TableAnalizer.Objects.Managers
 
             return [.. items]; 
         }
-           
-        private static List<SKUForTargetReports> GetLessReceiptThanWaiting (List<SKUForTargetReports> list) 
-        {
-            var items = from el in list
-                        where el.SKUReceiptGoods < el.SKURansomsWaiting
-                        select el;
-
-            return [.. items]; 
-        } 
-
-        private static List<SKUForTargetReports> GetGreatReceiptThanWaiting (List<SKUForTargetReports> list) 
-        {
-            var items = from el in list
-                        where el.SKUReceiptGoods > el.SKURansomsWaiting
-                        select el;
-
-            return [.. items]; 
-        }
-
         #endregion
     }
 }

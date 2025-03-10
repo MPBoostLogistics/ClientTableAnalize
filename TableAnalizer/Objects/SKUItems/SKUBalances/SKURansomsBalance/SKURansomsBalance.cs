@@ -1,84 +1,88 @@
 ﻿namespace TableAnalizer.Objects.SKUItems.SKUBalances  
 {
     /// <summary>
-    ///  Client's ransoms balance.
+    /// Client's ransoms balance.
     /// </summary>
-    /// <remarks><i>New version, tested</i></remarks>
     public class SKURansomsBalance : IEquatable<SKURansomsBalance>
     {
         #region Properties
-        public int SKURansomsTotal { get; private set; }      // Всего
-        public int SKURansomsWaiting { get; private set; }    // Ожидание 
-        public int SKURansomsOnWay { get; }                   // В пути
-        public int SKURansomsCanceled { get; }                // Отменен 
-        public int SKURansomsDelivered { get; }               // Доставлен на ПВЗ
-        public int SKURansomsWithDrawn { get; }               // Забран с ПВЗ
+        /// <summary>
+        /// Общее количество покупок
+        /// </summary>
+        public int SKUTotalNumberPurchases => 
+            SKUInTransitNumberPurchases + SKUCancelledNumberPurchases + SKUDeliveredToPointsNumberPurchases +
+            SKUPickedupFromPointsNumberPurchases + SKUUnknownNumberPurchases;
+        /// <summary>
+        /// Общее количество покупок, ожидаемое к возврату. 
+        /// </summary>
+        public int SKUWaitingNumberPurchases =>
+            SKUDeliveredToPointsNumberPurchases + SKUPickedupFromPointsNumberPurchases;
+        /// <summary>
+        /// Количество покупок в пути.
+        /// </summary>
+        public int SKUInTransitNumberPurchases { get; private set; } = 0;
+        /// <summary>
+        /// Количество отмененных (возвращенных) покупок.
+        /// </summary>
+        public int SKUCancelledNumberPurchases { get; private set; } = 0;
+        /// <summary>
+        /// Количество покупок, доставленных на точки.
+        /// </summary>
+        public int SKUDeliveredToPointsNumberPurchases { get; private set; } = 0; 
+        /// <summary>
+        /// Количество покупок, забранных с точек.
+        /// </summary>          
+        public int SKUPickedupFromPointsNumberPurchases { get; private set; } = 0;
+        /// <summary>
+        /// Количество покупок в неизвестном статусе.
+        /// </summary>          
+        public int SKUUnknownNumberPurchases { get; private set; } = 0;  
         #endregion
 
         #region Constructors
         public SKURansomsBalance(List<SKURansomsBalanceDataUnit> skuRansomsBalanceUnits)
         {
-            var groupsByStatus = from unit in skuRansomsBalanceUnits
-                                 group unit by unit.SKURansomsStatus
-                                 into nameGroup
-                                 orderby nameGroup.Key
-                                 select nameGroup;
+            var groupsBySKUNumber = from unit in skuRansomsBalanceUnits
+                                    group unit by unit.SKUNumber
+                                    into nameGroup
+                                    orderby nameGroup.Key
+                                    select nameGroup;
 
-            foreach (var group in groupsByStatus)
+            foreach (var group in groupsBySKUNumber)
             {
-                switch (group.Key)
+                foreach (var groupItem in group)
                 {
-                    case SKURansomsStatus.Delivered:
-                        SKURansomsDelivered = group.Count();
-                        break;
-                    case SKURansomsStatus.WithDrawn:
-                        SKURansomsWithDrawn = group.Count();
-                        break;
-                    case SKURansomsStatus.Canceled:
-                        SKURansomsCanceled = group.Count();
-                        break;
-                    case SKURansomsStatus.OnWay:
-                        SKURansomsOnWay = group.Count();
-                        break;
-                    case null:
-                        break;
+                    SKUInTransitNumberPurchases += groupItem.SKUInTransitNumberPurchases;
+                    SKUCancelledNumberPurchases += groupItem.SKUCancelledNumberPurchases;
+                    SKUDeliveredToPointsNumberPurchases += groupItem.SKUDeliveredToPointsNumberPurchases;
+                    SKUPickedupFromPointsNumberPurchases += groupItem.SKUPickedupFromPointsNumberPurchases;
+                    SKUUnknownNumberPurchases += groupItem.SKUUnknownNumberPurchases;
                 }
             }
-
-            CalculateTotalAndWaiting();
         }
 
         /// <summary>
         /// Constructor for tests.
         /// </summary>
-        public SKURansomsBalance(int? onWay, int? canceled, int? delivered, int? withDrawn)
+        public SKURansomsBalance(int? inTransit, int? canceled, int? deliveredToPoints, int? pickedupFromPoint, int? unknown)
         {
-            SKURansomsOnWay = onWay ?? 0;
-            SKURansomsCanceled = canceled ?? 0;
-            SKURansomsDelivered = delivered ?? 0;
-            SKURansomsWithDrawn = withDrawn ?? 0;
-
-            CalculateTotalAndWaiting();
+            SKUInTransitNumberPurchases = inTransit ?? 0;
+            SKUCancelledNumberPurchases = canceled ?? 0;
+            SKUDeliveredToPointsNumberPurchases = deliveredToPoints ?? 0;
+            SKUPickedupFromPointsNumberPurchases = pickedupFromPoint ?? 0;
+            SKUUnknownNumberPurchases = unknown ?? 0;
         }
         #endregion Constructors
 
         #region Functionality
 
-        public override string ToString() => $"Ransoms: total: {SKURansomsTotal}, on way: {SKURansomsOnWay}, canceled: {SKURansomsCanceled}, delivered: {SKURansomsDelivered}, withDrawn: {SKURansomsWithDrawn} (waiting: {SKURansomsWaiting})";
-
-        private void CalculateTotalAndWaiting()
-        {
-            SKURansomsTotal = SKURansomsDelivered + SKURansomsWithDrawn + SKURansomsCanceled + SKURansomsOnWay;
-            SKURansomsWaiting = SKURansomsDelivered + SKURansomsWithDrawn;
-        }
-
         public bool Equals(SKURansomsBalance? other) =>
-            this.SKURansomsTotal == other?.SKURansomsTotal &&
-            this.SKURansomsWaiting == other?.SKURansomsWaiting &&
-            this.SKURansomsOnWay == other?.SKURansomsOnWay &&
-            this.SKURansomsCanceled == other?.SKURansomsCanceled &&
-            this.SKURansomsDelivered == other?.SKURansomsDelivered &&
-            this.SKURansomsWithDrawn == other?.SKURansomsWithDrawn;
+            this.SKUTotalNumberPurchases == other?.SKUTotalNumberPurchases &&
+            this.SKUWaitingNumberPurchases == other?.SKUWaitingNumberPurchases &&
+            this.SKUInTransitNumberPurchases == other?.SKUInTransitNumberPurchases &&
+            this.SKUCancelledNumberPurchases == other?.SKUCancelledNumberPurchases &&
+            this.SKUDeliveredToPointsNumberPurchases == other?.SKUDeliveredToPointsNumberPurchases &&
+            this.SKUPickedupFromPointsNumberPurchases == other?.SKUPickedupFromPointsNumberPurchases;
 
         public override bool Equals(object? other)
         {

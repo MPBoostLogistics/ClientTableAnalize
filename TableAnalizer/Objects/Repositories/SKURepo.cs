@@ -71,12 +71,14 @@ namespace TableAnalizer.Objects.Repositories
                     break;
                 
                 case (true,true): 
-                    int? onWay = CombineIntValues(retriveValue.SKURansomsBalance!.SKURansomsOnWay, newValue.SKURansomsBalance!.SKURansomsOnWay, isSummary);
-                    int? canceled = CombineIntValues(retriveValue.SKURansomsBalance!.SKURansomsCanceled, newValue.SKURansomsBalance!.SKURansomsCanceled, isSummary);
-                    int? delivered = CombineIntValues(retriveValue.SKURansomsBalance!.SKURansomsDelivered, newValue.SKURansomsBalance!.SKURansomsDelivered, isSummary);
-                    int? withDrawn = CombineIntValues(retriveValue.SKURansomsBalance!.SKURansomsWithDrawn, newValue.SKURansomsBalance!.SKURansomsWithDrawn, isSummary);
-
-                    skuRansomsBalance = new (onWay, canceled, delivered, withDrawn);
+                    int? inTransitNumberPurchases = CombineIntValues(retriveValue.SKURansomsBalance!.SKUInTransitNumberPurchases, newValue.SKURansomsBalance!.SKUInTransitNumberPurchases, isSummary);
+                    int? cancelledNumberPurchases = CombineIntValues(retriveValue.SKURansomsBalance!.SKUCancelledNumberPurchases, newValue.SKURansomsBalance!.SKUCancelledNumberPurchases, isSummary);
+                    int? deliveredToPointsNumberPurchases = CombineIntValues(retriveValue.SKURansomsBalance!.SKUDeliveredToPointsNumberPurchases, newValue.SKURansomsBalance!.SKUDeliveredToPointsNumberPurchases, isSummary);
+                    int? pickedupFromPointsNumberPurchases = CombineIntValues(retriveValue.SKURansomsBalance!.SKUPickedupFromPointsNumberPurchases, newValue.SKURansomsBalance!.SKUPickedupFromPointsNumberPurchases, isSummary);
+                    int? unknownNumberPurchases = CombineIntValues(retriveValue.SKURansomsBalance!.SKUPickedupFromPointsNumberPurchases, newValue.SKURansomsBalance!.SKUUnknownNumberPurchases, isSummary);
+                    
+                    skuRansomsBalance = new (inTransitNumberPurchases, cancelledNumberPurchases, deliveredToPointsNumberPurchases, pickedupFromPointsNumberPurchases, unknownNumberPurchases);
+                    
                     break;
             }
 
@@ -94,20 +96,13 @@ namespace TableAnalizer.Objects.Repositories
                 
                 case (true,true): 
                     
-                    string brandAndName = !string.IsNullOrEmpty(retriveValue.SKURemainingBalance!.SKUBrandAndName) ?
-                        retriveValue.SKURemainingBalance!.SKUBrandAndName :
-                            !string.IsNullOrEmpty(newValue.SKURemainingBalance!.SKUBrandAndName) ?
-                            newValue.SKURemainingBalance!.SKUBrandAndName :
-                            string.Empty;
+                    int skuReceipt = CombineIntValues(retriveValue.SKURemainingBalance!.SKUReceipt, newValue.SKURemainingBalance!.SKUReceipt, isSummary);
+                    int skuOutgoingProducts = CombineIntValues(retriveValue.SKURemainingBalance!.SKUOutgoingProducts, newValue.SKURemainingBalance.SKUOutgoingProducts, isSummary);
+                    int skuTransfered = CombineIntValues(retriveValue.SKURemainingBalance!.SKUTransfered, newValue.SKURemainingBalance.SKUTransfered, isSummary); 
+                    int skuRemaining = CombineIntValues(retriveValue.SKURemainingBalance!.SKUTransfered, newValue.SKURemainingBalance.SKUTransfered, isSummary); 
 
-                    int skuReceipt = CombineIntValues(retriveValue.SKURemainingBalance.SKUReceipt, newValue.SKURemainingBalance!.SKUReceipt, isSummary);
-                    int skuOutgoingProducts = CombineIntValues(retriveValue.SKURemainingBalance.SKUOutgoingProducts, newValue.SKURemainingBalance.SKUOutgoingProducts, isSummary);
-                    int skuTransfered = CombineIntValues(retriveValue.SKURemainingBalance.SKUTransfered, newValue.SKURemainingBalance.SKUTransfered, isSummary); 
-                    int skuRemaining = CombineIntValues(retriveValue.SKURemainingBalance.SKUTransfered, newValue.SKURemainingBalance.SKUTransfered, isSummary); 
-
-                    skuRemainingBalance = new SKURemainingBalance(skuNumber, brandAndName, skuReceipt, skuOutgoingProducts, skuTransfered, skuRemaining);
+                    skuRemainingBalance = new SKURemainingBalance(skuNumber, skuReceipt, skuOutgoingProducts, skuTransfered, skuRemaining);
                 
-
                     break;
             }
 

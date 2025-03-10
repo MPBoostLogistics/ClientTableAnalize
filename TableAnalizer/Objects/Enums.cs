@@ -47,10 +47,27 @@ namespace TableAnalizer.Objects
 
     public enum SKURansomsStatus
     {
-        Delivered,  // Доставлен на ПВЗ
-        WithDrawn,  // Забран с ПВЗ
-        Canceled,   // Отменен 
-        OnWay      // В пути
+        /// <summary>
+        /// Покупки доставлены на точки
+        /// </summary>
+        DeliveredToPoints, 
+        /// <summary>
+        /// Покупки забраны с точек 
+        /// </summary>
+        PickedupFromPoints,  
+        /// <summary>
+        /// Покупки отменены
+        /// </summary>
+        Canceled,  
+        /// <summary>
+        /// Покупки в пути
+        /// </summary>
+        InTransit,
+        /// <summary>
+        /// Неизвестный статус покупок
+        /// </summary>
+        Unknown
+        
     }
 
     public enum ParsingTypeCode

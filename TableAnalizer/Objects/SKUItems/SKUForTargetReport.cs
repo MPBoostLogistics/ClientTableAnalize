@@ -217,11 +217,11 @@ namespace TableAnalizer.Objects.SKUItems
             // Fill SKURansomsBalance
             if (sku.SKURansomsBalance is not null)
             {
-                SKURansomsOnWay = sku.SKURansomsBalance.SKURansomsOnWay;
-                SKURansomsCanceled = sku.SKURansomsBalance.SKURansomsCanceled;
-                SKURansomsDelivered = sku.SKURansomsBalance.SKURansomsDelivered;
-                SKURansomsWithDrawn = sku.SKURansomsBalance.SKURansomsWithDrawn;
-                SKURansomsWaiting = sku.SKURansomsBalance.SKURansomsWaiting;
+                SKURansomsOnWay = sku.SKURansomsBalance.SKUInTransitNumberPurchases;
+                SKURansomsCanceled = sku.SKURansomsBalance.SKUCancelledNumberPurchases;
+                SKURansomsDelivered = sku.SKURansomsBalance.SKUDeliveredToPointsNumberPurchases;
+                SKURansomsWithDrawn = sku.SKURansomsBalance.SKUPickedupFromPointsNumberPurchases;
+                SKURansomsWaiting = sku.SKURansomsBalance.SKUWaitingNumberPurchases;
             }
 
             // Fill SKURemainingBalance
