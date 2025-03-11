@@ -41,8 +41,7 @@ namespace TableAnalizer.Objects
         /// <summary>
         /// Перемещния на фулфилмент
         /// </summary>       
-        Transfered,            
-        Client               // клиентский отчет
+        Transfered            
     }
 
     public enum SKURansomsStatus

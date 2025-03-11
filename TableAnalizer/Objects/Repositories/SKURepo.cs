@@ -23,6 +23,17 @@ namespace TableAnalizer.Objects.Repositories
 
         private static SKU CreateNewSKU(SKU retriveValue, SKU newValue, bool isSummary) 
         {
+            // Logins
+            List<string> clientLoginsList = (retriveValue.ClientLogins.Count > 0, newValue.ClientLogins.Count > 0) switch
+            {
+                (true, true) => [.. retriveValue.ClientLogins
+                        .Union(newValue.ClientLogins)
+                        .OrderByDescending(el => el)],
+                (true, false) => retriveValue.ClientLogins,
+                (false, true) => newValue.ClientLogins,
+                _ => [],
+            };
+
             // Marketplace 
             Marketplace? marketplace = null;
             switch(retriveValue.Marketplace.HasValue, newValue.Marketplace.HasValue) 
@@ -201,7 +212,7 @@ namespace TableAnalizer.Objects.Repositories
             // isParallel
             bool isParallel = retriveValue.IsParallelSKU || newValue.IsParallelSKU;
 
-            return new SKU(marketplace, skuNumber, skuBrand, skuName, skuRansomsBalance, 
+            return new SKU(clientLoginsList, marketplace, skuNumber, skuBrand, skuName, skuRansomsBalance, 
                 skuRemainingBalance, skuWriteOffBalance, skuCompensationBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays, isParallel);
         }
 

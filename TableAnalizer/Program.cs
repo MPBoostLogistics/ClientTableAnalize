@@ -260,33 +260,18 @@ internal class Program
         if (reportFile is not null)
         {
             // Make ExcelPackage
-            var package = excelManager!.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
+            using var package = excelManager!.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
 
-            if(package is not null) 
+            // Receiving and processing data
+            Task<double>? receivingAndProcessingDataTask = skuManager!.ReceivingAndProcessingData(reportFileKey, isInternalReport, package);
+            if(receivingAndProcessingDataTask is not null) 
             {
-                // Receiving and processing data
-                Task<double>? receivingAndProcessingDataTask = skuManager!.ReceivingAndProcessingData(reportFileKey, isInternalReport, package);
-                if(receivingAndProcessingDataTask is not null) 
-                {
-                    await Task.Run(async () => await receivingAndProcessingDataTask);
-                    receivingAndProcessingDataTask.Wait();
-                }
-    
-                // Dispose package
-                if(excelManager.GetExcelPackageByKey(reportFileKey, out ExcelPackage? existingPackage)) 
-                {
-                    existingPackage?.Dispose();
-                }
-
-                // Return time
-                return receivingAndProcessingDataTask?.Result ?? 0.00;
-            } 
-            else 
-            {
-                return 0.00;
+                await Task.Run(async () => await receivingAndProcessingDataTask);
+                receivingAndProcessingDataTask.Wait();
             }
 
-           
+            // Return time
+            return receivingAndProcessingDataTask?.Result ?? 0.00;
         }
         else
         {

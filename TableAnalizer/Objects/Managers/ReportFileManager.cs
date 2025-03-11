@@ -10,9 +10,8 @@ namespace TableAnalizer.Objects.Managers
     public class ReportFileManager(IConfiguration config) : BaseManager(config)
     {
         #region Fields 
-        private const string RANSOMS_SINGLE_REPORT_REGEX_01_PATTERN = @"Отчет\sвыкупов\sпо\sклиенту\s\W\d+";
-        private const string RANSOMS_SINGLE_REPORT_REGEX_02_PATTERN = @"Отчет\sвыкупов\sпо\sклиенту\s\d+";
-        private const string RANSOMS_MULTY_REPORT_REGEX_PATTERM = @"\bОтчет_выкупов_по_клиентам_\d+";
+        private const string RANSOMS_SINGLE_REPORT_REGEX_PATTERN = @"Отчет\sвыкупов\sпо\sклиенту\s\S+";
+        private const string RANSOMS_MULTY_REPORT_REGEX_PATTERM = @"Отчет_выкупов_по_клиентам_\S+";
         private const string BALANCE_REPORT_REGEX_PATTERN  = @"\d+\s+\bбаланс\b";
         private const string SHIPPED_REPORT_REGEX_PATTERN  = @"\d+\s+\bрасходы\b";
         private const string TRANSFER_REPORT_REGEX_PATTERN  = @"\d+\s+\bперемещения\b";
@@ -41,8 +40,7 @@ namespace TableAnalizer.Objects.Managers
             { 
                 SourceSKUReportFileKey.Ransoms,  
                 [ 
-                    new(RANSOMS_SINGLE_REPORT_REGEX_01_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-                    new(RANSOMS_SINGLE_REPORT_REGEX_02_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
+                    new(RANSOMS_SINGLE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
                     new(RANSOMS_MULTY_REPORT_REGEX_PATTERM, RegexOptions.None, TimeSpan.FromSeconds(1)) 
                 ] 
             }, 

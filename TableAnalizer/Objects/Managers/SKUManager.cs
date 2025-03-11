@@ -94,11 +94,7 @@ namespace TableAnalizer.Objects.Managers
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             // Get source excel worksheet by name
-            var currentWorksheetTask = excelManager?.GetExcelWorksheetByName(workSheetName, reportFileKey, excelPackage) ;
-            await Task.Run(() => currentWorksheetTask);
-            currentWorksheetTask?.Wait();
-            var currentWorksheet = currentWorksheetTask?.Result;
-            
+            var currentWorksheet = excelPackage.Workbook.Worksheets.SingleOrDefault(ws => ws.Name == workSheetName);
             if (currentWorksheet is null)
             {
                 OnManagerReached(new($"There is no worksheet named '{workSheetName}' in workbook file at key {reportFileKey}.",true, true));
@@ -166,10 +162,6 @@ namespace TableAnalizer.Objects.Managers
                                 predicateHandler = FindSkusWithResort;
                                 message = "Артикулов из пересортов: ";
                                 break;
-                            case ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME:
-                                predicateHandler = FindSkusWithParallel;
-                                message = "Артикулов из параллельных клиентов: ";
-                                break;
                         };
                         break;
                     case SourceSKUReportFileKey.OutgoingProducts:
@@ -219,7 +211,6 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOff = reportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
-            bool isParellel = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
 
             await Task.Delay(10); // dummy
 
@@ -338,17 +329,6 @@ namespace TableAnalizer.Objects.Managers
                     SkuResortBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
                 }
             } 
-            else if(isParellel) 
-            {
-                foreach (var rowWithRawData in rowsWithRawData)
-                {
-                    var unit = new SKUParallelUnit(rowWithRawData);
-                    if(!SKUParallelUnits.Contains(unit)) 
-                    {
-                        SKUParallelUnits.Add(unit);
-                    }
-                }
-            }
 
             return reportFileKey switch
             {
@@ -361,7 +341,6 @@ namespace TableAnalizer.Objects.Managers
                 {
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => SkuCompensationBalanceUnits.Count(),
                     ExcelManager.RESORTS_REPORT_WORKSHEET_NAME => SkuResortBalanceUnits.Count(),
-                    ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME => SKUParallelUnits.Count,
                     _ => 0
                 },
                 _ => 0
@@ -382,7 +361,6 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOff = skuReportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResorts = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
-            bool isParellel = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
 
             // Dummy
             await Task.Delay(1);
@@ -428,6 +406,8 @@ namespace TableAnalizer.Objects.Managers
                             throw new InvalidCastException("Cannot cast collection to IList<SKURansomsBalanceDataUnit>.");
 
 
+                        var login = units.First().SKUClientLogin;
+
                         marketplace = units.First().SKUMarketPlace;
 
                         var skuBrandAndName = units.First().SKUBrandAndName;
@@ -441,7 +421,7 @@ namespace TableAnalizer.Objects.Managers
                         var skuAveragePrice = units
                             .Average(u => u.SKUAveragePrice);
 
-                        SKU tempSKU = new(marketplace, skuNumber, skuBrandAndName, ransomsBalance, skuAveragePrice, skuLastPurchaseDate, DeadlineDays, IS_REMOVE_BRAND_FROM_NAME);
+                        SKU tempSKU = new(marketplace, login, skuNumber, skuBrandAndName, ransomsBalance, skuAveragePrice, skuLastPurchaseDate, DeadlineDays, IS_REMOVE_BRAND_FROM_NAME);
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, tempSKU);
                     }
                     else if (isRemaining)
@@ -498,15 +478,6 @@ namespace TableAnalizer.Objects.Managers
                         
                         UpdateSKUsToResortCollection(skuResortBalance);
                     }
-                }
-            }
-
-            if(isParellel && SKUParallelUnits.Count > 0) 
-            {
-                foreach (var skuParallelUnit in SKUParallelUnits)
-                {
-                    SKU tempSKU = new(skuParallelUnit.SKUNumber, true);
-                    SKUs.RetrieveAndUpdateOrAddValue(skuParallelUnit.SKUNumber, tempSKU);
                 }
             }
         }

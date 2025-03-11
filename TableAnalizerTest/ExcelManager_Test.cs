@@ -56,6 +56,19 @@ namespace TableAnalizerTest
         }
 
         [Test, Order(4)]
+        public void GetExcelWorksheetByName_Test() 
+        {
+            // arrange
+            // ...
+
+            // act
+            //excelManager.GetExcelWorksheetByName(ExcelManager.)
+
+            // assert 
+            // ... 
+        }
+
+        [Test, Order(5)]
         public void GetExcelWorksheetStringNamesByKey_Test() 
         {
             // arrange
@@ -70,8 +83,7 @@ namespace TableAnalizerTest
             Assert.That(workSheetNames.First(), Is.EqualTo(ExcelManager.RANSOMS_WORKSHEET_NAME));
         }
 
-
-        [Test, Order(5)]
+        [Test, Order(6)]
         public void MakeRangeSourceReportRowsByKey_Test() 
         {
             // arrange
@@ -86,7 +98,7 @@ namespace TableAnalizerTest
 
         }
 
-        [Test, Order(6)]
+        [Test, Order(7)]
         public async Task GetRangeSourceReportRows_Test() 
         {
             var excelPackage = new ExcelPackage (sourceReportFileForSKURansoms!.FileInfo);
@@ -117,7 +129,7 @@ namespace TableAnalizerTest
             excelPackage?.Dispose();
         }
 
-        [Test, Order(7)]
+        [Test, Order(8)]
         public async Task GetRawDataFromExcelRows_Test() 
         {
             // arrange

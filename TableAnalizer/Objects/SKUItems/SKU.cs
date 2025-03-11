@@ -5,10 +5,9 @@ using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.SKUItems
 {
-    /// <remarks><i>New version.</i></remarks>
     public class SKU
     {
-        #region  Variables and constants 
+        #region  Fields 
         public static readonly DateOnly DATEONLY_DEFAULT = new(0001,01,01);
         public static readonly double AVERAGE_PRICE_DEFAULT = 0.00;
         public static readonly int DEADLINE_DAYS_DEFAULT = 30;
@@ -18,6 +17,7 @@ namespace TableAnalizer.Objects.SKUItems
         #endregion Variables and constants
 
         #region Properties
+        public List<string> ClientLogins { get; private set; } = [];
         public Marketplace? Marketplace { get; private set; }
         public int SKUNumber { get; }
         public string SKUBrand { get; private set; } = DEFAULT_BRAND;
@@ -37,13 +37,17 @@ namespace TableAnalizer.Objects.SKUItems
         #region Constructors && destructors
 
         // Constructor for ransoms
-        public SKU(Marketplace? marketplace, int skuNumber, string skuBrandAndName, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate, int deadlineDays, bool isRemoveBrandFromName)
+        public SKU(Marketplace? marketplace, string? clientLogin, int skuNumber, string? skuBrandAndName, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate, int deadlineDays, bool isRemoveBrandFromName)
         {
+            if(!string.IsNullOrEmpty(clientLogin))
+                ClientLogins.Add(clientLogin);
+
             Marketplace = marketplace;
             SKUNumber = skuNumber;
-            ParsingSKUBrandAndName(skuBrandAndName, isRemoveBrandFromName);
 
-           
+            if(!string.IsNullOrEmpty(skuBrandAndName))
+                ParsingSKUBrandAndName(skuBrandAndName, isRemoveBrandFromName);
+
             SKURansomsBalance = skuRansomsBalance;
             AveragePrice = averagePrice;
             MaxRansomsDate = maxRansomsDate;
@@ -97,12 +101,13 @@ namespace TableAnalizer.Objects.SKUItems
         }
 
         // Constructor for generating a new entity from repository
-        public SKU(Marketplace? marketplace, int skuNumber, string skuBrand, string skuName, 
+        public SKU(List<string> clientLogins, Marketplace? marketplace,  int skuNumber, string skuBrand, string skuName, 
             SKURansomsBalance? skuRansomsBalance, SKURemainingBalance? skuRemainingBalance, 
             SKUWriteOffBalance? skuWriteOffBalance, SKUCompensationBalance? skuCompensationBalance, 
             SKUResortBalance skuResortBalance, double? averagePrice, 
             DateOnly? maxRansomsDate, int? deadLineDays, bool isParallel) 
        {
+            ClientLogins = clientLogins;
             Marketplace = marketplace;
             SKUNumber = skuNumber;
             SKUBrand = skuBrand ?? string.Empty;
@@ -151,34 +156,6 @@ namespace TableAnalizer.Objects.SKUItems
             SKUNumber = skuNumber;
             SKUResortBalance = skuResortBalance;
         }
-
-        // Constructor for parralel sku
-        public SKU(int skuNumber, bool isParallelSKU) 
-        {
-            SKUNumber = skuNumber;
-            IsParallelSKU = isParallelSKU;
-        }
-
-        // Constructor for analize client report
-        // public SKU(SKUClientReportDataUnit dataUnit, int deadlineDays) 
-        // {
-        //     Marketplace = dataUnit.SKUMp;
-        //     SKUNumber = dataUnit.SKUNumber;
-        //     SKUBrand = dataUnit.SKUBrand ?? string.Empty;
-        //     SKUName = dataUnit.SKUName ?? string.Empty;
-
-        //     SKURansomsBalance = new SKURansomsBalance (dataUnit.SKURansomsOnWay, dataUnit.SKURansomsCanceled, dataUnit.SKURansomsDelivered, dataUnit.SKURansomsWithDrawn, dataUnit.);
-        //     SKURemainingBalance = new SKURemainingBalance(dataUnit.SKUNumber, dataUnit.SKUReceiptGoods, dataUnit.SKUOutgoingProducts, dataUnit.SKUTransferDataUnit, dataUnit.SKURemaining);
-            
-        //     SKUWriteOffBalance = null;
-        //     SKUCompensationBalance = null;
-        //     SKUResortBalance = null;
-
-        //     AveragePrice = dataUnit.SKUPrice ?? 0.00;
-        //     MaxRansomsDate = dataUnit.SKURansomDate;
-
-        //     DeadLineDays = deadlineDays;
-        // }
         #endregion
     }
 }
