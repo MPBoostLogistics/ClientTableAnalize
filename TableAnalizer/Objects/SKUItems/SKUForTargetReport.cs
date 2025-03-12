@@ -119,8 +119,12 @@ namespace TableAnalizer.Objects.SKUItems
         public int LessMutualSettlementThanWaiting => 
             SKUMutualSettlement < SKURansomsWaiting ? 
                 SKURemaining > 0 ? 
-                SKURansomsWaiting - SKUMutualSettlement - SKURemaining : 
-                SKURansomsWaiting - SKUMutualSettlement : 
+                SKURansomsWaiting - SKUMutualSettlement - SKURemaining >= 0 ?
+                    SKURansomsWaiting - SKUMutualSettlement - SKURemaining :
+                    0 : 
+                SKURansomsWaiting - SKUMutualSettlement > 0 ? 
+                SKURansomsWaiting - SKUMutualSettlement :
+                0 : 
             0;
 
         /// <summary>
