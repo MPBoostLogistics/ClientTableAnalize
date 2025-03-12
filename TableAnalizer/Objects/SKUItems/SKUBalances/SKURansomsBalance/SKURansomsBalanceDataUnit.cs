@@ -14,6 +14,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         public string? SKUBrandAndName { get; set; }
         public double SKUAveragePrice { get;  set; }
         public DateOnly SKULastPurchaseDate { get;  set; }
+
         public int SKUTotalNumberPurchases { get; set; }
         public int SKUInTransitNumberPurchases { get; set; }
         public int SKUCancelledNumberPurchases { get; set; }

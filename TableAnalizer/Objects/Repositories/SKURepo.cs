@@ -24,16 +24,10 @@ namespace TableAnalizer.Objects.Repositories
         private static SKU CreateNewSKU(SKU retriveValue, SKU newValue, bool isSummary) 
         {
             // Logins
-            List<string> clientLoginsList = (retriveValue.ClientLogins.Count > 0, newValue.ClientLogins.Count > 0) switch
-            {
-                (true, true) => [.. retriveValue.ClientLogins
+            List<string> clientLoginsList =  [.. retriveValue.ClientLogins
                         .Union(newValue.ClientLogins)
-                        .OrderByDescending(el => el)],
-                (true, false) => retriveValue.ClientLogins,
-                (false, true) => newValue.ClientLogins,
-                _ => [],
-            };
-
+                        .OrderByDescending(el => el)];
+             
             // Marketplace 
             Marketplace? marketplace = null;
             switch(retriveValue.Marketplace.HasValue, newValue.Marketplace.HasValue) 

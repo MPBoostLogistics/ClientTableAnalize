@@ -3,25 +3,15 @@ namespace TableAnalizer.Objects.Parsing
     /// <summary>
     /// Represents source column of an Excel table.
     /// </summary>
-    public readonly struct SourceColumn 
+    public readonly struct SourceColumn(int colIndex, string name, ParsingTypeCode parsingTypeCode, bool isValueRequired, string? filterString = null)
     {
         #region Properties
-        public int ColIndex { get; }
-        public string Name { get; }
-        public ParsingTypeCode ParsingTypeCode { get; }
-        public bool IsValueRequired { get; }
-        public string? FilterString { get; }
-        #endregion
+        public int ColIndex { get; } = colIndex;
+        public string Name { get; } = name;
+        public ParsingTypeCode ParsingTypeCode { get; } = parsingTypeCode;
+        public bool IsValueRequired { get; } = isValueRequired;
+        public string? FilterString { get; } = filterString;
 
-        #region Constructors
-        public SourceColumn(int colIndex, string name, ParsingTypeCode parsingTypeCode,  bool isValueRequired, string? filterString = null)
-        {
-            ColIndex = colIndex;
-            Name = name;
-            ParsingTypeCode = parsingTypeCode;
-            IsValueRequired = isValueRequired;
-            FilterString = filterString;
-        }
         #endregion
     }
 }

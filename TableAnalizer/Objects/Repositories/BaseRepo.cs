@@ -13,7 +13,7 @@ namespace TableAnalizer.Objects.Repositories
         
         public virtual bool GetValue(K id, out V? item) => Entiies.TryGetValue(id, out item);
 
-        public virtual List<V> GetValues(Predicate<V> predicate) => Entiies.Values.ToList().FindAll(predicate).ToList();
+        public virtual List<V> GetValues(Predicate<V> predicate) => [.. Entiies.Values.ToList().FindAll(predicate)];
 
         public virtual int GetValuesCount(Predicate<V> predicate) => Entiies.Values.ToList().FindAll(predicate).Count;
   

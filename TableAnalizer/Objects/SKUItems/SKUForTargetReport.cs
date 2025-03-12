@@ -204,7 +204,7 @@ namespace TableAnalizer.Objects.SKUItems
         #region Constructors
         public SKUForTargetReports(SKU sku, bool isInternalReport, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues = null)
         {
-            SKULogins = string.Join(",", sku.ClientLogins);
+            SKULogins = string.Join(", ", sku.ClientLogins);
             SKUmp = sku.Marketplace;
             SKUNumber = sku.SKUNumber;
             SKUBrand = sku.SKUBrand;

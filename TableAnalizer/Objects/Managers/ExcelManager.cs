@@ -263,7 +263,7 @@ namespace TableAnalizer.Objects.Managers
            
             new (colNumber: 25, colName: "Задержка довоза, всего", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayTotal),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: accentTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: accentTargetCellSettings),
             new (colNumber: 26, colName: "Задержка довоза от точек, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayPoints),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 4),
@@ -300,16 +300,16 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 5, colName: "Задержка довоза от точек, товаров", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty,  propertyName: "SKUDeliveryDelayPoints",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x == 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 6, colName: "Задержка довоза от точек, сумма", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUDeliveryDelayPointsSum",
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x == 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 7, colName: "Задержка довоза от склада, товаров", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUDeliveryDelayStorage",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x == 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 8, colName: "Задержка довоза от склада, сумма", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUDeliveryDelayStorageSum",
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x == 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings)
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings)
         ];
         public TargetCell[] cellsReportingOverruns =
         [
@@ -327,10 +327,10 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 5, colName: "Перерасход, товаров", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUOverrunsCount",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x == 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 6, colName: "Перерасход, сумма", colWidth: 14, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUOverrunsSum",
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode,valueСheckingPredicate: x => x == 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings)
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode,valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings)
         ];
         public TargetCell[] cellsReportingAnalitics = 
         [

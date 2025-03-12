@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
@@ -506,19 +505,15 @@ namespace TableAnalizer.Objects.Managers
             List<string>? filenameStrings;
 
             var isSummary =  filename.Contains('_');
-            filenameStrings = isSummary ? [.. filename.Split('_')] : [.. filename.Split(' ')];
+            filenameStrings = isSummary ? [.. filename.Split('_', '.')] : [.. filename.Split(' ', '.')];
        
             filenameStrings.RemoveRange(0,4);
+            filenameStrings.RemoveRange(filenameStrings.Count - 1, 1); // remove xlsx
 
-            // Один элемент = один логин
+            // Single login
             if(filenameStrings.Count == 1) 
             {
                 var element = filenameStrings[0];
-                if(element.Contains('.'))
-                {
-                    var elements = element.Split('.');
-                    element = elements.First();
-                }
 
                 if(element.StartsWith('+'))
                     RemoveChars(true, false, ['+'], ref element);
@@ -526,21 +521,21 @@ namespace TableAnalizer.Objects.Managers
                 filenameStrings[0] = element;
 
             } 
-            // Несколько элементов = несколько логинов
+            // Many logins
             else 
             {
                 for (int i = 0; i < filenameStrings.Count; i++)
                 {
                     var element = filenameStrings[i];
+
                     RemoveChars(start: true, end: false, ['+'], ref element);
                     RemoveChars(start: false, end: true, [','], ref element);
+                    
                     filenameStrings[i] = element.Trim();
                 }
             }
 
             return filenameStrings; 
-
-            //"+447849626195.xlsx"
         }
 
         #endregion

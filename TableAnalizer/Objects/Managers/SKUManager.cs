@@ -122,7 +122,7 @@ namespace TableAnalizer.Objects.Managers
 
                 // Processing:
                 // 1. Save balances for sku's
-                await SaveSKUBalanceUnits(reportFileKey, workSheetName, [.. rawRowsItems], isInternalReport);
+                await SaveSKUBalanceUnits(reportFileKey, workSheetName, [.. rawRowsItems]);
 
                 // 2. Create or update sku's from balance units 
                 var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName, isInternalReport);
@@ -202,7 +202,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="rowsWithRawData">List of raw data dictionaries.</param>
         /// <returns>Number of keys in final dictionary.</returns>
         /// <exception cref="ArgumentException">Exception when passing an empty dictionary.</exception>
-        public async Task<int> SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData, bool isSummary)
+        public async Task<int> SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData)
         {
             bool isRansoms = reportFileKey == SourceSKUReportFileKey.Ransoms;
             bool isBalance = reportFileKey == SourceSKUReportFileKey.Balance;
@@ -224,7 +224,7 @@ namespace TableAnalizer.Objects.Managers
 
                 foreach (var group in skuRansomsBalanceDataUnits)
                 {
-                    var list = (((List<SKURansomsBalanceDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ?? 
+                    List<ParsingRowEntity>? list = (((List<SKURansomsBalanceDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ?? 
                         throw new InvalidCastException("Невозможно привести List<SKURansomsBalanceDataUnit> к List<ParsingRowEntity>");
 
                     var skuNumber = group.Key;
@@ -405,8 +405,11 @@ namespace TableAnalizer.Objects.Managers
                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKURansomsBalanceDataUnit>().ToList()) ??
                             throw new InvalidCastException("Cannot cast collection to IList<SKURansomsBalanceDataUnit>.");
 
+                        var logins = from unit in units
+                                     select unit.SKUClientLogin;
 
-                        var login = units.First().SKUClientLogin;
+
+                        var loginsString = string.Join(", ", logins.ToList());
 
                         marketplace = units.First().SKUMarketPlace;
 
@@ -421,7 +424,7 @@ namespace TableAnalizer.Objects.Managers
                         var skuAveragePrice = units
                             .Average(u => u.SKUAveragePrice);
 
-                        SKU tempSKU = new(marketplace, login, skuNumber, skuBrandAndName, ransomsBalance, skuAveragePrice, skuLastPurchaseDate, DeadlineDays, IS_REMOVE_BRAND_FROM_NAME);
+                        SKU tempSKU = new(marketplace, loginsString, skuNumber, skuBrandAndName, ransomsBalance, skuAveragePrice, skuLastPurchaseDate, DeadlineDays, IS_REMOVE_BRAND_FROM_NAME);
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, tempSKU);
                     }
                     else if (isRemaining)
