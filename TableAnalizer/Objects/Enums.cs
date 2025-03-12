@@ -16,49 +16,57 @@ namespace TableAnalizer.Objects
         Unknown                     // Неопределенный
     }
 
-    public enum ArticeStorageIndex
-    {
-        GoodsExpected,      // Ожидаемое количество товаров на складе
-        GoodsReceived,      // Принято товаров
-        GoodsShipped,       // Отгружено товарами
-        GoodsRemaining,     // Остаток товаров на складе
-        WriteoffShortages   // Принято на склад и списано по недостачам
-    }
-
     public enum SourceSKUReportFileKey
     {
-        RansomsWB,          // выкупы WB
-        RansomsOZ,          // выкупы OZ
+        /// <summary>
+        /// Выкупы клиента
+        /// </summary>
+        Ransoms,
         /// <summary>
         /// Баланс (приходы и остатки)
         /// </summary>
-        Balance,          
-        WriteOffShortages,  // списание недростач общее 
-        Additional,          // недостачи, пересорты и пустышки
-        Shipped,             // расходы товаром 
-        Transfered,            // перемещение (на фулфилмент) 
-        Client               // клиентский отчет
-    }
-
-    public enum SourceSKUReportKey
-    {
-        RansomsWB,          // выкупы WB
-        RansomsOZ,          // выкупы OZ
-        RemainingWB,        // приходы и остатки WB
-        RemainingOZ,        // приходы и остатки OZ
-        Shipped,            // расходы товаром 
-        Transfered,         // передано товаров (на производство)
-        WriteOffShortages,  // списание недростач общее 
-        Compensation,       // оплаченные недостачи
-        Resort,             // пересорты 
+        Balance,      
+        /// <summary>
+        /// Списано недостач с точек
+        /// </summary>   
+        WriteOffShortages,
+        /// <summary>
+        /// Недостачи и пересорты
+        /// </summary>
+        Additional,    
+        /// <summary>
+        /// Расходы товаром. 
+        /// </summary>
+        OutgoingProducts,      
+        /// <summary>
+        /// Перемещния на фулфилмент
+        /// </summary>       
+        Transfered            
     }
 
     public enum SKURansomsStatus
     {
-        Delivered,  // Доставлен на ПВЗ
-        WithDrawn,  // Забран с ПВЗ
-        Canceled,   // Отменен 
-        OnWay      // В пути
+        /// <summary>
+        /// Покупки доставлены на точки
+        /// </summary>
+        DeliveredToPoints, 
+        /// <summary>
+        /// Покупки забраны с точек 
+        /// </summary>
+        PickedupFromPoints,  
+        /// <summary>
+        /// Покупки отменены
+        /// </summary>
+        Canceled,  
+        /// <summary>
+        /// Покупки в пути
+        /// </summary>
+        InTransit,
+        /// <summary>
+        /// Неизвестный статус покупок
+        /// </summary>
+        Unknown
+        
     }
 
     public enum ParsingTypeCode

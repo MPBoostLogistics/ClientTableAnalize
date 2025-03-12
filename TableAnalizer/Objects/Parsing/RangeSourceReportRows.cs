@@ -3,23 +3,23 @@ namespace TableAnalizer.Objects.Parsing
     /// <summary>
     /// Represents a range of source report rows.
     /// </summary>
-    public class RangeSourceReportRows
+    public class RangeSourceReportRows(List<SourceColumn> sourceCells, string? key = null, (string key, int offset)? terminatingStringValue = null)
     {
         #region Properties
         /// <summary>
         /// String key with name of room (range), can be empty (for example, if there is only one range).
         /// </summary>
-        public string? Key { get; }
+        public string? Key { get; } = key;
 
         /// <summary>
         /// Terminating string value from which index of the last row is calculated (can be empty)
         /// </summary>
-        public (string key, int offset)? TerminatingStringValue { get; }
+        public (string key, int offset)? TerminatingStringValue { get; } = terminatingStringValue;
 
         /// <summary>
         /// Collection of SourceColumn objects (describe cource columns of range)
         /// </summary>
-        public List<SourceColumn> SourceCells { get; }
+        public List<SourceColumn> SourceCells { get; } = sourceCells;
 
         /// <summary>
         /// A collection of range row indexes.
@@ -29,17 +29,9 @@ namespace TableAnalizer.Objects.Parsing
         /// <summary>
         /// A collection of data on read rows (each row is a dictionary of values).
         /// </summary>
-        public List<Dictionary<string, ItemForParsing>> DataOnReadRowsCollection { get; private set; } = new();
-        #endregion Properties
+        public List<Dictionary<string, ItemForParsing>> DataOnReadRowsCollection { get; private set; } = [];
 
-        #region  Constructors
-        public RangeSourceReportRows(List<SourceColumn> sourceCells, string? key = null, (string key, int offset)? terminatingStringValue = null)
-        {
-            SourceCells = sourceCells;
-            Key = key;
-            TerminatingStringValue = terminatingStringValue;
-        }
-        #endregion Constructors
+        #endregion Properties
 
         #region Functionality
         public void SetRange(int startRowIndex, int count) =>

@@ -12,6 +12,7 @@ namespace TableAnalizer.Objects.SKUItems
 
         #region Properties
         #region Properties - Common
+        public string SKULogins { get; set; }
         public Marketplace? SKUmp { get; set; }
         public int SKUNumber { get; set; }
         public string SKUBrand { get; set; }
@@ -118,8 +119,12 @@ namespace TableAnalizer.Objects.SKUItems
         public int LessMutualSettlementThanWaiting => 
             SKUMutualSettlement < SKURansomsWaiting ? 
                 SKURemaining > 0 ? 
-                SKURansomsWaiting - SKUMutualSettlement - SKURemaining : 
-                SKURansomsWaiting - SKUMutualSettlement : 
+                SKURansomsWaiting - SKUMutualSettlement - SKURemaining >= 0 ?
+                    SKURansomsWaiting - SKUMutualSettlement - SKURemaining :
+                    0 : 
+                SKURansomsWaiting - SKUMutualSettlement > 0 ? 
+                SKURansomsWaiting - SKUMutualSettlement :
+                0 : 
             0;
 
         /// <summary>
@@ -201,8 +206,9 @@ namespace TableAnalizer.Objects.SKUItems
         #endregion
 
         #region Constructors
-        public SKUForTargetReports(SKU sku, bool isRawReport, bool isMulty, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues = null)
+        public SKUForTargetReports(SKU sku, bool isInternalReport, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues = null)
         {
+            SKULogins = string.Join(", ", sku.ClientLogins);
             SKUmp = sku.Marketplace;
             SKUNumber = sku.SKUNumber;
             SKUBrand = sku.SKUBrand;
@@ -217,11 +223,11 @@ namespace TableAnalizer.Objects.SKUItems
             // Fill SKURansomsBalance
             if (sku.SKURansomsBalance is not null)
             {
-                SKURansomsOnWay = sku.SKURansomsBalance.SKURansomsOnWay;
-                SKURansomsCanceled = sku.SKURansomsBalance.SKURansomsCanceled;
-                SKURansomsDelivered = sku.SKURansomsBalance.SKURansomsDelivered;
-                SKURansomsWithDrawn = sku.SKURansomsBalance.SKURansomsWithDrawn;
-                SKURansomsWaiting = sku.SKURansomsBalance.SKURansomsWaiting;
+                SKURansomsOnWay = sku.SKURansomsBalance.SKUInTransitNumberPurchases;
+                SKURansomsCanceled = sku.SKURansomsBalance.SKUCancelledNumberPurchases;
+                SKURansomsDelivered = sku.SKURansomsBalance.SKUDeliveredToPointsNumberPurchases;
+                SKURansomsWithDrawn = sku.SKURansomsBalance.SKUPickedupFromPointsNumberPurchases;
+                SKURansomsWaiting = sku.SKURansomsBalance.SKUWaitingNumberPurchases;
             }
 
             // Fill SKURemainingBalance
@@ -233,7 +239,7 @@ namespace TableAnalizer.Objects.SKUItems
                 // Удаляем приходы из расхода по списанию
                 SKUReceiptGoods = writeOff.HasValue ? receipt - writeOff.Value : receipt;
 
-                SKUOutgoingProducts = sku.SKURemainingBalance.SKUShipped;
+                SKUOutgoingProducts = sku.SKURemainingBalance.SKUOutgoingProducts;
                 SKUTransfered = sku.SKURemainingBalance.SKUTransfered;
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
             }
@@ -251,13 +257,13 @@ namespace TableAnalizer.Objects.SKUItems
             }
 
             // Article analysis
-            AnalizeSKU(sku, isRawReport, isMulty, traceDelay, resortFromSkusValues);
+            AnalizeSKU(sku, isInternalReport,  traceDelay, resortFromSkusValues);
         }
 
         #endregion
 
         #region Functionality
-        private void AnalizeSKU(SKU sku, bool isInteralReport, bool isSummary, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
+        private void AnalizeSKU(SKU sku, bool isInteralReport, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
         {
             // Setting status to undefined
             SetSellmentStatus(SKUSellmentStatus.Unknown);
@@ -336,7 +342,7 @@ namespace TableAnalizer.Objects.SKUItems
                     select skuAndSum;
 
 
-                // Исходящие: Пересорты расхода
+                // Входящие: Пересорты расхода
                 var resortConsumptionItems = GetResortValuesBy(SKUResortBalanceTarget.ResortingConsumption);
                 var resortConsumptionItemsSum = resortConsumptionItems?.Aggregate(0, (acc, i) => acc + i.sum);
                 if (resortConsumptionItems is not null && resortConsumptionItems.Any() && resortConsumptionItemsSum > 0)
@@ -344,7 +350,7 @@ namespace TableAnalizer.Objects.SKUItems
 
                     SKUResort += (int)resortConsumptionItemsSum;
 
-                    if(resortConsumptionItemsSum >= LessReceiptThanWaiting) 
+                    if(SKUMutualSettlement >= SKURansomsWaiting && (int)resortConsumptionItemsSum >= LessReceiptThanWaiting) 
                     {
                         SKUReceiptGoods += (int)resortConsumptionItemsSum;
                     }

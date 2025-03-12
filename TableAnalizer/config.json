@@ -19,5 +19,9 @@
     "Collections": 
     {
       "validFileExtensions" : [".xls", ".xlsx"]
+    },
+    "Strings" : 
+    {
+      "LogisticsReportFirstName" : "LogisticsReport"
     }
   }

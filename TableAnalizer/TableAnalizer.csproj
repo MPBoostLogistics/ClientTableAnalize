@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <PlatformTarget>anycpu</PlatformTarget>
+    <PlatformTarget>ARM64</PlatformTarget>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ReleaseVersion>0.2</ReleaseVersion>
@@ -13,9 +13,10 @@
     <None Remove="EPPlus" />
     <None Remove="Objects\" />
   </ItemGroup>
+  
   <ItemGroup>
-    <PackageReference Include="EPPlus" Version="7.6.0" />
-    <PackageReference Include="Vegiwoo.CSharpHelpers" Version="1.0.16" />
+    <PackageReference Include="EPPlus" Version="7.6.1" />
+    <PackageReference Include="Vegiwoo.CSharpHelpers" Version="1.0.20" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Objects\" />

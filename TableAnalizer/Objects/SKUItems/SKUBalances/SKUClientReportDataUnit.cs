@@ -16,9 +16,11 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         public int SKURansomsOnWay { get; set; } 
         public int SKURansomsDelivered { get; set; } 
         public int SKURansomsWithDrawn { get; set; } 
-        public int SKUReceipt { get; set; } 
-        public int SKUShipped { get; set; } 
+        public int SKUReceiptGoods { get; set; } 
+        public int SKUPaidPoints { get; set; }
+        public int SKUOutgoingProducts { get; set; } 
         public int SKUTransferDataUnit { get; set; } 
+        public int SKUPaidWarehouse { get; set; }
         public int SKURemaining { get; set; }
         #endregion Properties
     }

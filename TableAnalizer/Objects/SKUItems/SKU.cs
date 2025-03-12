@@ -5,20 +5,23 @@ using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.SKUItems
 {
-    /// <remarks><i>New version.</i></remarks>
     public class SKU
     {
-        #region  Variables and constants 
+        #region  Fields 
         public static readonly DateOnly DATEONLY_DEFAULT = new(0001,01,01);
         public static readonly double AVERAGE_PRICE_DEFAULT = 0.00;
         public static readonly int DEADLINE_DAYS_DEFAULT = 30;
+
+        public const string DEFAULT_BRAND = "No brand";
+        public const string DEFAULT_NAME = "No brand";
         #endregion Variables and constants
 
         #region Properties
+        public List<string> ClientLogins { get; private set; } = [];
         public Marketplace? Marketplace { get; private set; }
         public int SKUNumber { get; }
-        public string SKUBrand { get; private set; } = string.Empty;
-        public string SKUName { get; private set; } = string.Empty;
+        public string SKUBrand { get; private set; } = DEFAULT_BRAND;
+        public string SKUName { get; private set; } = DEFAULT_NAME;
         public SKURansomsBalance? SKURansomsBalance { get; private set;}
         public SKURemainingBalance? SKURemainingBalance { get; private set;}
         public SKUWriteOffBalance? SKUWriteOffBalance { get; private set;}
@@ -34,12 +37,17 @@ namespace TableAnalizer.Objects.SKUItems
         #region Constructors && destructors
 
         // Constructor for ransoms
-        public SKU(Marketplace? marketplace, int skuNumber, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate, int deadlineDays)
+        public SKU(Marketplace? marketplace, string? clientLogin, int skuNumber, string? skuBrandAndName, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate, int deadlineDays, bool isRemoveBrandFromName)
         {
-            SKUNumber = skuNumber;
-            SKUBrand = string.Empty; SKUName = string.Empty;
+            if(!string.IsNullOrEmpty(clientLogin))
+                ClientLogins.Add(clientLogin);
 
             Marketplace = marketplace;
+            SKUNumber = skuNumber;
+
+            if(!string.IsNullOrEmpty(skuBrandAndName))
+                ParsingSKUBrandAndName(skuBrandAndName, isRemoveBrandFromName);
+
             SKURansomsBalance = skuRansomsBalance;
             AveragePrice = averagePrice;
             MaxRansomsDate = maxRansomsDate;
@@ -48,44 +56,58 @@ namespace TableAnalizer.Objects.SKUItems
         }
 
         // Constructor for remainingBalance 
-        public SKU(Marketplace? marketplace, int skuNumber, SKURemainingBalance skuRemainingBalance, bool isRemoveBrandFromName)
+        public SKU(int skuNumber, SKURemainingBalance skuRemainingBalance)
         {
-            Marketplace = marketplace;
             SKUNumber = skuNumber;
-
             SKURemainingBalance = skuRemainingBalance;
+        }
 
-            string[]? skuBrandAndName = skuRemainingBalance.SKUBrandAndName.Split('/');
-
-            switch(skuBrandAndName.Length) 
+        private void ParsingSKUBrandAndName(string skuBrandAndNameString, bool isRemoveBrandFromName)
+        {
+            // Если есть разделитель /
+            // biidi / Говорящая детские книга для малышей - Алфавит и цифры, Общая характеристика товара			
+            if (skuBrandAndNameString.Contains('/'))
             {
-                case 1:
-                    SKUName = isRemoveBrandFromName ? skuBrandAndName[0].Trim() : skuRemainingBalance.SKUBrandAndName.Trim();
-                    break;
-                case 2: case 3: case 4:
-                    SKUBrand = skuBrandAndName[0].Trim();
-                    SKUName = isRemoveBrandFromName ? skuBrandAndName[1].Trim() : skuRemainingBalance.SKUBrandAndName.Trim(); 
-                    break;
-                default:
-                    break;
+                string[]? skuBrandAndName = skuBrandAndNameString.Split('/');
+
+                switch (skuBrandAndName.Length)
+                {
+                    case 1:
+                        SKUName = isRemoveBrandFromName ? skuBrandAndName[0].Trim() : skuBrandAndNameString.Trim();
+                        break;
+                    case 2:
+                    case 3:
+                    case 4:
+                        SKUBrand = skuBrandAndName[0].Trim();
+                        SKUName = isRemoveBrandFromName ? skuBrandAndName[1].Trim() : skuBrandAndNameString.Trim();
+                        break;
+                    default:
+                        break;
+                }
             }
+            else
+            {
+                SKUName = skuBrandAndNameString.Trim();
+            }
+
 
             // Remove ", Общая характеристика товара"
             string[]? SKUNameWithOtherInfо = SKUName.Split(',');
-            if(SKUNameWithOtherInfо.Last() == " Общая характеристика товара") 
+            if (SKUNameWithOtherInfо.Last() == " Общая характеристика товара")
             {
-                SKUNameWithOtherInfо = SKUNameWithOtherInfо.Take(SKUNameWithOtherInfо.Length - 1).ToArray();
+                SKUNameWithOtherInfо = [.. SKUNameWithOtherInfо.Take(SKUNameWithOtherInfо.Length - 1)];
                 SKUName = string.Join("", SKUNameWithOtherInfо);
             }
         }
 
         // Constructor for generating a new entity from repository
-        public SKU(Marketplace? marketplace, int skuNumber, string skuBrand, string skuName, 
+        public SKU(List<string> clientLogins, Marketplace? marketplace,  int skuNumber, string skuBrand, string skuName, 
             SKURansomsBalance? skuRansomsBalance, SKURemainingBalance? skuRemainingBalance, 
             SKUWriteOffBalance? skuWriteOffBalance, SKUCompensationBalance? skuCompensationBalance, 
             SKUResortBalance skuResortBalance, double? averagePrice, 
             DateOnly? maxRansomsDate, int? deadLineDays, bool isParallel) 
        {
+            ClientLogins = clientLogins;
             Marketplace = marketplace;
             SKUNumber = skuNumber;
             SKUBrand = skuBrand ?? string.Empty;
@@ -122,10 +144,9 @@ namespace TableAnalizer.Objects.SKUItems
         }
 
         // Constructor for writeOffBalance 
-        public SKU(int skuNumber, Marketplace marketplace, SKUWriteOffBalance writeOffBalance) 
+        public SKU(int skuNumber, SKUWriteOffBalance writeOffBalance) 
         {
             SKUNumber = skuNumber;
-            Marketplace = marketplace;
             SKUWriteOffBalance = writeOffBalance;
         }
 
@@ -134,34 +155,6 @@ namespace TableAnalizer.Objects.SKUItems
         {
             SKUNumber = skuNumber;
             SKUResortBalance = skuResortBalance;
-        }
-
-        // Constructor for parralel sku
-        public SKU(int skuNumber, bool isParallelSKU) 
-        {
-            SKUNumber = skuNumber;
-            IsParallelSKU = isParallelSKU;
-        }
-
-        // Constructor for analize client report
-        public SKU(SKUClientReportDataUnit dataUnit, int deadlineDays) 
-        {
-            Marketplace = dataUnit.SKUMp;
-            SKUNumber = dataUnit.SKUNumber;
-            SKUBrand = dataUnit.SKUBrand ?? string.Empty;
-            SKUName = dataUnit.SKUName ?? string.Empty;
-
-            SKURansomsBalance = new SKURansomsBalance (dataUnit.SKURansomsOnWay, dataUnit.SKURansomsCanceled, dataUnit.SKURansomsDelivered, dataUnit.SKURansomsWithDrawn);
-            SKURemainingBalance = new SKURemainingBalance(dataUnit.SKUNumber, SKUName, dataUnit.SKUReceipt, dataUnit.SKUShipped, dataUnit.SKUTransferDataUnit, dataUnit.SKURemaining);
-            
-            SKUWriteOffBalance = null;
-            SKUCompensationBalance = null;
-            SKUResortBalance = null;
-
-            AveragePrice = dataUnit.SKUPrice ?? 0.00;
-            MaxRansomsDate = dataUnit.SKURansomDate;
-
-            DeadLineDays = deadlineDays;
         }
         #endregion
     }
