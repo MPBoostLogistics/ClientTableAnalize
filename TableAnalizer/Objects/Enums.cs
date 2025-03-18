@@ -92,9 +92,13 @@ namespace TableAnalizer.Objects
     public enum SKUResortBalanceTarget 
     {
         /// <summary>
-        /// Пересорттица товарами
+        /// Пересортица расходов
         /// </summary>
-        ResortingConsumption
+        ResortingConsumption, 
+        /// <summary>
+        /// Пересортица приходов
+        /// </summary>
+        ResortingReceipt
     }
 
     public enum CompensationTarget 

@@ -7,7 +7,7 @@ namespace TableAnalizer.Objects.SKUItems
     {
         #region Fields
         private const string RESORT_CONSUMPTION_FIRST_LINE = "Пересортица расхода от др.арт. (добавлен в \"Приход товаром\" и \"Расход пересортом\"):\n";
-
+        private const string RESORT_RECEIPT_FIRST_LINE = "Пересортица прихода от др.арт. (добавлен в \"Приход товаром\"):\n";
         #endregion
 
         #region Properties
@@ -23,8 +23,6 @@ namespace TableAnalizer.Objects.SKUItems
         public SellmentStatus SellmentStatus { get; private set; } = new SellmentStatus(SKUSellmentStatus.Unknown);
         public string SellmentStatusString => SellmentStatus.StatusLabel;
 
-        // Is Parrales sku
-        private bool IsParallelSku { get; set; }
         public Color FillColor { get; set; }
 
         #endregion
@@ -230,8 +228,6 @@ namespace TableAnalizer.Objects.SKUItems
             SKUDate = sku.MaxRansomsDate;
             isDeadline = (SKUDate.ToDateTime(new TimeOnly()) - DateTime.Now).Duration().Days > sku.DeadLineDays;
 
-            IsParallelSku = sku.IsParallelSKU;
-
             // Fill SKURansomsBalance
             if (sku.SKURansomsBalance is not null)
             {
@@ -325,21 +321,30 @@ namespace TableAnalizer.Objects.SKUItems
             if (sku.SKUResortBalance is not null)
             {
                 // Исходящие: Пересорты расхода
-                var resortConsumptionItems = sku.SKUResortBalance?.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortingConsumption);
-                if (resortConsumptionItems.HasValue && resortConsumptionItems.Value.sum > 0)
+                var resortsReceiptItems = sku.SKUResortBalance?.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortingReceipt);
+                if (resortsReceiptItems.HasValue && resortsReceiptItems.Value.sum > 0)
                 {
-                    SKUOutgoingProducts -= resortConsumptionItems.Value.sum;
+                    SKUReceiptGoods -= resortsReceiptItems.Value.sum;
+                    SKUResortsComment += resortsReceiptItems.Value.comment;
+                }
 
-                    if (resortConsumptionItems.Value.sum >= MoreReceiptThanWaiting)
+
+                // Исходящие: Пересорты расхода
+                var resortConsumptionItems = sku.SKUResortBalance?.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortingConsumption);
+                if (resortsReceiptItems.HasValue && resortsReceiptItems.Value.sum > 0)
+                {
+                    SKUOutgoingProducts -= resortsReceiptItems.Value.sum;
+
+                    if (resortsReceiptItems.Value.sum >= MoreReceiptThanWaiting)
                     {
-                        SKUReceiptGoods -= resortConsumptionItems.Value.sum;
+                        SKUReceiptGoods -= resortsReceiptItems.Value.sum;
                         if(int.IsNegative(SKUReceiptGoods)) 
                         {
                             SKUReceiptGoods = 0;
                         }
                     }
 
-                    SKUResortsComment += resortConsumptionItems.Value.comment;
+                    SKUResortsComment += resortsReceiptItems.Value.comment;
                 }
             }
 
@@ -353,8 +358,23 @@ namespace TableAnalizer.Objects.SKUItems
                     let skuAndSum = (sku: resortFromSkusValue.Key, sum: targetWithSum.Value)
                     select skuAndSum;
 
+                // Входящие: Пересорты прихода
+                var resortReceiptItems = GetResortValuesBy(SKUResortBalanceTarget.ResortingReceipt);
+                var resortReceiptItemsSum = resortReceiptItems?.Aggregate(0, (acc, i) => acc + i.sum);
+                if (resortReceiptItems is not null && resortReceiptItems.Any() && resortReceiptItemsSum > 0)
+                {
+                    SKUReceiptGoods += (int)resortReceiptItemsSum;
 
-                // Входящие: Пересорты расхода
+                    StringBuilder goodsResortsSb = new(RESORT_RECEIPT_FIRST_LINE);
+                    foreach (var (sk, su) in resortReceiptItems)
+                    {
+                        goodsResortsSb.Append($"{sk} шт.:{su}, ");
+                    }
+
+                    SKUResortsComment = goodsResortsSb.ToString();
+                }
+
+                 // Входящие: Пересорты расхода
                 var resortConsumptionItems = GetResortValuesBy(SKUResortBalanceTarget.ResortingConsumption);
                 var resortConsumptionItemsSum = resortConsumptionItems?.Aggregate(0, (acc, i) => acc + i.sum);
                 if (resortConsumptionItems is not null && resortConsumptionItems.Any() && resortConsumptionItemsSum > 0)
@@ -376,67 +396,8 @@ namespace TableAnalizer.Objects.SKUItems
                     SKUResortsComment = goodsResortsSb.ToString();
                 }
 
+               
             }
-            // {
-            //     IEnumerable<(int sku, int sum)>? GetResortValuesBy(SKUResortBalanceTarget balanceTarget)  => 
-            //         from resortFromSkusValue in resortFromSkusValues
-            //         from targetWithSum in  resortFromSkusValue.Value
-            //         where targetWithSum.Key == balanceTarget
-            //         let skuAndSum = (sku: resortFromSkusValue.Key, sum: targetWithSum.Value)
-            //         select skuAndSum;
-
-            //     // Входящие пересорты: пересорты приходов (1С)
-            //     var skuAndSumsByResortIn1CReceipt = GetResortValuesBy(SKUResortBalanceTarget.ResortIn1CReceipt);
-            //     var skuAndSumsByResortIn1CReceiptSum = skuAndSumsByResortIn1CReceipt?.Aggregate(0, (acc, i) => acc + i.sum);
-            //     if(skuAndSumsByResortIn1CReceipt is not null && skuAndSumsByResortIn1CReceipt.Any() && skuAndSumsByResortIn1CReceiptSum > 0) 
-            //     {
-            //         // Данные здесь не меняются, так как есть проводка в 1С
-
-            //         StringBuilder resortIn1CReceiptSB = new("\nПересортица прихода от др.арт. (1С, см \"Склад: Приход товаром\"): \n");
-            //         foreach ((int sk, int su) in skuAndSumsByResortIn1CReceipt)
-            //         {
-            //             resortIn1CReceiptSB.Append($"{sk} шт.:{su}, ");
-            //         }
-
-            //         SKUResortsComment = resortIn1CReceiptSB.ToString();
-            //     }
-
-            //     // Входящие пересорты: пересорты расходов (1С)
-            //     var skuAndSumsByResortIn1C = GetResortValuesBy(SKUResortBalanceTarget.ResortIn1C);
-            //     var skuAndSumsByResortIn1CSum = skuAndSumsByResortIn1C?.Aggregate(0, (acc, i) => acc + i.sum);
-            //     if(skuAndSumsByResortIn1C is not null && skuAndSumsByResortIn1C.Any())  
-            //     {
-            //         SKUResort += (int)skuAndSumsByResortIn1CSum!;   // Добавляется в Склад: Расход пересортом
-
-            //         // Обновление комментария
-            //         StringBuilder goodsResortsSb = new("\nПересортица расхода от др. арт. (1С, добавлено в \"Склад: Расход пересортом\",\n");
-            //         foreach (var (sk, su) in skuAndSumsByResortIn1C)
-            //         {
-            //             goodsResortsSb.Append($"{sk} шт.:{su}, ");
-            //         }
-
-            //         SKUResortsComment = goodsResortsSb.ToString();
-            //     }
-
-            //     // Входящие пересорты: пересорты расходов (концептуальные)
-            //     var skuAndSumsByResortConceprual = GetResortValuesBy(SKUResortBalanceTarget.Conceptual);
-            //     var skuAndSumsByResortConceprualSum = skuAndSumsByResortConceprual?.Aggregate(0, (acc, i) => acc + i.sum);
-            //     if(skuAndSumsByResortConceprual is not null && skuAndSumsByResortConceprual.Any())  
-            //     {
-            //         // //SKUResort += (int)skuAndSumsByResortConceprualSum!;   // Добавляется в Склад: Расход пересортом
-            //         // SKUReceiptGoods -= (int)skuAndSumsByResortConceprualSum!;
-            //         // SKUShipped -= (int)skuAndSumsByResortConceprualSum!;    // Вычитается из Склад: Расход товаром
-
-            //         // // Обновление комментария
-            //         // StringBuilder goodsResortsSb = new("\nПересортица расхода от др. арт. (баланс, вычтено из \"Склад: Приход товаром\" и \"Склад: Расход товаром\": \n");
-            //         // foreach (var (sk, su) in skuAndSumsByResortConceprual)
-            //         // {
-            //         //     goodsResortsSb.Append($"{sk} шт.:{su} ");
-            //         // }
-
-            //         // SKUResortsComment = goodsResortsSb.ToString();
-            //     }
-            // }
         }
 
         private void SetStatus()
