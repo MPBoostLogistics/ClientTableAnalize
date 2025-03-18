@@ -104,7 +104,7 @@ namespace TableAnalizer.Objects.Repositories
                     int skuReceipt = CombineIntValues(retriveValue.SKURemainingBalance!.SKUReceipt, newValue.SKURemainingBalance!.SKUReceipt, isSummary);
                     int skuOutgoingProducts = CombineIntValues(retriveValue.SKURemainingBalance!.SKUOutgoingProducts, newValue.SKURemainingBalance.SKUOutgoingProducts, isSummary);
                     int skuTransfered = CombineIntValues(retriveValue.SKURemainingBalance!.SKUTransfered, newValue.SKURemainingBalance.SKUTransfered, isSummary); 
-                    int skuRemaining = CombineIntValues(retriveValue.SKURemainingBalance!.SKUTransfered, newValue.SKURemainingBalance.SKUTransfered, isSummary); 
+                    int skuRemaining = CombineIntValues(retriveValue.SKURemainingBalance!.SKURemaining, newValue.SKURemainingBalance.SKURemaining, isSummary); 
 
                     skuRemainingBalance = new SKURemainingBalance(skuNumber, skuReceipt, skuOutgoingProducts, skuTransfered, skuRemaining);
                 

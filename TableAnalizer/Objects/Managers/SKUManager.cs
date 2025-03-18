@@ -25,11 +25,11 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         public static Dictionary<SKUSellmentStatus, Color> StatusColors { get; } = new()
         {
-            {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#EAF6F5")},                             // #EAF6F5
-            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fef4e2")},                              // #fef4e2
-            {SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse, ColorTranslator.FromHtml("#b9b9eb")}, // #b9b9eb 
-            {SKUSellmentStatus.DelayDeliveryFromWarehouse, ColorTranslator.FromHtml("#e1e1f7")},          // #e1e1f7
-            {SKUSellmentStatus.DelayDeliveryFromPoints, ColorTranslator.FromHtml("#cdcdf1")},             // #cdcdf1
+            {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#d9fef1")},                             // #d9fef1
+            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fdd383")},                              // #fdd383
+            {SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse, ColorTranslator.FromHtml("#bccced")}, // #bccced 
+            {SKUSellmentStatus.DelayDeliveryFromWarehouse, ColorTranslator.FromHtml("#d2ddf3")},          // #d2ddf3
+            {SKUSellmentStatus.DelayDeliveryFromPoints, ColorTranslator.FromHtml("#b5c7eb")},             // #b5c7eb
             {SKUSellmentStatus.Unknown, ColorTranslator.FromHtml("#eef5f9")}                              // #eef5f9
         };
         #endregion
@@ -602,18 +602,22 @@ namespace TableAnalizer.Objects.Managers
 
             foreach (var (_, targetSku) in SKUs.GetValuesList())
             {
+                
+
                 if(targetSku is null) continue;
+
+                bool isSummary = ReportFileManager.ClientLogins.Count > 1;
 
                 SKUForTargetReports newValue;
                 if(SKUToResorts.TryGetValue(targetSku.SKUNumber, out Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues) && 
                     resortFromSkusValues is not null &&
                     resortFromSkusValues.Count > 0) 
                 {
-                    newValue = new(targetSku, ReportFileManager.ClientLogins.Count > 1,  1000, resortFromSkusValues);
+                    newValue = new(targetSku, isSummary,  1000, resortFromSkusValues);
                 } 
                 else 
                 {
-                    newValue = new(targetSku, ReportFileManager.ClientLogins.Count > 1 , 1000);
+                    newValue = new(targetSku, isSummary , 1000);
                 }
                 
                 skuForTargetReports.Add(newValue);

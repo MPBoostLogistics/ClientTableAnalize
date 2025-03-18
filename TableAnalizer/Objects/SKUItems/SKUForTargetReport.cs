@@ -1,5 +1,8 @@
 using System.Drawing;
 using System.Text;
+using SixLabors.ImageSharp;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUAnalyticalBalance;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
 
 namespace TableAnalizer.Objects.SKUItems
 {
@@ -23,7 +26,7 @@ namespace TableAnalizer.Objects.SKUItems
         public SellmentStatus SellmentStatus { get; private set; } = new SellmentStatus(SKUSellmentStatus.Unknown);
         public string SellmentStatusString => SellmentStatus.StatusLabel;
 
-        public Color FillColor { get; set; }
+        public System.Drawing.Color FillColor { get; set; }
 
         #endregion
         #region Properties - Ransoms
@@ -211,6 +214,13 @@ namespace TableAnalizer.Objects.SKUItems
         public bool IsSKUNormalize => 
             SKURansomsWaiting == SKUReceiptTotal && SKUReceiptTotal == SKUMutualSettlement && SKURemaining == 0 || 
             SKURansomsWaiting == SKUReceiptTotal && SKUMutualSettlement + SKURemaining == SKURansomsWaiting;
+        
+        public SKUAnalyticalBalance SKUAnalyticalBalance { get; set; }
+        
+        public int SKUOverspendingSum => SKUAnalyticalBalance.SKUOverspendingSum;
+
+        public int SKUUnderspendingSum => SKUAnalyticalBalance.SKUUnderspendingSum;
+
         #endregion
 
         #endregion
@@ -241,11 +251,11 @@ namespace TableAnalizer.Objects.SKUItems
             // Fill SKURemainingBalance
             if (sku.SKURemainingBalance is not null)
             {
-                var receipt = sku.SKURemainingBalance.SKUReceipt;
-                var writeOff = sku.SKUWriteOffBalance?.SKUWriteOff;
+                // var receipt = sku.SKURemainingBalance.SKUReceipt;
+                // var writeOff = sku.SKUWriteOffBalance?.SKUWriteOff;
 
-                // Удаляем приходы из расхода по списанию
-                SKUReceiptGoods = writeOff.HasValue ? receipt - writeOff.Value : receipt;
+                SKUReceiptGoods = sku.SKURemainingBalance.SKUReceipt; 
+                SKUPaidPoints += sku.SKUWriteOffBalance?.SKUWriteOff ?? 0;
 
                 SKUOutgoingProducts = sku.SKURemainingBalance.SKUOutgoingProducts;
                 SKUTransfered = sku.SKURemainingBalance.SKUTransfered;
@@ -255,11 +265,11 @@ namespace TableAnalizer.Objects.SKUItems
             // Fill SKUCompensationBalance 
             if (sku.SKUCompensationBalance is not null)
             {
-                SKUPaidWarehouse = sku.SKUCompensationBalance.CompensationItems
+                SKUPaidWarehouse += sku.SKUCompensationBalance.CompensationItems
                     .Where(el => el.Key == CompensationTarget.Warehouse)
                     .Aggregate(0, (acc, i) => acc + i.Value.count);
 
-                SKUPaidPoints = sku.SKUCompensationBalance.CompensationItems
+                SKUPaidPoints += sku.SKUCompensationBalance.CompensationItems
                     .Where(el => el.Key == CompensationTarget.PickupPoint)
                     .Aggregate(0, (acc, i) => acc + i.Value.count);
             }
@@ -275,6 +285,9 @@ namespace TableAnalizer.Objects.SKUItems
         {
             // Setting status to undefined
             SetSellmentStatus(SKUSellmentStatus.Unknown);
+
+            // Рачет аналитического баланса
+            SetSKUAnalyticalBalance();
 
             // Calculation of resorts
             //CalculateResorts(sku, resortFromSkusValues);
@@ -298,6 +311,16 @@ namespace TableAnalizer.Objects.SKUItems
 
             // Setting the status 
             SetStatus();
+        }
+
+        private void SetSKUAnalyticalBalance()
+        {
+            SKUAnalyticalBalance = new(SKUNumber, SKUPrice);
+
+            if(!IsSKUNormalize) 
+            {
+                SKUAnalyticalBalance.SetSourceSums(LessMutualSettlementThanWaiting, MoreMutualSettlementThanWaiting);
+            }
         }
 
         private void CalculateDelay(SKUSellmentStatus sellmentStatus)

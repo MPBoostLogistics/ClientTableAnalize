@@ -90,7 +90,6 @@ namespace TableAnalizer.Objects.SKUItems
                 SKUName = skuBrandAndNameString.Trim();
             }
 
-
             // Remove ", Общая характеристика товара"
             string[]? SKUNameWithOtherInfо = SKUName.Split(',');
             if (SKUNameWithOtherInfо.Last() == " Общая характеристика товара")

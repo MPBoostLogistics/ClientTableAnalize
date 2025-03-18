@@ -1,36 +1,39 @@
 namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUAnalyticalBalance
 {
-    public class SKUAnalyticalBalance
+    public class SKUAnalyticalBalance(int number, double price)
     {
-        public int SKUNumber { get; set; }
-        public double SKUPrice { get; set; }
-        public int SKURansomsWaiting { get; set; }
-        public int SKUReceiptTotal { get; set; }
-        /// <summary>
-        /// Взаиморасчет с клиентом.
-        /// </summary>
-        public int SKUMutualSettlement { get; set; }
-        /// <summary>
-        /// Остаток  товаров на складе.
-        /// </summary>
-        public int SKURemaining { get; set; }
+        #region Properties 
+        public int SKUNumber { get; private set; } = number;
+        public double SKUPrice { get; private set; } = price;
 
-        public bool SKUNomalize { get; set; }
+        /// <summary>
+        /// Перерасход товарами
+        /// </summary>
+        public int SKUOverspendingSum { get; private set; } = 0;
 
-        // /// <summary>
-        // /// Взаиморачет меньше ожидания. 
-        // /// </summary>
-        // /// <remarks><b>Примечание</b>Привет</remarks>
-        // public int LessMutualSettlementThanWaiting => 
-        // SKUMutualSettlement < SKURansomsWaiting ? 
-        //     SKURemaining > 0 ? 
-        //     SKURansomsWaiting - SKUMutualSettlement - SKURemaining >= 0 ?
-        //         SKURansomsWaiting - SKUMutualSettlement - SKURemaining :
-        //         0 : 
-        //     SKURansomsWaiting - SKUMutualSettlement > 0 ? 
-        //     SKURansomsWaiting - SKUMutualSettlement :
-        //     0 : 
-        // 0;
-        // /*
+        /// <summary>
+        /// Недорасход товарами
+        /// </summary>
+        public int SKUUnderspendingSum { get; private set; } = 0;
+
+        /// <summary>
+        /// Артикулы и кол-во товаров на которые учтен перерасход 
+        /// </summary>
+        public Dictionary<int, int> OverspendingResorts { get; private set; } = [];
+
+        /// <summary>
+        /// Артикулы и кол-во товаров с которых учтен перерасход 
+        /// </summary>
+        public Dictionary<int, int> UnderspendingResorts { get; private set; } = [];
+
+        #endregion
+
+        #region Functionality
+        public void SetSourceSums(int overspendingSum, int underspendingSum)
+        {
+            SKUOverspendingSum = overspendingSum;
+            SKUUnderspendingSum = underspendingSum;
+        }
+        #endregion
     }
 }
