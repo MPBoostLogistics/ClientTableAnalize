@@ -450,10 +450,10 @@ namespace TableAnalizer.Objects.Managers
         {
             var sheetColor = sheetName switch
             {
-                OUTPUT_REPORT_MAINREPORT_NAME => Colors[SKUSellmentStatus.FullSet],
-                OUTPUT_REPORT_DELAYREPORT_NAME => Colors[SKUSellmentStatus.OnSearchPoints],
-                OUTPUT_REPORT_OVERRUNSREPORT_NAME => Colors[SKUSellmentStatus.Unknown],
-                OUTPUT_REPORT_ANALYTICS_RERORT_NAME => Colors[SKUSellmentStatus.OnSearchWarehouse],
+                OUTPUT_REPORT_MAINREPORT_NAME => SKUManager.StatusColors[SKUSellmentStatus.FullSet],
+                OUTPUT_REPORT_DELAYREPORT_NAME => SKUManager.StatusColors[SKUSellmentStatus.DelayDeliveryFromPoints],
+                OUTPUT_REPORT_OVERRUNSREPORT_NAME => SKUManager.StatusColors[SKUSellmentStatus.Unknown],
+                OUTPUT_REPORT_ANALYTICS_RERORT_NAME => SKUManager.StatusColors[SKUSellmentStatus.DelayDeliveryFromWarehouse],
                 _ => Color.Gray,
             };
 
@@ -1291,7 +1291,7 @@ namespace TableAnalizer.Objects.Managers
         private static List<SKUForTargetReports> GetDelay (List<SKUForTargetReports> list) 
         {
             var items = from el in list
-                        where el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.OnSearchPoints || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouseAndPoints)
+                        where el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.DelayDeliveryFromPoints || el.SellmentStatus.Status is SKUSellmentStatus.DelayDeliveryFromWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse)
                         select el;
 
             return [.. items]; 

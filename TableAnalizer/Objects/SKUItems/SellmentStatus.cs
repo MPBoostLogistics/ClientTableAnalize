@@ -1,3 +1,5 @@
+using TableAnalizer.Objects.Managers;
+
 namespace TableAnalizer.Objects.SKUItems
 {
      public class SellmentStatus 
@@ -16,32 +18,28 @@ namespace TableAnalizer.Objects.SKUItems
             switch (Status)
             {
                 case SKUSellmentStatus.FullSet:
-                    StatusLabel = "Полный расчет";
-                    StatusColor = System.Drawing.ColorTranslator.FromHtml("#e1ffdb");
+                    StatusLabel = SKUManager.StatusStrings[SKUSellmentStatus.FullSet];
+                    StatusColor = SKUManager.StatusColors[SKUSellmentStatus.FullSet];
                     break;
                 case SKUSellmentStatus.InWork:
-                    StatusLabel = "В работе";
-                    StatusColor = System.Drawing.ColorTranslator.FromHtml("#ffe7cd");
+                    StatusLabel = SKUManager.StatusStrings[SKUSellmentStatus.InWork];
+                    StatusColor = SKUManager.StatusColors[SKUSellmentStatus.InWork];
                     break;
-                case SKUSellmentStatus.OnSearchWarehouseAndPoints:
-                    StatusLabel = "На поиске  ПВЗ и склада";
-                    StatusColor =  System.Drawing.ColorTranslator.FromHtml("#ff6d6d");
+                case SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse:
+                    StatusLabel = SKUManager.StatusStrings[SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse];
+                    StatusColor = SKUManager.StatusColors[SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse];
                     break;
-                case SKUSellmentStatus.OnSearchWarehouse:
-                    StatusLabel = "На поиске склада"; 
-                    StatusColor = System.Drawing.ColorTranslator.FromHtml("#ffd3d3");
+                case SKUSellmentStatus.DelayDeliveryFromWarehouse:
+                    StatusLabel = SKUManager.StatusStrings[SKUSellmentStatus.DelayDeliveryFromWarehouse];
+                    StatusColor = SKUManager.StatusColors[SKUSellmentStatus.DelayDeliveryFromWarehouse];
                     break;
-                case SKUSellmentStatus.OnSearchPoints:
-                    StatusLabel = "На поиске ПВЗ";
-                    StatusColor =  System.Drawing.ColorTranslator.FromHtml("#ffa0a0");
-                    break;
-                case SKUSellmentStatus.Unknown:
-                    StatusLabel = "Не определен"; 
-                    StatusColor = System.Drawing.ColorTranslator.FromHtml("#e6fcff");
+                case SKUSellmentStatus.DelayDeliveryFromPoints:
+                    StatusLabel = SKUManager.StatusStrings[SKUSellmentStatus.DelayDeliveryFromPoints];
+                    StatusColor = SKUManager.StatusColors[SKUSellmentStatus.DelayDeliveryFromPoints];
                     break;
                 default:
-                    StatusLabel = "Не определен"; 
-                    StatusColor = System.Drawing.ColorTranslator.FromHtml("#e6fcff");
+                    StatusLabel = SKUManager.StatusStrings[SKUSellmentStatus.Unknown]; 
+                    StatusColor = SKUManager.StatusColors[SKUSellmentStatus.Unknown];
                     break;
             }
         }

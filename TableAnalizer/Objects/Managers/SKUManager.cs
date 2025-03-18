@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Drawing;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
@@ -17,6 +18,20 @@ namespace TableAnalizer.Objects.Managers
         #region Variables and constants 
         private const bool IS_REMOVE_BRAND_FROM_NAME = false;
         private readonly ExcelManager? excelManager = excelManager;
+        public static Dictionary<SKUSellmentStatus, string> StatusStrings = [];
+
+        /// <summary>
+        /// Сollection of colors to indicate status of mutual settlements with clients.
+        /// </summary>
+        public static Dictionary<SKUSellmentStatus, Color> StatusColors { get; } = new()
+        {
+            {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#EAF6F5")},                             // #EAF6F5
+            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fef4e2")},                              // #fef4e2
+            {SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse, ColorTranslator.FromHtml("#b9b9eb")}, // #b9b9eb 
+            {SKUSellmentStatus.DelayDeliveryFromWarehouse, ColorTranslator.FromHtml("#e1e1f7")},          // #e1e1f7
+            {SKUSellmentStatus.DelayDeliveryFromPoints, ColorTranslator.FromHtml("#cdcdf1")},             // #cdcdf1
+            {SKUSellmentStatus.Unknown, ColorTranslator.FromHtml("#eef5f9")}                              // #eef5f9
+        };
         #endregion
 
         #region Properties 
@@ -52,6 +67,21 @@ namespace TableAnalizer.Objects.Managers
         #endregion
 
         #region Functionality
+
+        protected override void AddConfigVariables()
+        {
+            base.AddConfigVariables();
+
+            IConfigurationSection? stringsSection = config!.GetSection("Strings");
+            
+            // Set status strings variables
+            StatusStrings.Add(SKUSellmentStatus.FullSet, stringsSection.GetValue<string>("FullSetStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.InWork, stringsSection.GetValue<string>("InWorkStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromPointsAndWarehouseStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromWarehouseStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromPoints, stringsSection.GetValue<string>("DelayDeliveryFromPointsStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.Unknown, stringsSection.GetValue<string>("UnknownStatusString") ?? string.Empty);
+        }
 
         public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, bool isInternalReport, ExcelPackage excelPackage)
         {            

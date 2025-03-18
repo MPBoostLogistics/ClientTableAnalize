@@ -10,9 +10,18 @@ namespace TableAnalizer.Objects
     {
         FullSet,                    // Полный расчет
         InWork,                     // В работе
-        OnSearchWarehouseAndPoints, // На поиске склада и ПВЗ
-        OnSearchWarehouse,          // На поиске склада 
-        OnSearchPoints,             // На поиске ПВЗ
+        /// <summary>
+        /// Задержка довоза от точек и склада.
+        /// </summary>
+        DelayDeliveryFromPointsAndWarehouse, 
+        /// <summary>
+        /// Задержка довоза от склада.
+        /// </summary>
+        DelayDeliveryFromWarehouse,   
+        /// <summary>
+        /// Задержка довоза от точек.
+        /// </summary>
+        DelayDeliveryFromPoints,          
         Unknown                     // Неопределенный
     }
 

@@ -22,6 +22,12 @@
     },
     "Strings" : 
     {
-      "LogisticsReportFirstName" : "LogisticsReport"
+      "LogisticsReportFirstName" : "LogisticsReport",
+      "FullSetStatusString": "Полный расчет", 
+      "InWorkStatusString": "В работе",
+      "DelayDeliveryFromPointsAndWarehouseStatusString": "Задержка от точек и склада",
+      "DelayDeliveryFromWarehouseStatusString" : "Задержка от склада",
+      "DelayDeliveryFromPointsStatusString" : "Задержка от точек",
+      "UnknownStatusString" : "Не определен"
     }
   }

@@ -7,7 +7,7 @@ namespace TableAnalizer.Objects.Managers
 {
     public class BaseManager 
     {
-        #region Variables and constants 
+        #region Fields
         
         internal IConfiguration config;
         #endregion Variables and constant
@@ -16,19 +16,7 @@ namespace TableAnalizer.Objects.Managers
         public string[] ValidFileExtensions { get; } = [".xls", ".xlsx"];
         public static List<string> ClientLogins { get; protected set;} = [];
 
-        /// <summary>
-        /// Сollection of colors to indicate status of mutual settlements with clients.
-        /// </summary>
-        /// <remarks><i>New version</i></remarks>
-        public Dictionary<SKUSellmentStatus, Color> Colors { get; } = new()
-        {
-            {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#EAF6F5")},                    // #EAF6F5
-            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fef4e2")},                     // #fef4e2
-            {SKUSellmentStatus.OnSearchWarehouseAndPoints, ColorTranslator.FromHtml("#ffe2d3")}, // #ffe2d3
-            {SKUSellmentStatus.OnSearchWarehouse, ColorTranslator.FromHtml("#ffe1d2")},          // #ffe1d2
-            {SKUSellmentStatus.OnSearchPoints, ColorTranslator.FromHtml("#ffe7db")},             // #ffe7db
-            {SKUSellmentStatus.Unknown, ColorTranslator.FromHtml("#eef5f9")}                     // #eef5f9
-        };
+
         #endregion Properties
 
         #region Events
@@ -41,7 +29,6 @@ namespace TableAnalizer.Objects.Managers
         /// Manager event handler.
         /// </summary>
         /// <param name="message">Event message.</param>
-        /// <remarks><i>New version</i></remarks>
         public delegate void ManagerHandler(string message);
         #endregion Events
 
@@ -57,7 +44,7 @@ namespace TableAnalizer.Objects.Managers
         #region Functionality
         protected virtual void AddConfigVariables()
         {
-            // ...
+            
         }
 
         /// <summary>

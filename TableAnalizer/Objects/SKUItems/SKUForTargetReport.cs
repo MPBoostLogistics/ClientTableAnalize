@@ -277,24 +277,24 @@ namespace TableAnalizer.Objects.SKUItems
             SetSellmentStatus(SKUSellmentStatus.Unknown);
 
             // Calculation of resorts
-            CalculateResorts(sku, resortFromSkusValues);
+            //CalculateResorts(sku, resortFromSkusValues);
 
             // Compensation for goods receipts anomalies
-            if(!isInteralReport)
-                CompensationGoodsReceiptsAnomalies();
+            //if(!isInteralReport)
+             //   CompensationGoodsReceiptsAnomalies();
 
             // Calculation of shortages from points 
-            CalculateDelay(SKUSellmentStatus.OnSearchPoints);
+            //CalculateDelay(SKUSellmentStatus.OnSearchPoints);
       
             // Calculation of shortages from the warehouse
-            CalculateDelay(SKUSellmentStatus.OnSearchWarehouse);
+            //CalculateDelay(SKUSellmentStatus.OnSearchWarehouse);
 
             // Calculation of overruns
-            var totalСonsumptionWithoutResorts = SKUMutualSettlement - SKUResort;
-            if (totalСonsumptionWithoutResorts > SKURansomsWaiting)
-            {
-                SKUOverrunsCount = totalСonsumptionWithoutResorts - SKURansomsWaiting;
-            }
+            // var totalСonsumptionWithoutResorts = SKUMutualSettlement - SKUResort;
+            // if (totalСonsumptionWithoutResorts > SKURansomsWaiting)
+            // {
+            //     SKUOverrunsCount = totalСonsumptionWithoutResorts - SKURansomsWaiting;
+            // }
 
             // Setting the status 
             SetStatus();
@@ -304,17 +304,16 @@ namespace TableAnalizer.Objects.SKUItems
         {
             switch (sellmentStatus)
             {
-                case SKUSellmentStatus.OnSearchPoints:
+                case SKUSellmentStatus.DelayDeliveryFromPoints:
                     SKUDeliveryDelayPoints = SKUMutualSettlement >= SKURansomsWaiting ? 0 : SKURansomsWaiting - SKUReceiptTotal;
                     break;
-                case SKUSellmentStatus.OnSearchWarehouse:
+                case SKUSellmentStatus.DelayDeliveryFromWarehouse:
                     SKUDeliveryDelayStorage = SKURansomsWaiting - SKUDeliveryDelayPoints - SKUMutualSettlement;
                     break;
                 default:
                     break;
             }
         }
-
         private void CalculateResorts(SKU sku, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
         {
             // Фикация исходящих пересортов 
@@ -409,21 +408,38 @@ namespace TableAnalizer.Objects.SKUItems
             }
             else
             {
-                switch (SKUDeliveryDelayPoints > 0, SKUDeliveryDelayStorage > 0)
+                switch (IsSKUNormalize) 
                 {
-                    case (true, true):
-                        SetSellmentStatus(SKUSellmentStatus.OnSearchWarehouseAndPoints);
+                    case true:
+                        switch(SKURemaining > 0) 
+                        {
+                            case true:
+                                SetSellmentStatus(SKUSellmentStatus.DelayDeliveryFromWarehouse);
+                                break;
+                            case false:
+                                 SetSellmentStatus(SKUSellmentStatus.FullSet);
+                                break;
+                        }
                         break;
-                    case (true, false):
-                        SetSellmentStatus(SKUSellmentStatus.OnSearchPoints);
-                        break;
-                    case (false, true):
-                        SetSellmentStatus(SKUSellmentStatus.OnSearchWarehouse);
-                        break;
-                    case (false, false):
-                        SetSellmentStatus(SKUSellmentStatus.FullSet);
+                    case false:
+                        switch (SKUDeliveryDelayPoints > 0, SKUDeliveryDelayStorage > 0)
+                        {
+                            case (true, true):
+                                SetSellmentStatus(SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse);
+                                break;
+                            case (true, false):
+                                SetSellmentStatus(SKUSellmentStatus.DelayDeliveryFromPoints);
+                                break;
+                            case (false, true):
+                                SetSellmentStatus(SKUSellmentStatus.DelayDeliveryFromWarehouse);
+                                break;
+                            case (false, false):
+                                SetSellmentStatus(SKUSellmentStatus.FullSet);
+                                break;
+                        }
                         break;
                 }
+                
             }
         }
 
