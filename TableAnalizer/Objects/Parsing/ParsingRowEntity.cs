@@ -1,5 +1,7 @@
+using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
+using Org.BouncyCastle.Crypto.Engines;
 using TableAnalizer.Interfaces;
 
 namespace TableAnalizer.Objects.Parsing
@@ -115,6 +117,9 @@ namespace TableAnalizer.Objects.Parsing
                         case ParsingTypeCode.Marketplace:
                             property.SetValue(this, (Marketplace)value);
                             break;
+                        case ParsingTypeCode.BoolTypeCode:
+                            property.SetValue(this, (bool)value);
+                            break;
                     }
                }
             }
@@ -206,6 +211,12 @@ namespace TableAnalizer.Objects.Parsing
                         "oz" or "Oz" or "OZ" or "Ozon" => Marketplace.OZ,
                         _ => throw new NotImplementedException(),
                     };
+                    break;
+
+                case ParsingTypeCode.BoolTypeCode:
+                    value = bool.TryParse(valueString, out bool boolValue) ? 
+                        boolValue : 
+                        throw new Exception($"Failed to convert string \"{valueString}\" to boolean"); 
                     break;
 
                 default:

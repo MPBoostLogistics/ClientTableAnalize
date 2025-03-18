@@ -77,7 +77,9 @@ namespace TableAnalizer.Objects
         StringTypeCode,             // 3
         SKURansomsStatus,           // 4
         Marketplace,                // 5
-        SellmentStatus              // 6
+        SellmentStatus,             // 6
+        BoolTypeCode                // 7
+
     }
 
     public enum SourceCellsType 

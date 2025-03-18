@@ -5,19 +5,16 @@ using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.SKUItems;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
-using System.Diagnostics;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
-using System.Threading.Tasks;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
-using IronSoftware.Abstractions;
 using Microsoft.Extensions.Configuration;
 
 namespace TableAnalizer.Objects.Managers
 {
     public class ExcelManager : BaseManager
     {
-        #region Constants && variables
+        #region Fields
         public const string FIRST_ROOM_NAME = "1 - Помещение приемки и сортировки";
         public const string SECOND_ROOM_NAME = "2 - Помещение длительного хранения";
         public const string THIRD_ROOM_NAME = "3 - Помещение упаковки и отгрузки";
@@ -160,27 +157,6 @@ namespace TableAnalizer.Objects.Managers
             new(5, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
             new(39, nameof(SKUWriteOffDataUnit.SKUWriteOffCount), ParsingTypeCode.IntTypeCode, true)
         ];     
-
-        public static List<SourceColumn> ClientReportSourceCells { get; } =
-        [
-            new(1, nameof(SKUClientReportDataUnit.SKUMp), ParsingTypeCode.Marketplace, true),
-            new(2, nameof(SKUClientReportDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
-            new(3, nameof(SKUClientReportDataUnit.SKUBrand), ParsingTypeCode.StringTypeCode, false),
-            new(4, nameof(SKUClientReportDataUnit.SKUName), ParsingTypeCode.StringTypeCode, false),
-            new(5, nameof(SKUClientReportDataUnit.SKUPrice), ParsingTypeCode.DoubleTypeCode, true),
-            new(6, nameof(SKUClientReportDataUnit.SKURansomDate), ParsingTypeCode.DataOnlyTypeCode, true),
-            new(8, nameof(SKUClientReportDataUnit.SKURansomsTotal), ParsingTypeCode.IntTypeCode, true),
-            new(9, nameof(SKUClientReportDataUnit.SKURansomsCanceled), ParsingTypeCode.IntTypeCode, true),
-            new(10, nameof(SKUClientReportDataUnit.SKURansomsOnWay), ParsingTypeCode.IntTypeCode, true),
-            new(11, nameof(SKUClientReportDataUnit.SKURansomsDelivered), ParsingTypeCode.IntTypeCode, true),
-            new(12, nameof(SKUClientReportDataUnit.SKURansomsWithDrawn), ParsingTypeCode.IntTypeCode, true),
-            new(15, nameof(SKUClientReportDataUnit.SKUReceiptGoods), ParsingTypeCode.IntTypeCode, true),
-            new(16, nameof(SKUClientReportDataUnit.SKUPaidPoints), ParsingTypeCode.IntTypeCode, true),
-            new(18, nameof(SKUClientReportDataUnit.SKUOutgoingProducts), ParsingTypeCode.IntTypeCode, true),
-            new(19, nameof(SKUClientReportDataUnit.SKUTransferDataUnit), ParsingTypeCode.IntTypeCode, true),
-            new(20, nameof(SKUClientReportDataUnit.SKUPaidWarehouse), ParsingTypeCode.IntTypeCode, true),
-            new(23, nameof(SKUClientReportDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, true)
-        ];
 
         public TargetCell[] cellsReportingMain =
         [
@@ -394,6 +370,10 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 19, colName: "Взаиморасчет больше ожидания", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.MoreMutualSettlementThanWaiting),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
+            
+            new (colNumber: 20, colName: "Артикул нормализован", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
+            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.IsSKUNormalize),
+            parsingTypeCode: ParsingTypeCode.BoolTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
         ];
 
         private readonly int sellmentStatusColomnNum;
@@ -734,6 +714,12 @@ namespace TableAnalizer.Objects.Managers
                             if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out SellmentStatus? sellmentStatus))
                             {
                                 value = sellmentStatus;
+                            }
+                            break;
+                        case ParsingTypeCode.BoolTypeCode:
+                            if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out bool? boolean))
+                            {
+                                value = boolean;
                             }
                             break;
                         default:

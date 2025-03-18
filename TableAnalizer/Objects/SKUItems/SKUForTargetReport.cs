@@ -202,6 +202,18 @@ namespace TableAnalizer.Objects.SKUItems
              0.00;
 
         #endregion
+        #region Properties - Analitycs
+        /// <summary>
+        /// Артикул нормализован
+        /// </summary>
+        /// <remarks>
+        /// <para>Ожидание == Приход == Взаиморасчет и Остаток на складе == 0</para> 
+        /// <para>Ожидание == Приход и Взаиморасчет + Остаток на складе == Ожидание</para> 
+        /// </remarks>
+        public bool IsSKUNormalize => 
+            SKURansomsWaiting == SKUReceiptTotal && SKUReceiptTotal == SKUMutualSettlement && SKURemaining == 0 || 
+            SKURansomsWaiting == SKUReceiptTotal && SKUMutualSettlement + SKURemaining == SKURansomsWaiting;
+        #endregion
 
         #endregion
 
