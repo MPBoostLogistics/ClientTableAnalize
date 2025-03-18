@@ -1,8 +1,5 @@
-using System.Drawing;
 using System.Text;
 using SixLabors.ImageSharp;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUAnalyticalBalance;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
 
 namespace TableAnalizer.Objects.SKUItems
 {

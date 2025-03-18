@@ -1,7 +1,8 @@
 {
     "Flags": 
     {
-      "isTracing": true
+      "isTracing": true,
+      "isAutoResorting": true
     },
     "Messages": {
       "GoodbyMessage": "\nThank you for using the program.\nHave a productive day!",

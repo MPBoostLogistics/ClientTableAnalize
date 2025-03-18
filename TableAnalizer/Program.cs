@@ -21,6 +21,7 @@ internal class Program
     private static int DeadlineDays { get; set; }
     private static string goodByMessage = string.Empty;
     private static bool isTracing;
+    private static bool isAutoResorting;
     private static int TracingDelay { get; set; }
 
     private static string TraceInfoFlag { get; set; } = string.Empty;
@@ -80,6 +81,7 @@ internal class Program
 
             IConfigurationSection? flagsSection = config.GetSection("Flags");
             isTracing = flagsSection.GetValue<bool>("isTracing");
+            isAutoResorting = flagsSection.GetValue<bool>("isAutoResorting");
 
             IConfigurationSection? messagesSection = config.GetSection("Messages");
             goodByMessage = messagesSection.GetValue<string>("GoodbyMessage");
@@ -233,12 +235,16 @@ internal class Program
                 await TracingProgramExecution(new($"Articles for final report: {skusForTargetReportTask.Result.Count}.", false, false));
             }
 
-            // Article analysis and automatic re-sorting
             List<SKUForTargetReports> skuForTargetReports = skusForTargetReportTask.Result;
-            Task analisysTasks = AnalyticalManager.AnalysisTargetSKUs(ref skuForTargetReports);
-            await Task.Run(() => analisysTasks);
-            analisysTasks.Wait();
 
+            // Article analysis and automatic re-sorting
+            if(isAutoResorting) 
+            {
+                Task doAnalyticsTask = AnalyticalManager.AnalysisTargetSKUs(ref skuForTargetReports);
+                await Task.Run(() => doAnalyticsTask);
+                doAnalyticsTask.Wait();
+            }
+            
             // Save work 
             var makeReportTask = excelManager!.MakeReports(skuForTargetReports, isTracing, isInternalReport);
             await Task.Run(() => makeReportTask);
