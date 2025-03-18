@@ -3,9 +3,9 @@ using System.Text;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 {
-    public class ResortBalanceUnit (SKUResortBalanceTarget balanceTarget)
+    public class ResortBalanceUnit (SKUResortTarget balanceTarget)
     {
-        public SKUResortBalanceTarget BalanceTarget { get; } = balanceTarget;
+        public SKUResortTarget BalanceTarget { get; } = balanceTarget;
 
         public Dictionary<int ,int> ResortTo { get; private set; } = []; 
 
@@ -40,7 +40,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
         /// <summary>
         /// SKUs FOR WHICH re-sorting - what was <b>re-graded</b> and <b>entered</b> into 1C system: key - sku to resort: value - target of resorting, count.
         /// </summary>
-        public readonly Dictionary<int, Dictionary<SKUResortBalanceTarget, int>> SKUsToResort = []; 
+        public readonly Dictionary<int, Dictionary<SKUResortTarget, int>> SKUsToResort = []; 
         
         public int MoreReceiptThanWaiting {get; private set;} = 0;
         
@@ -82,22 +82,22 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 
                 // Get key and target
                 var skuToResortKey = skuResortDataUnit.SKUToResortNumber;
-                SKUResortBalanceTarget skuResortBalanceTarget;
+                SKUResortTarget skuResortBalanceTarget;
 
                 switch (skuResortDataUnit.ResortComment!.Trim())
                 {
                     case RESORT_CONSUMPTION_KEY:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.ResortingConsumption;
+                        skuResortBalanceTarget = SKUResortTarget.ResortingConsumption;
                         break;
                     case RESORT_RECEIPT_KEY:
-                        skuResortBalanceTarget = SKUResortBalanceTarget.ResortingReceipt;
+                        skuResortBalanceTarget = SKUResortTarget.ResortingReceipt;
                         break;
                     default:
                         SkippedProcedureMessage();
                         continue;
                 }
 
-                if (SKUsToResort.TryGetValue(skuToResortKey, out Dictionary<SKUResortBalanceTarget, int>? value))
+                if (SKUsToResort.TryGetValue(skuToResortKey, out Dictionary<SKUResortTarget, int>? value))
                 {
                     var resortDict = value;
                     if (resortDict.TryGetValue(skuResortBalanceTarget, out int count))
@@ -114,7 +114,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
                 }
                 else
                 {
-                    SKUsToResort[skuToResortKey] = new Dictionary<SKUResortBalanceTarget, int>()
+                    SKUsToResort[skuToResortKey] = new Dictionary<SKUResortTarget, int>()
                     {
                         {skuResortBalanceTarget, skuResortDataUnit.SKUToResortNumberCount}
                     };
@@ -136,14 +136,14 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             }
         }
 
-        public void Update(Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortSKUsInNewValues) 
+        public void Update(Dictionary<int, Dictionary<SKUResortTarget, int>>? resortSKUsInNewValues) 
         {       
             if(resortSKUsInNewValues is null || resortSKUsInNewValues.Count == 0) return;
 
             foreach (var resortSKUsInNewValue in resortSKUsInNewValues)
             {
                 var resortSKUsInNewValueKey = resortSKUsInNewValue.Key;
-                if (SKUsToResort.TryGetValue(resortSKUsInNewValueKey, out Dictionary<SKUResortBalanceTarget, int>? value)) 
+                if (SKUsToResort.TryGetValue(resortSKUsInNewValueKey, out Dictionary<SKUResortTarget, int>? value)) 
                 {
                     var resortDict = value;
 
@@ -170,7 +170,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             }
         }
 
-        public (int sum, string? comment)? FindSkusInBalanceBy(SKUResortBalanceTarget target) 
+        public (int sum, string? comment)? FindSkusInBalanceBy(SKUResortTarget target) 
         {
             var resortBalanceUnit = GetSkusResortToSum(target);
             if(resortBalanceUnit.ResortTo.Count == 0) return null;
@@ -182,10 +182,10 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             // Исходящие пересорты
             switch(target) 
             {
-                case SKUResortBalanceTarget.ResortingConsumption:
+                case SKUResortTarget.ResortingConsumption:
                     stringBuilder.Append(RESORT_CONSUMPTION_FIRST_LINE);
                     break;
-                case SKUResortBalanceTarget.ResortingReceipt:
+                case SKUResortTarget.ResortingReceipt:
                     stringBuilder.Append(RESORT_RECEIPT_FIRST_LINE);
                     break;
             }
@@ -205,12 +205,12 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             
         }
 
-        public ResortBalanceUnit GetSkusResortToSum(SKUResortBalanceTarget target) 
+        public ResortBalanceUnit GetSkusResortToSum(SKUResortTarget target) 
         {
             var resort = new ResortBalanceUnit(target);
             foreach (var sku in SKUsToResort)
             {
-                foreach ((SKUResortBalanceTarget t, int s) in sku.Value)
+                foreach ((SKUResortTarget t, int s) in sku.Value)
                 {
                     if(t == target) 
                     {

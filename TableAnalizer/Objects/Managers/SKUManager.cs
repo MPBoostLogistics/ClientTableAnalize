@@ -52,7 +52,7 @@ namespace TableAnalizer.Objects.Managers
         ///  значение:  словарь - ключ: resortTarget (цель пересорта)
         ///                       значение: resortSum (количество)
         /// </summary>
-        private readonly Dictionary<int, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>?> SKUToResorts =[]; 
+        private readonly Dictionary<int, Dictionary<int, Dictionary<SKUResortTarget, int>>?> SKUToResorts =[]; 
 
         private static List<SKUParallelUnit> SKUParallelUnits {get; set;} = [];
 
@@ -519,7 +519,7 @@ namespace TableAnalizer.Objects.Managers
         { 
             int skuResortFromNumber = skuResortBalance.SKUFromResortNumber;
 
-            ResortBalanceUnit? resortingConsumptionItem = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortingConsumption);
+            ResortBalanceUnit? resortingConsumptionItem = skuResortBalance.GetSkusResortToSum(SKUResortTarget.ResortingConsumption);
 
             List<ResortBalanceUnit>? skusResortToUnits = [];
             skusResortToUnits.AddRange([resortingConsumptionItem]);
@@ -532,21 +532,21 @@ namespace TableAnalizer.Objects.Managers
                     // Цель пересорта
                     var resortToTarget = skusResortToUnit.BalanceTarget;
 
-                    Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortsFromDict;
-                    Dictionary<SKUResortBalanceTarget, int>? resortItemsByTarget;
+                    Dictionary<int, Dictionary<SKUResortTarget, int>>? resortsFromDict;
+                    Dictionary<SKUResortTarget, int>? resortItemsByTarget;
                     int resortSumByTarget = 0;
 
                     // Проходим по элементам словаря внутри юнита (арт пересорта, сумма)
                     foreach ((int resortToNumber, int resortToSum) in skusResortToUnit.ResortTo)
                     {
                         // Если по артикулу resortToNumber есть сведения...
-                        if (SKUToResorts.TryGetValue(resortToNumber, out Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortsFromExistingDict) &&
+                        if (SKUToResorts.TryGetValue(resortToNumber, out Dictionary<int, Dictionary<SKUResortTarget, int>>? resortsFromExistingDict) &&
                         resortsFromExistingDict is not null &&
                         resortsFromExistingDict.Count > 0)
                         {
                             resortsFromDict = resortsFromExistingDict;
 
-                            if(resortsFromDict.TryGetValue(skuResortFromNumber, out Dictionary<SKUResortBalanceTarget, int>? resortDictTargets)) 
+                            if(resortsFromDict.TryGetValue(skuResortFromNumber, out Dictionary<SKUResortTarget, int>? resortDictTargets)) 
                             {
                                 resortItemsByTarget = resortDictTargets;
 
@@ -602,14 +602,12 @@ namespace TableAnalizer.Objects.Managers
 
             foreach (var (_, targetSku) in SKUs.GetValuesList())
             {
-                
-
                 if(targetSku is null) continue;
 
                 bool isSummary = ReportFileManager.ClientLogins.Count > 1;
 
                 SKUForTargetReports newValue;
-                if(SKUToResorts.TryGetValue(targetSku.SKUNumber, out Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues) && 
+                if(SKUToResorts.TryGetValue(targetSku.SKUNumber, out Dictionary<int, Dictionary<SKUResortTarget, int>>? resortFromSkusValues) && 
                     resortFromSkusValues is not null &&
                     resortFromSkusValues.Count > 0) 
                 {

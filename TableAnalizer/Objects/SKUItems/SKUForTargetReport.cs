@@ -9,7 +9,7 @@ namespace TableAnalizer.Objects.SKUItems
     public class SKUForTargetReports
     {
         #region Fields
-        private const string RESORT_CONSUMPTION_FIRST_LINE = "Пересортица расхода от др.арт. (добавлен в \"Приход товаром\" и \"Расход пересортом\"):\n";
+        private const string RESORT_CONSUMPTION_FIRST_LINE = "Пересортица расходов:\n";
         private const string RESORT_RECEIPT_FIRST_LINE = "Пересортица прихода от др.арт. (добавлен в \"Приход товаром\"):\n";
         #endregion
 
@@ -214,19 +214,13 @@ namespace TableAnalizer.Objects.SKUItems
         public bool IsSKUNormalize => 
             SKURansomsWaiting == SKUReceiptTotal && SKUReceiptTotal == SKUMutualSettlement && SKURemaining == 0 || 
             SKURansomsWaiting == SKUReceiptTotal && SKUMutualSettlement + SKURemaining == SKURansomsWaiting;
-        
-        public SKUAnalyticalBalance SKUAnalyticalBalance { get; set; }
-        
-        public int SKUOverspendingSum => SKUAnalyticalBalance.SKUOverspendingSum;
-
-        public int SKUUnderspendingSum => SKUAnalyticalBalance.SKUUnderspendingSum;
 
         #endregion
 
         #endregion
 
         #region Constructors
-        public SKUForTargetReports(SKU sku, bool isInternalReport, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues = null)
+        public SKUForTargetReports(SKU sku, bool isInternalReport, int traceDelay, Dictionary<int, Dictionary<SKUResortTarget, int>>? resortFromSkusValues = null)
         {
             SKULogins = string.Join(", ", sku.ClientLogins);
             SKUmp = sku.Marketplace;
@@ -251,11 +245,10 @@ namespace TableAnalizer.Objects.SKUItems
             // Fill SKURemainingBalance
             if (sku.SKURemainingBalance is not null)
             {
-                // var receipt = sku.SKURemainingBalance.SKUReceipt;
-                // var writeOff = sku.SKUWriteOffBalance?.SKUWriteOff;
+                var receipt = sku.SKURemainingBalance.SKUReceipt;
+                var writeOff = sku.SKUWriteOffBalance?.SKUWriteOff;
 
-                SKUReceiptGoods = sku.SKURemainingBalance.SKUReceipt; 
-                SKUPaidPoints += sku.SKUWriteOffBalance?.SKUWriteOff ?? 0;
+                SKUReceiptGoods = writeOff is not null && writeOff > 0 ? receipt - (int)writeOff : receipt; 
 
                 SKUOutgoingProducts = sku.SKURemainingBalance.SKUOutgoingProducts;
                 SKUTransfered = sku.SKURemainingBalance.SKUTransfered;
@@ -281,13 +274,10 @@ namespace TableAnalizer.Objects.SKUItems
         #endregion
 
         #region Functionality
-        private void AnalizeSKU(SKU sku, bool isInteralReport, int traceDelay, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
+        private void AnalizeSKU(SKU sku, bool isInteralReport, int traceDelay, Dictionary<int, Dictionary<SKUResortTarget, int>>? resortFromSkusValues)
         {
             // Setting status to undefined
             SetSellmentStatus(SKUSellmentStatus.Unknown);
-
-            // Рачет аналитического баланса
-            SetSKUAnalyticalBalance();
 
             // Calculation of resorts
             //CalculateResorts(sku, resortFromSkusValues);
@@ -313,15 +303,34 @@ namespace TableAnalizer.Objects.SKUItems
             SetStatus();
         }
 
-        private void SetSKUAnalyticalBalance()
-        {
-            SKUAnalyticalBalance = new(SKUNumber, SKUPrice);
 
-            if(!IsSKUNormalize) 
+        public void MakeResort(SKUResortTarget target, SKUResortDirection dir, int skuNumber, int sum) 
+        {
+            if(string.IsNullOrEmpty(SKUResortsComment)) 
             {
-                SKUAnalyticalBalance.SetSourceSums(LessMutualSettlementThanWaiting, MoreMutualSettlementThanWaiting);
+                SKUResortsComment = RESORT_CONSUMPTION_FIRST_LINE;
+            }
+
+            switch (target)
+            {
+                case SKUResortTarget.ResortingConsumption:
+                    switch (dir)
+                    {
+                        case SKUResortDirection.Incoming:
+                            SKUResort += sum;
+                            SKUResortsComment = $"- от арт. {skuNumber}: {sum}";
+                            break;
+                        case SKUResortDirection.Outgoing:
+                            SKUOutgoingProducts -= sum;
+                            SKUResortsComment = $"- на арт. {skuNumber}: {sum}";
+                            break;
+                    }
+                    break;
+                case SKUResortTarget.ResortingReceipt:
+                    break;
             }
         }
+
 
         private void CalculateDelay(SKUSellmentStatus sellmentStatus)
         {
@@ -337,13 +346,13 @@ namespace TableAnalizer.Objects.SKUItems
                     break;
             }
         }
-        private void CalculateResorts(SKU sku, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues)
+        private void CalculateResorts(SKU sku, Dictionary<int, Dictionary<SKUResortTarget, int>>? resortFromSkusValues)
         {
             // Фикация исходящих пересортов 
             if (sku.SKUResortBalance is not null)
             {
                 // Исходящие: Пересорты расхода
-                var resortsReceiptItems = sku.SKUResortBalance?.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortingReceipt);
+                var resortsReceiptItems = sku.SKUResortBalance?.FindSkusInBalanceBy(SKUResortTarget.ResortingReceipt);
                 if (resortsReceiptItems.HasValue && resortsReceiptItems.Value.sum > 0)
                 {
                     SKUReceiptGoods -= resortsReceiptItems.Value.sum;
@@ -352,7 +361,7 @@ namespace TableAnalizer.Objects.SKUItems
 
 
                 // Исходящие: Пересорты расхода
-                var resortConsumptionItems = sku.SKUResortBalance?.FindSkusInBalanceBy(SKUResortBalanceTarget.ResortingConsumption);
+                var resortConsumptionItems = sku.SKUResortBalance?.FindSkusInBalanceBy(SKUResortTarget.ResortingConsumption);
                 if (resortsReceiptItems.HasValue && resortsReceiptItems.Value.sum > 0)
                 {
                     SKUOutgoingProducts -= resortsReceiptItems.Value.sum;
@@ -373,7 +382,7 @@ namespace TableAnalizer.Objects.SKUItems
             // Фикация входящих пересортов 
             if (resortFromSkusValues is not null && resortFromSkusValues.Count > 0)
             {
-                IEnumerable<(int sku, int sum)>? GetResortValuesBy(SKUResortBalanceTarget balanceTarget) =>
+                IEnumerable<(int sku, int sum)>? GetResortValuesBy(SKUResortTarget balanceTarget) =>
                     from resortFromSkusValue in resortFromSkusValues
                     from targetWithSum in resortFromSkusValue.Value
                     where targetWithSum.Key == balanceTarget
@@ -381,7 +390,7 @@ namespace TableAnalizer.Objects.SKUItems
                     select skuAndSum;
 
                 // Входящие: Пересорты прихода
-                var resortReceiptItems = GetResortValuesBy(SKUResortBalanceTarget.ResortingReceipt);
+                var resortReceiptItems = GetResortValuesBy(SKUResortTarget.ResortingReceipt);
                 var resortReceiptItemsSum = resortReceiptItems?.Aggregate(0, (acc, i) => acc + i.sum);
                 if (resortReceiptItems is not null && resortReceiptItems.Any() && resortReceiptItemsSum > 0)
                 {
@@ -397,7 +406,7 @@ namespace TableAnalizer.Objects.SKUItems
                 }
 
                  // Входящие: Пересорты расхода
-                var resortConsumptionItems = GetResortValuesBy(SKUResortBalanceTarget.ResortingConsumption);
+                var resortConsumptionItems = GetResortValuesBy(SKUResortTarget.ResortingConsumption);
                 var resortConsumptionItemsSum = resortConsumptionItems?.Aggregate(0, (acc, i) => acc + i.sum);
                 if (resortConsumptionItems is not null && resortConsumptionItems.Any() && resortConsumptionItemsSum > 0)
                 {

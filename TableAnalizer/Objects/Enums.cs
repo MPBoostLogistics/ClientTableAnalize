@@ -8,8 +8,14 @@ namespace TableAnalizer.Objects
 
     public enum SKUSellmentStatus
     {
-        FullSet,                    // Полный расчет
-        InWork,                     // В работе
+        /// <summary>
+        /// Полный расчет
+        /// </summary>
+        FullSet,                   
+        /// <summary>
+        /// В работе
+        /// </summary>
+        InWork,                    
         /// <summary>
         /// Задержка довоза от точек и склада.
         /// </summary>
@@ -22,7 +28,10 @@ namespace TableAnalizer.Objects
         /// Задержка довоза от точек.
         /// </summary>
         DelayDeliveryFromPoints,          
-        Unknown                     // Неопределенный
+        /// <summary>
+        /// Неопределенный
+        /// </summary>
+        Unknown                
     }
 
     public enum SourceSKUReportFileKey
@@ -98,7 +107,7 @@ namespace TableAnalizer.Objects
         NonFiltration
     }
 
-    public enum SKUResortBalanceTarget 
+    public enum SKUResortTarget 
     {
         /// <summary>
         /// Пересортица расходов
@@ -108,6 +117,18 @@ namespace TableAnalizer.Objects
         /// Пересортица приходов
         /// </summary>
         ResortingReceipt
+    }
+
+    public enum SKUResortDirection 
+    {
+        /// <summary>
+        /// Входящий пересорт.
+        /// </summary>
+        Incoming,
+        /// <summary>
+        /// Исходящий пересорт.
+        /// </summary>
+        Outgoing
     }
 
     public enum CompensationTarget 

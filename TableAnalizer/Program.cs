@@ -20,7 +20,6 @@ internal class Program
     #region Variables and constants   
     private static int DeadlineDays { get; set; }
     private static string goodByMessage = string.Empty;
-    private static bool isMulty;
     private static bool isTracing;
     private static int TracingDelay { get; set; }
 
@@ -34,6 +33,7 @@ internal class Program
     private static ReportFileManager? reportFileManager;
     private static ExcelManager? excelManager;
     private static SKUManager? skuManager;
+    private static AnalyticalManager? anManager;
     #endregion
 
     #region Functionality
@@ -46,7 +46,7 @@ internal class Program
             reportFileManager = new(config);
             excelManager = new(config);
             skuManager = new(config, DeadlineDays, excelManager);
-
+            anManager = new(config);
         }
         else 
         {
@@ -97,6 +97,7 @@ internal class Program
         reportFileManager!.ManagerReached += Report;
         excelManager!.ManagerReached += Report;
         skuManager!.ManagerReached += Report;
+        anManager!.ManagerReached += Report;
 
         Console.Clear();
 
@@ -232,8 +233,13 @@ internal class Program
                 await TracingProgramExecution(new($"Articles for final report: {skusForTargetReportTask.Result.Count}.", false, false));
             }
 
-             // Save work 
+            // Article analysis and automatic re-sorting
             List<SKUForTargetReports> skuForTargetReports = skusForTargetReportTask.Result;
+            Task analisysTasks = AnalyticalManager.AnalysisTargetSKUs(ref skuForTargetReports);
+            await Task.Run(() => analisysTasks);
+            analisysTasks.Wait();
+
+            // Save work 
             var makeReportTask = excelManager!.MakeReports(skuForTargetReports, isTracing, isInternalReport);
             await Task.Run(() => makeReportTask);
             makeReportTask.Wait();
