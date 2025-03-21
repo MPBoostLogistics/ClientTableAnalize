@@ -45,92 +45,77 @@ namespace TableAnalizer.Objects.Managers
 
         public static Task SetAutoMoreMutualSettlementResorts(ref List<SKUForTargetReports> skuForTargetReports)
         {
+            // Initial set collections
             var updateDataTask = UpdateDataSkus(ref skuForTargetReports);
             Task.Run(() => updateDataTask);
             updateDataTask.Wait();
 
-            if (!isNeedUnderspending || !isPossibilityOverspending) return Task.CompletedTask;
-
-            LinkedListNode<SKUForTargetReports>? usc;
-
-            // Пока есть возможность пересортов расхода
-            while (isPossibilityOverspending)
+            if (isNeedUnderspending && isPossibilityOverspending)
             {
-                usc = underspendingSkus!.First;
-                StringBuilder stringBuilder = new($"------------\nus candidate: {usc!.Value.SKUNumber}, need sum: {usc!.Value.LessMutualSettlementThanWaiting}\n");
-                Dictionary<int, int> resortResult = SetAutoMoreMutualSettlementResort(ref stringBuilder, usc!);
-  
-                int usi = skuForTargetReports.IndexOf(usc!.Value);
+                var overNode = overspendingSkus?.First;
+                var underNode = underspendingSkus?.First;
 
-                foreach (var item in resortResult)
+                while (underNode != null && overNode != null)
                 {
-                    SKUForTargetReports? osiItem = skuForTargetReports.SingleOrDefault(el => el.SKUNumber == item.Key);
-                    
-                    if (osiItem != null)
+                    var overSku = overNode.Value;
+                    var underSku = underNode.Value;
+
+                    if (overSku.MoreMutualSettlementThanWaiting == 0)
                     {
-                        int osi = skuForTargetReports.IndexOf(osiItem);
-                        if (int.IsPositive(usi) && int.IsPositive(osi))
-                        {
-                            skuForTargetReports[usi].MakeResort(SKUResortTarget.ResortingConsumption, SKUResortDirection.Incoming, item.Key, item.Value);
-                            skuForTargetReports[osi].MakeResort(SKUResortTarget.ResortingConsumption, SKUResortDirection.Outgoing, usc.Value.SKUNumber, item.Value);
-
-                            Trace.WriteLine("Resort ok!");
-                        }
+                        overNode = overNode.Next;
+                        continue;
                     }
-                }
-            
-                // Update collections
-                updateDataTask = UpdateDataSkus(ref skuForTargetReports);
-                Task.Run(() => updateDataTask);
-                updateDataTask.Wait();
 
-                resortResult.Clear();
-                stringBuilder = new();
+                    int result = 0;
+                    if (overSku.MoreMutualSettlementThanWaiting >= underSku.LessMutualSettlementThanWaiting)
+                    {
+                        result = underSku.LessMutualSettlementThanWaiting;
+                        underNode = underNode.Next;
+                    }
+                    else
+                    {
+                        result = overSku.MoreMutualSettlementThanWaiting;
+                        overNode = overNode.Next;
+                    }
+
+                    int underSkuIndex = skuForTargetReports.IndexOf(underSku);
+                    int overSkuIndex = skuForTargetReports.IndexOf(overSku);
+                    
+                    MakeResort(ref skuForTargetReports, underSkuIndex, overSkuIndex, result);
+                }
             }
 
-            return Task.CompletedTask;
-        }
+            // Initial set collections
+            updateDataTask = UpdateDataSkus(ref skuForTargetReports);
+            Task.Run(() => updateDataTask);
+            updateDataTask.Wait();
 
-        private static Dictionary<int, int> SetAutoMoreMutualSettlementResort(ref StringBuilder stringBuilder, LinkedListNode<SKUForTargetReports> usc)
-        {
-            Dictionary<int, int> resortResult = [];
-            static bool isResortComplete(Dictionary<int, int> d, int n) => d.Aggregate(0, (acc, i) => acc + i.Value) == n;
-
-            var osc = overspendingSkus!.First;
-
-            // Пока необходимая сумма пререрасхода не набрана
-            while (!isResortComplete(resortResult, usc.Value.LessMutualSettlementThanWaiting))
+            if(isNeedUnderspending && isPossibilityOverspending) 
             {
-                stringBuilder.Append($"os candidate: {osc!.Value.SKUNumber}, ");
+                return SetAutoMoreMutualSettlementResorts(ref  skuForTargetReports);
+            } 
+            else 
+            {
+                return Task.CompletedTask;
+            }
+        }
 
-                if (osc.Value.MoreMutualSettlementThanWaiting == 0 && osc.Next != null)
-                {
-                    osc = osc.Next;
-                    continue;
-                }
-
-                int takeSum = osc.Value.MoreMutualSettlementThanWaiting >= usc.Value.LessMutualSettlementThanWaiting ?
-                    usc.Value.LessMutualSettlementThanWaiting :
-                    osc.Value.MoreMutualSettlementThanWaiting;
-
-                stringBuilder.Append($"take sum: {takeSum}\n");
-
-                resortResult[osc.Value.SKUNumber] = takeSum;
-
-                if (!isResortComplete(resortResult, usc.Value.LessMutualSettlementThanWaiting) && osc.Next != null) 
-                {
-                    osc = osc.Next;
-                    continue;
-                }
-                else 
-                {
-                    Trace.WriteLine(stringBuilder.ToString());
-                    break;
-                } 
+        private static void MakeResort(ref List<SKUForTargetReports> skuForTargetReports, int underSkuIndex, int overSkuIndex, int sum)
+        {
+            if(int.IsNegative(underSkuIndex) || int.IsNegative(overSkuIndex)) 
+            {
+                return;
             }
 
-            return resortResult;
+            skuForTargetReports[underSkuIndex].MakeResort(SKUResortTarget.ResortingConsumption, SKUResortDirection.Incoming, skuForTargetReports[overSkuIndex].SKUNumber, sum);
+            skuForTargetReports[overSkuIndex].MakeResort(SKUResortTarget.ResortingConsumption, SKUResortDirection.Outgoing, skuForTargetReports[underSkuIndex].SKUNumber, sum);
         }
+
+
+
+      
+
+       
 
         private static IEnumerable<SKUForTargetReports>? GetSkus(ref List<SKUForTargetReports> skuForTargetReports, Func<SKUForTargetReports, bool> skuPredicate)
         {
