@@ -6,8 +6,8 @@ namespace TableAnalizer.Objects.SKUItems
     public class SKUForTargetReports
     {
         #region Fields
-        private const string RESORT_CONSUMPTION_FIRST_LINE = "Пересортица расходов:\n";
-        private const string RESORT_RECEIPT_FIRST_LINE = "Пересортица прихода от др.арт. (добавлен в \"Приход товаром\"):\n";
+        private const string RESORT_CONSUMPTION_FIRST_LINE = "Пересортица расходов:";
+        private const string RESORT_RECEIPT_FIRST_LINE = "Пересортица приходов:";
         #endregion
 
         #region Properties

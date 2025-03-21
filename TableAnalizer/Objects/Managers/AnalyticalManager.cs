@@ -1,88 +1,142 @@
+using System.Diagnostics;
+using System.Text;
 using Microsoft.Extensions.Configuration;
 using TableAnalizer.Objects.SKUItems;
 
 namespace TableAnalizer.Objects.Managers
 {
     public class AnalyticalManager(IConfiguration config) : BaseManager(config)
-    {      
+    {
         #region Fields
-        private static Func<SKUForTargetReports, bool> OverPredicate => sku => sku.IsSKUNormalize == false && sku.MoreMutualSettlementThanWaiting > 0;
-        private static Func<SKUForTargetReports, bool> UnderPredicate => sku => sku.IsSKUNormalize == false && sku.LessMutualSettlementThanWaiting > 0;
+        private static Func<SKUForTargetReports, bool> OverPredicate => sku => !sku.IsSKUNormalize && sku.MoreMutualSettlementThanWaiting > 0 && int.IsPositive(sku.SKUOutgoingProducts - sku.MoreMutualSettlementThanWaiting);
+        private static Func<SKUForTargetReports, bool> UnderPredicate => sku => !sku.IsSKUNormalize && sku.LessMutualSettlementThanWaiting > 0;
 
-        private static readonly Func<SKUForTargetReports, SKUForTargetReports, bool> MatchBySumAndPrice = (ob, ub) => 
-            ob.MoreMutualSettlementThanWaiting >= ub.LessMutualSettlementThanWaiting &&
-            ob.SKUPrice >= ub.SKUPrice;
+        private static readonly Func<SKUForTargetReports, SKUForTargetReports, bool> MatchByPrice = (ov, us) =>
+            ov.SKUPrice >= us.SKUPrice;
 
-         private static readonly Func<SKUForTargetReports, SKUForTargetReports, bool> MatchBySum = (ob, ub) => 
-            ob.MoreMutualSettlementThanWaiting >= ub.LessMutualSettlementThanWaiting;
-            
         /// <summary>
-        /// Балансы с перерасходами
+        /// Артикулы с перерасходами (по расходу)
         /// </summary>
-        private static List<SKUForTargetReports>? overspendingSkus;
+        private static LinkedList<SKUForTargetReports>? overspendingSkus;
         /// <summary>
-        /// Балансы с перерасходами
+        ///  Артикулы с недорасходами (по расходу)
         /// </summary>
-        private static List<SKUForTargetReports>? underspendingSkus;
-            
+        private static LinkedList<SKUForTargetReports>? underspendingSkus;
+
+        private static bool isNeedUnderspending;
+        private static bool isPossibilityOverspending;
+
         #endregion
 
         #region Functionality
 
-        private static void UpdateSkus(ref List<SKUForTargetReports> skuForTargetReports) 
+        private static Task UpdateDataSkus(ref List<SKUForTargetReports> skuForTargetReports)
         {
-            var obs = GetSkus(ref skuForTargetReports, OverPredicate);
-            if(obs is not null) 
-            {
-                overspendingSkus = [..obs];
-            }
+            var oss = GetSkus(ref skuForTargetReports, OverPredicate);
+            overspendingSkus = oss is not null ? new LinkedList<SKUForTargetReports>(oss) : null;
+            isPossibilityOverspending = overspendingSkus is not null && overspendingSkus.Count != 0;
 
-            var ubs = GetSkus(ref skuForTargetReports, UnderPredicate);
-            if(ubs is not null) 
-            {
-                underspendingSkus = [.. ubs];
-            }
+            var uss = GetSkus(ref skuForTargetReports, UnderPredicate);
+            underspendingSkus = uss is not null ? new LinkedList<SKUForTargetReports>(uss) : null;
+            isNeedUnderspending = underspendingSkus is not null && underspendingSkus.Count != 0;
+
+            return Task.CompletedTask;
         }
 
-        public static Task AnalysisTargetSKUs(ref List<SKUForTargetReports> skuForTargetReports) 
+        public static Task SetAutoMoreMutualSettlementResorts(ref List<SKUForTargetReports> skuForTargetReports)
         {
-            UpdateSkus(ref skuForTargetReports);
+            var updateDataTask = UpdateDataSkus(ref skuForTargetReports);
+            Task.Run(() => updateDataTask);
+            updateDataTask.Wait();
 
-            // Проход по артикулам с недорасходом
-            if(underspendingSkus is not null) 
+            if (!isNeedUnderspending || !isPossibilityOverspending) return Task.CompletedTask;
+
+            LinkedListNode<SKUForTargetReports>? usc;
+
+            // Пока есть возможность пересортов расхода
+            while (isPossibilityOverspending)
             {
-                for (int i = 0; i < underspendingSkus.Count; i++)
+                usc = underspendingSkus!.First;
+                StringBuilder stringBuilder = new($"------------\nus candidate: {usc!.Value.SKUNumber}, need sum: {usc!.Value.LessMutualSettlementThanWaiting}\n");
+                Dictionary<int, int> resortResult = SetAutoMoreMutualSettlementResort(ref stringBuilder, usc!);
+  
+                int usi = skuForTargetReports.IndexOf(usc!.Value);
+
+                foreach (var item in resortResult)
                 {
-                    if(overspendingSkus is not null) 
+                    SKUForTargetReports? osiItem = skuForTargetReports.SingleOrDefault(el => el.SKUNumber == item.Key);
+                    
+                    if (osiItem != null)
                     {
-                        SKUForTargetReports? obPretender;
-
-                        // Артикул-претендент перерасхода по совпадению количества и цены товаров
-                        obPretender = overspendingSkus.FirstOrDefault(el => MatchBySumAndPrice(el, underspendingSkus[i]));
-                        // Артикул-претендент перерасхода по совпадению количества
-                        obPretender ??= overspendingSkus.FirstOrDefault(el => MatchBySum(el, underspendingSkus[i]));
-
-                        if(obPretender is not null)
+                        int osi = skuForTargetReports.IndexOf(osiItem);
+                        if (int.IsPositive(usi) && int.IsPositive(osi))
                         {
-                            var resortSum = underspendingSkus[i].LessMutualSettlementThanWaiting;
-                            underspendingSkus[i].MakeResort(SKUResortTarget.ResortingConsumption, SKUResortDirection.Incoming, obPretender.SKUNumber, resortSum);
-                            obPretender.MakeResort(SKUResortTarget.ResortingConsumption, SKUResortDirection.Outgoing, underspendingSkus[i].SKUNumber, resortSum);
-                        } 
+                            skuForTargetReports[usi].MakeResort(SKUResortTarget.ResortingConsumption, SKUResortDirection.Incoming, item.Key, item.Value);
+                            skuForTargetReports[osi].MakeResort(SKUResortTarget.ResortingConsumption, SKUResortDirection.Outgoing, usc.Value.SKUNumber, item.Value);
 
+                            Trace.WriteLine("Resort ok!");
+                        }
                     }
-                
-                    UpdateSkus(ref skuForTargetReports);
                 }
+            
+                // Update collections
+                updateDataTask = UpdateDataSkus(ref skuForTargetReports);
+                Task.Run(() => updateDataTask);
+                updateDataTask.Wait();
+
+                resortResult.Clear();
+                stringBuilder = new();
             }
-        
+
             return Task.CompletedTask;
-        } 
-        
-        private static IEnumerable<SKUForTargetReports>? GetSkus(ref List<SKUForTargetReports> skuForTargetReports, Func<SKUForTargetReports, bool> skuPredicate) 
+        }
+
+        private static Dictionary<int, int> SetAutoMoreMutualSettlementResort(ref StringBuilder stringBuilder, LinkedListNode<SKUForTargetReports> usc)
+        {
+            Dictionary<int, int> resortResult = [];
+            static bool isResortComplete(Dictionary<int, int> d, int n) => d.Aggregate(0, (acc, i) => acc + i.Value) == n;
+
+            var osc = overspendingSkus!.First;
+
+            // Пока необходимая сумма пререрасхода не набрана
+            while (!isResortComplete(resortResult, usc.Value.LessMutualSettlementThanWaiting))
+            {
+                stringBuilder.Append($"os candidate: {osc!.Value.SKUNumber}, ");
+
+                if (osc.Value.MoreMutualSettlementThanWaiting == 0 && osc.Next != null)
+                {
+                    osc = osc.Next;
+                    continue;
+                }
+
+                int takeSum = osc.Value.MoreMutualSettlementThanWaiting >= usc.Value.LessMutualSettlementThanWaiting ?
+                    usc.Value.LessMutualSettlementThanWaiting :
+                    osc.Value.MoreMutualSettlementThanWaiting;
+
+                stringBuilder.Append($"take sum: {takeSum}\n");
+
+                resortResult[osc.Value.SKUNumber] = takeSum;
+
+                if (!isResortComplete(resortResult, usc.Value.LessMutualSettlementThanWaiting) && osc.Next != null) 
+                {
+                    osc = osc.Next;
+                    continue;
+                }
+                else 
+                {
+                    Trace.WriteLine(stringBuilder.ToString());
+                    break;
+                } 
+            }
+
+            return resortResult;
+        }
+
+        private static IEnumerable<SKUForTargetReports>? GetSkus(ref List<SKUForTargetReports> skuForTargetReports, Func<SKUForTargetReports, bool> skuPredicate)
         {
             return from skuForTarget in skuForTargetReports
-                    where skuPredicate(skuForTarget)
-                    select skuForTarget;
+                   where skuPredicate(skuForTarget)
+                   select skuForTarget;
         }
 
         #endregion

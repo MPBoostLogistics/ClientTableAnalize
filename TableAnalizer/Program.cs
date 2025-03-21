@@ -240,7 +240,7 @@ internal class Program
             // Article analysis and automatic re-sorting
             if(isAutoResorting) 
             {
-                Task doAnalyticsTask = AnalyticalManager.AnalysisTargetSKUs(ref skuForTargetReports);
+                Task doAnalyticsTask = AnalyticalManager.SetAutoMoreMutualSettlementResorts(ref skuForTargetReports);
                 await Task.Run(() => doAnalyticsTask);
                 doAnalyticsTask.Wait();
             }

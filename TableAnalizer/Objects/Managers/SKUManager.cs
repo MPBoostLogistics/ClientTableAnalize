@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Drawing;
-using System.Text;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using TableAnalizer.Interfaces;
@@ -23,13 +22,14 @@ namespace TableAnalizer.Objects.Managers
         /// <summary>
         /// Сollection of colors to indicate status of mutual settlements with clients.
         /// </summary>
+        /// <remarks>https://www.color-hex.com/color-palette/2922</remarks>
         public static Dictionary<SKUSellmentStatus, Color> StatusColors { get; } = new()
         {
-            {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#d9fef1")},                             // #d9fef1
-            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fdd383")},                              // #fdd383
-            {SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse, ColorTranslator.FromHtml("#bccced")}, // #bccced 
-            {SKUSellmentStatus.DelayDeliveryFromWarehouse, ColorTranslator.FromHtml("#d2ddf3")},          // #d2ddf3
-            {SKUSellmentStatus.DelayDeliveryFromPoints, ColorTranslator.FromHtml("#b5c7eb")},             // #b5c7eb
+            {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#a8e6cf")},                             // #a8e6cf
+            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#dcedc1")},                              // #dcedc1
+            {SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse, ColorTranslator.FromHtml("#ff8b94")}, // #ff8b94
+            {SKUSellmentStatus.DelayDeliveryFromWarehouse, ColorTranslator.FromHtml("#ffd3b6")},          // #ffd3b6
+            {SKUSellmentStatus.DelayDeliveryFromPoints, ColorTranslator.FromHtml("#ffaaa5")},             // #ffaaa5
             {SKUSellmentStatus.Unknown, ColorTranslator.FromHtml("#eef5f9")}                              // #eef5f9
         };
         #endregion
