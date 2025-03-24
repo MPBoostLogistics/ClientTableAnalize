@@ -240,9 +240,18 @@ internal class Program
             // Article analysis and automatic re-sorting
             if(isAutoResorting) 
             {
-                Task doAnalyticsTask = AnalyticalManager.SetAutoMoreMutualSettlementResorts(ref skuForTargetReports);
-                await Task.Run(() => doAnalyticsTask);
-                doAnalyticsTask.Wait();
+                Task[] autoResortTasks =
+                [
+                    AnalyticalManager.SetConsumptionResorts(ref skuForTargetReports),
+                    //AnalyticalManager.SetReceiptResorts(ref skuForTargetReports),
+                ];
+
+                for (int i = 0; i < autoResortTasks.Length; i++)
+                {
+                    await Task.Run(() => autoResortTasks[i]);
+                }
+                
+                Task.WaitAll(autoResortTasks);
             }
             
             // Save work 

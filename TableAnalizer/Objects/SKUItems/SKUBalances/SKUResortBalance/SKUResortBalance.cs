@@ -87,7 +87,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
                 switch (skuResortDataUnit.ResortComment!.Trim())
                 {
                     case RESORT_CONSUMPTION_KEY:
-                        skuResortBalanceTarget = SKUResortTarget.ResortingConsumption;
+                        skuResortBalanceTarget = SKUResortTarget.ResortingConsumptionByOutgoing;
                         break;
                     case RESORT_RECEIPT_KEY:
                         skuResortBalanceTarget = SKUResortTarget.ResortingReceipt;
@@ -182,7 +182,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             // Исходящие пересорты
             switch(target) 
             {
-                case SKUResortTarget.ResortingConsumption:
+                case SKUResortTarget.ResortingConsumptionByOutgoing:
                     stringBuilder.Append(RESORT_CONSUMPTION_FIRST_LINE);
                     break;
                 case SKUResortTarget.ResortingReceipt:

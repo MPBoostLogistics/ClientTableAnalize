@@ -110,9 +110,15 @@ namespace TableAnalizer.Objects
     public enum SKUResortTarget 
     {
         /// <summary>
-        /// Пересортица расходов
+        /// Пересортица расходов на расход товаров 
         /// </summary>
-        ResortingConsumption, 
+        ResortingConsumptionByOutgoing, 
+
+        /// <summary>
+        /// Пересортица расходов на перемещение (фулфилмент)
+        /// </summary>
+        ResortingConsumptionByTransfer, 
+
         /// <summary>
         /// Пересортица приходов
         /// </summary>

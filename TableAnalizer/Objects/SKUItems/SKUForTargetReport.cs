@@ -56,6 +56,11 @@ namespace TableAnalizer.Objects.SKUItems
         public int SKUPaidPoints { get; set; } = 0;
 
         /// <summary>
+        /// Списано на точках. 
+        /// </summary>
+        public int SKUWriteOffPoints { get; set; } = 0;
+
+        /// <summary>
         /// Склад: Приход от точек меньше ожидания
         /// </summary>
         public int LessReceiptThanWaiting =>
@@ -242,14 +247,16 @@ namespace TableAnalizer.Objects.SKUItems
             // Fill SKURemainingBalance
             if (sku.SKURemainingBalance is not null)
             {
-                var receipt = sku.SKURemainingBalance.SKUReceipt;
-                var writeOff = sku.SKUWriteOffBalance?.SKUWriteOff;
-
-                SKUReceiptGoods = writeOff is not null && writeOff > 0 ? receipt - (int)writeOff : receipt; 
-
+                SKUReceiptGoods = sku.SKURemainingBalance.SKUReceipt;
                 SKUOutgoingProducts = sku.SKURemainingBalance.SKUOutgoingProducts;
                 SKUTransfered = sku.SKURemainingBalance.SKUTransfered;
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
+            }
+
+            // Fill write-off 
+            if (sku.SKUWriteOffBalance is not null) 
+            {
+                SKUWriteOffPoints = sku.SKUWriteOffBalance!.SKUWriteOff;
             }
 
             // Fill SKUCompensationBalance 
@@ -305,12 +312,34 @@ namespace TableAnalizer.Objects.SKUItems
         {
             if(string.IsNullOrEmpty(SKUResortsComment)) 
             {
-                SKUResortsComment = RESORT_CONSUMPTION_FIRST_LINE;
+                switch (target)
+                {
+                    case SKUResortTarget.ResortingConsumptionByOutgoing: case SKUResortTarget.ResortingConsumptionByTransfer:
+                        SKUResortsComment = RESORT_CONSUMPTION_FIRST_LINE;
+                        break;
+                    case SKUResortTarget.ResortingReceipt:
+                        SKUResortsComment = RESORT_RECEIPT_FIRST_LINE;
+                        break;
+                }
             }
 
             switch (target)
             {
-                case SKUResortTarget.ResortingConsumption:
+                case SKUResortTarget.ResortingConsumptionByTransfer:
+                    switch (dir)
+                    {
+                        case SKUResortDirection.Incoming:
+                            SKUResort += sum;
+                            SKUResortsComment = $"- от арт. {skuNumber}: {sum} (фф)";
+                            break;
+                        case SKUResortDirection.Outgoing:
+                            SKUTransfered -= sum;
+                            SKUResortsComment = $"- на арт. {skuNumber}: {sum} (фф)";
+                            break;
+                    }
+                    break;
+
+                case SKUResortTarget.ResortingConsumptionByOutgoing:
                     switch (dir)
                     {
                         case SKUResortDirection.Incoming:
@@ -324,6 +353,15 @@ namespace TableAnalizer.Objects.SKUItems
                     }
                     break;
                 case SKUResortTarget.ResortingReceipt:
+                    // switch (dir) 
+                    // {
+                    //     case SKUResortDirection.Incoming:
+                    //         SKUReceiptGoods -= sum;
+                    //         SKUResortsComment = $"- внутри арт. уменьшен приход на {sum}";
+                    //         break;
+                    //     default:
+                    //         break;
+                    // }
                     break;
             }
         }
@@ -358,7 +396,7 @@ namespace TableAnalizer.Objects.SKUItems
 
 
                 // Исходящие: Пересорты расхода
-                var resortConsumptionItems = sku.SKUResortBalance?.FindSkusInBalanceBy(SKUResortTarget.ResortingConsumption);
+                var resortConsumptionItems = sku.SKUResortBalance?.FindSkusInBalanceBy(SKUResortTarget.ResortingConsumptionByOutgoing);
                 if (resortsReceiptItems.HasValue && resortsReceiptItems.Value.sum > 0)
                 {
                     SKUOutgoingProducts -= resortsReceiptItems.Value.sum;
@@ -403,7 +441,7 @@ namespace TableAnalizer.Objects.SKUItems
                 }
 
                  // Входящие: Пересорты расхода
-                var resortConsumptionItems = GetResortValuesBy(SKUResortTarget.ResortingConsumption);
+                var resortConsumptionItems = GetResortValuesBy(SKUResortTarget.ResortingConsumptionByOutgoing);
                 var resortConsumptionItemsSum = resortConsumptionItems?.Aggregate(0, (acc, i) => acc + i.sum);
                 if (resortConsumptionItems is not null && resortConsumptionItems.Any() && resortConsumptionItemsSum > 0)
                 {

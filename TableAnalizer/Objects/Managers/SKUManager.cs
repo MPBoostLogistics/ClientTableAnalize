@@ -519,7 +519,7 @@ namespace TableAnalizer.Objects.Managers
         { 
             int skuResortFromNumber = skuResortBalance.SKUFromResortNumber;
 
-            ResortBalanceUnit? resortingConsumptionItem = skuResortBalance.GetSkusResortToSum(SKUResortTarget.ResortingConsumption);
+            ResortBalanceUnit? resortingConsumptionItem = skuResortBalance.GetSkusResortToSum(SKUResortTarget.ResortingConsumptionByOutgoing);
 
             List<ResortBalanceUnit>? skusResortToUnits = [];
             skusResortToUnits.AddRange([resortingConsumptionItem]);
