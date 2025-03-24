@@ -43,7 +43,7 @@ namespace TableAnalizer.Objects.SKUItems
         /// <summary>
         /// Приход от точек, всего
         /// </summary>
-        public int SKUReceiptTotal => SKUReceiptGoods + SKUPaidPoints;
+        public int SKUReceiptTotal => SKUReceiptGoods + SKUPaidByPointsToOrganization;
 
         /// <summary>
         /// из них, Склад: Приход товарами
@@ -51,15 +51,10 @@ namespace TableAnalizer.Objects.SKUItems
         public int SKUReceiptGoods { get; set; } = 0;
 
         /// <summary>
-        /// из них: Денежная компенсация
+        /// Оплачено точками организации 
         /// </summary>
-        public int SKUPaidPoints { get; set; } = 0;
-
-        /// <summary>
-        /// Списано на точках. 
-        /// </summary>
-        public int SKUWriteOffPoints { get; set; } = 0;
-
+        public int SKUPaidByPointsToOrganization { get; set; } = 0;
+        
         /// <summary>
         /// Склад: Приход от точек меньше ожидания
         /// </summary>
@@ -107,9 +102,19 @@ namespace TableAnalizer.Objects.SKUItems
         public int SKUTransfered { get; set; }
 
         /// <summary>
+        /// Всего: Денежная компенсация
+        /// </summary>
+        public int SKUPaidTotal => SKUPaidWarehouse + SKUPaidPoints;
+
+        /// <summary>
         /// Склад: Денежная компенсация
         /// </summary>                       
         public int SKUPaidWarehouse { get; set; } = 0;
+
+         /// <summary>
+        /// Точки: Денежная компенсация
+        /// </summary>                       
+        public int SKUPaidPoints { get; set; } = 0;
 
         /// <summary>
         /// Склад: расход пересортом                
@@ -217,6 +222,14 @@ namespace TableAnalizer.Objects.SKUItems
             SKURansomsWaiting == SKUReceiptTotal && SKUReceiptTotal == SKUMutualSettlement && SKURemaining == 0 || 
             SKURansomsWaiting == SKUReceiptTotal && SKUMutualSettlement + SKURemaining == SKURansomsWaiting;
 
+        /// <summary>
+        /// Долг по оплате компенсации организацией перед клиентом.
+        /// </summary>
+        public int SKUDebtToClientForCompensationSum => 
+            SKUPaidByPointsToOrganization - SKUPaidTotal > 0 ? 
+            SKUPaidByPointsToOrganization - SKUPaidTotal : 
+            0;
+
         #endregion
 
         #endregion
@@ -256,7 +269,7 @@ namespace TableAnalizer.Objects.SKUItems
             // Fill write-off 
             if (sku.SKUWriteOffBalance is not null) 
             {
-                SKUWriteOffPoints = sku.SKUWriteOffBalance!.SKUWriteOff;
+                SKUPaidByPointsToOrganization = sku.SKUWriteOffBalance!.SKUWriteOff;
             }
 
             // Fill SKUCompensationBalance 
