@@ -8,12 +8,30 @@ namespace TableAnalizer.Objects
 
     public enum SKUSellmentStatus
     {
-        FullSet,                    // Полный расчет
-        InWork,                     // В работе
-        OnSearchWarehouseAndPoints, // На поиске склада и ПВЗ
-        OnSearchWarehouse,          // На поиске склада 
-        OnSearchPoints,             // На поиске ПВЗ
-        Unknown                     // Неопределенный
+        /// <summary>
+        /// Полный расчет
+        /// </summary>
+        FullSet,                   
+        /// <summary>
+        /// В работе
+        /// </summary>
+        InWork,                    
+        /// <summary>
+        /// Задержка довоза от точек и склада.
+        /// </summary>
+        DelayDeliveryFromPointsAndWarehouse, 
+        /// <summary>
+        /// Задержка довоза от склада.
+        /// </summary>
+        DelayDeliveryFromWarehouse,   
+        /// <summary>
+        /// Задержка довоза от точек.
+        /// </summary>
+        DelayDeliveryFromPoints,          
+        /// <summary>
+        /// Неопределенный
+        /// </summary>
+        Unknown                
     }
 
     public enum SourceSKUReportFileKey
@@ -77,7 +95,9 @@ namespace TableAnalizer.Objects
         StringTypeCode,             // 3
         SKURansomsStatus,           // 4
         Marketplace,                // 5
-        SellmentStatus              // 6
+        SellmentStatus,             // 6
+        BoolTypeCode                // 7
+
     }
 
     public enum SourceCellsType 
@@ -87,16 +107,40 @@ namespace TableAnalizer.Objects
         NonFiltration
     }
 
-    public enum SKUResortBalanceTarget 
+    public enum SKUResortTarget 
     {
         /// <summary>
-        /// Пересортица расходов
+        /// Пересортица расходов на расход товаров 
         /// </summary>
-        ResortingConsumption, 
+        ResortingConsumptionByOutgoing, 
+
+        /// <summary>
+        /// Пересортица расходов на перемещение (фулфилмент)
+        /// </summary>
+        ResortingConsumptionByTransfer, 
+
         /// <summary>
         /// Пересортица приходов
         /// </summary>
         ResortingReceipt
+    }
+
+    public enum SKUResortDirection 
+    {
+        /// <summary>
+        /// Входящий пересорт.
+        /// </summary>
+        Incoming,
+        /// <summary>
+        /// Исходящий пересорт.
+        /// </summary>
+        Outgoing,
+        /// <summary>
+        /// Внутренний пересорт.
+        /// </summary>
+        Internal
+
+
     }
 
     public enum CompensationTarget 

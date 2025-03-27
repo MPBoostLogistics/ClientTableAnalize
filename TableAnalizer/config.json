@@ -1,7 +1,8 @@
 {
     "Flags": 
     {
-      "isTracing": true
+      "isTracing": true,
+      "isAutoResorting": true
     },
     "Messages": {
       "GoodbyMessage": "\nThank you for using the program.\nHave a productive day!",
@@ -22,6 +23,12 @@
     },
     "Strings" : 
     {
-      "LogisticsReportFirstName" : "LogisticsReport"
+      "LogisticsReportFirstName" : "LogisticsReport",
+      "FullSetStatusString": "Полный расчет", 
+      "InWorkStatusString": "В работе",
+      "DelayDeliveryFromPointsAndWarehouseStatusString": "Задержка от точек и склада",
+      "DelayDeliveryFromWarehouseStatusString" : "Задержка от склада",
+      "DelayDeliveryFromPointsStatusString" : "Задержка от точек",
+      "UnknownStatusString" : "Не определен"
     }
   }

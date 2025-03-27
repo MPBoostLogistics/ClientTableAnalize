@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using System.Text;
+using System.Drawing;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using TableAnalizer.Interfaces;
@@ -17,6 +17,21 @@ namespace TableAnalizer.Objects.Managers
         #region Variables and constants 
         private const bool IS_REMOVE_BRAND_FROM_NAME = false;
         private readonly ExcelManager? excelManager = excelManager;
+        public static Dictionary<SKUSellmentStatus, string> StatusStrings = [];
+
+        /// <summary>
+        /// Сollection of colors to indicate status of mutual settlements with clients.
+        /// </summary>
+        /// <remarks>https://www.color-hex.com/color-palette/2922</remarks>
+        public static Dictionary<SKUSellmentStatus, Color> StatusColors { get; } = new()
+        {
+            {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#e6f6eb")},                             // #e6f6eb
+            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fff6f0")},                              // #fff6f0
+            {SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse, ColorTranslator.FromHtml("#ffd9d9")}, // #ffd9d9
+            {SKUSellmentStatus.DelayDeliveryFromWarehouse, ColorTranslator.FromHtml("#ffe0e0")},          // #ffe0e0
+            {SKUSellmentStatus.DelayDeliveryFromPoints, ColorTranslator.FromHtml("#ffefef")},             // #ffefef
+            {SKUSellmentStatus.Unknown, ColorTranslator.FromHtml("#eef5f9")}                              // #eef5f9
+        };
         #endregion
 
         #region Properties 
@@ -30,14 +45,14 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; } = new ParsingRowEntityRepo();
 
-        /// <summary>
-        /// Словарь прересортов в обратном направлении:
-        ///  - ключ: skuResortToNumber (артикул на который пересорт), 
-        ///  значение: словарь - ключ: skuResortFromNumber (артикул с которого пересорт), 
-        ///  значение:  словарь - ключ: resortTarget (цель пересорта)
-        ///                       значение: resortSum (количество)
-        /// </summary>
-        private readonly Dictionary<int, Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>?> SKUToResorts =[]; 
+        // /// <summary>
+        // /// Словарь прересортов в обратном направлении:
+        // ///  - ключ: skuResortToNumber (артикул на который пересорт), 
+        // ///  значение: словарь - ключ: skuResortFromNumber (артикул с которого пересорт), 
+        // ///  значение:  словарь - ключ: resortTarget (цель пересорта)
+        // ///                       значение: resortSum (количество)
+        // /// </summary>
+        // private readonly Dictionary<int, Dictionary<int, Dictionary<SKUResortTarget, int>>?> SKUToResorts =[]; 
 
         private static List<SKUParallelUnit> SKUParallelUnits {get; set;} = [];
 
@@ -52,6 +67,21 @@ namespace TableAnalizer.Objects.Managers
         #endregion
 
         #region Functionality
+
+        protected override void AddConfigVariables()
+        {
+            base.AddConfigVariables();
+
+            IConfigurationSection? stringsSection = config!.GetSection("Strings");
+            
+            // Set status strings variables
+            StatusStrings.Add(SKUSellmentStatus.FullSet, stringsSection.GetValue<string>("FullSetStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.InWork, stringsSection.GetValue<string>("InWorkStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromPointsAndWarehouseStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromWarehouseStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromPoints, stringsSection.GetValue<string>("DelayDeliveryFromPointsStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.Unknown, stringsSection.GetValue<string>("UnknownStatusString") ?? string.Empty);
+        }
 
         public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, bool isInternalReport, ExcelPackage excelPackage)
         {            
@@ -137,7 +167,7 @@ namespace TableAnalizer.Objects.Managers
                 static bool FindSkusWithWriteOff(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOff > 0;
                 static bool FindSkusWithCompensation(SKU sku) => sku.SKUCompensationBalance != null;
                 static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
-                static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
+                //static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
 
                 var message = string.Empty;
 
@@ -479,92 +509,92 @@ namespace TableAnalizer.Objects.Managers
                         SKUResortBalance skuResortBalance = new(skuNumber, [.. units]);
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuResortBalance));
                         
-                        UpdateSKUsToResortCollection(skuResortBalance);
+                        //UpdateSKUsToResortCollection(skuResortBalance);
                     }
                 }
             }
         }
 
-        private void UpdateSKUsToResortCollection(SKUResortBalance skuResortBalance)
-        { 
-            int skuResortFromNumber = skuResortBalance.SKUFromResortNumber;
+        // private void UpdateSKUsToResortCollection(SKUResortBalance skuResortBalance)
+        // { 
+        //     int skuResortFromNumber = skuResortBalance.SKUFromResortNumber;
 
-            ResortBalanceUnit? resortingConsumptionItem = skuResortBalance.GetSkusResortToSum(SKUResortBalanceTarget.ResortingConsumption);
+        //     ResortBalanceUnit? resortingConsumptionItem = skuResortBalance.GetSkusResortToSum(SKUResortTarget.ResortingConsumptionByOutgoing);
 
-            List<ResortBalanceUnit>? skusResortToUnits = [];
-            skusResortToUnits.AddRange([resortingConsumptionItem]);
+        //     List<ResortBalanceUnit>? skusResortToUnits = [];
+        //     skusResortToUnits.AddRange([resortingConsumptionItem]);
 
-            if (skusResortToUnits is not null && skusResortToUnits.Count != 0)
-            {
-                // Проходим по юнитам
-                foreach (var skusResortToUnit in skusResortToUnits)
-                {
-                    // Цель пересорта
-                    var resortToTarget = skusResortToUnit.BalanceTarget;
+        //     if (skusResortToUnits is not null && skusResortToUnits.Count != 0)
+        //     {
+        //         // Проходим по юнитам
+        //         foreach (var skusResortToUnit in skusResortToUnits)
+        //         {
+        //             // Цель пересорта
+        //             var resortToTarget = skusResortToUnit.BalanceTarget;
 
-                    Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortsFromDict;
-                    Dictionary<SKUResortBalanceTarget, int>? resortItemsByTarget;
-                    int resortSumByTarget = 0;
+        //             Dictionary<int, Dictionary<SKUResortTarget, int>>? resortsFromDict;
+        //             Dictionary<SKUResortTarget, int>? resortItemsByTarget;
+        //             int resortSumByTarget = 0;
 
-                    // Проходим по элементам словаря внутри юнита (арт пересорта, сумма)
-                    foreach ((int resortToNumber, int resortToSum) in skusResortToUnit.ResortTo)
-                    {
-                        // Если по артикулу resortToNumber есть сведения...
-                        if (SKUToResorts.TryGetValue(resortToNumber, out Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortsFromExistingDict) &&
-                        resortsFromExistingDict is not null &&
-                        resortsFromExistingDict.Count > 0)
-                        {
-                            resortsFromDict = resortsFromExistingDict;
+        //             // Проходим по элементам словаря внутри юнита (арт пересорта, сумма)
+        //             foreach ((int resortToNumber, int resortToSum) in skusResortToUnit.ResortTo)
+        //             {
+        //                 // Если по артикулу resortToNumber есть сведения...
+        //                 if (SKUToResorts.TryGetValue(resortToNumber, out Dictionary<int, Dictionary<SKUResortTarget, int>>? resortsFromExistingDict) &&
+        //                 resortsFromExistingDict is not null &&
+        //                 resortsFromExistingDict.Count > 0)
+        //                 {
+        //                     resortsFromDict = resortsFromExistingDict;
 
-                            if(resortsFromDict.TryGetValue(skuResortFromNumber, out Dictionary<SKUResortBalanceTarget, int>? resortDictTargets)) 
-                            {
-                                resortItemsByTarget = resortDictTargets;
+        //                     if(resortsFromDict.TryGetValue(skuResortFromNumber, out Dictionary<SKUResortTarget, int>? resortDictTargets)) 
+        //                     {
+        //                         resortItemsByTarget = resortDictTargets;
 
-                                if(resortItemsByTarget.TryGetValue(resortToTarget, out int sum)) 
-                                {
-                                    resortSumByTarget = sum;
-                                    resortSumByTarget += resortToSum;
-                                } 
-                                else 
-                                {
-                                    resortSumByTarget = resortToSum;
-                                }
+        //                         if(resortItemsByTarget.TryGetValue(resortToTarget, out int sum)) 
+        //                         {
+        //                             resortSumByTarget = sum;
+        //                             resortSumByTarget += resortToSum;
+        //                         } 
+        //                         else 
+        //                         {
+        //                             resortSumByTarget = resortToSum;
+        //                         }
 
-                                resortItemsByTarget[resortToTarget] = resortSumByTarget;
-                            } 
-                            else 
-                            {
-                                // Сумма пересортов
-                                resortSumByTarget = resortToSum;
+        //                         resortItemsByTarget[resortToTarget] = resortSumByTarget;
+        //                     } 
+        //                     else 
+        //                     {
+        //                         // Сумма пересортов
+        //                         resortSumByTarget = resortToSum;
 
-                                // Новый словарь: Цель пересортов - Сумма пересортов
-                                resortItemsByTarget = new() 
-                                {
-                                    {resortToTarget, resortSumByTarget}
-                                };
-                            }  
+        //                         // Новый словарь: Цель пересортов - Сумма пересортов
+        //                         resortItemsByTarget = new() 
+        //                         {
+        //                             {resortToTarget, resortSumByTarget}
+        //                         };
+        //                     }  
 
-                            resortsFromDict[skuResortFromNumber] = resortItemsByTarget;
-                        } 
-                        // Если по артикулу resortToNumber нет сведений, создается новая запись
-                        else 
-                        {
-                            resortItemsByTarget = new() 
-                            {
-                                {resortToTarget, resortToSum}
-                            };
+        //                     resortsFromDict[skuResortFromNumber] = resortItemsByTarget;
+        //                 } 
+        //                 // Если по артикулу resortToNumber нет сведений, создается новая запись
+        //                 else 
+        //                 {
+        //                     resortItemsByTarget = new() 
+        //                     {
+        //                         {resortToTarget, resortToSum}
+        //                     };
 
-                            resortsFromDict = new() 
-                            {
-                                { skuResortFromNumber, resortItemsByTarget }
-                            };
-                        } 
+        //                     resortsFromDict = new() 
+        //                     {
+        //                         { skuResortFromNumber, resortItemsByTarget }
+        //                     };
+        //                 } 
 
-                        SKUToResorts[resortToNumber] = resortsFromDict;
-                    }                    
-                }
-            }
-        }
+        //                 SKUToResorts[resortToNumber] = resortsFromDict;
+        //             }                    
+        //         }
+        //     }
+        // }
 
         public async Task<List<SKUForTargetReports>> MakeSkusForTargetReport() 
         {
@@ -574,19 +604,21 @@ namespace TableAnalizer.Objects.Managers
             {
                 if(targetSku is null) continue;
 
-                SKUForTargetReports newValue;
-                if(SKUToResorts.TryGetValue(targetSku.SKUNumber, out Dictionary<int, Dictionary<SKUResortBalanceTarget, int>>? resortFromSkusValues) && 
-                    resortFromSkusValues is not null &&
-                    resortFromSkusValues.Count > 0) 
-                {
-                    newValue = new(targetSku, ReportFileManager.ClientLogins.Count > 1,  1000, resortFromSkusValues);
-                } 
-                else 
-                {
-                    newValue = new(targetSku, ReportFileManager.ClientLogins.Count > 1 , 1000);
-                }
+                //bool isSummary = ReportFileManager.ClientLogins.Count > 1;
+
+                //SKUForTargetReports newValue;
+                // if(SKUToResorts.TryGetValue(targetSku.SKUNumber, out Dictionary<int, Dictionary<SKUResortTarget, int>>? resortFromSkusValues) && 
+                //     resortFromSkusValues is not null &&
+                //     resortFromSkusValues.Count > 0) 
+                // {
+                //     newValue = new(targetSku, isSummary,  1000, resortFromSkusValues);
+                // } 
+                // else 
+                // {
+                   // newValue = ;
+               // }
                 
-                skuForTargetReports.Add(newValue);
+                skuForTargetReports.Add(new(targetSku, ClientLogins.Count > 1 , 1000));
             }
 
             await Task.Delay(10); // dummy 

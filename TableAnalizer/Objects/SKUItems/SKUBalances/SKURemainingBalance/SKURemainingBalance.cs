@@ -10,7 +10,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         /// <summary>
         /// Number of goods received at the warehouse.
         /// </summary>
-        public int SKUReceipt { get; private set; } = 0;  
+        public int SKUReceipt { get; private set; }  
         /// <summary>
         /// Number of goods delivered to the customer.
         /// </summary>

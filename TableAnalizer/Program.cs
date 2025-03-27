@@ -20,8 +20,8 @@ internal class Program
     #region Variables and constants   
     private static int DeadlineDays { get; set; }
     private static string goodByMessage = string.Empty;
-    private static bool isMulty;
     private static bool isTracing;
+    private static bool isAutoResorting;
     private static int TracingDelay { get; set; }
 
     private static string TraceInfoFlag { get; set; } = string.Empty;
@@ -34,6 +34,7 @@ internal class Program
     private static ReportFileManager? reportFileManager;
     private static ExcelManager? excelManager;
     private static SKUManager? skuManager;
+    private static AnalyticalManager? anManager;
     #endregion
 
     #region Functionality
@@ -46,7 +47,7 @@ internal class Program
             reportFileManager = new(config);
             excelManager = new(config);
             skuManager = new(config, DeadlineDays, excelManager);
-
+            anManager = new(config);
         }
         else 
         {
@@ -80,6 +81,7 @@ internal class Program
 
             IConfigurationSection? flagsSection = config.GetSection("Flags");
             isTracing = flagsSection.GetValue<bool>("isTracing");
+            isAutoResorting = flagsSection.GetValue<bool>("isAutoResorting");
 
             IConfigurationSection? messagesSection = config.GetSection("Messages");
             goodByMessage = messagesSection.GetValue<string>("GoodbyMessage");
@@ -97,6 +99,7 @@ internal class Program
         reportFileManager!.ManagerReached += Report;
         excelManager!.ManagerReached += Report;
         skuManager!.ManagerReached += Report;
+        anManager!.ManagerReached += Report;
 
         Console.Clear();
 
@@ -232,8 +235,30 @@ internal class Program
                 await TracingProgramExecution(new($"Articles for final report: {skusForTargetReportTask.Result.Count}.", false, false));
             }
 
-             // Save work 
             List<SKUForTargetReports> skuForTargetReports = skusForTargetReportTask.Result;
+
+            // Article analysis and automatic re-sorting
+            if(isAutoResorting) 
+            {
+                Task[] autoResortTasks =
+                [
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByOutgoing),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByTransfer),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingReceipt),
+                    AnalyticalManager.FixExtraReceipts(ref skuForTargetReports),
+                    AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
+                    
+                ];
+
+                for (int i = 0; i < autoResortTasks.Length; i++)
+                {
+                    await Task.Run(() => autoResortTasks[i]);
+                }
+                
+                Task.WaitAll(autoResortTasks);
+            }
+            
+            // Save work 
             var makeReportTask = excelManager!.MakeReports(skuForTargetReports, isTracing, isInternalReport);
             await Task.Run(() => makeReportTask);
             makeReportTask.Wait();

@@ -88,28 +88,47 @@ namespace TableAnalizer.Objects.Repositories
             }
 
             // SKURemainingBalance
-            SKURemainingBalance? skuRemainingBalance = null;
-            switch(retriveValue.SKURemainingBalance is not null, newValue.SKURemainingBalance is not null) 
+            SKURemainingBalance? skuRemainingBalance;
+
+            var skuReceiptRv = retriveValue.SKURemainingBalance?.SKUReceipt is not null && retriveValue.SKURemainingBalance?.SKUReceipt > 0;
+            var skuReceiptNv = newValue.SKURemainingBalance?.SKUReceipt is not null && newValue.SKURemainingBalance?.SKUReceipt > 0;
+            int? skuReceipt = (skuReceiptRv, skuReceiptNv) switch 
             {
-                case (true,false):
-                    skuRemainingBalance = retriveValue.SKURemainingBalance;
-                    break;
+                (true,false) or (true,true) => retriveValue.SKURemainingBalance?.SKUReceipt,
+                (false,true) => newValue.SKURemainingBalance?.SKUReceipt,
+                _ => 0
+            };
 
-                case (false,true):
-                    skuRemainingBalance = newValue.SKURemainingBalance;
-                    break;
-                
-                case (true,true): 
-                    
-                    int skuReceipt = CombineIntValues(retriveValue.SKURemainingBalance!.SKUReceipt, newValue.SKURemainingBalance!.SKUReceipt, isSummary);
-                    int skuOutgoingProducts = CombineIntValues(retriveValue.SKURemainingBalance!.SKUOutgoingProducts, newValue.SKURemainingBalance.SKUOutgoingProducts, isSummary);
-                    int skuTransfered = CombineIntValues(retriveValue.SKURemainingBalance!.SKUTransfered, newValue.SKURemainingBalance.SKUTransfered, isSummary); 
-                    int skuRemaining = CombineIntValues(retriveValue.SKURemainingBalance!.SKUTransfered, newValue.SKURemainingBalance.SKUTransfered, isSummary); 
+            var skuOutgoingRv = retriveValue.SKURemainingBalance?.SKUOutgoingProducts is not null && retriveValue.SKURemainingBalance?.SKUOutgoingProducts > 0;
+            var skuOutgoingNv = newValue.SKURemainingBalance?.SKUOutgoingProducts is not null && newValue.SKURemainingBalance?.SKUOutgoingProducts > 0;
+            int? skuOutgoing = (skuOutgoingRv, skuOutgoingNv) switch 
+            {
+                (true,false) => retriveValue.SKURemainingBalance?.SKUOutgoingProducts,
+                (true,true) => retriveValue.SKURemainingBalance?.SKUOutgoingProducts + newValue.SKURemainingBalance?.SKUOutgoingProducts,
+                (false,true) => newValue.SKURemainingBalance?.SKUOutgoingProducts,
+                _ => 0
+            };
 
-                    skuRemainingBalance = new SKURemainingBalance(skuNumber, skuReceipt, skuOutgoingProducts, skuTransfered, skuRemaining);
-                
-                    break;
-            }
+            var skuTransferedRv = retriveValue.SKURemainingBalance?.SKUTransfered is not null && retriveValue.SKURemainingBalance?.SKUTransfered > 0;
+            var skuTransferedNv = newValue.SKURemainingBalance?.SKUTransfered is not null && newValue.SKURemainingBalance?.SKUTransfered > 0;
+            int? skuTransfered = (skuTransferedRv, skuTransferedNv) switch 
+            {
+                (true,false) => retriveValue.SKURemainingBalance?.SKUTransfered,
+                (true,true) => retriveValue.SKURemainingBalance?.SKUTransfered + newValue.SKURemainingBalance?.SKUTransfered,
+                (false,true) => newValue.SKURemainingBalance?.SKUTransfered,
+                _ => 0
+            };
+
+            var skuRemainingRv = retriveValue.SKURemainingBalance?.SKURemaining is not null && retriveValue.SKURemainingBalance?.SKURemaining > 0;
+            var skuRemainingNv = newValue.SKURemainingBalance?.SKURemaining is not null && newValue.SKURemainingBalance?.SKURemaining > 0;
+            int? skuRemaining = (skuRemainingRv, skuRemainingNv) switch 
+            {
+                (true,false) or (true,true) => retriveValue.SKURemainingBalance?.SKURemaining,
+                (false,true) => newValue.SKURemainingBalance?.SKURemaining,
+                _ => 0
+            };
+
+            skuRemainingBalance = new(skuNumber, skuReceipt ?? 0, skuOutgoing ?? 0, skuTransfered ?? 0, skuRemaining ?? 0);
 
             // SKUWriteOffBalance
             SKUWriteOffBalance? skuWriteOffBalance = null;

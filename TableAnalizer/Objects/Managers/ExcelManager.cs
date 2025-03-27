@@ -1,23 +1,20 @@
 //https://www.color-hex.com/color-palette/1054961
 
 using System.Drawing;
-using TableAnalizer.Objects.Parsing;
-using TableAnalizer.Objects.SKUItems;
+using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
-using System.Diagnostics;
+using TableAnalizer.Objects.Parsing;
+using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
-using System.Threading.Tasks;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
-using IronSoftware.Abstractions;
-using Microsoft.Extensions.Configuration;
 
 namespace TableAnalizer.Objects.Managers
 {
     public class ExcelManager : BaseManager
     {
-        #region Constants && variables
+        #region Fields
         public const string FIRST_ROOM_NAME = "1 - Помещение приемки и сортировки";
         public const string SECOND_ROOM_NAME = "2 - Помещение длительного хранения";
         public const string THIRD_ROOM_NAME = "3 - Помещение упаковки и отгрузки";
@@ -32,38 +29,36 @@ namespace TableAnalizer.Objects.Managers
         public const string PARALLEL_SKUS_WORKSHEET_NAME = "Параллельные";
         public const string RANSOMS_WORKSHEET_NAME = "Выкупы";
         public const string REMAINING_OR_SHIPPED_WORKSHEET_NAME = "TDSheet";
-
         private const int DEFAULT_TABLE_ROW_HEIGHT = 18;
         private const int DEFAULT_TABLE_COL_WIDTH = 18;
         private const int RECORD_INDEX = 1;
         private const int HEADER_TABLE_ROW_HEIGHT = 120;
         private const int HEADER_FONT_SIZE = 14;
-        private const string LOGISTIC_FLAG = "Да";
-
         private const string STRING_OR_INT_CELL_FORMAT = "0";
         private const string DOUBLE_CELL_FORMAT = "0.00";
         private const string DATE_CELL_FORNAT = "dd.MM.yyyy";
 
         // Default target cell settings
-        private static readonly Color defaultTextColor = ColorTranslator.FromHtml("#134767");       // #134767           
+        private static readonly Color defaultTextColor = Color.FromArgb(100, 33, 34, 56);        //rgb(33, 34, 56)           
         private static readonly int defaultTextSize = 12;
 
         // Accent target cell settings
-        private static readonly Color accentTextColor = ColorTranslator.FromHtml("#7f360f");        // #7f360f
-        private static readonly Color accentCellFillColor = ColorTranslator.FromHtml("#f7f1e1");    // #f7f1e1
-        private static readonly int accentTextSize = 14;
+        private static readonly Color accentTextColor = Color.FromArgb(100, 41, 45, 121);        //rgb(41, 45, 121)    
+        private static readonly int accentTextSize = 15;
 
-        private static readonly TargetCellSettings defaultTargetCellSettings = 
-            new (textСolor: defaultTextColor, textSize: defaultTextSize, cellFillColor: null, false);
-        private static readonly TargetCellSettings accentTargetCellSettings  = 
-            new (textСolor: accentTextColor, textSize: accentTextSize, cellFillColor: accentCellFillColor, true);
+        private static readonly TargetCellSettings defaultTargetCellSettings =
+            new(textСolor: defaultTextColor, textSize: defaultTextSize, cellFillColor: null, false);
+        private static readonly TargetCellSettings accentTargetCellSettings =
+            new(textСolor: accentTextColor, textSize: accentTextSize, cellFillColor: null, true);
 
         private static string SumFormila = string.Empty;
+
+        // Colors
+        private static readonly Color dangerColor = System.Drawing.ColorTranslator.FromHtml("#d8675b"); // #d8675b
 
         #endregion
 
         #region Properties
-        private static Dictionary<string, ExcelPackage> MultiReportExcelPackages { get; } = [];
         private static Dictionary<SourceSKUReportFileKey, ExcelPackage> ExcelPackages { get; } = [];
         private static Type TypeString { get; } = typeof(string);
         private static Type TypeInt { get; } = typeof(int);
@@ -104,7 +99,6 @@ namespace TableAnalizer.Objects.Managers
             new(11, nameof(SKURansomsBalanceDataUnit.SKUPickedupFromPointsNumberPurchases), ParsingTypeCode.IntTypeCode, true),
             new(12, nameof(SKURansomsBalanceDataUnit.SKUUnknownNumberPurchases), ParsingTypeCode.IntTypeCode, true),
         ];
-
         public static List<SourceColumn> RemainingFirstRoomSourceCells { get; } =
         [
             new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
@@ -112,33 +106,28 @@ namespace TableAnalizer.Objects.Managers
             new(15, nameof(SKURemainingBalanceDataUnit.SKUReceipt), ParsingTypeCode.IntTypeCode, false),
             new(17, nameof(SKURemainingBalanceDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, false)
         ];
-
         public static List<SourceColumn> RemainingSecondRoomSourceCells { get; } =
         [
             new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
             new(6, nameof(SKURemainingBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
             new(17, nameof(SKURemainingBalanceDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, false)
         ];
-
         public static List<SourceColumn> RemainingThirdRoomSourceCells { get; } =
         [
             new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
             new(6, nameof(SKURemainingBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
             new(17, nameof(SKURemainingBalanceDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, false)
         ];
-
         public static List<SourceColumn> ShippedSourceCells { get; } =
         [
             new(4, nameof(SKUShippedDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
             new(28, nameof(SKUShippedDataUnit.SKUShippedCount), ParsingTypeCode.IntTypeCode, true)
         ];
-
         public static List<SourceColumn> TransferSourceCells { get; } =
         [
             new(4, nameof(SKUTransferDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
             new(34, nameof(SKUTransferDataUnit.SKUTransferedCount), ParsingTypeCode.IntTypeCode, true)
         ];
-
         public static List<SourceColumn> CompensationSourceCells { get; } =
         [
             new(1, nameof(SKUCompensationDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
@@ -146,7 +135,6 @@ namespace TableAnalizer.Objects.Managers
             new(3, nameof(SKUCompensationDataUnit.CompensationSum), ParsingTypeCode.DoubleTypeCode, true),
             new(4, nameof(SKUCompensationDataUnit.CompensationComment), ParsingTypeCode.StringTypeCode, false)
         ];
-
         public static List<SourceColumn> ResortSourceCells { get; } =
         [
             new(1, nameof(SKUResortDataUnit.SKUFromResortNumber), ParsingTypeCode.IntTypeCode, true),
@@ -154,32 +142,10 @@ namespace TableAnalizer.Objects.Managers
             new(3, nameof(SKUResortDataUnit.SKUToResortNumberCount), ParsingTypeCode.IntTypeCode, true),
             new(4, nameof(SKUResortDataUnit.ResortComment), ParsingTypeCode.StringTypeCode, false)
         ];
-        
         public static List<SourceColumn> WriteOffShortagesSourceCells { get; } =
         [
-            new(5, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
-            new(39, nameof(SKUWriteOffDataUnit.SKUWriteOffCount), ParsingTypeCode.IntTypeCode, true)
-        ];     
-
-        public static List<SourceColumn> ClientReportSourceCells { get; } =
-        [
-            new(1, nameof(SKUClientReportDataUnit.SKUMp), ParsingTypeCode.Marketplace, true),
-            new(2, nameof(SKUClientReportDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
-            new(3, nameof(SKUClientReportDataUnit.SKUBrand), ParsingTypeCode.StringTypeCode, false),
-            new(4, nameof(SKUClientReportDataUnit.SKUName), ParsingTypeCode.StringTypeCode, false),
-            new(5, nameof(SKUClientReportDataUnit.SKUPrice), ParsingTypeCode.DoubleTypeCode, true),
-            new(6, nameof(SKUClientReportDataUnit.SKURansomDate), ParsingTypeCode.DataOnlyTypeCode, true),
-            new(8, nameof(SKUClientReportDataUnit.SKURansomsTotal), ParsingTypeCode.IntTypeCode, true),
-            new(9, nameof(SKUClientReportDataUnit.SKURansomsCanceled), ParsingTypeCode.IntTypeCode, true),
-            new(10, nameof(SKUClientReportDataUnit.SKURansomsOnWay), ParsingTypeCode.IntTypeCode, true),
-            new(11, nameof(SKUClientReportDataUnit.SKURansomsDelivered), ParsingTypeCode.IntTypeCode, true),
-            new(12, nameof(SKUClientReportDataUnit.SKURansomsWithDrawn), ParsingTypeCode.IntTypeCode, true),
-            new(15, nameof(SKUClientReportDataUnit.SKUReceiptGoods), ParsingTypeCode.IntTypeCode, true),
-            new(16, nameof(SKUClientReportDataUnit.SKUPaidPoints), ParsingTypeCode.IntTypeCode, true),
-            new(18, nameof(SKUClientReportDataUnit.SKUOutgoingProducts), ParsingTypeCode.IntTypeCode, true),
-            new(19, nameof(SKUClientReportDataUnit.SKUTransferDataUnit), ParsingTypeCode.IntTypeCode, true),
-            new(20, nameof(SKUClientReportDataUnit.SKUPaidWarehouse), ParsingTypeCode.IntTypeCode, true),
-            new(23, nameof(SKUClientReportDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, true)
+            new(4, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(27, nameof(SKUWriteOffDataUnit.SKUWriteOffCount), ParsingTypeCode.IntTypeCode, true)
         ];
 
         public TargetCell[] cellsReportingMain =
@@ -208,7 +174,7 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 8, colName: "Статус взаиморасчетов", colWidth: 18, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SellmentStatusString),
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            
+
             new (colNumber: 9, colName: "Заказов: всего", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKURansomsTotal),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
@@ -224,63 +190,57 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 13, colName: "Заказов: забрано с ПВЗ", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKURansomsWithDrawn),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 14, colName: "Склад: Ожидание", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKURansomsWaiting),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: accentTargetCellSettings),                                             
-            
-            new (colNumber: 15, colName: "Приход от точек, всего", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 14, colName: "Склад: Ожидание", colWidth: 12.0, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKURansomsWaiting),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: accentTargetCellSettings),
+
+            new (colNumber: 15, colName: "Приход от точек", colWidth: 11.5, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUReceiptTotal),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: accentTargetCellSettings),
-            new (colNumber: 16, colName: "приход товарами", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUReceiptGoods),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 2),
-            new (colNumber: 17, colName: "оплачено компенсацией", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUPaidPoints),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 18, colName: "Общий взаиморасчет", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 16, colName: "Общий взаиморасчет", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUMutualSettlement),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: accentTargetCellSettings),
-            new (colNumber: 19, colName: "расход товарами", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 17, colName: "расход товарами", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUOutgoingProducts) ,
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 5),
-            new (colNumber: 20, colName: "на фулфилмент", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 18, colName: "на фулфилмент", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUTransfered) ,
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),    
-            new (colNumber: 21, colName: "компенсацией", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 19, colName: "компенсацией", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUPaidWarehouse),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 22, colName: "пересортом", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 20, colName: "пересортом", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUResort),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 23, colName: "Комментарий к пересортами", colWidth: 32, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 21, colName: "Комментарий к пересортами", colWidth: 25, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUResortsComment),
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            
-            new (colNumber: 24, colName: "Склад: Остаток товаров", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKURemaining),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate:  x => x < 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-           
-            new (colNumber: 25, colName: "Задержка довоза, всего", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+
+            new (colNumber: 22, colName: "Склад: Остаток товаров", colWidth: 11.5, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKURemaining),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate:  x => x < 0, typeFormula: null, targetCellSettings: accentTargetCellSettings),
+
+            new (colNumber: 23, colName: "Задержка довоза, всего", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayTotal),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: accentTargetCellSettings),
-            new (colNumber: 26, colName: "Задержка довоза от точек, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: accentTargetCellSettings),
+            new (colNumber: 24, colName: "Задержка довоза от точек, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayPoints),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 4),
-            new (colNumber: 27, colName: "Задержка довоза от точек, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
+            new (colNumber: 25, colName: "Задержка довоза от точек, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayPointsSum),
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 28, colName: "Задержка довоза от склада, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 26, colName: "Задержка довоза от склада, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayStorage),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 29, colName: "Задержка довоза от склада, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
+            new (colNumber: 27, colName: "Задержка довоза от склада, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayStorageSum),
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            
-            new (colNumber: 30, colName: "Перерасход, кол-во", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
+
+            new (colNumber: 28, colName: "Перерасход, кол-во", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUOverrunsCount),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: accentTargetCellSettings),
-            new (colNumber: 31, colName: "Перерасход, сумма руб.", colWidth: 14, format: DOUBLE_CELL_FORMAT,
+            new (colNumber: 29, colName: "Перерасход, сумма руб.", colWidth: 14, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUOverrunsSum),
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
         ];
@@ -298,16 +258,19 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 4, colName: "Наименование товара", colWidth: 50, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUName",
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 5, colName: "Задержка довоза от точек, товаров", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 5, colName: "Задержка довоза, всего", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayTotal),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: accentTargetCellSettings),
+            new (colNumber: 6, colName: "Задержка довоза от точек, товаров", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty,  propertyName: "SKUDeliveryDelayPoints",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 6, colName: "Задержка довоза от точек, сумма", colWidth: 12, format: DOUBLE_CELL_FORMAT,
+            new (colNumber: 7, colName: "Задержка довоза от точек, сумма", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUDeliveryDelayPointsSum",
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 7, colName: "Задержка довоза от склада, товаров", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 8, colName: "Задержка довоза от склада, товаров", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUDeliveryDelayStorage",
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 8, colName: "Задержка довоза от склада, сумма", colWidth: 12, format: DOUBLE_CELL_FORMAT,
+            new (colNumber: 9, colName: "Задержка довоза от склада, сумма", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUDeliveryDelayStorageSum",
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings)
         ];
@@ -332,7 +295,7 @@ namespace TableAnalizer.Objects.Managers
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUOverrunsSum",
                 parsingTypeCode: ParsingTypeCode.DoubleTypeCode,valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings)
         ];
-        public TargetCell[] cellsReportingAnalitics = 
+        public TargetCell[] cellsReportingAnalitics =
         [
             new (colNumber: 1, colName: "Логины", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKULogins),
@@ -349,50 +312,60 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 5, colName: "Средняя цена товара, руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUPrice),
             parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            
-            new (colNumber: 6, colName: "Склад: Ожидание", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+
+            new (colNumber: 6, colName: "Склад: Ожидание", colWidth: 12.0, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKURansomsWaiting),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
-            
+
             new (colNumber: 7, colName: "Приход от точек, всего", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUReceiptTotal),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
             new (colNumber: 8, colName: "приход товарами", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUReceiptGoods),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 4),
-            new (colNumber: 9, colName: "оплачено компенсацией", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUPaidPoints),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 10, colName: "Приход меньше ожидания", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.LessReceiptThanWaiting),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 11, colName: "Приход больше ожидания", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.MoreReceiptThanWaiting),
+            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 2),
+            new (colNumber: 9, colName: "оплачено точками организации", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
+            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUPaidByPointsToOrganization),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 12, colName: "Общий взаиморасчет", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 10, colName: "Общий взаиморасчет", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUMutualSettlement),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
-            new (colNumber: 13, colName: "расход товарами", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 11, colName: "расход товарами", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUOutgoingProducts),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 4),
-            new (colNumber: 14, colName: "на фулфилмент", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 12, colName: "на фулфилмент", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUTransfered),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 15, colName: "компенсацией", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUPaidWarehouse),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 16, colName: "пересортами", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 13, colName: "пересортами", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUResort),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 17, colName: "Склад: Остаток по учету", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 14, colName: "оплачено клиенту от склада и организации ", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
+            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUPaidTotal),
+            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
+
+            new (colNumber: 15, colName: "Склад: Остаток по учету", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKURemaining),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
-            new (colNumber: 18, colName: "Взаиморасчет меньше ожидания", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.LessMutualSettlementThanWaiting),
+            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x < 0, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
+
+            new (colNumber: 16, colName: "Артикул нормализован", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
+            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.IsSkuNormalize),
+            parsingTypeCode: ParsingTypeCode.BoolTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+
+            new (colNumber: 17, colName: "Долг по оплате компенсации перед клиентом", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
+            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUDebtToClientForCompensationSum),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 19, colName: "Взаиморасчет больше ожидания", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.MoreMutualSettlementThanWaiting),
+
+            new (colNumber: 18, colName: "Нужны входящие пересорты прихода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
+            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Приход меньше ожидания", propertyName: nameof(SKUForTargetReports.LessReceiptThanWaiting),
+            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 19, colName: "Возможны исходящие пересорты прихода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
+            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Приход больше ожидания", propertyName: nameof(SKUForTargetReports.MoreReceiptThanWaiting),
+            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 20, colName: "Нужны входящие пересорты расхода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
+            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Взаиморасчет меньше ожидания", propertyName: nameof(SKUForTargetReports.LessMutualSettlementThanWaiting),
+            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 21, colName: "Возможны исходящие пересорты расхода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
+            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Взаиморасчет больше ожидания", propertyName: nameof(SKUForTargetReports.MoreMutualSettlementThanWaiting),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
         ];
 
@@ -455,7 +428,7 @@ namespace TableAnalizer.Objects.Managers
         {
             try
             {
-                return ExcelPackages.TryGetValue(key, out package) && package is not null; 
+                return ExcelPackages.TryGetValue(key, out package) && package is not null;
             }
             catch (System.Exception ex)
             {
@@ -466,14 +439,14 @@ namespace TableAnalizer.Objects.Managers
 
         }
 
-        private Task<bool> MakeReportTask(in ExcelPackage outputPackage, string sheetName, TargetCell[] targetCells, List<List<int>>? rangeForGrouping, List<SKUForTargetReports> actualData, bool isTracing) 
+        private Task<bool> MakeReportTask(in ExcelPackage outputPackage, string sheetName, TargetCell[] targetCells, List<List<int>>? rangeForGrouping, List<SKUForTargetReports> actualData, bool isTracing)
         {
             var sheetColor = sheetName switch
             {
-                OUTPUT_REPORT_MAINREPORT_NAME => Colors[SKUSellmentStatus.FullSet],
-                OUTPUT_REPORT_DELAYREPORT_NAME => Colors[SKUSellmentStatus.OnSearchPoints],
-                OUTPUT_REPORT_OVERRUNSREPORT_NAME => Colors[SKUSellmentStatus.Unknown],
-                OUTPUT_REPORT_ANALYTICS_RERORT_NAME => Colors[SKUSellmentStatus.OnSearchWarehouse],
+                OUTPUT_REPORT_MAINREPORT_NAME => SKUManager.StatusColors[SKUSellmentStatus.FullSet],
+                OUTPUT_REPORT_DELAYREPORT_NAME => SKUManager.StatusColors[SKUSellmentStatus.DelayDeliveryFromPoints],
+                OUTPUT_REPORT_OVERRUNSREPORT_NAME => SKUManager.StatusColors[SKUSellmentStatus.Unknown],
+                OUTPUT_REPORT_ANALYTICS_RERORT_NAME => SKUManager.StatusColors[SKUSellmentStatus.DelayDeliveryFromWarehouse],
                 _ => Color.Gray,
             };
 
@@ -482,19 +455,19 @@ namespace TableAnalizer.Objects.Managers
 
             try
             {
-                FillingСellsWithData(sheetName == OUTPUT_REPORT_MAINREPORT_NAME, outputReportSheet, actualData, targetCells, isTracing); 
+                FillingСellsWithData(sheetName == OUTPUT_REPORT_MAINREPORT_NAME, outputReportSheet, actualData, targetCells, isTracing);
             }
             catch (System.Exception ex)
             {
                 OnManagerReached(new($"{ex.Message}", true, true));
-                return Task.Run(()=> false);
+                return Task.Run(() => false);
             }
 
             SetupTableHeader(in targetCells, ref outputReportSheet);
             AddFilterAndAccentInWorkSheet(ref outputReportSheet, in rangeForGrouping);
             CalculateFormulas(in targetCells, ref outputReportSheet);
 
-            return Task.Run(()=> true);
+            return Task.Run(() => true);
         }
 
         private static void CalculateFormulas(in TargetCell[] targetCells, ref ExcelWorksheet outputReportSheet)
@@ -502,7 +475,7 @@ namespace TableAnalizer.Objects.Managers
             int firstRow = outputReportSheet.Dimension.Start.Row + 1;
             int endRow = outputReportSheet.Dimension.End.Row;
 
-            IEnumerable<(int ColNumber, TypesFormulas? TypeFormula)> cellColumns = 
+            IEnumerable<(int ColNumber, TypesFormulas? TypeFormula)> cellColumns =
                 from cell in targetCells
                 where cell.TypeFormula is not null
                 select (cell.ColNumber, cell.TypeFormula);
@@ -521,7 +494,7 @@ namespace TableAnalizer.Objects.Managers
                         break;
                 }
 
-                if(!string.IsNullOrEmpty(formula)) 
+                if (!string.IsNullOrEmpty(formula))
                 {
                     outputReportSheet.Cells[endRow + 1, ColNumber].Formula = formula;
                 }
@@ -608,8 +581,8 @@ namespace TableAnalizer.Objects.Managers
                 Task.WaitAll();
 
                 return SaveWorkProcedure(isTracing, ref outputPackage);
-            } 
-            else 
+            }
+            else
             {
                 return SaveWorkProcedure(isTracing, ref outputPackage);
             }
@@ -639,7 +612,7 @@ namespace TableAnalizer.Objects.Managers
             return isSaveWork;
         }
 
-        private static List<SKUForTargetReports> GetActualDataForTargetReportBy(TargetReportType targetReportType, List<SKUForTargetReports> sourceData) 
+        private static List<SKUForTargetReports> GetActualDataForTargetReportBy(TargetReportType targetReportType, List<SKUForTargetReports> sourceData)
         {
             switch (targetReportType)
             {
@@ -655,12 +628,12 @@ namespace TableAnalizer.Objects.Managers
                 //     var overruns = GetOverruns(sourceData).ToList();
                 //     var lessReceiptThanWaiting = GetLessReceiptThanWaiting(sourceData).ToList();
                 //     var greatReceiptThanWaiting = GetGreatReceiptThanWaiting(sourceData).ToList();
-                   
+
                 //    return [.. delays
                 //         .UnionBy(overruns, p => p.SKUNumber)
                 //         .UnionBy(lessReceiptThanWaiting, p => p.SKUNumber)
                 //         .UnionBy(greatReceiptThanWaiting, p => p.SKUNumber)];
-                    
+
                 default:
                     return [.. sourceData];
             }
@@ -669,15 +642,15 @@ namespace TableAnalizer.Objects.Managers
         private static IEnumerable<List<int>>? GetRangeForGrouping(in TargetCell[] targetCells)
         {
             return from targetCell in targetCells
-                    where targetCell.GroupCellsFromCurrentCount != 0
-                    let range = Enumerable.Range(targetCell.ColNumber, targetCell.GroupCellsFromCurrentCount)
-                    select range.ToList();
+                   where targetCell.GroupCellsFromCurrentCount != 0
+                   let range = Enumerable.Range(targetCell.ColNumber, targetCell.GroupCellsFromCurrentCount)
+                   select range.ToList();
         }
 
         public ExcelWorksheet FillingСellsWithData(bool isMainReport, ExcelWorksheet worksheet, List<SKUForTargetReports> targetReportDatas, TargetCell[] targetCells, bool isTracing, int recordIndex = 1)
         {
             var result = worksheet;
-            if(isTracing) 
+            if (isTracing)
             {
                 ManagerReachedEventArgs args = new($"Fill in Excel sheet with the name '{result.Name}'...", false, false);
                 OnManagerReached(args);
@@ -688,7 +661,7 @@ namespace TableAnalizer.Objects.Managers
             foreach (var targetReportData in targetReportDatas)
             {
                 foreach (var targetCell in targetCells)
-                {   
+                {
 
                     object? value = null;
 
@@ -736,25 +709,31 @@ namespace TableAnalizer.Objects.Managers
                                 value = sellmentStatus;
                             }
                             break;
+                        case ParsingTypeCode.BoolTypeCode:
+                            if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out bool? boolean))
+                            {
+                                value = boolean;
+                            }
+                            break;
                         default:
-                            throw new Exception ("ParsingTypeCode при заполнении ячеек не определен!");
+                            throw new Exception("ParsingTypeCode при заполнении ячеек не определен!");
                     }
 
                     if (value is not null)
                     {
                         // Set value for cell 
-                        ExcelRange? tableCell = result.Cells[rowIndex, targetCell.ColNumber]; 
-       
-                        if(tableCell is not null)
+                        ExcelRange? tableCell = result.Cells[rowIndex, targetCell.ColNumber];
+
+                        if (tableCell is not null)
                         {
                             ApplySettingsToTableCell(ref tableCell!, value, targetCell, isMainReport, targetReportData.FillColor);
                         }
-                        else 
+                        else
                         {
                             OnManagerReached(new($"Table cell for rowIndex {rowIndex} && column number {targetCell.ColNumber} is null.", true, true));
                         }
-                    } 
-                    else 
+                    }
+                    else
                     {
                         OnManagerReached(new($"When filling in the cells on sheet, the value for '{targetCell.ColName}' turned out to be null.", true, true));
                     }
@@ -762,25 +741,25 @@ namespace TableAnalizer.Objects.Managers
                 rowIndex++;
             }
 
-            if(isTracing)
+            if (isTracing)
             {
                 ManagerReachedEventArgs args = new($"Excel sheet named '{result.Name}'is filled with data.", false, false);
                 OnManagerReached(args);
             }
-            
+
             return result;
         }
 
-        private void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell, bool isMainReport, Color? statusColor) 
+        private void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell, bool isMainReport, Color? statusColor)
         {
             // Add value to cell 
             tableCell.Value = value;
-            
+
             // Get color for status column
-            if(isMainReport && tableCell.Start.Column == sellmentStatusColomnNum && statusColor != null) 
+            if (isMainReport && tableCell.Start.Column == sellmentStatusColomnNum && statusColor != null)
             {
                 tableCell.Style.Fill.SetBackground((Color)statusColor);
-            }   
+            }
 
             // Add number format to cell 
             tableCell.Style.Numberformat.Format = targetCell.Format;
@@ -791,19 +770,21 @@ namespace TableAnalizer.Objects.Managers
             // Filling cells with color   
             if (targetCell.CellSettings.ExcelFillStyle == ExcelFillStyle.Solid)
             {
-                 if(targetCell.CellSettings.CellFillColor is null)
+                if (targetCell.CellSettings.CellFillColor is null)
                     throw new Exception($"Cell fill don`t have a \"{nameof(targetCell.CellSettings.CellFillColor)}\" parameter assigned.");
 
                 tableCell.Style.Fill.PatternType = targetCell.CellSettings.ExcelFillStyle;
+
+                tableCell.Style.Fill.PatternType = ExcelFillStyle.Solid;
                 tableCell.Style.Fill.BackgroundColor.SetColor((Color)targetCell.CellSettings.CellFillColor);
             }
 
             // Apply font settings 
-            if(int.TryParse(tableCell.Value?.ToString(), out int v) && targetCell.ValueСheckingPredicate is not null && targetCell.ValueСheckingPredicate(v)) 
+            if (int.TryParse(tableCell.Value?.ToString(), out int v) && targetCell.ValueСheckingPredicate is not null && targetCell.ValueСheckingPredicate(v))
             {
                 tableCell.Style.Font.Size = targetCell.CellSettings.FontSize;
                 tableCell.Style.Font.Bold = true;
-                tableCell.Style.Font.Color.SetColor(System.Drawing.ColorTranslator.FromHtml("#ff6c1f")); // #ff6c1f
+                tableCell.Style.Font.Color.SetColor(dangerColor);
 
                 // if(!string.IsNullOrEmpty(attentionCell.Comment)) 
                 // {
@@ -815,14 +796,14 @@ namespace TableAnalizer.Objects.Managers
                 //     message.Color = Color.Black;
                 //     message.Bold = false;
                 //     message.Size = attentionCell.FontSize - 1;
-                    
+
                 //     comment.VerticalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignVerticalVml.Top;
                 //     comment.HorizontalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignHorizontalVml.Left;
-                
+
                 //     comment.AutoFit = true;
                 // }
-            } 
-            else 
+            }
+            else
             {
                 tableCell.Style.Font.Size = targetCell.CellSettings.FontSize;
                 tableCell.Style.Font.Bold = targetCell.CellSettings.IsTextBold;
@@ -900,7 +881,7 @@ namespace TableAnalizer.Objects.Managers
                 columnInWorkSheet.Style.WrapText = currentResultCell.WrapTextInHeader;
 
                 // Add comment in header cell 
-                if(!string.IsNullOrEmpty(currentResultCell.TextCommentInHeader)) 
+                if (!string.IsNullOrEmpty(currentResultCell.TextCommentInHeader))
                 {
                     var comment = firstRowCell.AddComment("Анализ отчета:\r\n");
                     comment.Font.Color = Color.Black;
@@ -910,16 +891,16 @@ namespace TableAnalizer.Objects.Managers
                     message.Color = Color.Black;
                     message.Bold = false;
                     message.Size = firstRowCell.Style.Font.Size - 1;
-                    
+
                     comment.VerticalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignVerticalVml.Top;
                     comment.HorizontalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignHorizontalVml.Left;
-                
+
                     comment.AutoFit = true;
                 }
             }
         }
 
-        private static string GetCellsAddress(int firstColumn, int firstRow, int endColumn, int endRow) => 
+        private static string GetCellsAddress(int firstColumn, int firstRow, int endColumn, int endRow) =>
             $"{ExcelCellAddress.GetColumnLetter(firstColumn)}{firstRow}:{ExcelCellAddress.GetColumnLetter(endColumn)}{endRow}";
 
         private static void AddFilterAndAccentInWorkSheet(ref ExcelWorksheet excelWorksheet, in List<List<int>>? rangesForGrouping)
@@ -938,7 +919,7 @@ namespace TableAnalizer.Objects.Managers
             excelWorksheet.View.FreezePanes(2, 4);
 
             // 
-            if(rangesForGrouping is not null && rangesForGrouping.Count > 0) 
+            if (rangesForGrouping is not null && rangesForGrouping.Count > 0)
             {
                 foreach (var rangeForGrouping in rangesForGrouping)
                 {
@@ -956,10 +937,10 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="key">Key for searching ExcelPackage in internal dictionary.</param>
         /// <param name="worksheet">Found Excel worksheet or null.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public async Task<ExcelWorksheet?> GetExcelWorksheetByName(string name, ExcelPackage excelPackage)  
+        public async Task<ExcelWorksheet?> GetExcelWorksheetByName(string name, ExcelPackage excelPackage)
         {
             await Task.Delay(1);
-            return excelPackage.Workbook.Worksheets.SingleOrDefault(ws => ws.Name == name); 
+            return excelPackage.Workbook.Worksheets.SingleOrDefault(ws => ws.Name == name);
         }
 
         /// <summary>
@@ -969,12 +950,12 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="worksheet">Excel worksheet for searching.</param>
         /// <returns>Integer index of row or null.</returns>
         /// <remarks><i>New version, tested</i></remarks>
-        public static bool GetRowIndexBy(string key, in ExcelWorksheet worksheet, out int? rowInex) 
+        public static bool GetRowIndexBy(string key, in ExcelWorksheet worksheet, out int? rowInex)
         {
-            rowInex =  worksheet.Cells.FirstOrDefault(c => c.Value != null && c.Value.ToString()?.Trim().ToLower() == key.Trim().ToLower())?.Start.Row;
+            rowInex = worksheet.Cells.FirstOrDefault(c => c.Value != null && c.Value.ToString()?.Trim().ToLower() == key.Trim().ToLower())?.Start.Row;
             return rowInex.HasValue;
         }
-            
+
         /// <summary>
         /// Gets data from row ranges in specified Excel worksheet.
         /// </summary>
@@ -1002,7 +983,7 @@ namespace TableAnalizer.Objects.Managers
                     var getValuesFromRowTask = GetValuesFromRow(in workSheet, rowIndex, in currentSourceCells, out Dictionary<string, ItemForParsing>? values);
                     Task.Run(() => getValuesFromRowTask);
                     getValuesFromRowTask.Wait();
-                    
+
                     var getValuesFromRowTaskSuccess = getValuesFromRowTask.Result;
 
                     if (getValuesFromRowTaskSuccess && values is not null)
@@ -1046,7 +1027,7 @@ namespace TableAnalizer.Objects.Managers
                 var value = workSheet.Cells[rowIndex, dataCell.ColIndex].Value;
 
                 if (value is null)
-                { 
+                {
                     if (dataCell.IsValueRequired)
                         throw new ArgumentException($"A table cell does not contain a <b>required value</b> for name: '{dataCell.Name}'");
                     else
@@ -1067,16 +1048,16 @@ namespace TableAnalizer.Objects.Managers
         {
             foreach (var sourceCell in sourceCells)
             {
-                ExcelRange? address = workSheet.Cells[rowIndex, sourceCell.ColIndex] ?? 
+                ExcelRange? address = workSheet.Cells[rowIndex, sourceCell.ColIndex] ??
                     throw new Exception($"ExcelRange (address) at row {rowIndex} and column {sourceCell.ColIndex} is null");
-                
+
                 var addressValue = address.Value;
-                if(addressValue is not null && !string.IsNullOrEmpty(addressValue.ToString())) 
+                if (addressValue is not null && !string.IsNullOrEmpty(addressValue.ToString()))
                 {
-                    return ParsingRowEntity.Parse(addressValue.ToString()!, sourceCell.ParsingTypeCode, !sourceCell.IsValueRequired, out object? value) && 
-                        value is not null; 
+                    return ParsingRowEntity.Parse(addressValue.ToString()!, sourceCell.ParsingTypeCode, !sourceCell.IsValueRequired, out object? value) &&
+                        value is not null;
                 }
-                else 
+                else
                 {
                     return false;
                 }
@@ -1089,11 +1070,11 @@ namespace TableAnalizer.Objects.Managers
         {
             filterSourceCellsCount = 0;
 
-            if (!FindSorceCellsByType(in sourceCells, SourceCellsType.Filtration, out List<SourceColumn>? filterSourceCells)) 
+            if (!FindSorceCellsByType(in sourceCells, SourceCellsType.Filtration, out List<SourceColumn>? filterSourceCells))
             {
                 return true;
-            } 
-            else 
+            }
+            else
             {
                 filterSourceCellsCount = filterSourceCells!.Count;
                 foreach (var filterSourceCell in filterSourceCells)
@@ -1107,13 +1088,13 @@ namespace TableAnalizer.Objects.Managers
 
         private static bool СheckingValuesInRequiredCells(in ExcelWorksheet workSheet, int rowIndex, in List<SourceColumn> sourceCells)
         {
-            if(!FindSorceCellsByType(in sourceCells, SourceCellsType.Required, out List<SourceColumn>? requiredCells) && 
-                requiredCells is null || 
+            if (!FindSorceCellsByType(in sourceCells, SourceCellsType.Required, out List<SourceColumn>? requiredCells) &&
+                requiredCells is null ||
                 requiredCells?.Count == 0)
             {
                 return true;
             }
-            else 
+            else
             {
                 var requiredCellValues = new List<object>();
                 foreach (var sourceCell in requiredCells!)
@@ -1123,8 +1104,8 @@ namespace TableAnalizer.Objects.Managers
                     if (cell is null || value is null)
                     {
                         return false;
-                    } 
-                    else 
+                    }
+                    else
                     {
                         requiredCellValues.Add(value);
                     }
@@ -1160,7 +1141,7 @@ namespace TableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.Ransoms => [new(RansomsSourceCells)],
                 SourceSKUReportFileKey.Balance => [ new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
                                                     new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME), new(RemainingThirdRoomSourceCells, THIRD_ROOM_NAME, (LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))],
-                SourceSKUReportFileKey.WriteOffShortages => [new (WriteOffShortagesSourceCells)],
+                SourceSKUReportFileKey.WriteOffShortages => [new(WriteOffShortagesSourceCells)],
                 SourceSKUReportFileKey.OutgoingProducts => [new(ShippedSourceCells)],
                 SourceSKUReportFileKey.Transfered => [new(TransferSourceCells)],
                 SourceSKUReportFileKey.Additional => workSheetName switch
@@ -1192,19 +1173,19 @@ namespace TableAnalizer.Objects.Managers
             RangeSourceReportRows? rangeWithTermination = rangeSourceReportRows
                 .SingleOrDefault(rs => rs.TerminatingStringValue.HasValue);
 
-            bool isOneRangeWithoutKeysAndTerminations = rangeSourceReportRows.Count == 1 && 
-                (rangesWithKeys is null || !rangesWithKeys.Any()) && 
+            bool isOneRangeWithoutKeysAndTerminations = rangeSourceReportRows.Count == 1 &&
+                (rangesWithKeys is null || !rangesWithKeys.Any()) &&
                 rangeWithTermination is null;
-            
+
             // Range is one, no key and no termination value (e.g. Ransoms, Shipped, Compenaton, Resorts etc)
-            if(isOneRangeWithoutKeysAndTerminations)
-            { 
+            if (isOneRangeWithoutKeysAndTerminations)
+            {
                 var start = startRangeRowIndex + DEFAULT_STEP;
                 var count = worksheet.Dimension.End.Row - DEFAULT_STEP;
-                rangeSourceReportRows.First().SetRange(start,count);
-            } 
+                rangeSourceReportRows.First().SetRange(start, count);
+            }
             // There is more than one range (e.g. Remainig)
-            else if(rangeSourceReportRows.Count > 1)
+            else if (rangeSourceReportRows.Count > 1)
             {
                 CreateRowRange(in worksheet, ref rangeSourceReportRows, DEFAULT_STEP, rangeWithTermination?.TerminatingStringValue);
             }
@@ -1226,8 +1207,8 @@ namespace TableAnalizer.Objects.Managers
             for (int i = 0; i < keysInTemplateList.Count; i++)
             {
                 var key = keysInTemplateList[i];
-                if(!string.IsNullOrEmpty(key) && 
-                    GetRowIndexBy(key, in worksheet, out int? rowIndex) && 
+                if (!string.IsNullOrEmpty(key) &&
+                    GetRowIndexBy(key, in worksheet, out int? rowIndex) &&
                     rowIndex.HasValue)
                 {
                     existingElements.Add((key, rowIndex.Value));
@@ -1242,48 +1223,48 @@ namespace TableAnalizer.Objects.Managers
             // Iterate linked list
             var currentNode = existingElementsLinkedList.First;
 
-            while(currentNode != null)
+            while (currentNode != null)
             {
                 (string key, int index) = currentNode.Value;
 
                 start = index + DEFAULT_STEP;
 
-                if(currentNode.Next != null) 
+                if (currentNode.Next != null)
                 {
                     (string nextKey, int nextIndex) = currentNode.Next!.Value;
                     count = nextIndex - start.Value;
-                } 
+                }
                 else
                 {
-                    if(termination is not null) 
+                    if (termination is not null)
                     {
                         var terminationKey = termination.Value.rowStringKey;
                         var terminationOffset = termination.Value.offset;
 
-                        if(!string.IsNullOrEmpty(terminationKey) && 
-                           GetRowIndexBy(terminationKey, in worksheet, out int? terminationIndex) && 
+                        if (!string.IsNullOrEmpty(terminationKey) &&
+                           GetRowIndexBy(terminationKey, in worksheet, out int? terminationIndex) &&
                            terminationIndex.HasValue)
                         {
                             count = terminationIndex - start.Value - terminationOffset;
-                        } 
-                        else 
+                        }
+                        else
                         {
                             throw new ArgumentException("Cannot get index of termination row.");
                         }
-                    } 
-                    else 
+                    }
+                    else
                     {
                         throw new ArgumentException("Multiple ranges must contain a termination row.");
-                    } 
+                    }
                 }
 
                 // Set range
                 var targetTemplate = rangeSourceReportRows
                     .SingleOrDefault(el => string.Equals(el.Key, key));
 
-                if(targetTemplate is not null && 
-                   start.HasValue && 
-                   count.HasValue) 
+                if (targetTemplate is not null &&
+                   start.HasValue &&
+                   count.HasValue)
                 {
                     targetTemplate.SetRange(start.Value, count.Value);
                     outputRanges.Add(targetTemplate);
@@ -1302,22 +1283,22 @@ namespace TableAnalizer.Objects.Managers
             !string.IsNullOrEmpty(value.ToString()) &&
             string.Equals(filter.Trim().ToLower(), value.ToString()!.Trim().ToLower());
 
-        private static List<SKUForTargetReports> GetDelay (List<SKUForTargetReports> list) 
+        private static List<SKUForTargetReports> GetDelay(List<SKUForTargetReports> list)
         {
             var items = from el in list
-                        where el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.OnSearchPoints || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.OnSearchWarehouseAndPoints)
+                        where el.SKUDeliveryDelayTotal > 0 && (el.SellmentStatus.Status is SKUSellmentStatus.DelayDeliveryFromPoints || el.SellmentStatus.Status is SKUSellmentStatus.DelayDeliveryFromWarehouse || el.SellmentStatus.Status is SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse)
                         select el;
 
-            return [.. items]; 
+            return [.. items];
         }
-                 
-        private static List<SKUForTargetReports> GetOverruns (List<SKUForTargetReports> list)  
-        {
-              var items = from el in list
-                          where el.SKUOverrunsSum > 0.00
-                          select el;
 
-            return [.. items]; 
+        private static List<SKUForTargetReports> GetOverruns(List<SKUForTargetReports> list)
+        {
+            var items = from el in list
+                        where el.SKUOverrunsSum > 0.00
+                        select el;
+
+            return [.. items];
         }
         #endregion
     }
