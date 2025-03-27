@@ -134,7 +134,13 @@ namespace TableAnalizer.Objects
         /// <summary>
         /// Исходящий пересорт.
         /// </summary>
-        Outgoing
+        Outgoing,
+        /// <summary>
+        /// Внутренний пересорт.
+        /// </summary>
+        Internal
+
+
     }
 
     public enum CompensationTarget 

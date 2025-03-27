@@ -242,8 +242,12 @@ internal class Program
             {
                 Task[] autoResortTasks =
                 [
-                    AnalyticalManager.SetConsumptionResorts(ref skuForTargetReports),
-                    //AnalyticalManager.SetReceiptResorts(ref skuForTargetReports),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByOutgoing),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByTransfer),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingReceipt),
+                    AnalyticalManager.FixExtraReceipts(ref skuForTargetReports),
+                    AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
+                    
                 ];
 
                 for (int i = 0; i < autoResortTasks.Length; i++)
