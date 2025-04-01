@@ -44,6 +44,7 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuWriteOffBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<int, List<ParsingRowEntity>> SkuParallelUnits { get; } = new ParsingRowEntityRepo();
 
         // /// <summary>
         // /// Словарь прересортов в обратном направлении:
@@ -167,7 +168,7 @@ namespace TableAnalizer.Objects.Managers
                 static bool FindSkusWithWriteOff(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOff > 0;
                 static bool FindSkusWithCompensation(SKU sku) => sku.SKUCompensationBalance != null;
                 static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
-                //static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
+                static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
 
                 var message = string.Empty;
 
@@ -192,19 +193,20 @@ namespace TableAnalizer.Objects.Managers
                                 predicateHandler = FindSkusWithResort;
                                 message = "Артикулов из пересортов: ";
                                 break;
+                            case ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME:
+                                predicateHandler = FindSkusWithParallel;
+                                message = "Артикулов параллельных клиентов: ";
+                                break;
                         };
                         break;
                     case SourceSKUReportFileKey.OutgoingProducts:
                         predicateHandler = FindSkusWithOutgoingProducts;
                         message = "Артикулов в расходе со склада: ";
                         break;
-
                     case SourceSKUReportFileKey.Transfered:
                         predicateHandler = FindSkusWithTransfered;
                         message = "Артикулов в передаче со склада (на фулфилмент): ";
                         break;
-                    
-
                     case SourceSKUReportFileKey.WriteOffShortages:
                         predicateHandler = FindSkusWithWriteOff;
                         message = "Артикулов в списании недостач: ";
@@ -241,6 +243,7 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOff = reportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
+            bool isParallel = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
 
             await Task.Delay(10); // dummy
 
@@ -354,9 +357,26 @@ namespace TableAnalizer.Objects.Managers
                 {
                     var skuNumber = skuResortGroup.Key;
                     List<ParsingRowEntity>? list = (((List<SKUResortDataUnit>?)[.. skuResortGroup])?.Cast<ParsingRowEntity>().ToList()) ?? 
-                        throw new InvalidCastException("Cannot cast List<SKUResortDataUnit> to List<ParsingRowEntity>.");
+                        throw new InvalidCastException($"Cannot cast List of {nameof(SKUResortDataUnit)} to List of {nameof(ParsingRowEntity)}.");
 
                     SkuResortBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
+                }
+            } 
+            else if(isParallel) 
+            {
+                var skuParallelDataUnits = from rowWithRawData in rowsWithRawData
+                                           let unit = new SKUParallelUnit(rowWithRawData)
+                                           group unit by unit.SKUNumber 
+                                           into unitGroup  
+                                           select unitGroup;
+
+                foreach (var skuParallelGroup in skuParallelDataUnits) 
+                {
+                    var skuNumber = skuParallelGroup.Key;
+                    List<ParsingRowEntity>? list = (((List<SKUParallelUnit>?)[.. skuParallelGroup])?.Cast<ParsingRowEntity>().ToList()) ?? 
+                        throw new InvalidCastException($"Cannot cast List of {nameof(SKUParallelUnit)} to List of {nameof(ParsingRowEntity)}.");
+
+                    SkuParallelUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
                 }
             } 
 
@@ -371,6 +391,7 @@ namespace TableAnalizer.Objects.Managers
                 {
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => SkuCompensationBalanceUnits.Count(),
                     ExcelManager.RESORTS_REPORT_WORKSHEET_NAME => SkuResortBalanceUnits.Count(),
+                    ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME => SkuParallelUnits.Count(),
                     _ => 0
                 },
                 _ => 0
@@ -391,6 +412,7 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOff = skuReportFileKey == SourceSKUReportFileKey.WriteOffShortages;
             bool isCompensation = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResorts = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
+            bool isParellel = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
 
             // Dummy
             await Task.Delay(1);
@@ -415,6 +437,8 @@ namespace TableAnalizer.Objects.Managers
                         parsingEntityCollection = SkuCompensationBalanceUnits,
                     ExcelManager.RESORTS_REPORT_WORKSHEET_NAME => 
                         parsingEntityCollection = SkuResortBalanceUnits,
+                    ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME => 
+                        parsingEntityCollection = SkuParallelUnits,
                     _ => parsingEntityCollection = null
                 },
                 _ => parsingEntityCollection = null,
@@ -504,12 +528,20 @@ namespace TableAnalizer.Objects.Managers
                     else if(isResorts)
                     {
                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUResortDataUnit>().ToList()) ??
-                            throw new InvalidCastException("Cannot cast collection to IList<SKUResortDataUnit>.");
+                            throw new InvalidCastException($"Cannot cast collection to {nameof(IList<SKUResortDataUnit>)}.");
 
                         SKUResortBalance skuResortBalance = new(skuNumber, [.. units]);
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuResortBalance));
-                        
-                        //UpdateSKUsToResortCollection(skuResortBalance);
+                    }
+                    else if(isParellel) 
+                    {
+                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUParallelUnit>().ToList()) ??
+                            throw new InvalidCastException($"Cannot cast collection to {nameof(IList<SKUParallelUnit>)}.");
+
+                        foreach (var unit in units)
+                        {
+                            SKUs.RetrieveAndUpdateOrAddValue(unit.SKUNumber, new(unit.SKUNumber, true));
+                        }
                     }
                 }
             }
@@ -603,22 +635,7 @@ namespace TableAnalizer.Objects.Managers
             foreach (var (_, targetSku) in SKUs.GetValuesList())
             {
                 if(targetSku is null) continue;
-
-                //bool isSummary = ReportFileManager.ClientLogins.Count > 1;
-
-                //SKUForTargetReports newValue;
-                // if(SKUToResorts.TryGetValue(targetSku.SKUNumber, out Dictionary<int, Dictionary<SKUResortTarget, int>>? resortFromSkusValues) && 
-                //     resortFromSkusValues is not null &&
-                //     resortFromSkusValues.Count > 0) 
-                // {
-                //     newValue = new(targetSku, isSummary,  1000, resortFromSkusValues);
-                // } 
-                // else 
-                // {
-                   // newValue = ;
-               // }
-                
-                skuForTargetReports.Add(new(targetSku, ClientLogins.Count > 1 , 1000));
+                skuForTargetReports.Add(new(targetSku));
             }
 
             await Task.Delay(10); // dummy 

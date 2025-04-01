@@ -1,5 +1,4 @@
-using System.Text;
-using SixLabors.ImageSharp;
+using System.Diagnostics;
 
 namespace TableAnalizer.Objects.SKUItems
 {
@@ -218,6 +217,8 @@ namespace TableAnalizer.Objects.SKUItems
         /// <para>Ожидание == Приход == Взаиморасчет и Остаток на складе == 0</para> 
         /// <para>Ожидание == Приход и Взаиморасчет + Остаток на складе == Ожидание</para> 
         /// </remarks>
+        
+        private bool IsParallelClientsSKU { get; } = false; 
         public bool IsSkuNormalize => 
             SKURansomsWaiting == SKUReceiptTotal && SKUReceiptTotal == SKUMutualSettlement && SKURemaining == 0 || 
             SKURansomsWaiting == SKUReceiptTotal && SKUMutualSettlement + SKURemaining == SKURansomsWaiting;
@@ -235,7 +236,7 @@ namespace TableAnalizer.Objects.SKUItems
         #endregion
 
         #region Constructors
-        public SKUForTargetReports(SKU sku, bool isInternalReport, int traceDelay, Dictionary<int, Dictionary<SKUResortTarget, int>>? resortFromSkusValues = null)
+        public SKUForTargetReports(SKU sku)
         {
             SKULogins = string.Join(", ", sku.ClientLogins);
             SKUmp = sku.Marketplace;
@@ -283,6 +284,9 @@ namespace TableAnalizer.Objects.SKUItems
                     .Where(el => el.Key == CompensationTarget.PickupPoint)
                     .Aggregate(0, (acc, i) => acc + i.Value.count);
             }
+        
+            // Is parallel clients SKU
+            IsParallelClientsSKU = sku.IsParallelClientsSKU;
         }
 
         #endregion
@@ -301,7 +305,7 @@ namespace TableAnalizer.Objects.SKUItems
 
             // Calculation of overruns
             var totalСonsumptionWithoutResorts = SKUMutualSettlement - SKUResort;
-            if (totalСonsumptionWithoutResorts > SKURansomsWaiting)
+            if (totalСonsumptionWithoutResorts > SKURansomsWaiting && !IsParallelClientsSKU)
             {
                 SKUOverrunsCount = totalСonsumptionWithoutResorts - SKURansomsWaiting;
             }

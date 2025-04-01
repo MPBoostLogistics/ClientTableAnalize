@@ -142,6 +142,11 @@ namespace TableAnalizer.Objects.Managers
             new(3, nameof(SKUResortDataUnit.SKUToResortNumberCount), ParsingTypeCode.IntTypeCode, true),
             new(4, nameof(SKUResortDataUnit.ResortComment), ParsingTypeCode.StringTypeCode, false)
         ];
+
+        public static List<SourceColumn> ParallelSourceCells { get; } =
+        [
+            new(1, nameof(SKUParallelUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true)
+        ];
         public static List<SourceColumn> WriteOffShortagesSourceCells { get; } =
         [
             new(4, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
@@ -516,7 +521,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 SourceSKUReportFileKey.Ransoms => [RANSOMS_WORKSHEET_NAME],
                 SourceSKUReportFileKey.Balance or SourceSKUReportFileKey.OutgoingProducts or SourceSKUReportFileKey.Transfered or SourceSKUReportFileKey.WriteOffShortages => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
-                SourceSKUReportFileKey.Additional => [COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME],
+                SourceSKUReportFileKey.Additional => [COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
                 _ => null,
             };
             return workSheetNames is not null && workSheetNames.Count != 0;
@@ -1148,6 +1153,7 @@ namespace TableAnalizer.Objects.Managers
                 {
                     COMPENSATION_REPORT_WORKSHEET_NAME => [new(CompensationSourceCells)],
                     RESORTS_REPORT_WORKSHEET_NAME => [new(ResortSourceCells)],
+                    PARALLEL_SKUS_WORKSHEET_NAME => [new(ParallelSourceCells)],
                     _ => [],
                 },
                 _ => [],

@@ -139,8 +139,6 @@ namespace TableAnalizer.Objects
         /// Внутренний пересорт.
         /// </summary>
         Internal
-
-
     }
 
     public enum CompensationTarget 

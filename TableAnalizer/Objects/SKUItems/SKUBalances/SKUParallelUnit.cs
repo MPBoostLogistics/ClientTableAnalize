@@ -5,23 +5,20 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     /// <summary>
     /// Parallel data unit.
     /// </summary>
-    /// <remarks><i>New version</i></remarks>
-
-    public class SKUParallelUnit : ParsingRowEntity
+    public class SKUParallelUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
-        public int SKUNumber { get; set; }               // Артикул товара
-
+        /// <summary>
+        /// Артикул товара
+        /// </summary>
+        public int SKUNumber { get; set; }
         #endregion Properties
 
-        #region Constructors
-        public SKUParallelUnit(in Dictionary<string, ItemForParsing> parsingElements) : base(parsingElements){}
-        #endregion Constructors
 
         #region Functionality
         public override string ToString()
         {
-            return $"{SKUNumber}";
+            return $"SKUParallelUnit: {SKUNumber}";
         }
         #endregion
     }

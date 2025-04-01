@@ -223,7 +223,7 @@ namespace TableAnalizer.Objects.Repositories
             };
 
             // isParallel
-            bool isParallel = retriveValue.IsParallelSKU || newValue.IsParallelSKU;
+            bool isParallel = retriveValue.IsParallelClientsSKU || newValue.IsParallelClientsSKU;
 
             return new SKU(clientLoginsList, marketplace, skuNumber, skuBrand, skuName, skuRansomsBalance, 
                 skuRemainingBalance, skuWriteOffBalance, skuCompensationBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays, isParallel);

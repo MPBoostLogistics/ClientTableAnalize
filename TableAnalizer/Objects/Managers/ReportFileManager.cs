@@ -27,9 +27,6 @@ namespace TableAnalizer.Objects.Managers
 
         public Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> ReportsPaths { get; private set; } = [];
         public Dictionary<string, SourceReportFileForSKU> ReportsPathsMultyReport { get; private set; } = new();
-        
-        public SourceReportFileForSKU? AdditionalPathsMultyReport { get; private set; }
-        
         public static DirectoryInfo? DirInfoForClientTargetReports { get; private set; }
         public static string? InputReportsFilePath { get; set; } = string.Empty;
         public static string OutputClientReportFilePath { get; private set; } = string.Empty;
