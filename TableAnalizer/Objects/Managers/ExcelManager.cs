@@ -43,13 +43,20 @@ namespace TableAnalizer.Objects.Managers
         private static readonly int defaultTextSize = 12;
 
         // Accent target cell settings
-        private static readonly Color accentTextColor = Color.FromArgb(100, 41, 45, 121);        //rgb(41, 45, 121)    
-        private static readonly int accentTextSize = 15;
+        private static readonly Color accentTextColor = Color.FromArgb(100, 59, 89, 104);        //rgb(59, 89, 104)8  
+        private static readonly int accentTextSize = 15;     
+
+        // Summary target cell settings
+        private static readonly Color summaryTextColor = Color.FromArgb(100, 79, 79, 94);        //rgb(79, 79, 94) 
+        private static readonly int summaryTextSize = 15;                                       
 
         private static readonly TargetCellSettings defaultTargetCellSettings =
             new(textСolor: defaultTextColor, textSize: defaultTextSize, cellFillColor: null, false);
         private static readonly TargetCellSettings accentTargetCellSettings =
-            new(textСolor: accentTextColor, textSize: accentTextSize, cellFillColor: null, true);
+            new(textСolor: accentTextColor, textSize: accentTextSize, cellFillColor: Color.FromArgb(100, 249,249, 251), true); //rgb(249, 249, 251)
+
+        private static readonly TargetCellSettings summaryTargetCellSettings =
+            new(textСolor: summaryTextColor, textSize: summaryTextSize, cellFillColor: null); 
 
         private static string SumFormila = string.Empty;
 
@@ -195,59 +202,60 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 13, colName: "Заказов: забрано с ПВЗ", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKURansomsWithDrawn),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 14, colName: "Склад: Ожидание", colWidth: 12.0, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 14, colName: "Склад: Ожидание", colWidth: 12.0f, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKURansomsWaiting),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: accentTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
 
-            new (colNumber: 15, colName: "Приход от точек", colWidth: 11.5, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUReceiptTotal),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: accentTargetCellSettings),
+            new (colNumber: 15, colName: "Общий взаиморасчет с клиентом", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUSummarySettlement),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
 
-            new (colNumber: 16, colName: "Общий взаиморасчет", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUMutualSettlement),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: accentTargetCellSettings),
-            new (colNumber: 17, colName: "расход товарами", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 16, colName: "в том числе компенсацией", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUSettlementByCompensation),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
+  
+            new (colNumber: 17, colName: "в том числе товарами", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUSettlementByGoods) ,
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
+            new (colNumber: 18, colName: "отгружено товарами", colWidth: 7.5f, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUOutgoingProducts) ,
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 5),
-            new (colNumber: 18, colName: "на фулфилмент", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 4),
+            new (colNumber: 19, colName: "передано на фулфилмент", colWidth: 7.5f, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUTransfered) ,
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 19, colName: "компенсацией", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUPaidWarehouse),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 20, colName: "пересортом", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 20, colName: "отгружено пересортом от других арт.", colWidth: 7.5f, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUResort),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 21, colName: "Комментарий к пересортами", colWidth: 25, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUResortsComment),
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 22, colName: "Склад: Остаток товаров", colWidth: 11.5, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 22, colName: "Склад: Остаток товаров", colWidth: 11.5f, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKURemaining),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate:  x => x < 0, typeFormula: null, targetCellSettings: accentTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate:  x => x < 0, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
 
             new (colNumber: 23, colName: "Задержка довоза, всего", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayTotal),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: accentTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
             new (colNumber: 24, colName: "Задержка довоза от точек, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayPoints),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 4),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 4),
             new (colNumber: 25, colName: "Задержка довоза от точек, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayPointsSum),
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 26, colName: "Задержка довоза от склада, кол-во", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayStorage),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 27, colName: "Задержка довоза от склада, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUDeliveryDelayStorageSum),
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
 
             new (colNumber: 28, colName: "Перерасход, кол-во", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUOverrunsCount),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: accentTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
             new (colNumber: 29, colName: "Перерасход, сумма руб.", colWidth: 14, format: DOUBLE_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUOverrunsSum),
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
         ];
         public TargetCell[] cellsReportingDelays =
         [
@@ -318,58 +326,72 @@ namespace TableAnalizer.Objects.Managers
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUPrice),
             parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 6, colName: "Склад: Ожидание", colWidth: 12.0, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 6, colName: "Склад: Ожидание", colWidth: 11.5f, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKURansomsWaiting),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
 
             new (colNumber: 7, colName: "Приход от точек, всего", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUReceiptTotal),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
-            new (colNumber: 8, colName: "приход товарами", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 8, colName: "приход товарами", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUReceiptGoods),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 2),
-            new (colNumber: 9, colName: "оплачено точками организации", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUPaidByPointsToOrganization),
+            new (colNumber: 9, colName: "списано с точек", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUWrittenOffFromPoints),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 10, colName: "Общий взаиморасчет", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUMutualSettlement),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
-            new (colNumber: 11, colName: "расход товарами", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUOutgoingProducts),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 4),
-            new (colNumber: 12, colName: "на фулфилмент", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUTransfered),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 13, colName: "пересортами", colWidth: 6, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUResort),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 14, colName: "оплачено клиенту от склада и организации ", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUPaidTotal),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 10, colName: "Общий взаиморасчет с клиентом", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUSummarySettlement),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
 
-            new (colNumber: 15, colName: "Склад: Остаток по учету", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 11, colName: "в том числе компенсацией", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUSettlementByCompensation),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
+            new (colNumber: 12, colName: "от склада", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUPaidWarehouse),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 2),
+            new (colNumber: 13, colName: "от организации", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUPaidOrganization),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
+
+            new (colNumber: 14, colName: "в том числе товарами", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUSettlementByGoods) ,
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
+            new (colNumber: 15, colName: "отгружено товарами", colWidth: 7.5f, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUOutgoingProducts) ,
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 4),
+            new (colNumber: 16, colName: "передано на фулфилмент", colWidth: 7.5f, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUTransfered) ,
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 17, colName: "отгружено пересортом от других арт.", colWidth: 8.5f, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUResort),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 18, colName: "Комментарий к пересортами", colWidth: 25, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReports.SKUResortsComment),
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+
+            new (colNumber: 19, colName: "Склад: Остаток по учету", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKURemaining),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x < 0, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
 
-            new (colNumber: 16, colName: "Артикул нормализован", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 20, colName: "Артикул нормализован", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.IsSkuNormalize),
             parsingTypeCode: ParsingTypeCode.BoolTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 17, colName: "Долг по оплате компенсации перед клиентом", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 21, colName: "Долг по оплате компенсации перед клиентом", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUDebtToClientForCompensationSum),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 18, colName: "Нужны входящие пересорты прихода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 22, colName: "Нужны входящие пересорты прихода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Приход меньше ожидания", propertyName: nameof(SKUForTargetReports.LessReceiptThanWaiting),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 19, colName: "Возможны исходящие пересорты прихода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 23, colName: "Возможны исходящие пересорты прихода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Приход больше ожидания", propertyName: nameof(SKUForTargetReports.MoreReceiptThanWaiting),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 20, colName: "Нужны входящие пересорты расхода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 24, colName: "Нужны входящие пересорты расхода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Взаиморасчет меньше ожидания", propertyName: nameof(SKUForTargetReports.LessMutualSettlementThanWaiting),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 21, colName: "Возможны исходящие пересорты расхода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 25, colName: "Возможны исходящие пересорты расхода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Взаиморасчет больше ожидания", propertyName: nameof(SKUForTargetReports.MoreMutualSettlementThanWaiting),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
         ];
@@ -501,7 +523,15 @@ namespace TableAnalizer.Objects.Managers
 
                 if (!string.IsNullOrEmpty(formula))
                 {
-                    outputReportSheet.Cells[endRow + 1, ColNumber].Formula = formula;
+                    var range = outputReportSheet.Cells[endRow + 1, ColNumber];
+                    range.Formula = formula;
+
+                    range.Style.Font.Size = summaryTargetCellSettings.FontSize;
+                    range.Style.Font.Bold = true;
+                    range.Style.Font.Color.SetColor(summaryTargetCellSettings.TextСolor);
+
+                    range.Style.Border.Top.Style = ExcelBorderStyle.Thin;  
+                    range.Style.Border.Top.Color.SetColor(summaryTargetCellSettings.TextСolor);
                 }
             }
 

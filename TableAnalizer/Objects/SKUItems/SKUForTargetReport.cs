@@ -42,7 +42,7 @@ namespace TableAnalizer.Objects.SKUItems
         /// <summary>
         /// Приход от точек, всего
         /// </summary>
-        public int SKUReceiptTotal => SKUReceiptGoods + SKUPaidByPointsToOrganization;
+        public int SKUReceiptTotal => SKUReceiptGoods + SKUWrittenOffFromPoints;
 
         /// <summary>
         /// из них, Склад: Приход товарами
@@ -50,9 +50,9 @@ namespace TableAnalizer.Objects.SKUItems
         public int SKUReceiptGoods { get; set; } = 0;
 
         /// <summary>
-        /// Оплачено точками организации 
+        /// Списано с точек 
         /// </summary>
-        public int SKUPaidByPointsToOrganization { get; set; } = 0;
+        public int SKUWrittenOffFromPoints { get; set; } = 0;
         
         /// <summary>
         /// Склад: Приход от точек меньше ожидания
@@ -69,6 +69,7 @@ namespace TableAnalizer.Objects.SKUItems
             SKUReceiptTotal > SKURansomsWaiting ?
             SKUReceiptTotal - SKURansomsWaiting :
             0;
+
         #endregion
         #region Properties - Comments
 
@@ -86,9 +87,19 @@ namespace TableAnalizer.Objects.SKUItems
         #region Properties - Mutual settlement
 
         /// <summary>
-        /// Общий взаиморасчет (товаром, передачей на фулфилмент, компенсацией склада, пересортом) 
+        /// Общий взаиморасчет с клиентом (товарами, компенсацией)
         /// </summary>
-        public int SKUMutualSettlement => SKUOutgoingProducts + SKUTransfered + SKUPaidWarehouse + SKUResort;
+        public int SKUSummarySettlement => SKUSettlementByGoods + SKUSettlementByCompensation;
+
+        /// <summary>
+        /// Взаиморачет товарами (отгрузки, перемещения, пересорты)
+        /// </summary>
+        public int SKUSettlementByGoods => SKUOutgoingProducts + SKUTransfered + SKUResort;
+
+        /// <summary>
+        /// Взаиморасчет компенсацией (от склада и организации )
+        /// </summary>
+        public int SKUSettlementByCompensation => SKUPaidWarehouse + SKUPaidOrganization;
 
         /// <summary>
         /// расход товарами
@@ -101,19 +112,14 @@ namespace TableAnalizer.Objects.SKUItems
         public int SKUTransfered { get; set; }
 
         /// <summary>
-        /// Всего: Денежная компенсация
-        /// </summary>
-        public int SKUPaidTotal => SKUPaidWarehouse + SKUPaidPoints;
-
-        /// <summary>
         /// Склад: Денежная компенсация
         /// </summary>                       
         public int SKUPaidWarehouse { get; set; } = 0;
 
          /// <summary>
-        /// Точки: Денежная компенсация
+        /// Организация: Денежная компенсация
         /// </summary>                       
-        public int SKUPaidPoints { get; set; } = 0;
+        public int SKUPaidOrganization { get; set; } = 0;
 
         /// <summary>
         /// Склад: расход пересортом                
@@ -124,13 +130,13 @@ namespace TableAnalizer.Objects.SKUItems
         /// Общий взаиморасчет меньше ожидания клиента
         /// </summary>
         public int LessMutualSettlementThanWaiting => 
-            SKUMutualSettlement < SKURansomsWaiting ? 
+            SKUSummarySettlement < SKURansomsWaiting ? 
                 SKURemaining > 0 ? 
-                SKURansomsWaiting - SKUMutualSettlement - SKURemaining >= 0 ?
-                    SKURansomsWaiting - SKUMutualSettlement - SKURemaining :
+                SKURansomsWaiting - SKUSummarySettlement - SKURemaining >= 0 ?
+                    SKURansomsWaiting - SKUSummarySettlement - SKURemaining :
                     0 : 
-                SKURansomsWaiting - SKUMutualSettlement > 0 ? 
-                SKURansomsWaiting - SKUMutualSettlement :
+                SKURansomsWaiting - SKUSummarySettlement > 0 ? 
+                SKURansomsWaiting - SKUSummarySettlement :
                 0 : 
             0;
 
@@ -138,8 +144,8 @@ namespace TableAnalizer.Objects.SKUItems
         /// Общий взаиморасчет больше ожидания клиента
         /// </summary>
         public int MoreMutualSettlementThanWaiting =>
-            SKUMutualSettlement > SKURansomsWaiting ?
-            SKUMutualSettlement - SKURansomsWaiting :
+            SKUSummarySettlement > SKURansomsWaiting ?
+            SKUSummarySettlement - SKURansomsWaiting :
             0;
 
         #endregion
@@ -220,15 +226,15 @@ namespace TableAnalizer.Objects.SKUItems
         
         private bool IsParallelClientsSKU { get; } = false; 
         public bool IsSkuNormalize => 
-            SKURansomsWaiting == SKUReceiptTotal && SKUReceiptTotal == SKUMutualSettlement && SKURemaining == 0 || 
-            SKURansomsWaiting == SKUReceiptTotal && SKUMutualSettlement + SKURemaining == SKURansomsWaiting;
+            SKURansomsWaiting == SKUReceiptTotal && SKUReceiptTotal == SKUSummarySettlement && SKURemaining == 0 || 
+            SKURansomsWaiting == SKUReceiptTotal && SKUSummarySettlement + SKURemaining == SKURansomsWaiting;
 
         /// <summary>
         /// Долг по оплате компенсации организацией перед клиентом.
         /// </summary>
         public int SKUDebtToClientForCompensationSum => 
-            SKUPaidByPointsToOrganization - SKUPaidTotal > 0 ? 
-            SKUPaidByPointsToOrganization - SKUPaidTotal : 
+            SKUWrittenOffFromPoints - SKUSettlementByCompensation > 0 ? 
+            SKUWrittenOffFromPoints - SKUSettlementByCompensation : 
             0;
 
         #endregion
@@ -270,7 +276,7 @@ namespace TableAnalizer.Objects.SKUItems
             // Fill write-off 
             if (sku.SKUWriteOffBalance is not null) 
             {
-                SKUPaidByPointsToOrganization = sku.SKUWriteOffBalance!.SKUWriteOff;
+                SKUWrittenOffFromPoints = sku.SKUWriteOffBalance!.SKUWriteOff;
             }
 
             // Fill SKUCompensationBalance 
@@ -280,7 +286,7 @@ namespace TableAnalizer.Objects.SKUItems
                     .Where(el => el.Key == CompensationTarget.Warehouse)
                     .Aggregate(0, (acc, i) => acc + i.Value.count);
 
-                SKUPaidPoints += sku.SKUCompensationBalance.CompensationItems
+                SKUPaidOrganization += sku.SKUCompensationBalance.CompensationItems
                     .Where(el => el.Key == CompensationTarget.PickupPoint)
                     .Aggregate(0, (acc, i) => acc + i.Value.count);
             }
@@ -304,7 +310,7 @@ namespace TableAnalizer.Objects.SKUItems
             CalculateDelay(SKUSellmentStatus.DelayDeliveryFromWarehouse);
 
             // Calculation of overruns
-            var totalСonsumptionWithoutResorts = SKUMutualSettlement - SKUResort;
+            var totalСonsumptionWithoutResorts = SKUSummarySettlement - SKUResort;
             if (totalСonsumptionWithoutResorts > SKURansomsWaiting && !IsParallelClientsSKU)
             {
                 SKUOverrunsCount = totalСonsumptionWithoutResorts - SKURansomsWaiting;
@@ -406,8 +412,8 @@ namespace TableAnalizer.Objects.SKUItems
                     0;
                     break;
                 case SKUSellmentStatus.DelayDeliveryFromWarehouse:
-                    SKUDeliveryDelayStorage = (SKURansomsWaiting - SKUMutualSettlement - SKUDeliveryDelayPoints) > 0 ? 
-                    SKURansomsWaiting - SKUDeliveryDelayPoints - SKUMutualSettlement : 
+                    SKUDeliveryDelayStorage = (SKURansomsWaiting - SKUSummarySettlement - SKUDeliveryDelayPoints) > 0 ? 
+                    SKURansomsWaiting - SKUDeliveryDelayPoints - SKUSummarySettlement : 
                     0;
                     break;
                 default:

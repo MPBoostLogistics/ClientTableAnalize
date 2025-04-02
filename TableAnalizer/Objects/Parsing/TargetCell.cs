@@ -38,14 +38,14 @@ namespace TableAnalizer.Objects.Parsing
     /// <summary>
     /// Represents the result cell for an Excel table.
     /// </summary>
-    public readonly struct TargetCell(int colNumber, string colName, double colWidth, string format,
+    public readonly struct TargetCell(int colNumber, string colName, float colWidth, string format,
         bool wrapTextInHeader, int textRotationInHeader, string textCommentInHeader, string propertyName, ParsingTypeCode parsingTypeCode,
         Predicate<int>? valueСheckingPredicate, TargetCellSettings targetCellSettings, TypesFormulas? typeFormula, int groupCellsFromCurrent = 0)
     {
         #region Properties
         public int ColNumber { get; } = colNumber;
         public string ColName { get; } = colName;
-        public double ColumnWidth { get; } = colWidth;
+        public float ColumnWidth { get; } = colWidth;
         public string Format { get; } = format;
         public bool WrapTextInHeader { get; } = wrapTextInHeader;
         public int TextRotationInHeader { get; } = textRotationInHeader;

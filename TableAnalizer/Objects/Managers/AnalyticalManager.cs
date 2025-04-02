@@ -17,7 +17,7 @@ namespace TableAnalizer.Objects.Managers
 
         private static Func<SKUForTargetReports, bool> UnderPredicateByReceipt => sku => !sku.IsSkuNormalize && sku.LessReceiptThanWaiting > 0;
 
-        private static Func<SKUForTargetReports, bool> ExtraPredicateByReceipt => sku => !sku.IsSkuNormalize && (sku.SKUMutualSettlement + sku.SKURemaining) == sku.SKURansomsWaiting && sku.SKUReceiptTotal > sku.SKURansomsWaiting;
+        private static Func<SKUForTargetReports, bool> ExtraPredicateByReceipt => sku => !sku.IsSkuNormalize && (sku.SKUSummarySettlement + sku.SKURemaining) == sku.SKURansomsWaiting && sku.SKUReceiptTotal > sku.SKURansomsWaiting;
 
          private static Func<SKUForTargetReports, bool> ExtraPredicateByReceiptFinal => 
             sku => !sku.IsSkuNormalize && 
