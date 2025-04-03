@@ -154,10 +154,17 @@ namespace TableAnalizer.Objects.Managers
         [
             new(1, nameof(SKUParallelUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true)
         ];
-        public static List<SourceColumn> WriteOffShortagesSourceCells { get; } =
+
+        public static List<SourceColumn> WriteOffPointsSourceCells { get; } =
         [
             new(4, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
             new(27, nameof(SKUWriteOffDataUnit.SKUWriteOffCount), ParsingTypeCode.IntTypeCode, true)
+        ];
+
+        public static List<SourceColumn> WriteOffPointsViaWarehouseSourceCells { get; } =
+        [
+            new(5, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(39, nameof(SKUWriteOffDataUnit.SKUWriteOffCount), ParsingTypeCode.IntTypeCode, true)
         ];
 
         public TargetCell[] cellsReportingMain =
@@ -326,7 +333,7 @@ namespace TableAnalizer.Objects.Managers
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKUPrice),
             parsingTypeCode: ParsingTypeCode.DoubleTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 6, colName: "Склад: Ожидание", colWidth: 11.5f, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 6, colName: "Склад: Ожидание", colWidth: 12.0f, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReports.SKURansomsWaiting),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
 
@@ -550,7 +557,7 @@ namespace TableAnalizer.Objects.Managers
             workSheetNames = reportFileKey switch
             {
                 SourceSKUReportFileKey.Ransoms => [RANSOMS_WORKSHEET_NAME],
-                SourceSKUReportFileKey.Balance or SourceSKUReportFileKey.OutgoingProducts or SourceSKUReportFileKey.Transfered or SourceSKUReportFileKey.WriteOffShortages => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
+                SourceSKUReportFileKey.Balance or SourceSKUReportFileKey.OutgoingProducts or SourceSKUReportFileKey.Transfered or SourceSKUReportFileKey.WriteOffPoints or SourceSKUReportFileKey.WriteOffPointsViaWarehouse  => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
                 SourceSKUReportFileKey.Additional => [COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
                 _ => null,
             };
@@ -1176,7 +1183,8 @@ namespace TableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.Ransoms => [new(RansomsSourceCells)],
                 SourceSKUReportFileKey.Balance => [ new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
                                                     new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME), new(RemainingThirdRoomSourceCells, THIRD_ROOM_NAME, (LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))],
-                SourceSKUReportFileKey.WriteOffShortages => [new(WriteOffShortagesSourceCells)],
+                SourceSKUReportFileKey.WriteOffPoints => [new(WriteOffPointsSourceCells)],
+                SourceSKUReportFileKey.WriteOffPointsViaWarehouse => [new(WriteOffPointsViaWarehouseSourceCells)],
                 SourceSKUReportFileKey.OutgoingProducts => [new(ShippedSourceCells)],
                 SourceSKUReportFileKey.Transfered => [new(TransferSourceCells)],
                 SourceSKUReportFileKey.Additional => workSheetName switch

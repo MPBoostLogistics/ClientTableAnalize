@@ -386,6 +386,7 @@ namespace TableAnalizer.Objects.SKUItems
                         if(SKUReceiptGoods >= sum) 
                         {
                             SKUReceiptGoods -= sum;
+                            SKUResortsComment = $"- приход списано: {sum} (эп)";
                         } 
 
                         // Final balance receipt

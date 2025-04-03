@@ -17,7 +17,13 @@ namespace TableAnalizer.Objects.Managers
 
         private static Func<SKUForTargetReports, bool> UnderPredicateByReceipt => sku => !sku.IsSkuNormalize && sku.LessReceiptThanWaiting > 0;
 
-        private static Func<SKUForTargetReports, bool> ExtraPredicateByReceipt => sku => !sku.IsSkuNormalize && (sku.SKUSummarySettlement + sku.SKURemaining) == sku.SKURansomsWaiting && sku.SKUReceiptTotal > sku.SKURansomsWaiting;
+        /// <summary>
+        /// Артикул не номализован, взаиморасчет + остаток = ожидание и общий приход больше ожидания
+        /// </summary>
+        private static Func<SKUForTargetReports, bool> ExtraPredicateByReceipt => sku => 
+            !sku.IsSkuNormalize && 
+            (sku.SKUSummarySettlement + sku.SKURemaining) == sku.SKURansomsWaiting && 
+            sku.SKUReceiptTotal > sku.SKURansomsWaiting;
 
          private static Func<SKUForTargetReports, bool> ExtraPredicateByReceiptFinal => 
             sku => !sku.IsSkuNormalize && 
@@ -51,6 +57,9 @@ namespace TableAnalizer.Objects.Managers
         private static bool isPossibilityOverspendingByConsumption;
         private static bool isNeedUnderspendingByReceipt;
         private static bool isPossibilityOverspendingByReceipt;
+        /// <summary>
+        /// Есть артикулы с экстра-приходом
+        /// </summary>
         private static bool isThereAreSkusWithExtraReceipt;
 
         #endregion
@@ -75,7 +84,7 @@ namespace TableAnalizer.Objects.Managers
             underspendingSkusByReceipt = ussByReceipt is not null ? new LinkedList<SKUForTargetReports>(ussByReceipt.OrderByDescending(el => el.SKUNumber)) : null;
             isNeedUnderspendingByReceipt = underspendingSkusByReceipt is not null && underspendingSkusByReceipt.Count != 0;
 
-            var extraByReceipt = GetSkus(ref skuForTargetReports, [ExtraPredicateByReceipt, ExtraPredicateByReceiptFinal]);
+            var extraByReceipt = GetSkus(ref skuForTargetReports, [ExtraPredicateByReceipt]);
             extraSkusByReceipt = extraByReceipt?.OrderByDescending(el => el.SKUNumber).ToList();
             isThereAreSkusWithExtraReceipt = extraSkusByReceipt is not null && extraSkusByReceipt.Count != 0;
 

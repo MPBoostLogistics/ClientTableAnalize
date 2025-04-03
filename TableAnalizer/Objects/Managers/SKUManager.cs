@@ -207,9 +207,13 @@ namespace TableAnalizer.Objects.Managers
                         predicateHandler = FindSkusWithTransfered;
                         message = "Артикулов в передаче со склада (на фулфилмент): ";
                         break;
-                    case SourceSKUReportFileKey.WriteOffShortages:
+                    case SourceSKUReportFileKey.WriteOffPoints:
                         predicateHandler = FindSkusWithWriteOff;
-                        message = "Артикулов в списании недостач: ";
+                        message = "Артикулов в списании недостач от точек: ";
+                        break;
+                     case SourceSKUReportFileKey.WriteOffPointsViaWarehouse:
+                        predicateHandler = FindSkusWithWriteOff;
+                        message = "Артикулов в списании недостач от точек через склад: ";
                         break;
                     default:
                         break;
@@ -240,7 +244,8 @@ namespace TableAnalizer.Objects.Managers
             bool isBalance = reportFileKey == SourceSKUReportFileKey.Balance;
             bool isOutgoingProducts = reportFileKey == SourceSKUReportFileKey.OutgoingProducts;
             bool isTransfered = reportFileKey == SourceSKUReportFileKey.Transfered;
-            bool isWriteOff = reportFileKey == SourceSKUReportFileKey.WriteOffShortages;
+            bool isWriteOffPoints = reportFileKey == SourceSKUReportFileKey.WriteOffPoints;
+            bool isWriteOffPointsViaWarehouse = reportFileKey == SourceSKUReportFileKey.WriteOffPointsViaWarehouse;
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isParallel = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
@@ -313,22 +318,29 @@ namespace TableAnalizer.Objects.Managers
                     SkuTransferedBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             }
-            else if(isWriteOff) 
+            else if(isWriteOffPoints) 
             {
-                var skuWriteOffDataUnits = from rowWithRawData in rowsWithRawData
-                                           let unit = new SKUWriteOffDataUnit(rowWithRawData)
-                                           group unit by unit.SKUNumber 
-                                           into unitGroup  
-                                           select unitGroup;
+                throw new NotImplementedException();
+
+
+                // var skuWriteOffDataUnits = from rowWithRawData in rowsWithRawData
+                //                            let unit = new SKUWriteOffDataUnit(rowWithRawData)
+                //                            group unit by unit.SKUNumber 
+                //                            into unitGroup  
+                //                            select unitGroup;
                 
-                foreach (var group in skuWriteOffDataUnits)
-                {
-                    var list = (((List<SKUWriteOffDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
-                        throw new InvalidCastException("Невозможно привести List<SKUWriteOffDataUnit> к List<ParsingRowEntity>");
+                // foreach (var group in skuWriteOffDataUnits)
+                // {
+                //     var list = (((List<SKUWriteOffDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
+                //         throw new InvalidCastException("Невозможно привести List<SKUWriteOffDataUnit> к List<ParsingRowEntity>");
                     
-                    SkuWriteOffBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
-                }
+                //     SkuWriteOffBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                // }
             }    
+            else if(isWriteOffPointsViaWarehouse) 
+            {
+                 throw new NotImplementedException();
+            }
             else if(isCompensation) 
             {
                 var skuCompensationDataUnits = from rowWithRawData in rowsWithRawData
@@ -386,7 +398,8 @@ namespace TableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.Balance => SkuRemainingBalanceUnits.Count(),
                 SourceSKUReportFileKey.OutgoingProducts  => SkuShippedBalanceUnits.Count(),
                 SourceSKUReportFileKey.Transfered => SkuTransferedBalanceUnits.Count(),
-                SourceSKUReportFileKey.WriteOffShortages => SkuWriteOffBalanceUnits.Count(),
+                SourceSKUReportFileKey.WriteOffPoints => throw new NotImplementedException(),
+                SourceSKUReportFileKey.WriteOffPointsViaWarehouse => throw new NotImplementedException(),
                 SourceSKUReportFileKey.Additional => workSheetName switch 
                 {
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => SkuCompensationBalanceUnits.Count(),
@@ -409,7 +422,8 @@ namespace TableAnalizer.Objects.Managers
             bool isRemaining = skuReportFileKey == SourceSKUReportFileKey.Balance;
             bool isShipped = skuReportFileKey == SourceSKUReportFileKey.OutgoingProducts;
             bool isTransfered = skuReportFileKey == SourceSKUReportFileKey.Transfered;
-            bool isWriteOff = skuReportFileKey == SourceSKUReportFileKey.WriteOffShortages;
+            bool isWriteOffPoints = skuReportFileKey == SourceSKUReportFileKey.WriteOffPoints;
+            bool isWriteOffPointsViaWarehouse = skuReportFileKey == SourceSKUReportFileKey.WriteOffPointsViaWarehouse;
             bool isCompensation = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResorts = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isParellel = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
@@ -429,8 +443,11 @@ namespace TableAnalizer.Objects.Managers
                     parsingEntityCollection = SkuShippedBalanceUnits,  
                 SourceSKUReportFileKey.Transfered =>
                     parsingEntityCollection = SkuTransferedBalanceUnits,  
-                SourceSKUReportFileKey.WriteOffShortages =>
-                    parsingEntityCollection = SkuWriteOffBalanceUnits, 
+                SourceSKUReportFileKey.WriteOffPoints =>
+                    throw new NotImplementedException(),
+                SourceSKUReportFileKey.WriteOffPointsViaWarehouse =>
+                    throw new NotImplementedException(),
+                    //parsingEntityCollection = SkuWriteOffBalanceUnits, 
                 SourceSKUReportFileKey.Additional => workSheetName switch 
                 {
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => 
@@ -506,16 +523,22 @@ namespace TableAnalizer.Objects.Managers
                         SKURemainingBalance remainingBalance = new(skuNumber, units.ToList());
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, remainingBalance));
                     } 
-                    else if(isWriteOff) 
+                    else if(isWriteOffPoints) 
                     {
-                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUWriteOffDataUnit>().ToList()) ??
-                            throw new InvalidCastException("Cannot cast collection to IList<SKUWriteOffDataUnit>.");
+                        throw new NotImplementedException();
 
-                        if(SKUs.GetValue(skuNumber, out SKU? sKU)) 
-                        {
-                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units]);
-                            SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
-                        }
+                        // var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUWriteOffDataUnit>().ToList()) ??
+                        //     throw new InvalidCastException("Cannot cast collection to IList<SKUWriteOffDataUnit>.");
+
+                        // if(SKUs.GetValue(skuNumber, out SKU? sKU)) 
+                        // {
+                        //     SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units]);
+                        //     SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
+                        // }
+                    }
+                    else if(isWriteOffPointsViaWarehouse) 
+                    {
+                        throw new NotImplementedException();
                     }
                     else if(isCompensation) 
                     {
@@ -546,87 +569,6 @@ namespace TableAnalizer.Objects.Managers
                 }
             }
         }
-
-        // private void UpdateSKUsToResortCollection(SKUResortBalance skuResortBalance)
-        // { 
-        //     int skuResortFromNumber = skuResortBalance.SKUFromResortNumber;
-
-        //     ResortBalanceUnit? resortingConsumptionItem = skuResortBalance.GetSkusResortToSum(SKUResortTarget.ResortingConsumptionByOutgoing);
-
-        //     List<ResortBalanceUnit>? skusResortToUnits = [];
-        //     skusResortToUnits.AddRange([resortingConsumptionItem]);
-
-        //     if (skusResortToUnits is not null && skusResortToUnits.Count != 0)
-        //     {
-        //         // Проходим по юнитам
-        //         foreach (var skusResortToUnit in skusResortToUnits)
-        //         {
-        //             // Цель пересорта
-        //             var resortToTarget = skusResortToUnit.BalanceTarget;
-
-        //             Dictionary<int, Dictionary<SKUResortTarget, int>>? resortsFromDict;
-        //             Dictionary<SKUResortTarget, int>? resortItemsByTarget;
-        //             int resortSumByTarget = 0;
-
-        //             // Проходим по элементам словаря внутри юнита (арт пересорта, сумма)
-        //             foreach ((int resortToNumber, int resortToSum) in skusResortToUnit.ResortTo)
-        //             {
-        //                 // Если по артикулу resortToNumber есть сведения...
-        //                 if (SKUToResorts.TryGetValue(resortToNumber, out Dictionary<int, Dictionary<SKUResortTarget, int>>? resortsFromExistingDict) &&
-        //                 resortsFromExistingDict is not null &&
-        //                 resortsFromExistingDict.Count > 0)
-        //                 {
-        //                     resortsFromDict = resortsFromExistingDict;
-
-        //                     if(resortsFromDict.TryGetValue(skuResortFromNumber, out Dictionary<SKUResortTarget, int>? resortDictTargets)) 
-        //                     {
-        //                         resortItemsByTarget = resortDictTargets;
-
-        //                         if(resortItemsByTarget.TryGetValue(resortToTarget, out int sum)) 
-        //                         {
-        //                             resortSumByTarget = sum;
-        //                             resortSumByTarget += resortToSum;
-        //                         } 
-        //                         else 
-        //                         {
-        //                             resortSumByTarget = resortToSum;
-        //                         }
-
-        //                         resortItemsByTarget[resortToTarget] = resortSumByTarget;
-        //                     } 
-        //                     else 
-        //                     {
-        //                         // Сумма пересортов
-        //                         resortSumByTarget = resortToSum;
-
-        //                         // Новый словарь: Цель пересортов - Сумма пересортов
-        //                         resortItemsByTarget = new() 
-        //                         {
-        //                             {resortToTarget, resortSumByTarget}
-        //                         };
-        //                     }  
-
-        //                     resortsFromDict[skuResortFromNumber] = resortItemsByTarget;
-        //                 } 
-        //                 // Если по артикулу resortToNumber нет сведений, создается новая запись
-        //                 else 
-        //                 {
-        //                     resortItemsByTarget = new() 
-        //                     {
-        //                         {resortToTarget, resortToSum}
-        //                     };
-
-        //                     resortsFromDict = new() 
-        //                     {
-        //                         { skuResortFromNumber, resortItemsByTarget }
-        //                     };
-        //                 } 
-
-        //                 SKUToResorts[resortToNumber] = resortsFromDict;
-        //             }                    
-        //         }
-        //     }
-        // }
 
         public async Task<List<SKUForTargetReports>> MakeSkusForTargetReport() 
         {

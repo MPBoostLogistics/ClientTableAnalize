@@ -45,9 +45,13 @@ namespace TableAnalizer.Objects
         /// </summary>
         Balance,      
         /// <summary>
-        /// Списано недостач с точек
-        /// </summary>   
-        WriteOffShortages,
+        /// Списание недостач с точек через склад
+        /// </summary>
+        WriteOffPointsViaWarehouse,
+        /// <summary>
+        /// Списание недостач с точек напрямую
+        /// </summary>
+        WriteOffPoints,
         /// <summary>
         /// Недостачи и пересорты
         /// </summary>
