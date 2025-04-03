@@ -144,8 +144,9 @@ namespace TableAnalizer.Objects.Repositories
 
                     if(newValue.SKUWriteOffBalance is not null) 
                     {
-                        int skuWriteOff = retriveValue.SKUWriteOffBalance!.SKUWriteOff + newValue.SKUWriteOffBalance.SKUWriteOff;
-                        skuWriteOffBalance = new SKUWriteOffBalance(skuNumber, skuWriteOff);
+                        int skuWriteOffPoints = retriveValue.SKUWriteOffBalance!.SKUWriteOffPoints + newValue.SKUWriteOffBalance.SKUWriteOffPoints;
+                        int skuWriteOffPointsViaWarehouse = retriveValue.SKUWriteOffBalance!.SKUWriteOffPointsViaWarehouse + newValue.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouse;
+                        skuWriteOffBalance = new SKUWriteOffBalance(skuNumber, skuWriteOffPoints, skuWriteOffPointsViaWarehouse);
                     }
 
                     break;

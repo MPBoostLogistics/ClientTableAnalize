@@ -53,6 +53,10 @@ namespace TableAnalizer.Objects.SKUItems
         /// Списано с точек 
         /// </summary>
         public int SKUWrittenOffFromPoints { get; set; } = 0;
+        /// <summary>
+        /// Списано с точек через склад 
+        /// </summary>
+        public int SKUWrittenOffFromPointsViaWarehouse { get; set; } = 0;
         
         /// <summary>
         /// Склад: Приход от точек меньше ожидания
@@ -69,6 +73,17 @@ namespace TableAnalizer.Objects.SKUItems
             SKUReceiptTotal > SKURansomsWaiting ?
             SKUReceiptTotal - SKURansomsWaiting :
             0;
+
+        private string skuReceipComment = string.Empty;
+
+        /// <summary>
+        /// Комментарий к приходам
+        /// </summary>
+        public string SKUReceipComment
+        {
+            get => skuReceipComment;
+            set => skuReceipComment = string.IsNullOrEmpty(skuReceipComment) ? skuReceipComment = value : skuReceipComment += $"\n{value}";
+        } 
 
         #endregion
         #region Properties - Comments
@@ -273,10 +288,18 @@ namespace TableAnalizer.Objects.SKUItems
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
             }
 
-            // Fill write-off 
+            // Fill SKUWriteOff units
             if (sku.SKUWriteOffBalance is not null) 
             {
-                SKUWrittenOffFromPoints = sku.SKUWriteOffBalance!.SKUWriteOff;
+                SKUWrittenOffFromPoints = sku.SKUWriteOffBalance!.SKUWriteOffPoints;
+                SKUWrittenOffFromPointsViaWarehouse = sku.SKUWriteOffBalance!.SKUWriteOffPointsViaWarehouse;
+
+                if(SKUWrittenOffFromPointsViaWarehouse > 0) 
+                {
+                    SKUReceiptGoods -= SKUWrittenOffFromPointsViaWarehouse;
+
+                    SKUReceipComment = $"Списано с точек через склад\n(вычтено из прихода):\n{SKUWrittenOffFromPointsViaWarehouse}";
+                }
             }
 
             // Fill SKUCompensationBalance 
@@ -421,7 +444,7 @@ namespace TableAnalizer.Objects.SKUItems
                     break;
             }
         }
-       
+        
         private void SetStatus()
         {
             // Add status 

@@ -155,8 +155,6 @@ internal class Program
         }
         Console.Clear();
 
-        Console.ReadLine();
-
         return existingKeys; 
     }
 
@@ -314,7 +312,7 @@ internal class Program
             return 0;
         }
     } 
-
+    
     private static async Task<DirectoryInfo?> GetSourceReportsPathFromConsole(int delay) 
     {
         string reportsPathTitleMessage = "Specify path to dir with the client's source reports and press 'Enter':\n ";

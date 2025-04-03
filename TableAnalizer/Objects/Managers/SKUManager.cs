@@ -41,7 +41,8 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuRemainingBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuShippedBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuTransferedBalanceUnits { get; } = new ParsingRowEntityRepo();
-        public IRepository<int, List<ParsingRowEntity>> SkuWriteOffBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<int, List<ParsingRowEntity>> SkuWriteOffFromPointsBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<int, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuParallelUnits { get; } = new ParsingRowEntityRepo();
@@ -165,7 +166,8 @@ namespace TableAnalizer.Objects.Managers
                 static bool FindSkusWithRemaining(SKU sku) => sku.SKURemainingBalance != null;
                 static bool FindSkusWithOutgoingProducts(SKU sku) => sku.SKURemainingBalance?.SKUOutgoingProducts != null;
                 static bool FindSkusWithTransfered(SKU sku) => sku.SKURemainingBalance?.SKUTransfered != null;
-                static bool FindSkusWithWriteOff(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOff > 0;
+                static bool FindSkusWithWriteOffPoints(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPoints > 0;
+                static bool FindSkusWithWriteOffPointsViaWarehouse(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouse > 0;
                 static bool FindSkusWithCompensation(SKU sku) => sku.SKUCompensationBalance != null;
                 static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
                 static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
@@ -208,11 +210,11 @@ namespace TableAnalizer.Objects.Managers
                         message = "Артикулов в передаче со склада (на фулфилмент): ";
                         break;
                     case SourceSKUReportFileKey.WriteOffPoints:
-                        predicateHandler = FindSkusWithWriteOff;
+                        predicateHandler = FindSkusWithWriteOffPoints;
                         message = "Артикулов в списании недостач от точек: ";
                         break;
                      case SourceSKUReportFileKey.WriteOffPointsViaWarehouse:
-                        predicateHandler = FindSkusWithWriteOff;
+                        predicateHandler = FindSkusWithWriteOffPointsViaWarehouse;
                         message = "Артикулов в списании недостач от точек через склад: ";
                         break;
                     default:
@@ -320,26 +322,37 @@ namespace TableAnalizer.Objects.Managers
             }
             else if(isWriteOffPoints) 
             {
-                throw new NotImplementedException();
-
-
-                // var skuWriteOffDataUnits = from rowWithRawData in rowsWithRawData
-                //                            let unit = new SKUWriteOffDataUnit(rowWithRawData)
-                //                            group unit by unit.SKUNumber 
-                //                            into unitGroup  
-                //                            select unitGroup;
+                var skuWriteOffDataUnits = from rowWithRawData in rowsWithRawData
+                                           let unit = new SKUWriteOffDataUnit(rowWithRawData)
+                                           group unit by unit.SKUNumber 
+                                           into unitGroup  
+                                           select unitGroup;
                 
-                // foreach (var group in skuWriteOffDataUnits)
-                // {
-                //     var list = (((List<SKUWriteOffDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
-                //         throw new InvalidCastException("Невозможно привести List<SKUWriteOffDataUnit> к List<ParsingRowEntity>");
+                foreach (var group in skuWriteOffDataUnits)
+                {
+                    var list = (((List<SKUWriteOffDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
+                        throw new InvalidCastException($"Cannot cast {nameof(List<SKUWriteOffDataUnit>)} to {nameof(List<ParsingRowEntity>)}");
                     
-                //     SkuWriteOffBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
-                // }
+
+                    SkuWriteOffFromPointsBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                }
             }    
             else if(isWriteOffPointsViaWarehouse) 
             {
-                 throw new NotImplementedException();
+                var skuWriteOffDataUnits = from rowWithRawData in rowsWithRawData
+                                           let unit = new SKUWriteOffDataUnit(rowWithRawData)
+                                           group unit by unit.SKUNumber 
+                                           into unitGroup  
+                                           select unitGroup;
+
+                foreach (var group in skuWriteOffDataUnits)
+                {
+                    var list = (((List<SKUWriteOffDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
+                        throw new InvalidCastException($"Cannot cast {nameof(List<SKUWriteOffDataUnit>)} to {nameof(List<ParsingRowEntity>)}");
+                    
+
+                    SkuWriteOffFromPointsViaWarehouseBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                }
             }
             else if(isCompensation) 
             {
@@ -398,8 +411,8 @@ namespace TableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.Balance => SkuRemainingBalanceUnits.Count(),
                 SourceSKUReportFileKey.OutgoingProducts  => SkuShippedBalanceUnits.Count(),
                 SourceSKUReportFileKey.Transfered => SkuTransferedBalanceUnits.Count(),
-                SourceSKUReportFileKey.WriteOffPoints => throw new NotImplementedException(),
-                SourceSKUReportFileKey.WriteOffPointsViaWarehouse => throw new NotImplementedException(),
+                SourceSKUReportFileKey.WriteOffPoints => SkuWriteOffFromPointsBalanceUnits.Count(),
+                SourceSKUReportFileKey.WriteOffPointsViaWarehouse => SkuWriteOffFromPointsViaWarehouseBalanceUnits.Count(),
                 SourceSKUReportFileKey.Additional => workSheetName switch 
                 {
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => SkuCompensationBalanceUnits.Count(),
@@ -444,10 +457,9 @@ namespace TableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.Transfered =>
                     parsingEntityCollection = SkuTransferedBalanceUnits,  
                 SourceSKUReportFileKey.WriteOffPoints =>
-                    throw new NotImplementedException(),
+                    parsingEntityCollection = SkuWriteOffFromPointsBalanceUnits,
                 SourceSKUReportFileKey.WriteOffPointsViaWarehouse =>
-                    throw new NotImplementedException(),
-                    //parsingEntityCollection = SkuWriteOffBalanceUnits, 
+                    parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseBalanceUnits, 
                 SourceSKUReportFileKey.Additional => workSheetName switch 
                 {
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => 
@@ -525,20 +537,25 @@ namespace TableAnalizer.Objects.Managers
                     } 
                     else if(isWriteOffPoints) 
                     {
-                        throw new NotImplementedException();
+                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUWriteOffDataUnit>().ToList()) ??
+                            throw new InvalidCastException($"Cannot cast collection to {nameof(IList<SKUWriteOffDataUnit>)}.");
 
-                        // var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUWriteOffDataUnit>().ToList()) ??
-                        //     throw new InvalidCastException("Cannot cast collection to IList<SKUWriteOffDataUnit>.");
-
-                        // if(SKUs.GetValue(skuNumber, out SKU? sKU)) 
-                        // {
-                        //     SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units]);
-                        //     SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
-                        // }
+                        if(SKUs.GetValue(skuNumber, out SKU? sKU)) 
+                        {
+                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units], WriteOffSource.Points);
+                            SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
+                        }
                     }
                     else if(isWriteOffPointsViaWarehouse) 
                     {
-                        throw new NotImplementedException();
+                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUWriteOffDataUnit>().ToList()) ??
+                            throw new InvalidCastException($"Cannot cast collection to {nameof(IList<SKUWriteOffDataUnit>)}.");
+
+                        if(SKUs.GetValue(skuNumber, out SKU? sKU)) 
+                        {
+                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units], WriteOffSource.PointsViaWarehouse);
+                            SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
+                        }
                     }
                     else if(isCompensation) 
                     {

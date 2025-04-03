@@ -178,4 +178,10 @@ namespace TableAnalizer.Objects
         /// </summary>
         External
     }
+
+    public enum WriteOffSource 
+    {
+        Points, PointsViaWarehouse 
+    }
+
 }

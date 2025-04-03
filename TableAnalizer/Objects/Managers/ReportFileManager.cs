@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 using System.Text.RegularExpressions;
 using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
@@ -16,7 +17,7 @@ namespace TableAnalizer.Objects.Managers
         private const string TRANSFER_REPORT_REGEX_PATTERN  = @"\d+\s+\bперемещения\b";
         private const string ADDITIONAL_REPORT_REGEX_PATTERN  = @"\d+\s+\bдополнительный\b";
         private const string WRITEOFF_POINTS_VIA_WAREHOUSE_REPORT_REGEX_PATTERN = @"\bСписание\sточек\sчерез\sсклад\b";
-        private const string WRITEOFF_POINTS_REPORT_REGEX_PATTERN = @"\bСписание\sточек\sчерез\sсклад\b";
+        private const string WRITEOFF_POINTS_REPORT_REGEX_PATTERN = @"\bСписание\sточек\b";
         private const string WRITEOFF_DIRECTORY_NAME = "Списание";
 
         private string? logisticsReportFirstName;
@@ -107,7 +108,7 @@ namespace TableAnalizer.Objects.Managers
 
             try
             {
-                GetSourceReportFiles(reportsPath, out FileInfo[] files);
+                GetSourceReportExcelFiles(reportsPath, out FileInfo[] files);
       
                 Task<int> getFilesTask = GetSourceReportFiles(files);
                 await Task.Run(() => getFilesTask);
@@ -161,11 +162,11 @@ namespace TableAnalizer.Objects.Managers
             return existingKeys;
         }
 
-        private void GetSourceReportFiles(string reportsPath, out FileInfo[] files)
+        private void GetSourceReportExcelFiles(string reportsPath, out FileInfo[] files)
         {
             // Check writeOff directory path 
             var writeOffDirectoryPath = Path.Combine(reportsPath, WRITEOFF_DIRECTORY_NAME);
-            if (Directory.Exists(writeOffDirectoryPath))
+            if (!Directory.Exists(writeOffDirectoryPath))
             {
                 ManagerReachedEventArgs args = new($"Required directory named \"{WRITEOFF_DIRECTORY_NAME}\" is missing", true, true);
                 OnManagerReached(args);
@@ -224,6 +225,7 @@ namespace TableAnalizer.Objects.Managers
                         getSourceReportKeyByRegexTask.Wait();
 
                         var (key, loginsFileName) = getSourceReportKeyByRegexTask.Result;
+
                         if(key.HasValue) 
                         {
                             var sorceReportFile = new SourceReportFileForSKU(key.Value, fileInfo);
