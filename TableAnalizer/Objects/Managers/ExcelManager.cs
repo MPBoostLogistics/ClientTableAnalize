@@ -560,7 +560,11 @@ namespace TableAnalizer.Objects.Managers
             workSheetNames = reportFileKey switch
             {
                 SourceSKUReportFileKey.Ransoms => [RANSOMS_WORKSHEET_NAME],
-                SourceSKUReportFileKey.Balance or SourceSKUReportFileKey.OutgoingProducts or SourceSKUReportFileKey.Transfered or SourceSKUReportFileKey.WriteOffPoints or SourceSKUReportFileKey.WriteOffPointsViaWarehouse  => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
+                SourceSKUReportFileKey.Balance or SourceSKUReportFileKey.OutgoingProducts 
+                    or SourceSKUReportFileKey.Transfered 
+                    or SourceSKUReportFileKey.WriteOffPoints 
+                    or SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage  
+                    or SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
                 SourceSKUReportFileKey.Additional => [COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
                 _ => null,
             };
@@ -1187,7 +1191,8 @@ namespace TableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.Balance => [ new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
                                                     new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME), new(RemainingThirdRoomSourceCells, THIRD_ROOM_NAME, (LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))],
                 SourceSKUReportFileKey.WriteOffPoints => [new(WriteOffPointsSourceCells)],
-                SourceSKUReportFileKey.WriteOffPointsViaWarehouse => [new(WriteOffPointsViaWarehouseSourceCells)],
+                SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage => [new(WriteOffPointsViaWarehouseSourceCells)],
+                SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment => [new(WriteOffPointsViaWarehouseSourceCells)],
                 SourceSKUReportFileKey.OutgoingProducts => [new(ShippedSourceCells)],
                 SourceSKUReportFileKey.Transfered => [new(TransferSourceCells)],
                 SourceSKUReportFileKey.Additional => workSheetName switch

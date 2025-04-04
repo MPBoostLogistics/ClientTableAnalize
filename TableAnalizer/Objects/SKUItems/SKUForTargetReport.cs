@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace TableAnalizer.Objects.SKUItems
 {
     public class SKUForTargetReports
@@ -54,9 +52,13 @@ namespace TableAnalizer.Objects.SKUItems
         /// </summary>
         public int SKUWrittenOffFromPoints { get; set; } = 0;
         /// <summary>
-        /// Списано с точек через склад 
+        /// Списаны недостачи точек через склад 
         /// </summary>
-        public int SKUWrittenOffFromPointsViaWarehouse { get; set; } = 0;
+        public int SKUWrittenOffFromPointsViaWarehouseShortage { get; set; } = 0;
+        /// <summary>
+        /// Списаны корректировки точек через склад 
+        /// </summary>
+        public int SKUWrittenOffFromPointsViaWarehouseAdjustment { get; set; } = 0;
         
         /// <summary>
         /// Склад: Приход от точек меньше ожидания
@@ -292,14 +294,8 @@ namespace TableAnalizer.Objects.SKUItems
             if (sku.SKUWriteOffBalance is not null) 
             {
                 SKUWrittenOffFromPoints = sku.SKUWriteOffBalance!.SKUWriteOffPoints;
-                SKUWrittenOffFromPointsViaWarehouse = sku.SKUWriteOffBalance!.SKUWriteOffPointsViaWarehouse;
-
-                if(SKUWrittenOffFromPointsViaWarehouse > 0) 
-                {
-                    SKUReceiptGoods -= SKUWrittenOffFromPointsViaWarehouse;
-
-                    SKUReceipComment = $"Списано с точек через склад\n(вычтено из прихода):\n{SKUWrittenOffFromPointsViaWarehouse}";
-                }
+                SKUWrittenOffFromPointsViaWarehouseShortage = sku.SKUWriteOffBalance!.SKUWriteOffPointsViaWarehouseShortage;
+                SKUWrittenOffFromPointsViaWarehouseAdjustment = sku.SKUWriteOffBalance!.SKUWriteOffPointsViaWarehouseAdjustment;
             }
 
             // Fill SKUCompensationBalance 

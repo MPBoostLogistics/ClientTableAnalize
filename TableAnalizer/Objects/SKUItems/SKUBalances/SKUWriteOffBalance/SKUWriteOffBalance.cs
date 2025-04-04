@@ -11,7 +11,11 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         /// <summary>
         /// Списано по недостачам с точек через склад
         /// </summary>
-        public int SKUWriteOffPointsViaWarehouse { get; private set; } = 0;
+        public int SKUWriteOffPointsViaWarehouseShortage { get; private set; } = 0;
+        /// <summary>
+        /// Списано по корректировкам с точек через склад
+        /// </summary>
+        public int SKUWriteOffPointsViaWarehouseAdjustment { get; private set; } = 0;
 
         #endregion Properties
 
@@ -26,19 +30,24 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
                     SKUWriteOffPoints = skuWriteOffDataUnit
                         .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
                     break;
-                case WriteOffSource.PointsViaWarehouse:
-                     SKUWriteOffPointsViaWarehouse = skuWriteOffDataUnit
+                case WriteOffSource.PointsViaWarehouseShortage:
+                     SKUWriteOffPointsViaWarehouseShortage = skuWriteOffDataUnit
+                        .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
+                    break;
+                case WriteOffSource.PointsViaWarehouseAdjustment:
+                     SKUWriteOffPointsViaWarehouseAdjustment = skuWriteOffDataUnit
                         .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
                     break;
             }
         }
 
         // Constructor for sku repo 
-        public SKUWriteOffBalance(int skuNumber, int skuWriteOffPoints, int skuWriteOffPointsViaWarehouse)
+        public SKUWriteOffBalance(int skuNumber, int skuWriteOffPoints, int skuWriteOffPointsViaWarehouseShortage, int skuWriteOffPointsViaWarehouseAdjustment)
         {
             SKUNumber = skuNumber;
             SKUWriteOffPoints = skuWriteOffPoints;
-            SKUWriteOffPointsViaWarehouse = skuWriteOffPointsViaWarehouse;
+            SKUWriteOffPointsViaWarehouseShortage = skuWriteOffPointsViaWarehouseShortage;
+            SKUWriteOffPointsViaWarehouseAdjustment = skuWriteOffPointsViaWarehouseAdjustment;
 
         }
         #endregion Constructors
@@ -47,7 +56,9 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         public bool Equals(SKUWriteOffBalance? other) =>
             SKUNumber == other?.SKUNumber && 
             SKUWriteOffPoints == other?.SKUWriteOffPoints && 
-            SKUWriteOffPointsViaWarehouse == other?.SKUWriteOffPointsViaWarehouse;
+            SKUWriteOffPointsViaWarehouseShortage == other?.SKUWriteOffPointsViaWarehouseShortage && 
+            SKUWriteOffPointsViaWarehouseAdjustment == other?.SKUWriteOffPointsViaWarehouseAdjustment 
+            ;
 
         public override bool Equals(object? other)
         {

@@ -181,10 +181,18 @@ internal class Program
                 currentTask.Wait();
             }
 
-            // WriteOff points via warehouse task 
-            if (existingKeys.Contains(SourceSKUReportFileKey.WriteOffPointsViaWarehouse))
+            // WriteOff points via warehouse task (shortage)
+            if (existingKeys.Contains(SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffPointsViaWarehouse, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage, isInternalReport);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            }
+
+             // WriteOff points via warehouse task (adjustment)
+            if (existingKeys.Contains(SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment))
+            {
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }

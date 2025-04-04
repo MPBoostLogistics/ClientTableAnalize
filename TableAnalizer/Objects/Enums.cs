@@ -47,7 +47,11 @@ namespace TableAnalizer.Objects
         /// <summary>
         /// Списание недостач с точек через склад
         /// </summary>
-        WriteOffPointsViaWarehouse,
+        WriteOffPointsViaWarehouseShortage,
+        /// <summary>
+        /// Списание корректировок с точек через склад
+        /// </summary>
+        WriteOffPointsViaWarehouseAdjustment,
         /// <summary>
         /// Списание недостач с точек напрямую
         /// </summary>
@@ -181,7 +185,7 @@ namespace TableAnalizer.Objects
 
     public enum WriteOffSource 
     {
-        Points, PointsViaWarehouse 
+        Points, PointsViaWarehouseShortage, PointsViaWarehouseAdjustment 
     }
 
 }

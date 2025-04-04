@@ -16,7 +16,8 @@ namespace TableAnalizer.Objects.Managers
         private const string SHIPPED_REPORT_REGEX_PATTERN  = @"\d+\s+\bрасходы\b";
         private const string TRANSFER_REPORT_REGEX_PATTERN  = @"\d+\s+\bперемещения\b";
         private const string ADDITIONAL_REPORT_REGEX_PATTERN  = @"\d+\s+\bдополнительный\b";
-        private const string WRITEOFF_POINTS_VIA_WAREHOUSE_REPORT_REGEX_PATTERN = @"\bСписание\sточек\sчерез\sсклад\b";
+        private const string WRITEOFF_POINTS_VIA_WAREHOUSE_SHORTAGE_REPORT_REGEX_PATTERN = @"\bСписание\sточек\sчерез\sсклад\sнедостачи\b";
+        private const string WRITEOFF_POINTS_VIA_WAREHOUSE_ADJUSTMENT_REPORT_REGEX_PATTERN = @"\bСписание\sточек\sчерез\sсклад\sкорректировки\b";
         private const string WRITEOFF_POINTS_REPORT_REGEX_PATTERN = @"\bСписание\sточек\b";
         private const string WRITEOFF_DIRECTORY_NAME = "Списание";
 
@@ -56,9 +57,15 @@ namespace TableAnalizer.Objects.Managers
                 ]
             },
             {
-                SourceSKUReportFileKey.WriteOffPointsViaWarehouse, 
+                SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage, 
                 [
-                    new(WRITEOFF_POINTS_VIA_WAREHOUSE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
+                    new(WRITEOFF_POINTS_VIA_WAREHOUSE_SHORTAGE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
+                ]
+            },
+              {
+                SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment, 
+                [
+                    new(WRITEOFF_POINTS_VIA_WAREHOUSE_ADJUSTMENT_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
                 ]
             },
             {
@@ -360,10 +367,11 @@ namespace TableAnalizer.Objects.Managers
             var isContainsKeyOutgoingProducts = ReportsPaths.ContainsKey(SourceSKUReportFileKey.OutgoingProducts);
             var isContainsKeyTransfer = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Transfered);
             var isContainsWriteOffPoints = ReportsPaths.ContainsKey(SourceSKUReportFileKey.WriteOffPoints);
-            var isContainsWriteOffPointsViaWarehouse = ReportsPaths.ContainsKey(SourceSKUReportFileKey.WriteOffPointsViaWarehouse);
+            var isContainsWriteOffPointsViaWarehouseShortage = ReportsPaths.ContainsKey(SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage);
+            var isContainsWriteOffPointsViaWarehouseAdjustment = ReportsPaths.ContainsKey(SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment);
             var isContainsAdditional = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Additional);
 
-            bool success = isContainsKeyRansoms && isContainsKeyBalance && isContainsWriteOffPoints && isContainsWriteOffPointsViaWarehouse;
+            bool success = isContainsKeyRansoms && isContainsKeyBalance && isContainsWriteOffPoints && isContainsWriteOffPointsViaWarehouseShortage && isContainsWriteOffPointsViaWarehouseAdjustment;
 
             if (success)
             {
@@ -382,8 +390,11 @@ namespace TableAnalizer.Objects.Managers
                 if(isContainsWriteOffPoints)
                     existingKeys.Add(SourceSKUReportFileKey.WriteOffPoints);
 
-                if(isContainsWriteOffPointsViaWarehouse)
-                    existingKeys.Add(SourceSKUReportFileKey.WriteOffPointsViaWarehouse);
+                if(isContainsWriteOffPointsViaWarehouseShortage)
+                    existingKeys.Add(SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage);
+
+                if(isContainsWriteOffPointsViaWarehouseAdjustment)
+                    existingKeys.Add(SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment);
 
                 if (isContainsAdditional)
                     existingKeys.Add(SourceSKUReportFileKey.Additional);
@@ -402,8 +413,11 @@ namespace TableAnalizer.Objects.Managers
                 if (!isContainsWriteOffPoints)
                     lostKeys.Add(SourceSKUReportFileKey.WriteOffPoints);
 
-                if (!isContainsWriteOffPointsViaWarehouse)
-                    lostKeys.Add(SourceSKUReportFileKey.WriteOffPointsViaWarehouse);
+                if (!isContainsWriteOffPointsViaWarehouseShortage)
+                    lostKeys.Add(SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage);
+                
+                if (!isContainsWriteOffPointsViaWarehouseAdjustment)
+                    lostKeys.Add(SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment);
             }
    
             return success;

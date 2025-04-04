@@ -29,6 +29,23 @@ namespace TableAnalizer.Objects.Managers
             sku => !sku.IsSkuNormalize && 
             sku.SKUReceiptTotal > sku.SKURansomsWaiting;
 
+
+        /// <summary>
+        /// Артикул не нормализован, ожидание больше прихода и были списания недостач точек через склад
+        /// </summary>
+        private static Func<SKUForTargetReports, bool> WrittenOffFromPointsViaWarehouseByShortage => sku => 
+            !sku.IsSkuNormalize && 
+            sku.SKURansomsWaiting > sku.SKUReceiptTotal && 
+            sku.SKUWrittenOffFromPointsViaWarehouseShortage > 0;
+
+         /// <summary>
+        /// Артикул не нормализован, ожидание больше прихода и были списания корректировки от точек через склад
+        /// </summary>
+        private static Func<SKUForTargetReports, bool> WrittenOffFromPointsViaWarehouseByAdjustment => sku => 
+            !sku.IsSkuNormalize && 
+            sku.SKURansomsWaiting > sku.SKUReceiptTotal && 
+            sku.SKUWrittenOffFromPointsViaWarehouseShortage > 0;
+
         /// <summary>
         /// Артикулы с перерасходами (по расходу)
         /// </summary>
@@ -49,6 +66,11 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         private static LinkedList<SKUForTargetReports>? underspendingSkusByReceipt;
 
+        /// <summary>
+        ///  Артикулы с недорасходами (по приходу)
+        /// </summary>
+        //private static LinkedList<SKUForTargetReports>? underspendingSkusByReceipt; // WrittenOffFromPointsViaWarehouseByReceipt
+ 
         /// <summary>
         ///  Артикулы с экстра приходом=
         /// </summary>
