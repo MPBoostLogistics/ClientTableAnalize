@@ -9,6 +9,7 @@ using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
+using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -609,9 +610,9 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        public async Task<List<SKUForTargetReports>> MakeSkusForTargetReport() 
+        public async Task<List<SKUForTargetReport>> MakeSkusForTargetReport() 
         {
-            List<SKUForTargetReports> skuForTargetReports = [];
+            List<SKUForTargetReport> skuForTargetReports = [];
 
             foreach (var (_, targetSku) in SKUs.GetValuesList())
             {

@@ -1,15 +1,12 @@
-using System.Diagnostics;
-using System.Runtime.Serialization;
 
-namespace TableAnalizer.Objects.SKUItems
+namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 {
-    public class SKUForTargetReports
+    public partial class SKUForTargetReport
     {
         #region Fields
         private const string RESORT_CONSUMPTION_FIRST_LINE = "Пересортица расходов:";
         private const string RESORT_RECEIPT_FIRST_LINE = "Пересортица приходов:";
         #endregion
-
         #region Properties
         #region Properties - Common
         public string SKULogins { get; set; }
@@ -43,42 +40,15 @@ namespace TableAnalizer.Objects.SKUItems
         /// <summary>
         /// Приход от точек, всего
         /// </summary>
-        public int SKUReceiptTotal => SKUReceiptGoods + SKUWrittenOffFromPoints;
+        public int SKUReceiptTotal => SKUReceiptGoods + SKUWriteOffFromPoints;
 
         /// <summary>
         /// из них, Склад: Приход товарами
         /// </summary>
         public int SKUReceiptGoods { get; set; } = 0;
 
-        /// <summary>
-        /// Списано с точек 
-        /// </summary>
-        public int SKUWrittenOffFromPoints { get; set; } = 0;
-        /// <summary>
-        /// Списаны недостачи точек через склад 
-        /// </summary>
-        public int SKUWrittenOffFromPointsViaWarehouseShortage { get; set; } = 0;
-        /// <summary>
-        /// Списаны корректировки точек через склад 
-        /// </summary>
-        public int SKUWrittenOffFromPointsViaWarehouseAdjustment { get; set; } = 0;
-        
-        /// <summary>
-        /// Склад: Приход от точек меньше ожидания
-        /// </summary>
-        public int LessReceiptThanWaiting =>
-            SKUReceiptTotal < SKURansomsWaiting ?
-            SKURansomsWaiting - SKUReceiptTotal :
-            0;
-
-        /// <summary>
-        /// Склад: Приход от точек больше ожидания
-        /// </summary>
-        public int MoreReceiptThanWaiting =>
-            SKUReceiptTotal > SKURansomsWaiting ?
-            SKUReceiptTotal - SKURansomsWaiting :
-            0;
-
+        #endregion
+        #region Properties - Comments
         private string skuReceipComment = string.Empty;
 
         /// <summary>
@@ -89,9 +59,6 @@ namespace TableAnalizer.Objects.SKUItems
             get => skuReceipComment;
             set => skuReceipComment = string.IsNullOrEmpty(skuReceipComment) ? skuReceipComment = value : skuReceipComment += $"\n{value}";
         } 
-
-        #endregion
-        #region Properties - Comments
 
         private string skuResortsComment = string.Empty;
 
@@ -109,17 +76,12 @@ namespace TableAnalizer.Objects.SKUItems
         /// <summary>
         /// Общий взаиморасчет с клиентом (товарами, компенсацией)
         /// </summary>
-        public int SKUSummarySettlement => SKUSettlementByGoods + SKUSettlementByCompensation;
+        public int SKUSummarySettlement => SKUSettlementByGoods + SKUCompensatedTotalToClient;
 
         /// <summary>
         /// Взаиморачет товарами (отгрузки, перемещения, пересорты)
         /// </summary>
         public int SKUSettlementByGoods => SKUOutgoingProducts + SKUTransfered + SKUResort;
-
-        /// <summary>
-        /// Взаиморасчет компенсацией (от склада и организации )
-        /// </summary>
-        public int SKUSettlementByCompensation => SKUPaidWarehouse + SKUPaidOrganization;
 
         /// <summary>
         /// расход товарами
@@ -131,46 +93,10 @@ namespace TableAnalizer.Objects.SKUItems
         /// </summary>
         public int SKUTransfered { get; set; }
 
-        private int SKUSummaryFactPaid => SKUPaidWarehouse +  SKUPaidOrganization;
-
-
-        /// <summary>
-        /// Склад: Денежная компенсация
-        /// </summary>                       
-        public int SKUPaidWarehouse { get; set; } = 0;
-
-         /// <summary>
-        /// Организация: Денежная компенсация
-        /// </summary>                       
-        public int SKUPaidOrganization { get; set; } = 0;
-
         /// <summary>
         /// Склад: расход пересортом                
         /// </summary>
         public int SKUResort { get; set; }
-
-        /// <summary>
-        /// Общий взаиморасчет меньше ожидания клиента
-        /// </summary>
-        public int LessMutualSettlementThanWaiting => 
-            SKUSummarySettlement < SKURansomsWaiting ? 
-                SKURemaining > 0 ? 
-                SKURansomsWaiting - SKUSummarySettlement - SKURemaining >= 0 ?
-                    SKURansomsWaiting - SKUSummarySettlement - SKURemaining :
-                    0 : 
-                SKURansomsWaiting - SKUSummarySettlement > 0 ? 
-                SKURansomsWaiting - SKUSummarySettlement :
-                0 : 
-            0;
-
-        /// <summary>
-        /// Общий взаиморасчет больше ожидания клиента
-        /// </summary>
-        public int MoreMutualSettlementThanWaiting =>
-            SKUSummarySettlement > SKURansomsWaiting ?
-            SKUSummarySettlement - SKURansomsWaiting :
-            0;
-
         #endregion
         #region Properties - Remaining
         /// <summary>
@@ -202,7 +128,6 @@ namespace TableAnalizer.Objects.SKUItems
             SKUDeliveryDelayOrganization > 0 && isDeadline ?
             SKUDeliveryDelayOrganization * SKUPrice :
             0.00;
-
 
         private int skuDeliveryDelayPoints = 0;
         /// <summary>
@@ -258,34 +183,10 @@ namespace TableAnalizer.Objects.SKUItems
              0.00;
 
         #endregion
-        #region Properties - Analitycs
-        /// <summary>
-        /// Артикул нормализован
-        /// </summary>
-        /// <remarks>
-        /// <para>Ожидание == Приход == Взаиморасчет и Остаток на складе == 0</para> 
-        /// <para>Ожидание == Приход и Взаиморасчет + Остаток на складе == Ожидание</para> 
-        /// </remarks>
-        
-        private bool IsParallelClientsSKU { get; } = false; 
-        public bool IsSkuNormalize => 
-            SKURansomsWaiting == SKUReceiptTotal && SKUReceiptTotal == SKUSummarySettlement && SKURemaining == 0 || 
-            SKURansomsWaiting == SKUReceiptTotal && SKUSummarySettlement + SKURemaining == SKURansomsWaiting;
-
-        /// <summary>
-        /// Долг по оплате компенсации организацией перед клиентом.
-        /// </summary>
-        public int SKUDebtToClientForCompensationSum => 
-            SKUWrittenOffFromPoints - SKUSettlementByCompensation > 0 ? 
-            SKUWrittenOffFromPoints - SKUSettlementByCompensation : 
-            0;
-
-        #endregion
-
         #endregion
 
         #region Constructors
-        public SKUForTargetReports(SKU sku)
+        public SKUForTargetReport(SKU sku)
         {
             SKULogins = string.Join(", ", sku.ClientLogins);
             SKUmp = sku.Marketplace;
@@ -316,27 +217,14 @@ namespace TableAnalizer.Objects.SKUItems
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
             }
 
-            // Fill SKUWriteOff units
-            if (sku.SKUWriteOffBalance is not null) 
-            {
-                SKUWrittenOffFromPoints = sku.SKUWriteOffBalance!.SKUWriteOffPoints;
-                SKUWrittenOffFromPointsViaWarehouseShortage = sku.SKUWriteOffBalance!.SKUWriteOffPointsViaWarehouseShortage;
-                SKUWrittenOffFromPointsViaWarehouseAdjustment = sku.SKUWriteOffBalance!.SKUWriteOffPointsViaWarehouseAdjustment;
-            }
+            // Fill sku WriteOffs
+            SetSKUWriteOffs(sku.SKUWriteOffBalance);
 
             // Fill SKUCompensationBalance 
+            SetSKUCompensateds(sku.SKUCompensationBalance);
             if (sku.SKUCompensationBalance is not null)
-            {
-                SKUPaidWarehouse += sku.SKUCompensationBalance.CompensationItems
-                    .Where(el => el.Key == CompensationTarget.Warehouse)
-                    .Aggregate(0, (acc, i) => acc + i.Value.count);
-
-                SKUPaidOrganization += sku.SKUCompensationBalance.CompensationItems
-                    .Where(el => el.Key == CompensationTarget.PickupPoint)
-                    .Aggregate(0, (acc, i) => acc + i.Value.count);
-            }
         
-            // Is parallel clients SKU
+            // Set is parallel clients SKU
             IsParallelClientsSKU = sku.IsParallelClientsSKU;
         }
 

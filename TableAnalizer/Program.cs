@@ -14,6 +14,7 @@ using OfficeOpenXml;
 using TableAnalizer.Objects;
 using TableAnalizer.Objects.Managers;
 using TableAnalizer.Objects.SKUItems;
+using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 internal class Program
 {
@@ -242,7 +243,7 @@ internal class Program
             }
 
             // Make skus for target report
-            Task<List<SKUForTargetReports>>? skusForTargetReportTask = skuManager!.MakeSkusForTargetReport();
+            Task<List<SKUForTargetReport>>? skusForTargetReportTask = skuManager!.MakeSkusForTargetReport();
             await Task.Run(() => skusForTargetReportTask);
             skusForTargetReportTask.Wait();
 
@@ -251,7 +252,7 @@ internal class Program
                 await TracingProgramExecution(new($"Articles for final report: {skusForTargetReportTask.Result.Count}.", false, false));
             }
 
-            List<SKUForTargetReports> skuForTargetReports = skusForTargetReportTask.Result;
+            List<SKUForTargetReport> skuForTargetReports = skusForTargetReportTask.Result;
 
             // Article analysis and automatic re-sorting
             if(isAutoResorting) 
