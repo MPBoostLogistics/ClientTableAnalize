@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using TableAnalizer.Objects.SKUItems;
 
@@ -31,20 +32,16 @@ namespace TableAnalizer.Objects.Managers
 
 
         /// <summary>
-        /// Артикул не нормализован, ожидание больше прихода и были списания недостач точек через склад
+        /// Были списания недостач точек через склад
         /// </summary>
-        private static Func<SKUForTargetReports, bool> WrittenOffFromPointsViaWarehouseByShortage => sku => 
-            !sku.IsSkuNormalize && 
-            sku.SKURansomsWaiting > sku.SKUReceiptTotal && 
-            sku.SKUWrittenOffFromPointsViaWarehouseShortage > 0;
+        private static Func<SKUForTargetReports, bool> WrittenOffFromPointsViaWarehouseByShortage => 
+            sku => sku.SKUWrittenOffFromPointsViaWarehouseShortage > 0;
 
-         /// <summary>
-        /// Артикул не нормализован, ожидание больше прихода и были списания корректировки от точек через склад
+        /// <summary>
+        /// Были списания корректировки от точек через склад
         /// </summary>
-        private static Func<SKUForTargetReports, bool> WrittenOffFromPointsViaWarehouseByAdjustment => sku => 
-            !sku.IsSkuNormalize && 
-            sku.SKURansomsWaiting > sku.SKUReceiptTotal && 
-            sku.SKUWrittenOffFromPointsViaWarehouseShortage > 0;
+        private static Func<SKUForTargetReports, bool> WrittenOffFromPointsViaWarehouseByAdjustment => 
+            sku => sku.SKUWrittenOffFromPointsViaWarehouseAdjustment > 0;
 
         /// <summary>
         /// Артикулы с перерасходами (по расходу)
@@ -67,6 +64,17 @@ namespace TableAnalizer.Objects.Managers
         private static LinkedList<SKUForTargetReports>? underspendingSkusByReceipt;
 
         /// <summary>
+        ///  Артикулы со списанием недостач с точек через склад
+        /// </summary>
+        private static List<SKUForTargetReports>? writeOffPointsByShortage;
+
+        /// <summary>
+        ///  Артикулы со списанием корректировок с точек через склад
+        /// </summary>
+        private static List<SKUForTargetReports>? writeOffPointsByAdjustment;
+
+
+        /// <summary>
         ///  Артикулы с недорасходами (по приходу)
         /// </summary>
         //private static LinkedList<SKUForTargetReports>? underspendingSkusByReceipt; // WrittenOffFromPointsViaWarehouseByReceipt
@@ -84,12 +92,26 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         private static bool isThereAreSkusWithExtraReceipt;
 
+        private static bool isWriteOffPointsThroughWarehouseShortages;
+        private static bool isWriteOffPointsThroughWarehouseAdjustment;
+
         #endregion
+
+        #region Properties 
+        private static int PaidWriteOffRemainder {get;set;} = 0; 
+        #endregion
+
 
         #region Functionality
 
         private static Task UpdateDataForResorts(ref List<SKUForTargetReports> skuForTargetReports)
         {
+            writeOffPointsByShortage = GetSkus(ref skuForTargetReports, [WrittenOffFromPointsViaWarehouseByShortage])?.OrderByDescending(el => el.SKUNumber).ToList();;
+            isWriteOffPointsThroughWarehouseShortages = writeOffPointsByShortage is not null && writeOffPointsByShortage.Count > 0;
+
+            writeOffPointsByAdjustment = GetSkus(ref skuForTargetReports, [WrittenOffFromPointsViaWarehouseByAdjustment])?.OrderByDescending(el => el.SKUNumber).ToList();;
+            isWriteOffPointsThroughWarehouseAdjustment = writeOffPointsByAdjustment is not null && writeOffPointsByAdjustment.Count > 0;
+
             var ossByConsumption = GetSkus(ref skuForTargetReports, [OverPredicateConsumptionByOutgoingProducts, OverPredicateConsumptionByTransfer]);
             overspendingSkusByConsumption = ossByConsumption is not null ? new LinkedList<SKUForTargetReports>(ossByConsumption.OrderByDescending(el => el.SKUNumber)) : null;
             isPossibilityOverspendingByConsumption = overspendingSkusByConsumption is not null && overspendingSkusByConsumption.Count != 0;
@@ -106,8 +128,7 @@ namespace TableAnalizer.Objects.Managers
             underspendingSkusByReceipt = ussByReceipt is not null ? new LinkedList<SKUForTargetReports>(ussByReceipt.OrderByDescending(el => el.SKUNumber)) : null;
             isNeedUnderspendingByReceipt = underspendingSkusByReceipt is not null && underspendingSkusByReceipt.Count != 0;
 
-            var extraByReceipt = GetSkus(ref skuForTargetReports, [ExtraPredicateByReceipt]);
-            extraSkusByReceipt = extraByReceipt?.OrderByDescending(el => el.SKUNumber).ToList();
+            var extraByReceipt = GetSkus(ref skuForTargetReports, [ExtraPredicateByReceipt])?.OrderByDescending(el => el.SKUNumber).ToList();
             isThereAreSkusWithExtraReceipt = extraSkusByReceipt is not null && extraSkusByReceipt.Count != 0;
 
             return Task.CompletedTask;
@@ -230,6 +251,32 @@ namespace TableAnalizer.Objects.Managers
             return Task.CompletedTask;
         }
 
+        public static Task FixWriteOffByPoints(ref List<SKUForTargetReports> skuForTargetReports) 
+        {
+            // Initial set collections
+            var updateDataTask = UpdateDataForResorts(ref skuForTargetReports);
+            Task.Run(() => updateDataTask);
+            updateDataTask.Wait();
+
+            if (isWriteOffPointsThroughWarehouseShortages)
+            {
+                foreach (var sku in writeOffPointsByShortage!)
+                {
+                    MakeCorrection(ref skuForTargetReports, WriteOffSource.PointsViaWarehouseShortage, skuForTargetReports.IndexOf(sku));
+                }
+            }
+
+            if (isWriteOffPointsThroughWarehouseAdjustment)
+            {
+                foreach (var sku in writeOffPointsByAdjustment!)
+                {
+                    MakeCorrection(ref skuForTargetReports, WriteOffSource.PointsViaWarehouseAdjustment, skuForTargetReports.IndexOf(sku));
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
         public static Task FixExtraReceipts(ref List<SKUForTargetReports> skuForTargetReports) 
         {
             // Initial set collections
@@ -237,7 +284,7 @@ namespace TableAnalizer.Objects.Managers
             Task.Run(() => updateDataTask);
             updateDataTask.Wait();
 
-            if (isThereAreSkusWithExtraReceipt)
+            if (isWriteOffPointsThroughWarehouseShortages)
             {
                 foreach (var sku in extraSkusByReceipt!)
                 {
@@ -249,6 +296,26 @@ namespace TableAnalizer.Objects.Managers
             }
 
             return Task.CompletedTask;
+        }
+
+        
+        public static void MakeCorrection(ref List<SKUForTargetReports> skuForTargetReports, WriteOffSource writeOffSource, int skuIndex) 
+        {
+            if(int.IsNegative(skuIndex)) 
+            {
+                return;
+            } 
+
+            var values = skuForTargetReports[skuIndex].MakeCorrectionOnWriteOffShortages(writeOffSource);
+            if(values.paidWriteOffRemainder > 0) 
+            {
+                PaidWriteOffRemainder += values.paidWriteOffRemainder;
+            }
+
+            if(writeOffSource == WriteOffSource.PointsViaWarehouseShortage && values.Item2 > 0) 
+            {
+                throw new NotImplementedException($"Use it: {values.Item2}!");
+            }
         }
 
         private static void MakeResort(ref List<SKUForTargetReports> skuForTargetReports, SKUResortTarget target, int underSkuIndex, int overSkuIndex, int sum)
@@ -282,7 +349,15 @@ namespace TableAnalizer.Objects.Managers
         {
             foreach (var sku in skuForTargetReports)
             {
-                sku.FinalAnalize();
+                if(!sku.IsSkuNormalize && PaidWriteOffRemainder > 0) 
+                {
+                    var reminder = sku.FinalAnalize(PaidWriteOffRemainder);
+                    PaidWriteOffRemainder = reminder;
+                } 
+                else 
+                {
+                    sku.FinalAnalize(0);
+                }
             }
 
             return Task.CompletedTask;

@@ -258,10 +258,11 @@ internal class Program
             {
                 Task[] autoResortTasks =
                 [
+                    AnalyticalManager.FixWriteOffByPoints(ref skuForTargetReports),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByOutgoing),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByTransfer),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingReceipt),
-                    AnalyticalManager.FixExtraReceipts(ref skuForTargetReports),
+                    //AnalyticalManager.FixExtraReceipts(ref skuForTargetReports),
                     AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
                     
                 ];
