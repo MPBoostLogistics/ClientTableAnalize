@@ -9,6 +9,7 @@ using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
+using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -27,8 +28,10 @@ namespace TableAnalizer.Objects.Managers
         {
             {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#e6f6eb")},                             // #e6f6eb
             {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fff6f0")},                              // #fff6f0
-            {SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse, ColorTranslator.FromHtml("#ffd9d9")}, // #ffd9d9
-            {SKUSellmentStatus.DelayDeliveryFromWarehouse, ColorTranslator.FromHtml("#ffe0e0")},          // #ffe0e0
+            {SKUSellmentStatus.DelayFromPointsAndWarehouse, ColorTranslator.FromHtml("#ffd9d9")},         // #ffd9d9
+            {SKUSellmentStatus.DelayFromWarehouse, ColorTranslator.FromHtml("#ffe0e0")},                  // #ffe0e0
+            {SKUSellmentStatus.DelayFromOrganization, ColorTranslator.FromHtml("#f3d9d9")},               // #f3d9d9
+            {SKUSellmentStatus.DelayFromOrganizationAndWarehouse, ColorTranslator.FromHtml("#eddede")},   // #eddede
             {SKUSellmentStatus.DelayDeliveryFromPoints, ColorTranslator.FromHtml("#ffefef")},             // #ffefef
             {SKUSellmentStatus.Unknown, ColorTranslator.FromHtml("#eef5f9")}                              // #eef5f9
         };
@@ -41,7 +44,9 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuRemainingBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuShippedBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuTransferedBalanceUnits { get; } = new ParsingRowEntityRepo();
-        public IRepository<int, List<ParsingRowEntity>> SkuWriteOffBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<int, List<ParsingRowEntity>> SkuWriteOffFromPointsBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<int, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseShortageUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<int, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseAdjustmentUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuParallelUnits { get; } = new ParsingRowEntityRepo();
@@ -78,10 +83,12 @@ namespace TableAnalizer.Objects.Managers
             // Set status strings variables
             StatusStrings.Add(SKUSellmentStatus.FullSet, stringsSection.GetValue<string>("FullSetStatusString") ?? string.Empty);
             StatusStrings.Add(SKUSellmentStatus.InWork, stringsSection.GetValue<string>("InWorkStatusString") ?? string.Empty);
-            StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromPointsAndWarehouseStatusString") ?? string.Empty);
-            StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromWarehouseStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayFromPointsAndWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromPointsAndWarehouseStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayFromWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromWarehouseStatusString") ?? string.Empty);
             StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromPoints, stringsSection.GetValue<string>("DelayDeliveryFromPointsStatusString") ?? string.Empty);
             StatusStrings.Add(SKUSellmentStatus.Unknown, stringsSection.GetValue<string>("UnknownStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayFromOrganization, stringsSection.GetValue<string>("DelayFromOrganizationStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayFromOrganizationAndWarehouse, stringsSection.GetValue<string>("DelayFromOrganizationAndWarehouseStatusString") ?? string.Empty);
         }
 
         public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, bool isInternalReport, ExcelPackage excelPackage)
@@ -165,7 +172,9 @@ namespace TableAnalizer.Objects.Managers
                 static bool FindSkusWithRemaining(SKU sku) => sku.SKURemainingBalance != null;
                 static bool FindSkusWithOutgoingProducts(SKU sku) => sku.SKURemainingBalance?.SKUOutgoingProducts != null;
                 static bool FindSkusWithTransfered(SKU sku) => sku.SKURemainingBalance?.SKUTransfered != null;
-                static bool FindSkusWithWriteOff(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOff > 0;
+                static bool FindSkusWithWriteOffPoints(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPoints > 0;
+                static bool FindSkusWithWriteOffPointsViaWarehouseShortage(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseShortage > 0;
+                static bool FindSkusWithWriteOffPointsViaWarehouseAdjustment(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseAdjustment > 0;
                 static bool FindSkusWithCompensation(SKU sku) => sku.SKUCompensationBalance != null;
                 static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
                 static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
@@ -207,9 +216,17 @@ namespace TableAnalizer.Objects.Managers
                         predicateHandler = FindSkusWithTransfered;
                         message = "Артикулов в передаче со склада (на фулфилмент): ";
                         break;
-                    case SourceSKUReportFileKey.WriteOffShortages:
-                        predicateHandler = FindSkusWithWriteOff;
-                        message = "Артикулов в списании недостач: ";
+                    case SourceSKUReportFileKey.WriteOffPoints:
+                        predicateHandler = FindSkusWithWriteOffPoints;
+                        message = "Артикулов в списании недостач от точек: ";
+                        break;
+                    case SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage:
+                        predicateHandler = FindSkusWithWriteOffPointsViaWarehouseShortage;
+                        message = "Артикулов в списании недостач от точек через склад: ";
+                        break;
+                    case SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment:
+                        predicateHandler = FindSkusWithWriteOffPointsViaWarehouseAdjustment;
+                        message = "Артикулов в списании корректировок от точек через склад: ";
                         break;
                     default:
                         break;
@@ -240,7 +257,9 @@ namespace TableAnalizer.Objects.Managers
             bool isBalance = reportFileKey == SourceSKUReportFileKey.Balance;
             bool isOutgoingProducts = reportFileKey == SourceSKUReportFileKey.OutgoingProducts;
             bool isTransfered = reportFileKey == SourceSKUReportFileKey.Transfered;
-            bool isWriteOff = reportFileKey == SourceSKUReportFileKey.WriteOffShortages;
+            bool isWriteOffPoints = reportFileKey == SourceSKUReportFileKey.WriteOffPoints;
+            bool isWriteOffPointsViaWarehouseShortage = reportFileKey == SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage;
+            bool isWriteOffPointsViaWarehouseAdjustment = reportFileKey == SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment;
             bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isParallel = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
@@ -313,7 +332,7 @@ namespace TableAnalizer.Objects.Managers
                     SkuTransferedBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             }
-            else if(isWriteOff) 
+            else if(isWriteOffPoints) 
             {
                 var skuWriteOffDataUnits = from rowWithRawData in rowsWithRawData
                                            let unit = new SKUWriteOffDataUnit(rowWithRawData)
@@ -324,11 +343,29 @@ namespace TableAnalizer.Objects.Managers
                 foreach (var group in skuWriteOffDataUnits)
                 {
                     var list = (((List<SKUWriteOffDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
-                        throw new InvalidCastException("Невозможно привести List<SKUWriteOffDataUnit> к List<ParsingRowEntity>");
+                        throw new InvalidCastException($"Cannot cast {nameof(List<SKUWriteOffDataUnit>)} to {nameof(List<ParsingRowEntity>)}");
                     
-                    SkuWriteOffBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+
+                    SkuWriteOffFromPointsBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             }    
+            else if(isWriteOffPointsViaWarehouseShortage) 
+            {
+                var skuWriteOffDataUnits = from rowWithRawData in rowsWithRawData
+                                           let unit = new SKUWriteOffDataUnit(rowWithRawData)
+                                           group unit by unit.SKUNumber 
+                                           into unitGroup  
+                                           select unitGroup;
+
+                foreach (var group in skuWriteOffDataUnits)
+                {
+                    var list = (((List<SKUWriteOffDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
+                        throw new InvalidCastException($"Cannot cast {nameof(List<SKUWriteOffDataUnit>)} to {nameof(List<ParsingRowEntity>)}");
+                    
+
+                    SkuWriteOffFromPointsViaWarehouseShortageUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                }
+            }
             else if(isCompensation) 
             {
                 var skuCompensationDataUnits = from rowWithRawData in rowsWithRawData
@@ -386,7 +423,9 @@ namespace TableAnalizer.Objects.Managers
                 SourceSKUReportFileKey.Balance => SkuRemainingBalanceUnits.Count(),
                 SourceSKUReportFileKey.OutgoingProducts  => SkuShippedBalanceUnits.Count(),
                 SourceSKUReportFileKey.Transfered => SkuTransferedBalanceUnits.Count(),
-                SourceSKUReportFileKey.WriteOffShortages => SkuWriteOffBalanceUnits.Count(),
+                SourceSKUReportFileKey.WriteOffPoints => SkuWriteOffFromPointsBalanceUnits.Count(),
+                SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage => SkuWriteOffFromPointsViaWarehouseShortageUnits.Count(),
+                SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment => SkuWriteOffFromPointsViaWarehouseAdjustmentUnits.Count(),
                 SourceSKUReportFileKey.Additional => workSheetName switch 
                 {
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => SkuCompensationBalanceUnits.Count(),
@@ -409,7 +448,9 @@ namespace TableAnalizer.Objects.Managers
             bool isRemaining = skuReportFileKey == SourceSKUReportFileKey.Balance;
             bool isShipped = skuReportFileKey == SourceSKUReportFileKey.OutgoingProducts;
             bool isTransfered = skuReportFileKey == SourceSKUReportFileKey.Transfered;
-            bool isWriteOff = skuReportFileKey == SourceSKUReportFileKey.WriteOffShortages;
+            bool isWriteOffPoints = skuReportFileKey == SourceSKUReportFileKey.WriteOffPoints;
+            bool isWriteOffPointsViaWarehouseShortage = skuReportFileKey == SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage;
+            bool isWriteOffPointsViaWarehouseAdjustment = skuReportFileKey == SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment;
             bool isCompensation = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResorts = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isParellel = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
@@ -429,8 +470,12 @@ namespace TableAnalizer.Objects.Managers
                     parsingEntityCollection = SkuShippedBalanceUnits,  
                 SourceSKUReportFileKey.Transfered =>
                     parsingEntityCollection = SkuTransferedBalanceUnits,  
-                SourceSKUReportFileKey.WriteOffShortages =>
-                    parsingEntityCollection = SkuWriteOffBalanceUnits, 
+                SourceSKUReportFileKey.WriteOffPoints =>
+                    parsingEntityCollection = SkuWriteOffFromPointsBalanceUnits,
+                SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage =>
+                    parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseShortageUnits, 
+                SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment =>
+                    parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseAdjustmentUnits, 
                 SourceSKUReportFileKey.Additional => workSheetName switch 
                 {
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => 
@@ -506,14 +551,36 @@ namespace TableAnalizer.Objects.Managers
                         SKURemainingBalance remainingBalance = new(skuNumber, units.ToList());
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, remainingBalance));
                     } 
-                    else if(isWriteOff) 
+                    else if(isWriteOffPoints) 
                     {
                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUWriteOffDataUnit>().ToList()) ??
-                            throw new InvalidCastException("Cannot cast collection to IList<SKUWriteOffDataUnit>.");
+                            throw new InvalidCastException($"Cannot cast collection to {nameof(IList<SKUWriteOffDataUnit>)}.");
 
                         if(SKUs.GetValue(skuNumber, out SKU? sKU)) 
                         {
-                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units]);
+                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units], WriteOffSource.Points);
+                            SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
+                        }
+                    }
+                    else if(isWriteOffPointsViaWarehouseShortage) 
+                    {
+                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUWriteOffDataUnit>().ToList()) ??
+                            throw new InvalidCastException($"Cannot cast collection to {nameof(IList<SKUWriteOffDataUnit>)}.");
+
+                        if(SKUs.GetValue(skuNumber, out SKU? sKU)) 
+                        {
+                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units], WriteOffSource.PointsViaWarehouseShortage);
+                            SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
+                        }
+                    }
+                    else if(isWriteOffPointsViaWarehouseAdjustment) 
+                    {
+                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUWriteOffDataUnit>().ToList()) ??
+                            throw new InvalidCastException($"Cannot cast collection to {nameof(IList<SKUWriteOffDataUnit>)}.");
+
+                        if(SKUs.GetValue(skuNumber, out SKU? sKU)) 
+                        {
+                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units], WriteOffSource.PointsViaWarehouseAdjustment);
                             SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
                         }
                     }
@@ -547,90 +614,9 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        // private void UpdateSKUsToResortCollection(SKUResortBalance skuResortBalance)
-        // { 
-        //     int skuResortFromNumber = skuResortBalance.SKUFromResortNumber;
-
-        //     ResortBalanceUnit? resortingConsumptionItem = skuResortBalance.GetSkusResortToSum(SKUResortTarget.ResortingConsumptionByOutgoing);
-
-        //     List<ResortBalanceUnit>? skusResortToUnits = [];
-        //     skusResortToUnits.AddRange([resortingConsumptionItem]);
-
-        //     if (skusResortToUnits is not null && skusResortToUnits.Count != 0)
-        //     {
-        //         // Проходим по юнитам
-        //         foreach (var skusResortToUnit in skusResortToUnits)
-        //         {
-        //             // Цель пересорта
-        //             var resortToTarget = skusResortToUnit.BalanceTarget;
-
-        //             Dictionary<int, Dictionary<SKUResortTarget, int>>? resortsFromDict;
-        //             Dictionary<SKUResortTarget, int>? resortItemsByTarget;
-        //             int resortSumByTarget = 0;
-
-        //             // Проходим по элементам словаря внутри юнита (арт пересорта, сумма)
-        //             foreach ((int resortToNumber, int resortToSum) in skusResortToUnit.ResortTo)
-        //             {
-        //                 // Если по артикулу resortToNumber есть сведения...
-        //                 if (SKUToResorts.TryGetValue(resortToNumber, out Dictionary<int, Dictionary<SKUResortTarget, int>>? resortsFromExistingDict) &&
-        //                 resortsFromExistingDict is not null &&
-        //                 resortsFromExistingDict.Count > 0)
-        //                 {
-        //                     resortsFromDict = resortsFromExistingDict;
-
-        //                     if(resortsFromDict.TryGetValue(skuResortFromNumber, out Dictionary<SKUResortTarget, int>? resortDictTargets)) 
-        //                     {
-        //                         resortItemsByTarget = resortDictTargets;
-
-        //                         if(resortItemsByTarget.TryGetValue(resortToTarget, out int sum)) 
-        //                         {
-        //                             resortSumByTarget = sum;
-        //                             resortSumByTarget += resortToSum;
-        //                         } 
-        //                         else 
-        //                         {
-        //                             resortSumByTarget = resortToSum;
-        //                         }
-
-        //                         resortItemsByTarget[resortToTarget] = resortSumByTarget;
-        //                     } 
-        //                     else 
-        //                     {
-        //                         // Сумма пересортов
-        //                         resortSumByTarget = resortToSum;
-
-        //                         // Новый словарь: Цель пересортов - Сумма пересортов
-        //                         resortItemsByTarget = new() 
-        //                         {
-        //                             {resortToTarget, resortSumByTarget}
-        //                         };
-        //                     }  
-
-        //                     resortsFromDict[skuResortFromNumber] = resortItemsByTarget;
-        //                 } 
-        //                 // Если по артикулу resortToNumber нет сведений, создается новая запись
-        //                 else 
-        //                 {
-        //                     resortItemsByTarget = new() 
-        //                     {
-        //                         {resortToTarget, resortToSum}
-        //                     };
-
-        //                     resortsFromDict = new() 
-        //                     {
-        //                         { skuResortFromNumber, resortItemsByTarget }
-        //                     };
-        //                 } 
-
-        //                 SKUToResorts[resortToNumber] = resortsFromDict;
-        //             }                    
-        //         }
-        //     }
-        // }
-
-        public async Task<List<SKUForTargetReports>> MakeSkusForTargetReport() 
+        public async Task<List<SKUForTargetReport>> MakeSkusForTargetReport() 
         {
-            List<SKUForTargetReports> skuForTargetReports = [];
+            List<SKUForTargetReport> skuForTargetReports = [];
 
             foreach (var (_, targetSku) in SKUs.GetValuesList())
             {

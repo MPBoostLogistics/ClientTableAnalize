@@ -14,6 +14,7 @@ using OfficeOpenXml;
 using TableAnalizer.Objects;
 using TableAnalizer.Objects.Managers;
 using TableAnalizer.Objects.SKUItems;
+using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 internal class Program
 {
@@ -181,10 +182,26 @@ internal class Program
                 currentTask.Wait();
             }
 
-            // WriteOff task 
-            if (existingKeys.Contains(SourceSKUReportFileKey.WriteOffShortages))
+            // WriteOff points via warehouse task (shortage)
+            if (existingKeys.Contains(SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffShortages, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage, isInternalReport);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            }
+
+             // WriteOff points via warehouse task (adjustment)
+            if (existingKeys.Contains(SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment))
+            {
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment, isInternalReport);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            }
+
+            // WriteOff points task 
+            if (existingKeys.Contains(SourceSKUReportFileKey.WriteOffPoints))
+            {
+                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffPoints, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -226,7 +243,7 @@ internal class Program
             }
 
             // Make skus for target report
-            Task<List<SKUForTargetReports>>? skusForTargetReportTask = skuManager!.MakeSkusForTargetReport();
+            Task<List<SKUForTargetReport>>? skusForTargetReportTask = skuManager!.MakeSkusForTargetReport();
             await Task.Run(() => skusForTargetReportTask);
             skusForTargetReportTask.Wait();
 
@@ -235,17 +252,18 @@ internal class Program
                 await TracingProgramExecution(new($"Articles for final report: {skusForTargetReportTask.Result.Count}.", false, false));
             }
 
-            List<SKUForTargetReports> skuForTargetReports = skusForTargetReportTask.Result;
+            List<SKUForTargetReport> skuForTargetReports = skusForTargetReportTask.Result;
 
             // Article analysis and automatic re-sorting
             if(isAutoResorting) 
             {
                 Task[] autoResortTasks =
                 [
+                    AnalyticalManager.FixWriteOffByPoints(ref skuForTargetReports),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByOutgoing),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByTransfer),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingReceipt),
-                    AnalyticalManager.FixExtraReceipts(ref skuForTargetReports),
+                    //AnalyticalManager.FixExtraReceipts(ref skuForTargetReports),
                     AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
                     
                 ];
@@ -304,7 +322,7 @@ internal class Program
             return 0;
         }
     } 
-
+    
     private static async Task<DirectoryInfo?> GetSourceReportsPathFromConsole(int delay) 
     {
         string reportsPathTitleMessage = "Specify path to dir with the client's source reports and press 'Enter':\n ";

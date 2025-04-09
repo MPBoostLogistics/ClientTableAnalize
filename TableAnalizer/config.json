@@ -29,6 +29,8 @@
       "DelayDeliveryFromPointsAndWarehouseStatusString": "Задержка от точек и склада",
       "DelayDeliveryFromWarehouseStatusString" : "Задержка от склада",
       "DelayDeliveryFromPointsStatusString" : "Задержка от точек",
+      "DelayFromOrganizationStatusString" : "Задержка от организации",
+      "DelayFromOrganizationAndWarehouseStatusString" : "Задержка от организации и склада",
       "UnknownStatusString" : "Не определен"
     }
   }

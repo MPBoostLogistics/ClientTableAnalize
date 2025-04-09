@@ -2,15 +2,11 @@ using TableAnalizer.Objects.Parsing;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances
 {
-    public class SKUWriteOffDataUnit : ParsingRowEntity
+    public class SKUWriteOffDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
         public int SKUNumber { get; private set; }
-        public int SKUWriteOffCount { get; private set; }    // Списано недостачами
-        #endregion
-
-        #region Constructors
-        public SKUWriteOffDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : base(parsingElements){}
+        public int SKUWriteOffCount { get; private set; }
         #endregion
     }
 }
