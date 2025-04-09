@@ -17,13 +17,21 @@ namespace TableAnalizer.Objects
         /// </summary>
         InWork,                    
         /// <summary>
-        /// Задержка довоза от точек и склада.
+        /// Задержка от точек и склада.
         /// </summary>
-        DelayDeliveryFromPointsAndWarehouse, 
+        DelayFromPointsAndWarehouse, 
         /// <summary>
-        /// Задержка довоза от склада.
+        /// Задержка от склада.
         /// </summary>
-        DelayDeliveryFromWarehouse,   
+        DelayFromWarehouse,  
+        /// <summary>
+        /// Задержка от организации и склада.
+        /// </summary>
+        DelayFromOrganizationAndWarehouse, 
+        /// <summary>
+        /// Задержка от организации.
+        /// </summary>
+        DelayFromOrganization, 
         /// <summary>
         /// Задержка довоза от точек.
         /// </summary>
@@ -45,9 +53,17 @@ namespace TableAnalizer.Objects
         /// </summary>
         Balance,      
         /// <summary>
-        /// Списано недостач с точек
-        /// </summary>   
-        WriteOffShortages,
+        /// Списание недостач с точек через склад
+        /// </summary>
+        WriteOffPointsViaWarehouseShortage,
+        /// <summary>
+        /// Списание корректировок с точек через склад
+        /// </summary>
+        WriteOffPointsViaWarehouseAdjustment,
+        /// <summary>
+        /// Списание недостач с точек напрямую
+        /// </summary>
+        WriteOffPoints,
         /// <summary>
         /// Недостачи и пересорты
         /// </summary>
@@ -65,23 +81,23 @@ namespace TableAnalizer.Objects
     public enum SKURansomsStatus
     {
         /// <summary>
-        /// Покупки доставлены на точки
+        /// Заказы доставлены на точки
         /// </summary>
         DeliveredToPoints, 
         /// <summary>
-        /// Покупки забраны с точек 
+        /// Заказы забраны с точек 
         /// </summary>
         PickedupFromPoints,  
         /// <summary>
-        /// Покупки отменены
+        /// Заказы отменены
         /// </summary>
         Canceled,  
         /// <summary>
-        /// Покупки в пути
+        /// Заказы в пути
         /// </summary>
         InTransit,
         /// <summary>
-        /// Неизвестный статус покупок
+        /// Неизвестный статус заказов
         /// </summary>
         Unknown
         
@@ -139,8 +155,6 @@ namespace TableAnalizer.Objects
         /// Внутренний пересорт.
         /// </summary>
         Internal
-
-
     }
 
     public enum CompensationTarget 
@@ -176,4 +190,21 @@ namespace TableAnalizer.Objects
         /// </summary>
         External
     }
+
+    public enum WriteOffSource 
+    {
+        /// <summary>
+        /// Списание недостач с точек
+        /// </summary>
+        Points, 
+        /// <summary>
+        /// Списание недостач с точек через склад
+        /// </summary>
+        PointsViaWarehouseShortage, 
+        /// <summary>
+        /// Списание коррекировок точек через склад
+        /// </summary>
+        PointsViaWarehouseAdjustment 
+    }
+
 }

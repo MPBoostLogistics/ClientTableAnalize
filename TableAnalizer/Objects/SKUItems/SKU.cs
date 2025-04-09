@@ -30,7 +30,7 @@ namespace TableAnalizer.Objects.SKUItems
         public double AveragePrice { get; private set;} = AVERAGE_PRICE_DEFAULT;
         public DateOnly MaxRansomsDate { get; private set;} = DATEONLY_DEFAULT;
         public int DeadLineDays { get;  set; } = DEADLINE_DAYS_DEFAULT;
-        public bool IsParallelSKU {get;set;} = false;
+        public bool IsParallelClientsSKU {get;set;} = false;
 
         #endregion
 
@@ -132,7 +132,7 @@ namespace TableAnalizer.Objects.SKUItems
                 DeadLineDays = deadLineDays.Value;
             }
 
-            IsParallelSKU = isParallel;
+            IsParallelClientsSKU = isParallel;
         }
 
         // Constructor for compensationBalance 
@@ -155,6 +155,14 @@ namespace TableAnalizer.Objects.SKUItems
             SKUNumber = skuNumber;
             SKUResortBalance = skuResortBalance;
         }
+
+         // Constructor for parallel clients SKU 
+        public SKU(int skuNumber, bool isParallelClientsSKU) 
+        {
+            SKUNumber = skuNumber;
+            IsParallelClientsSKU = isParallelClientsSKU;
+        }
+     
         #endregion
     }
 }
