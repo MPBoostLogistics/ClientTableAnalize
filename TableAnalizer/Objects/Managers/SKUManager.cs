@@ -28,8 +28,10 @@ namespace TableAnalizer.Objects.Managers
         {
             {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#e6f6eb")},                             // #e6f6eb
             {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fff6f0")},                              // #fff6f0
-            {SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse, ColorTranslator.FromHtml("#ffd9d9")}, // #ffd9d9
-            {SKUSellmentStatus.DelayDeliveryFromWarehouse, ColorTranslator.FromHtml("#ffe0e0")},          // #ffe0e0
+            {SKUSellmentStatus.DelayFromPointsAndWarehouse, ColorTranslator.FromHtml("#ffd9d9")},         // #ffd9d9
+            {SKUSellmentStatus.DelayFromWarehouse, ColorTranslator.FromHtml("#ffe0e0")},                  // #ffe0e0
+            {SKUSellmentStatus.DelayFromOrganization, ColorTranslator.FromHtml("#f3d9d9")},               // #f3d9d9
+            {SKUSellmentStatus.DelayFromOrganizationAndWarehouse, ColorTranslator.FromHtml("#eddede")},   // #eddede
             {SKUSellmentStatus.DelayDeliveryFromPoints, ColorTranslator.FromHtml("#ffefef")},             // #ffefef
             {SKUSellmentStatus.Unknown, ColorTranslator.FromHtml("#eef5f9")}                              // #eef5f9
         };
@@ -81,10 +83,12 @@ namespace TableAnalizer.Objects.Managers
             // Set status strings variables
             StatusStrings.Add(SKUSellmentStatus.FullSet, stringsSection.GetValue<string>("FullSetStatusString") ?? string.Empty);
             StatusStrings.Add(SKUSellmentStatus.InWork, stringsSection.GetValue<string>("InWorkStatusString") ?? string.Empty);
-            StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromPointsAndWarehouseStatusString") ?? string.Empty);
-            StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromWarehouseStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayFromPointsAndWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromPointsAndWarehouseStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayFromWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromWarehouseStatusString") ?? string.Empty);
             StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromPoints, stringsSection.GetValue<string>("DelayDeliveryFromPointsStatusString") ?? string.Empty);
             StatusStrings.Add(SKUSellmentStatus.Unknown, stringsSection.GetValue<string>("UnknownStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayFromOrganization, stringsSection.GetValue<string>("DelayFromOrganizationStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayFromOrganizationAndWarehouse, stringsSection.GetValue<string>("DelayFromOrganizationAndWarehouseStatusString") ?? string.Empty);
         }
 
         public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, bool isInternalReport, ExcelPackage excelPackage)

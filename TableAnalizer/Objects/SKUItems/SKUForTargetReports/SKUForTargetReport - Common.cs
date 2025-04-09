@@ -237,15 +237,22 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             SetSellmentStatus(SKUSellmentStatus.Unknown);
 
             // Calculate compensation from organization
-            int paidWriteOffReminderResult = 0;
-            if(paidWriteOffRemainder > 0)
-                CalculateCompensationFromOrganization(out paidWriteOffReminderResult, in paidWriteOffRemainder);
+            int paidWriteOffReminderResult;
+            if(paidWriteOffRemainder > 0 && SKUDeliveryDelayOrganization == 0) 
+            {
+                 CalculateDelay(out paidWriteOffReminderResult, in paidWriteOffRemainder);
+            } 
+            else 
+            {
+                paidWriteOffReminderResult = paidWriteOffRemainder;
+            }
+               
 
             // Calculation of shortages from points 
             CalculateDelay(SKUSellmentStatus.DelayDeliveryFromPoints);
       
             // Calculation of shortages from the warehouse
-            CalculateDelay(SKUSellmentStatus.DelayDeliveryFromWarehouse);
+            CalculateDelay(SKUSellmentStatus.DelayFromWarehouse);
 
             // Calculation of overruns
             var totalСonsumptionWithoutResorts = SKUSummarySettlement - SKUResort;
@@ -258,66 +265,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             SetStatus();
 
             return paidWriteOffReminderResult;
-        }
-
-        /// <summary>
-        /// Производит корректировку недостач, списанных с точек.
-        /// </summary>
-        /// <param name="writeOffSource">Источник списания.</param>
-        /// <returns>Остаток после списания, ...</returns>
-        public (int paidWriteOffRemainder,int) MakeCorrectionOnWriteOffShortages(WriteOffSource writeOffSource) 
-        {
-            // switch (writeOffSource)
-            // {
-            //     case WriteOffSource.PointsViaWarehouseShortage:
-
-            //         int compensation;
-            //         if (MoreReceiptThanWaiting >= SKUWrittenOffFromPointsViaWarehouseShortage)
-            //         {
-            //             compensation = SKUWrittenOffFromPointsViaWarehouseShortage;
-            //             SKUWrittenOffFromPointsViaWarehouseShortage = 0;
-            //         }
-            //         else
-            //         {
-            //             compensation = SKUWrittenOffFromPointsViaWarehouseShortage - MoreReceiptThanWaiting;
-            //             SKUWrittenOffFromPointsViaWarehouseShortage -= compensation;
-            //         }
-
-            //         SKUReceiptGoods -= compensation;
-            //         SKUReceipComment = $"Списания недостач от точек через склад (вычтено из прихода товарами): {compensation}\nостаток: {SKUWrittenOffFromPointsViaWarehouseShortage}";
-                    
-            //         CalculateCompensationFromOrganization(out int paidWriteOffRemainder, in compensation);
-
-            //         return (paidWriteOffRemainder, SKUWrittenOffFromPointsViaWarehouseShortage - SKUDeliveryDelayOrganization);
-                
-            //     case WriteOffSource.PointsViaWarehouseAdjustment:
-            //         SKUReceipComment = $"Списания корректировок от точек через склад:\nвычтено из прихода товарами: {SKUWrittenOffFromPointsViaWarehouseAdjustment}";
-            //         SKUReceiptGoods -= SKUWrittenOffFromPointsViaWarehouseAdjustment; 
-            //         return (0,0);
-            //     default:
-            //         return (0,0);
-            // }
-            return(0,0); // dummy
-        }
-
-        private int CalculateCompensationFromOrganization(out int paidWriteOffRemainder, in int compensation)
-        {
-            paidWriteOffRemainder = 0;
-
-            // if (SKURansomsWaiting == SKUReceiptTotal && SKUSummarySettlement + SKURemaining < SKUReceiptTotal)
-            // {
-            //     // Необходимое количество списания (Ожидание - Общий взаиморасчет - Оплачено фактически)
-            //     var requiredQuantityGoodsForWriteoff = SKURansomsWaiting - SKUSummarySettlement - SKUSummaryFactPaid;
-
-
-            //     SKUDeliveryDelayOrganization = target > 0 && target >= compensation ?
-            //         compensation :
-            //         target;
-
-            //     paidWriteOffRemainder = compensation - SKUDeliveryDelayOrganization > 0 ? compensation - SKUDeliveryDelayOrganization : 0;
-            // }
-
-            return paidWriteOffRemainder;
         }
 
         public void MakeResort(SKUResortTarget target, SKUResortDirection dir, int skuNumber, int sum) 
@@ -412,7 +359,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                     SKURansomsWaiting - SKUReceiptTotal :
                     0;
                     break;
-                case SKUSellmentStatus.DelayDeliveryFromWarehouse:
+                case SKUSellmentStatus.DelayFromWarehouse:
                     SKUDeliveryDelayWarehouse = (SKURansomsWaiting - SKUSummarySettlement - SKUDeliveryDelayOrganization - SKUDeliveryDelayPoints) > 0 ? 
                     SKURansomsWaiting - SKUDeliveryDelayPoints - SKUDeliveryDelayOrganization - SKUSummarySettlement : 
                     0;
@@ -437,7 +384,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                         switch(SKURemaining > 0) 
                         {
                             case true:
-                                SetSellmentStatus(SKUSellmentStatus.DelayDeliveryFromWarehouse);
+                                SetSellmentStatus(SKUSellmentStatus.DelayFromWarehouse);
                                 break;
                             case false:
                                  SetSellmentStatus(SKUSellmentStatus.FullSet);
@@ -445,19 +392,28 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                         }
                         break;
                     case false:
-                        switch (SKUDeliveryDelayPoints > 0, SKUDeliveryDelayWarehouse > 0)
+                        switch (SKUDeliveryDelayOrganization > 0, SKUDeliveryDelayWarehouse > 0, SKUDeliveryDelayPoints > 0)
                         {
-                            case (true, true):
-                                SetSellmentStatus(SKUSellmentStatus.DelayDeliveryFromPointsAndWarehouse);
+                            case (true, false, false):
+                                SetSellmentStatus(SKUSellmentStatus.DelayFromOrganization);
                                 break;
-                            case (true, false):
+                            case (true, true, false):
+                                SetSellmentStatus(SKUSellmentStatus.DelayFromOrganizationAndWarehouse);
+                                break;
+                            case (false, true, false):
+                                SetSellmentStatus(SKUSellmentStatus.DelayFromWarehouse);
+                                break;
+                            case (false, true, true):
+                                SetSellmentStatus(SKUSellmentStatus.DelayFromPointsAndWarehouse);
+                                break;
+                            case (false, false, true):
                                 SetSellmentStatus(SKUSellmentStatus.DelayDeliveryFromPoints);
                                 break;
-                            case (false, true):
-                                SetSellmentStatus(SKUSellmentStatus.DelayDeliveryFromWarehouse);
-                                break;
-                            case (false, false):
+                            case (false, false, false):
                                 SetSellmentStatus(SKUSellmentStatus.FullSet);
+                                break;
+                            default:
+                                SetSellmentStatus(SKUSellmentStatus.Unknown);
                                 break;
                         }
                         break;

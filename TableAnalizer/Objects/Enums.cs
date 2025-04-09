@@ -17,13 +17,21 @@ namespace TableAnalizer.Objects
         /// </summary>
         InWork,                    
         /// <summary>
-        /// Задержка довоза от точек и склада.
+        /// Задержка от точек и склада.
         /// </summary>
-        DelayDeliveryFromPointsAndWarehouse, 
+        DelayFromPointsAndWarehouse, 
         /// <summary>
-        /// Задержка довоза от склада.
+        /// Задержка от склада.
         /// </summary>
-        DelayDeliveryFromWarehouse,   
+        DelayFromWarehouse,  
+        /// <summary>
+        /// Задержка от организации и склада.
+        /// </summary>
+        DelayFromOrganizationAndWarehouse, 
+        /// <summary>
+        /// Задержка от организации.
+        /// </summary>
+        DelayFromOrganization, 
         /// <summary>
         /// Задержка довоза от точек.
         /// </summary>
@@ -73,23 +81,23 @@ namespace TableAnalizer.Objects
     public enum SKURansomsStatus
     {
         /// <summary>
-        /// Покупки доставлены на точки
+        /// Заказы доставлены на точки
         /// </summary>
         DeliveredToPoints, 
         /// <summary>
-        /// Покупки забраны с точек 
+        /// Заказы забраны с точек 
         /// </summary>
         PickedupFromPoints,  
         /// <summary>
-        /// Покупки отменены
+        /// Заказы отменены
         /// </summary>
         Canceled,  
         /// <summary>
-        /// Покупки в пути
+        /// Заказы в пути
         /// </summary>
         InTransit,
         /// <summary>
-        /// Неизвестный статус покупок
+        /// Неизвестный статус заказов
         /// </summary>
         Unknown
         

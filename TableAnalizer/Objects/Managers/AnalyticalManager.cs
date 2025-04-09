@@ -36,7 +36,7 @@ namespace TableAnalizer.Objects.Managers
         /// Были списания недостач точек через склад
         /// </summary>
         private static Func<SKUForTargetReport, bool> WrittenOffFromPointsViaWarehouseByShortage => 
-            sku => sku.SKUWrittenOffFromPointsViaWarehouseShortage > 0;
+            sku => sku.SKUWriteOffFromPointsViaWarehouseShortage > 0;
 
         /// <summary>
         /// Были списания корректировки от точек через склад
@@ -93,7 +93,13 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         private static bool isThereAreSkusWithExtraReceipt;
 
+        /// <summary>
+        /// Есть списания недостач от точек через склад (прошлые периоды)
+        /// </summary>
         private static bool isWriteOffPointsThroughWarehouseShortages;
+        /// <summary>
+        /// Есть корректировка данных от точек через склад (прошлые периоды)
+        /// </summary>
         private static bool isWriteOffPointsThroughWarehouseAdjustment;
 
         #endregion
@@ -263,7 +269,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var sku in writeOffPointsByShortage!)
                 {
-                    MakeCorrection(ref skuForTargetReports, WriteOffSource.PointsViaWarehouseShortage, skuForTargetReports.IndexOf(sku));
+                    MakeCorrectionWriteOffs(ref skuForTargetReports, WriteOffSource.PointsViaWarehouseShortage, skuForTargetReports.IndexOf(sku));
                 }
             }
 
@@ -271,7 +277,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var sku in writeOffPointsByAdjustment!)
                 {
-                    MakeCorrection(ref skuForTargetReports, WriteOffSource.PointsViaWarehouseAdjustment, skuForTargetReports.IndexOf(sku));
+                    MakeCorrectionWriteOffs(ref skuForTargetReports, WriteOffSource.PointsViaWarehouseAdjustment, skuForTargetReports.IndexOf(sku));
                 }
             }
 
@@ -299,24 +305,22 @@ namespace TableAnalizer.Objects.Managers
             return Task.CompletedTask;
         }
 
-
-        public static void MakeCorrection(ref List<SKUForTargetReport> skuForTargetReports, WriteOffSource writeOffSource, int skuIndex) 
+        public static void MakeCorrectionWriteOffs(ref List<SKUForTargetReport> skuForTargetReports, WriteOffSource writeOffSource, int skuIndex) 
         {
-            if(int.IsNegative(skuIndex)) 
-            {
-                return;
-            } 
+            if(int.IsNegative(skuIndex)) return;
 
-            var values = skuForTargetReports[skuIndex].MakeCorrectionOnWriteOffShortages(writeOffSource);
-            if(values.paidWriteOffRemainder > 0) 
+            var paidWriteOffRemainder = skuForTargetReports[skuIndex].MakeCorrectionOnWriteOffShortages(writeOffSource);
+            if(paidWriteOffRemainder > 0) 
             {
-                PaidWriteOffRemainder += values.paidWriteOffRemainder;
+                PaidWriteOffRemainder += paidWriteOffRemainder;
+                Trace.WriteLine($"PaidWriteOffRemainder ++ {PaidWriteOffRemainder}");
+                Task.Delay(500);
             }
 
-            if(writeOffSource == WriteOffSource.PointsViaWarehouseShortage && values.Item2 > 0) 
-            {
-                throw new NotImplementedException($"Use it: {values.Item2}!");
-            }
+            // if(writeOffSource == WriteOffSource.PointsViaWarehouseShortage && values.Item2 > 0) 
+            // {
+            //     throw new NotImplementedException($"Use it: {values.Item2}!");
+            // }
         }
 
         private static void MakeResort(ref List<SKUForTargetReport> skuForTargetReports, SKUResortTarget target, int underSkuIndex, int overSkuIndex, int sum)
@@ -359,6 +363,9 @@ namespace TableAnalizer.Objects.Managers
                 {
                     sku.FinalAnalize(0);
                 }
+
+                Trace.WriteLine($"PaidWriteOffRemainder -- {PaidWriteOffRemainder}");
+                Task.Delay(500);
             }
 
             return Task.CompletedTask;
