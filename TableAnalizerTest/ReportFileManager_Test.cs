@@ -12,13 +12,13 @@ namespace TableAnalizerTest
         }
 
         [Order(1)]
-        [TestCase(SourceSKUReportFileKey.Ransoms, true)]
-        [TestCase(SourceSKUReportFileKey.Balance, true)]
-        [TestCase(SourceSKUReportFileKey.OutgoingProducts, true)]
-        [TestCase(SourceSKUReportFileKey.WriteOffShortages, true)]
-        [TestCase(SourceSKUReportFileKey.Additional, false)]
-        [TestCase(SourceSKUReportFileKey.Transfered, false)]
-        public async Task ChecksAvailabilityNecessaryFiles_Test(SourceSKUReportFileKey key, bool isExisting) 
+        [TestCase(SourceReportItemKey.Ransoms, true)]
+        [TestCase(SourceReportItemKey.Balance, true)]
+        [TestCase(SourceReportItemKey.OutgoingProducts, true)]
+        [TestCase(SourceReportItemKey.WriteOffShortages, true)]
+        [TestCase(SourceReportItemKey.Additional, false)]
+        [TestCase(SourceReportItemKey.Transfered, false)]
+        public async Task ChecksAvailabilityNecessaryFiles_Test(SourceReportItemKey key, bool isExisting) 
         {
             // arrange
             // ...
@@ -27,7 +27,7 @@ namespace TableAnalizerTest
             var checksAvailabilityTask = reportFileManager.ChecksAvailabilityNecessaryFiles(testSingleClientSourceDirectory!.FullName);
             await Task.Run(() => checksAvailabilityTask);
             checksAvailabilityTask.Wait();
-            List<SourceSKUReportFileKey>? existingKeys = checksAvailabilityTask.Result;
+            List<SourceReportItemKey>? existingKeys = checksAvailabilityTask.Result;
 
             // assert 
             Assert.That(existingKeys, Is.Not.Null);

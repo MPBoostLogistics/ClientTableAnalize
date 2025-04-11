@@ -1,9 +1,8 @@
-﻿using System.Diagnostics;
-using System.Text;
+﻿using System.Text;
 using System.Text.RegularExpressions;
 using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
-using TableAnalizer.Objects.SKUItems;
+using TableAnalizer.Objects.ReportItems;
 
 namespace TableAnalizer.Objects.Managers
 {
@@ -21,6 +20,8 @@ namespace TableAnalizer.Objects.Managers
         private const string WRITEOFF_POINTS_REPORT_REGEX_PATTERN = @"\bСписание\sточек\b";
         private const string WRITEOFF_DIRECTORY_NAME = "Списание";
 
+        private int DataAgeLimitInDays { get; set;}
+
         private string? logisticsReportFirstName;
 
         #endregion
@@ -29,59 +30,62 @@ namespace TableAnalizer.Objects.Managers
 
         public static TargetReportRecipientType? ReportRecipientType { get; set; }
 
-        public Dictionary<SourceSKUReportFileKey, SourceReportFileForSKU> ReportsPaths { get; private set; } = [];
-        public Dictionary<string, SourceReportFileForSKU> ReportsPathsMultyReport { get; private set; } = new();
+        /// <summary>
+        /// Коллекция с файлами исходных отчетов.
+        /// </summary>
+        public Dictionary<SourceReportItemKey, SourceReportFileItem> SourceReportFiles { get; private set; } = [];
+
         public static DirectoryInfo? DirInfoForClientTargetReports { get; private set; }
         public static string? InputReportsFilePath { get; set; } = string.Empty;
         public static string OutputClientReportFilePath { get; private set; } = string.Empty;
 
-        public static Dictionary<SourceSKUReportFileKey, List<Regex>> RegexesForSourceReports { get; } = new Dictionary<SourceSKUReportFileKey, List<Regex>>
+        public static Dictionary<SourceReportItemKey, List<Regex>> RegexesForSourceReports { get; } = new Dictionary<SourceReportItemKey, List<Regex>>
         {
             { 
-                SourceSKUReportFileKey.Ransoms,  
+                SourceReportItemKey.Ransoms,  
                 [ 
                     new(RANSOMS_SINGLE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
                     new(RANSOMS_MULTY_REPORT_REGEX_PATTERM, RegexOptions.None, TimeSpan.FromSeconds(1)) 
                 ] 
             }, 
             {
-                SourceSKUReportFileKey.Balance, 
+                SourceReportItemKey.Balance, 
                 [
                     new(BALANCE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
                 ]
             },
             {
-                SourceSKUReportFileKey.WriteOffPoints, 
+                SourceReportItemKey.WriteOffPoints, 
                 [
                     new(WRITEOFF_POINTS_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
                 ]
             },
             {
-                SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage, 
+                SourceReportItemKey.WriteOffPointsViaWarehouseShortage, 
                 [
                     new(WRITEOFF_POINTS_VIA_WAREHOUSE_SHORTAGE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
                 ]
             },
               {
-                SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment, 
+                SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, 
                 [
                     new(WRITEOFF_POINTS_VIA_WAREHOUSE_ADJUSTMENT_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
                 ]
             },
             {
-                SourceSKUReportFileKey.OutgoingProducts, 
+                SourceReportItemKey.OutgoingProducts, 
                 [
                     new(SHIPPED_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
                 ]
             },
             {
-                SourceSKUReportFileKey.Transfered, 
+                SourceReportItemKey.Transfered, 
                 [
                     new(TRANSFER_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
                 ]
             },
             {
-                SourceSKUReportFileKey.Additional, 
+                SourceReportItemKey.Additional, 
                 [
                     new(ADDITIONAL_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
                 ]
@@ -97,6 +101,9 @@ namespace TableAnalizer.Objects.Managers
         {
             base.AddConfigVariables();
 
+            IConfigurationSection? numbersSessions = config!.GetSection("Numbers");
+            DataAgeLimitInDays = numbersSessions.GetValue<int>("DataAgeLimitInDays");
+
             IConfigurationSection? stringSessions = config!.GetSection("Strings");
             logisticsReportFirstName = stringSessions.GetValue<string>("LogisticsReportFirstName");
         }
@@ -107,30 +114,39 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="reportsPath">Directory with client reports.</param>
         /// <returns>List of existing keys as Task result.</returns>
         /// <remarks><i>Rework, testing</i></remarks>
-        public async Task<List<SourceSKUReportFileKey>?> ChecksAvailabilityNecessaryFiles(string reportsPath)
+        public async Task<List<SourceReportItemKey>?> ChecksAvailabilityNecessaryFiles(string reportsPath)
         {
-            
-            List<SourceSKUReportFileKey> existingKeys = [];
+            List<SourceReportItemKey> existingKeys = [];
             bool isError = false;
 
             try
             {
                 GetSourceReportExcelFiles(reportsPath, out FileInfo[] files);
       
-                Task<int> getFilesTask = GetSourceReportFiles(files);
-                await Task.Run(() => getFilesTask);
-                getFilesTask.Wait();
+                Task<int>? getFilesTask;
 
-                var getReportFilesResult = getFilesTask.Result;
+                try
+                {
+                    getFilesTask = GetSourceReportFiles(files);
+                    await Task.Run(() => getFilesTask);
+                    getFilesTask?.Wait();
+                }
+                catch (System.Exception ex)
+                {
+                    OnManagerReached(new(ex.Message, true, true));
+                    return await Task.FromResult<List<SourceReportItemKey>?>(null);
+                }
 
-                if (getFilesTask.Result == 0)
+                var getReportFilesResult = getFilesTask?.Result;
+
+                if (getFilesTask?.Result == 0)
                 {
                     OnManagerReached(new(string.Empty, true, true));
                 }
 
                 StringBuilder stringBuilder = new();
 
-                if (IsRequiredFilesProvided(out List<SourceSKUReportFileKey>? lostKeys, out existingKeys) && existingKeys.Count > 0)
+                if (IsRequiredFilesProvided(out List<SourceReportItemKey>? lostKeys, out existingKeys) && existingKeys.Count > 0)
                 {
                     stringBuilder.Append($"Provided {existingKeys.Count} source reports on keys: ");
                     foreach (var existingKey in existingKeys)
@@ -160,10 +176,15 @@ namespace TableAnalizer.Objects.Managers
                 }
 
                 OnManagerReached(new(stringBuilder.ToString(), isError, isError));
+                if(isError) 
+                {
+                    return await Task.FromResult<List<SourceReportItemKey>?>(null);
+                }
             }
             catch (Exception ex)
             {
                 OnManagerReached(new($"Data error: {ex.Message}\n", true, true));
+                return await Task.FromResult<List<SourceReportItemKey>?>(null);
             }
 
             return existingKeys;
@@ -203,7 +224,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="files">Path to files.</param>
         /// <returns>Number of recognized source files.</returns>
         /// <remarks><i>Rework, testing</i></remarks>
-        public async Task<int> GetSourceReportFiles(FileInfo[]? files)
+        public async Task<int>? GetSourceReportFiles(FileInfo[]? files)
         {
             StringBuilder message = new();
             var isError = false;
@@ -227,7 +248,7 @@ namespace TableAnalizer.Objects.Managers
                 {
                     try
                     {
-                        var  getSourceReportKeyByRegexTask = GetSourceReportKeyByRegex(fileInfo);
+                        var getSourceReportKeyByRegexTask = GetSourceReportKeyByRegex(fileInfo);
                         await Task.Run(() => getSourceReportKeyByRegexTask);
                         getSourceReportKeyByRegexTask.Wait();
 
@@ -235,15 +256,35 @@ namespace TableAnalizer.Objects.Managers
 
                         if(key.HasValue) 
                         {
-                            var sorceReportFile = new SourceReportFileForSKU(key.Value, fileInfo);
-
-                            if(key.Value == SourceSKUReportFileKey.Ransoms && !string.IsNullOrEmpty(loginsFileName)) 
+                            var isControlAgeOfData = key switch
                             {
-                                ClientLogins = GetLoginsFromFilename(loginsFileName);
-                            }
+                                SourceReportItemKey.Ransoms or 
+                                SourceReportItemKey.Balance or 
+                                SourceReportItemKey.OutgoingProducts or
+                                SourceReportItemKey.WriteOffPoints 
+                                => true,
+                                _ => false
+                            };
 
-                            // Store SourceReportFileForSKU
-                            ReportsPaths[key.Value] = sorceReportFile;
+                            try
+                            {
+                                var sorceReportFile = new SourceReportFileItem(key.Value, fileInfo, isControlAgeOfData, DataAgeLimitInDays);
+
+                                if(key.Value == SourceReportItemKey.Ransoms && !string.IsNullOrEmpty(loginsFileName)) 
+                                {
+                                    ClientLogins = GetLoginsFromFilename(loginsFileName);
+                                }
+
+                                // Store SourceReportFiles
+                                SourceReportFiles[key.Value] = sorceReportFile;
+
+                            }
+                            catch (System.Exception ex)
+                            {
+                                message.Append(ex.Message);
+                                isError = true;
+        
+                            }  
                         } 
                         else 
                         {
@@ -258,36 +299,41 @@ namespace TableAnalizer.Objects.Managers
                     }
                 }
 
-                try
+                if(!isError) 
                 {
-                    // Get output directory and report filename
-                    var personalPath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-                    var clientOutputPathTask = DefineDirInfoForClientTargetReports(personalPath);
-                    await Task.Run(async () => await clientOutputPathTask);
-                    clientOutputPathTask.Wait();
-                    var clientOutputPath = clientOutputPathTask.Result;
+                    try
+                    {
+                        // Get output directory and report filename
+                        var personalPath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+                        var clientOutputPathTask = DefineDirInfoForClientTargetReports(personalPath);
+                        await Task.Run(async () => await clientOutputPathTask);
+                        clientOutputPathTask.Wait();
+                        var clientOutputPath = clientOutputPathTask.Result;
 
-                    if (!string.IsNullOrEmpty(clientOutputPath))
-                    {
-                        message.Append($"\nDirectory for target report: {clientOutputPath}");
+                        if (!string.IsNullOrEmpty(clientOutputPath))
+                        {
+                            message.Append($"\nDirectory for target report: {clientOutputPath}");
+                        }
+                        else
+                        {
+                            message.Append("\nPath to dir for working with client can`t be an empty string!");
+                            isError = true;
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        message.Append("\nPath to dir for working with client can`t be an empty string!");
+                        message.Append($"\nDefineDirInfoForClientTargetReports Error:\n{ex.Message}");
                         isError = true;
                     }
                 }
-                catch (Exception ex)
-                {
-                    message.Append($"\nDefineDirInfoForClientTargetReports Error:\n{ex.Message}");
-                    isError = true;
-                }
+
+               
             }
 
             ManagerReachedEventArgs args = new(message.ToString(), isError, false, 2000);
             OnManagerReached(args);
 
-            return ReportsPaths.Count;
+            return SourceReportFiles.Count;
         }
 
         /// <summary>
@@ -295,8 +341,8 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <param name="key">Key to search for report file in dict.</param>
         /// <returns>SourceReportFileForSKU as Task (optional).</returns>
-        public async Task<SourceReportFileForSKU?> GetSourceReport(SourceSKUReportFileKey key) =>
-            await Task.Run(() => ReportsPaths.TryGetValue(key, out var reportFile) ? reportFile : null);
+        public async Task<SourceReportFileItem?> GetSourceReport(SourceReportItemKey key) =>
+            await Task.Run(() => SourceReportFiles.TryGetValue(key, out var reportFile) ? reportFile : null);
 
         /// <summary>
         /// Define directory for client report output.
@@ -358,66 +404,66 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="existingKeys">A collection of the required file keys that were provided.</param>
         /// <returns>Boolean flag indicating whether the operation has been performed.</returns>
         /// <remarks><i>Rework, testing</i></remarks>
-        public bool IsRequiredFilesProvided(out List<SourceSKUReportFileKey> lostKeys, out List<SourceSKUReportFileKey> existingKeys)
+        public bool IsRequiredFilesProvided(out List<SourceReportItemKey> lostKeys, out List<SourceReportItemKey> existingKeys)
         {
             existingKeys = lostKeys = new([]);
 
-            var isContainsKeyRansoms = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Ransoms);
-            var isContainsKeyBalance = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Balance);
-            var isContainsKeyOutgoingProducts = ReportsPaths.ContainsKey(SourceSKUReportFileKey.OutgoingProducts);
-            var isContainsKeyTransfer = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Transfered);
-            var isContainsWriteOffPoints = ReportsPaths.ContainsKey(SourceSKUReportFileKey.WriteOffPoints);
-            var isContainsWriteOffPointsViaWarehouseShortage = ReportsPaths.ContainsKey(SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage);
-            var isContainsWriteOffPointsViaWarehouseAdjustment = ReportsPaths.ContainsKey(SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment);
-            var isContainsAdditional = ReportsPaths.ContainsKey(SourceSKUReportFileKey.Additional);
+            var isContainsKeyRansoms = SourceReportFiles.ContainsKey(SourceReportItemKey.Ransoms);
+            var isContainsKeyBalance = SourceReportFiles.ContainsKey(SourceReportItemKey.Balance);
+            var isContainsKeyOutgoingProducts = SourceReportFiles.ContainsKey(SourceReportItemKey.OutgoingProducts);
+            var isContainsKeyTransfer = SourceReportFiles.ContainsKey(SourceReportItemKey.Transfered);
+            var isContainsWriteOffPoints = SourceReportFiles.ContainsKey(SourceReportItemKey.WriteOffPoints);
+            var isContainsWriteOffPointsViaWarehouseShortage = SourceReportFiles.ContainsKey(SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
+            var isContainsWriteOffPointsViaWarehouseAdjustment = SourceReportFiles.ContainsKey(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
+            var isContainsAdditional = SourceReportFiles.ContainsKey(SourceReportItemKey.Additional);
 
             bool success = isContainsKeyRansoms && isContainsKeyBalance && isContainsWriteOffPoints && isContainsWriteOffPointsViaWarehouseShortage && isContainsWriteOffPointsViaWarehouseAdjustment;
 
             if (success)
             {
                 if (isContainsKeyRansoms)
-                    existingKeys.Add(SourceSKUReportFileKey.Ransoms);
+                    existingKeys.Add(SourceReportItemKey.Ransoms);
 
                 if (isContainsKeyBalance)
-                    existingKeys.Add(SourceSKUReportFileKey.Balance);
+                    existingKeys.Add(SourceReportItemKey.Balance);
 
                 if (isContainsKeyOutgoingProducts)
-                    existingKeys.Add(SourceSKUReportFileKey.OutgoingProducts);
+                    existingKeys.Add(SourceReportItemKey.OutgoingProducts);
 
                 if (isContainsKeyTransfer)
-                    existingKeys.Add(SourceSKUReportFileKey.Transfered);
+                    existingKeys.Add(SourceReportItemKey.Transfered);
 
                 if(isContainsWriteOffPoints)
-                    existingKeys.Add(SourceSKUReportFileKey.WriteOffPoints);
+                    existingKeys.Add(SourceReportItemKey.WriteOffPoints);
 
                 if(isContainsWriteOffPointsViaWarehouseShortage)
-                    existingKeys.Add(SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage);
+                    existingKeys.Add(SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
 
                 if(isContainsWriteOffPointsViaWarehouseAdjustment)
-                    existingKeys.Add(SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment);
+                    existingKeys.Add(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
 
                 if (isContainsAdditional)
-                    existingKeys.Add(SourceSKUReportFileKey.Additional);
+                    existingKeys.Add(SourceReportItemKey.Additional);
             }
             else
             {
                 if (!isContainsKeyRansoms)
-                    lostKeys.Add(SourceSKUReportFileKey.Ransoms);
+                    lostKeys.Add(SourceReportItemKey.Ransoms);
 
                 if (!isContainsKeyBalance)
-                    lostKeys.Add(SourceSKUReportFileKey.Balance);
+                    lostKeys.Add(SourceReportItemKey.Balance);
 
                 if (!isContainsKeyOutgoingProducts)
-                    lostKeys.Add(SourceSKUReportFileKey.OutgoingProducts);
+                    lostKeys.Add(SourceReportItemKey.OutgoingProducts);
 
                 if (!isContainsWriteOffPoints)
-                    lostKeys.Add(SourceSKUReportFileKey.WriteOffPoints);
+                    lostKeys.Add(SourceReportItemKey.WriteOffPoints);
 
                 if (!isContainsWriteOffPointsViaWarehouseShortage)
-                    lostKeys.Add(SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage);
+                    lostKeys.Add(SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
                 
                 if (!isContainsWriteOffPointsViaWarehouseAdjustment)
-                    lostKeys.Add(SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment);
+                    lostKeys.Add(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
             }
    
             return success;
@@ -434,9 +480,9 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="fileInfo">Object to parse the file name for.</param>
         /// <returns>Report file key or null, the name of the file with client logins or null.</returns>
         /// <remarks><i>Rework, testing</i></remarks>
-        private static async Task<(SourceSKUReportFileKey? key, string? loginsFileName)> GetSourceReportKeyByRegex(FileInfo fileInfo) 
+        private static async Task<(SourceReportItemKey? key, string? loginsFileName)> GetSourceReportKeyByRegex(FileInfo fileInfo) 
         {
-            SourceSKUReportFileKey? key = null;
+            SourceReportItemKey? key = null;
             string? loginsFileName = null;
 
             var fileName = Path.GetFileName(fileInfo.Name);
@@ -452,7 +498,7 @@ namespace TableAnalizer.Objects.Managers
                     if(regexMatch is not null && regexMatch.Success) 
                     {
                         key =  regexesSourceReport.Key;
-                        if(key == SourceSKUReportFileKey.Ransoms) 
+                        if(key == SourceReportItemKey.Ransoms) 
                         {
                             loginsFileName = fileName;
                         }

@@ -3,10 +3,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 {
     public partial class SKUForTargetReport
     {
-        #region Fields
-        private const string RESORT_CONSUMPTION_FIRST_LINE = "Пересортица расходов:";
-        private const string RESORT_RECEIPT_FIRST_LINE = "Пересортица приходов:";
-        #endregion
         #region Properties
         #region Properties - Common
         public string SKULogins { get; set; }
@@ -60,16 +56,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             set => skuReceipComment = string.IsNullOrEmpty(skuReceipComment) ? skuReceipComment = value : skuReceipComment += $"\n{value}";
         } 
 
-        private string skuResortsComment = string.Empty;
-
-        /// <summary>
-        /// Комментарий к пересортами
-        /// </summary>
-        public string SKUResortsComment
-        {
-            get => skuResortsComment;
-            set => skuResortsComment = string.IsNullOrEmpty(skuResortsComment) ? skuResortsComment = value : skuResortsComment += $"\n{value}";
-        }
         #endregion
         #region Properties - Mutual settlement
 
@@ -93,76 +79,12 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// </summary>
         public int SKUTransfered { get; set; }
 
-        /// <summary>
-        /// Склад: расход пересортом                
-        /// </summary>
-        public int SKUResort { get; set; }
         #endregion
         #region Properties - Remaining
         /// <summary>
         /// Склад: Остаток товаров
         /// </summary>
         public int SKURemaining { get; set; }
-        #endregion
-        #region Properties - DeliveryDelay  
-        /// <summary>
-        /// Задержка довоза, всего
-        /// </summary>
-        public int SKUDeliveryDelayTotal => SKUDeliveryDelayOrganization + SKUDeliveryDelayPoints + SKUDeliveryDelayWarehouse;
-
-        private int skuDeliveryDelayOrganization = 0;
-
-        /// <summary>
-        /// Задержка оплаты от организации, кол-во
-        /// </summary>
-        public int SKUDeliveryDelayOrganization
-        {
-            get => skuDeliveryDelayOrganization;
-            set => skuDeliveryDelayOrganization = value > 0 ? value : 0;
-        }
-
-        /// <summary>
-        /// Задержка оплаты от организации, сумма руб.
-        /// </summary>
-        public double SKUDeliveryDelayOrganizationSum =>
-            SKUDeliveryDelayOrganization > 0 && isDeadline ?
-            SKUDeliveryDelayOrganization * SKUPrice :
-            0.00;
-
-        private int skuDeliveryDelayPoints = 0;
-        /// <summary>
-        /// Задержка довоза от точек, кол-во
-        /// </summary>
-        public int SKUDeliveryDelayPoints
-        {
-            get => skuDeliveryDelayPoints;
-            set => skuDeliveryDelayPoints = value > 0 ? value : 0;
-        }
-        /// <summary>
-        /// Задержка довоза от точек, сумма руб.
-        /// </summary>
-        public double SKUDeliveryDelayPointsSum =>
-            SKUDeliveryDelayPoints > 0 && isDeadline ?
-            SKUDeliveryDelayPoints * SKUPrice :
-            0.00;
-
-        private int skuDeliveryDelayStorage = 0;
-        /// <summary>
-        /// Задержка довоза от склада, кол-во
-        /// </summary>
-        public int SKUDeliveryDelayWarehouse
-        {
-            get => skuDeliveryDelayStorage;
-            set => skuDeliveryDelayStorage = value > 0 ? value : 0;
-        }
-        /// <summary>
-        /// Задержка довоза от склада, сумма руб.
-        /// </summary>
-        public double SKUDeliveryDelayWarehouseSum =>
-            SKUDeliveryDelayWarehouse > 0 && isDeadline ?
-            SKUDeliveryDelayWarehouse * SKUPrice :
-            0.00;
-
         #endregion
         #region Properties - Overruns 
         private int skuOverrunsCount = 0;
@@ -247,13 +169,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                 paidWriteOffReminderResult = paidWriteOffRemainder;
             }
                
-
-            // Calculation of shortages from points 
-            CalculateDelay(SKUSellmentStatus.DelayDeliveryFromPoints);
-      
-            // Calculation of shortages from the warehouse
-            CalculateDelay(SKUSellmentStatus.DelayFromWarehouse);
-
             // Calculation of overruns
             var totalСonsumptionWithoutResorts = SKUSummarySettlement - SKUResort;
             if (totalСonsumptionWithoutResorts > SKURansomsWaiting && !IsParallelClientsSKU)
@@ -261,114 +176,19 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                 SKUOverrunsCount = totalСonsumptionWithoutResorts - SKURansomsWaiting;
             }
 
+            // Calculation of shortages from points 
+            CalculateDelay(SKUSellmentStatus.DelayDeliveryFromPoints);
+      
+            // Calculation of shortages from the warehouse
+            CalculateDelay(SKUSellmentStatus.DelayFromWarehouse);
+
+
             // Setting the status 
             SetStatus();
 
             return paidWriteOffReminderResult;
         }
 
-        public void MakeResort(SKUResortTarget target, SKUResortDirection dir, int skuNumber, int sum) 
-        {
-            switch (target)
-            {
-                case SKUResortTarget.ResortingConsumptionByOutgoing: case SKUResortTarget.ResortingConsumptionByTransfer:
-                    if(!SKUResortsComment.Contains(RESORT_CONSUMPTION_FIRST_LINE)) 
-                    {
-                        SKUResortsComment = RESORT_CONSUMPTION_FIRST_LINE;
-                    }
-                    
-                    break;
-                case SKUResortTarget.ResortingReceipt:
-                    if(!SKUResortsComment.Contains(RESORT_RECEIPT_FIRST_LINE)) 
-                    {
-                        SKUResortsComment = RESORT_RECEIPT_FIRST_LINE;
-                    }
-                    break;
-            }
-            
-
-            switch (target)
-            {
-                case SKUResortTarget.ResortingConsumptionByTransfer:
-                    switch (dir)
-                    {
-                        case SKUResortDirection.Incoming:
-                            SKUResort += sum;
-                            SKUResortsComment = $"- от арт. {skuNumber}: {sum} (фф)";
-                            break;
-                        case SKUResortDirection.Outgoing:
-                            SKUTransfered -= sum;
-                            SKUResortsComment = $"- на арт. {skuNumber}: {sum} (фф)";
-                            break;
-                    }
-                    break;
-
-                case SKUResortTarget.ResortingConsumptionByOutgoing:
-                    switch (dir)
-                    {
-                        case SKUResortDirection.Incoming:
-                            SKUResort += sum;
-                            SKUResortsComment = $"- от арт. {skuNumber}: {sum} (р)";
-                            break;
-                        case SKUResortDirection.Outgoing:
-                            SKUOutgoingProducts -= sum;
-                            SKUResortsComment = $"- на арт. {skuNumber}: {sum} (р)";
-                            break;
-                    }
-                    break;
-                
-                case SKUResortTarget.ResortingReceipt:
-                switch (dir) 
-                {
-                    case SKUResortDirection.Incoming:
-                        SKUReceiptGoods += sum;
-                        SKUResortsComment = $"- от арт. {skuNumber}: {sum} (п)";
-                        break;
-                    case SKUResortDirection.Outgoing:
-                        SKUReceiptGoods -= sum;
-                        SKUResortsComment = $"- на арт. {skuNumber}: {sum} (п)";
-                        break;
-                    case SKUResortDirection.Internal:
-                    
-                        if(SKUReceiptGoods >= sum) 
-                        {
-                            SKUReceiptGoods -= sum;
-                            SKUResortsComment = $"- приход списано: {sum} (эп)";
-                        } 
-
-                        // Final balance receipt
-                        if(SKUReceiptTotal > SKURansomsWaiting) 
-                        {
-                            SKUReceiptGoods -= SKUReceiptTotal - SKURansomsWaiting;
-                        }
-
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            }
-        }
-
-        private void CalculateDelay(SKUSellmentStatus sellmentStatus)
-        {
-            switch (sellmentStatus)
-            {
-                case SKUSellmentStatus.DelayDeliveryFromPoints:
-                    SKUDeliveryDelayPoints = SKURansomsWaiting > SKUReceiptTotal ? 
-                    SKURansomsWaiting - SKUReceiptTotal :
-                    0;
-                    break;
-                case SKUSellmentStatus.DelayFromWarehouse:
-                    SKUDeliveryDelayWarehouse = (SKURansomsWaiting - SKUSummarySettlement - SKUDeliveryDelayOrganization - SKUDeliveryDelayPoints) > 0 ? 
-                    SKURansomsWaiting - SKUDeliveryDelayPoints - SKUDeliveryDelayOrganization - SKUSummarySettlement : 
-                    0;
-                    break;
-                default:
-                    break;
-            }
-        }
-        
         private void SetStatus()
         {
             // Add status 

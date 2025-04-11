@@ -313,8 +313,6 @@ namespace TableAnalizer.Objects.Managers
             if(paidWriteOffRemainder > 0) 
             {
                 PaidWriteOffRemainder += paidWriteOffRemainder;
-                Trace.WriteLine($"PaidWriteOffRemainder ++ {PaidWriteOffRemainder}");
-                Task.Delay(500);
             }
 
             // if(writeOffSource == WriteOffSource.PointsViaWarehouseShortage && values.Item2 > 0) 
