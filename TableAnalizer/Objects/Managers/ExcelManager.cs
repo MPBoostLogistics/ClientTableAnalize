@@ -67,7 +67,7 @@ namespace TableAnalizer.Objects.Managers
         #endregion
 
         #region Properties
-        private static Dictionary<SourceSKUReportFileKey, ExcelPackage> ExcelPackages { get; } = [];
+        private static Dictionary<SourceReportItemKey, ExcelPackage> ExcelPackages { get; } = [];
         private static Type TypeString { get; } = typeof(string);
         private static Type TypeInt { get; } = typeof(int);
         private static Type TypeDouble { get; } = typeof(double);
@@ -244,8 +244,8 @@ namespace TableAnalizer.Objects.Managers
 
             new (colNumber: 23, colName: "Задержка довоза, всего", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReport.SKUDeliveryDelayTotal),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: null, targetCellSettings: accentTargetCellSettings),
-            new (colNumber: 24, colName: "Задержка оплаты от организация, товаров", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
+            new (colNumber: 24, colName: "Задержка оплаты от организации, товаров", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty,  propertyName: nameof(SKUForTargetReport.SKUDeliveryDelayOrganization),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 6),
             new (colNumber: 25, colName: "Задержка оплаты от организация, сумма руб.", colWidth: 12, format: DOUBLE_CELL_FORMAT,
@@ -456,7 +456,7 @@ namespace TableAnalizer.Objects.Managers
         // <param name="key">Specified key.</param>
         // <param name="fileInfo">Specified FileInfo.</param>
         // <returns>Existing ExcelPackage (optional).</returns>
-        public ExcelPackage? CreateExcelPackage(SourceSKUReportFileKey key, FileInfo fileInfo)
+        public ExcelPackage? CreateExcelPackage(SourceReportItemKey key, FileInfo fileInfo)
         {
             if (!GetExcelPackageByKey(key, out ExcelPackage? package) && package is null)
             {
@@ -474,7 +474,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="key">ExcelPackage search key.</param>
         /// <param name="package">ExcelPackage or null.</param>
         /// <returns>Boolean flag of operation.</returns>
-        public bool GetExcelPackageByKey(SourceSKUReportFileKey key, out ExcelPackage? package)
+        public bool GetExcelPackageByKey(SourceReportItemKey key, out ExcelPackage? package)
         {
             try
             {
@@ -568,17 +568,17 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="workSheetNames">Collection of Excel workbook sheet names.</param>
         /// <returns>Boolean operation execution flag.</returns>
         /// <remarks><i>New version</i></remarks>
-        public static bool GetExcelWorksheetStringNamesByKey(SourceSKUReportFileKey reportFileKey, out List<string>? workSheetNames)
+        public static bool GetExcelWorksheetStringNamesByKey(SourceReportItemKey reportFileKey, out List<string>? workSheetNames)
         {
             workSheetNames = reportFileKey switch
             {
-                SourceSKUReportFileKey.Ransoms => [RANSOMS_WORKSHEET_NAME],
-                SourceSKUReportFileKey.Balance or SourceSKUReportFileKey.OutgoingProducts 
-                    or SourceSKUReportFileKey.Transfered 
-                    or SourceSKUReportFileKey.WriteOffPoints 
-                    or SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage  
-                    or SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
-                SourceSKUReportFileKey.Additional => [COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
+                SourceReportItemKey.Ransoms => [RANSOMS_WORKSHEET_NAME],
+                SourceReportItemKey.Balance or SourceReportItemKey.OutgoingProducts 
+                    or SourceReportItemKey.Transfered 
+                    or SourceReportItemKey.WriteOffPoints 
+                    or SourceReportItemKey.WriteOffPointsViaWarehouseShortage  
+                    or SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
+                SourceReportItemKey.Additional => [COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
                 _ => null,
             };
             return workSheetNames is not null && workSheetNames.Count != 0;
@@ -1196,19 +1196,19 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="reportFileKey">Source report file key.</param>
         /// <param name="rangeSourceReportRows">Сollection of RangeSourceReportRows objects.</param>
         /// <returns>Boolean flag for performing the operation.</returns>
-        public static bool MakeRangeSourceReportRowsByKey(SourceSKUReportFileKey reportFileKey, string workSheetName, out List<RangeSourceReportRows> rangeSourceReportRows)
+        public static bool MakeRangeSourceReportRowsByKey(SourceReportItemKey reportFileKey, string workSheetName, out List<RangeSourceReportRows> rangeSourceReportRows)
         {
             rangeSourceReportRows = reportFileKey switch
             {
-                SourceSKUReportFileKey.Ransoms => [new(RansomsSourceCells)],
-                SourceSKUReportFileKey.Balance => [ new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
+                SourceReportItemKey.Ransoms => [new(RansomsSourceCells)],
+                SourceReportItemKey.Balance => [ new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
                                                     new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME), new(RemainingThirdRoomSourceCells, THIRD_ROOM_NAME, (LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))],
-                SourceSKUReportFileKey.WriteOffPoints => [new(WriteOffPointsSourceCells)],
-                SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage => [new(WriteOffPointsViaWarehouseSourceCells)],
-                SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment => [new(WriteOffPointsViaWarehouseSourceCells)],
-                SourceSKUReportFileKey.OutgoingProducts => [new(ShippedSourceCells)],
-                SourceSKUReportFileKey.Transfered => [new(TransferSourceCells)],
-                SourceSKUReportFileKey.Additional => workSheetName switch
+                SourceReportItemKey.WriteOffPoints => [new(WriteOffPointsSourceCells)],
+                SourceReportItemKey.WriteOffPointsViaWarehouseShortage => [new(WriteOffPointsViaWarehouseSourceCells)],
+                SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment => [new(WriteOffPointsViaWarehouseSourceCells)],
+                SourceReportItemKey.OutgoingProducts => [new(ShippedSourceCells)],
+                SourceReportItemKey.Transfered => [new(TransferSourceCells)],
+                SourceReportItemKey.Additional => workSheetName switch
                 {
                     COMPENSATION_REPORT_WORKSHEET_NAME => [new(CompensationSourceCells)],
                     RESORTS_REPORT_WORKSHEET_NAME => [new(ResortSourceCells)],

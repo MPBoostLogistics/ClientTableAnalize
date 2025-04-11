@@ -42,7 +42,7 @@ namespace TableAnalizer.Objects
         Unknown                
     }
 
-    public enum SourceSKUReportFileKey
+    public enum SourceReportItemKey
     {
         /// <summary>
         /// Выкупы клиента
@@ -65,7 +65,7 @@ namespace TableAnalizer.Objects
         /// </summary>
         WriteOffPoints,
         /// <summary>
-        /// Недостачи и пересорты
+        /// Оплаченные недостачи
         /// </summary>
         Additional,    
         /// <summary>

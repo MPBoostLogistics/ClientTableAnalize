@@ -13,7 +13,7 @@ using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using TableAnalizer.Objects;
 using TableAnalizer.Objects.Managers;
-using TableAnalizer.Objects.SKUItems;
+using TableAnalizer.Objects.ReportItems;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 internal class Program
@@ -94,7 +94,6 @@ internal class Program
             DeadlineDays = numbersSection.GetValue<int>("DeadlineDays");
         }
     }
-
     private static async Task Analyze()
     {
         reportFileManager!.ManagerReached += Report;
@@ -105,10 +104,10 @@ internal class Program
         Console.Clear();
 
         // Get data
-        Task<List<SourceSKUReportFileKey>?>? getDataFromConsoleTask = GetDataFromConsole();
+        Task<List<SourceReportItemKey>?>? getDataFromConsoleTask = GetDataFromConsole();
         await Task.Run(() => getDataFromConsoleTask);
         getDataFromConsoleTask.Wait();
-        List<SourceSKUReportFileKey>? existingKeys = getDataFromConsoleTask.Result;
+        List<SourceReportItemKey>? existingKeys = getDataFromConsoleTask.Result;
 
         //Start analize
         await TracingProgramExecution(new("Report analysis task has started...", false, false));
@@ -121,7 +120,7 @@ internal class Program
         skuManager.ManagerReached -= Report;
     }
 
-    private static async Task<List<SourceSKUReportFileKey>?> GetDataFromConsole() 
+    private static async Task<List<SourceReportItemKey>?> GetDataFromConsole() 
     {
         // Get source reports path
         DirectoryInfo? getSourceReportDirInfo = null;
@@ -136,30 +135,42 @@ internal class Program
         await TracingProgramExecution(new($"Reports path: {getSourceReportDirInfo.Name}", false, false));
 
         // Availability necessary reports
-        List<SourceSKUReportFileKey>? existingKeys = null;
-        while(existingKeys is null) 
+        Task<List<SourceReportItemKey>?>? availabilityNecessaryTask = null;
+        List<SourceReportItemKey>? existingKeys = null;
+        //while(existingKeys == null) 
+        //{
+            try
+            {
+                availabilityNecessaryTask = reportFileManager!.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName);
+                await Task.Run(() => availabilityNecessaryTask);
+                availabilityNecessaryTask.Wait();
+                existingKeys = availabilityNecessaryTask.Result;
+            }
+            catch (System.Exception ex)
+            {
+                existingKeys = null;
+                await TracingProgramExecution(new(ex.Message, true, true));
+                //break;
+            }
+        //}
+
+        if(!availabilityNecessaryTask!.IsFaulted && existingKeys != null && existingKeys.Count > 0)  
         {
-            Task<List<SourceSKUReportFileKey>?>  availabilityNecessaryTask = 
-                reportFileManager!.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName);
-            await Task.Run(() => availabilityNecessaryTask);
-            availabilityNecessaryTask.Wait();
-            existingKeys = availabilityNecessaryTask.Result;
+            // Select report direction
+            while(ReportFileManager.ReportRecipientType is null) 
+            {
+                Task<TargetReportRecipientType?> getTargetReportRecipientTypeTask = GetTargetReportRecipientTypeFromConsole(TracingDelay);
+                await Task.Run(() => getTargetReportRecipientTypeTask);
+                getTargetReportRecipientTypeTask.Wait();
+                ReportFileManager.ReportRecipientType = getTargetReportRecipientTypeTask.Result;
+            }
+            Console.Clear();
         }
-        
-        // Select report direction
-        while(ReportFileManager.ReportRecipientType is null) 
-        {
-            Task<TargetReportRecipientType?> getTargetReportRecipientTypeTask = GetTargetReportRecipientTypeFromConsole(TracingDelay);
-            await Task.Run(() => getTargetReportRecipientTypeTask);
-            getTargetReportRecipientTypeTask.Wait();
-            ReportFileManager.ReportRecipientType = getTargetReportRecipientTypeTask.Result;
-        }
-        Console.Clear();
 
         return existingKeys; 
     }
 
-    private static async Task AnalyzeСlientReport(List<SourceSKUReportFileKey>? existingKeys) 
+    private static async Task AnalyzeСlientReport(List<SourceReportItemKey>? existingKeys) 
     {
         bool isInternalReport = ReportFileManager.ReportRecipientType.HasValue && ReportFileManager.ReportRecipientType.Value == TargetReportRecipientType.Internal;
 
@@ -167,65 +178,65 @@ internal class Program
         if (existingKeys is not null && existingKeys.Count > 0) 
         {
             // Ransoms task
-            if(existingKeys.Contains(SourceSKUReportFileKey.Ransoms))
+            if(existingKeys.Contains(SourceReportItemKey.Ransoms))
             {
-                Task ransomsTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Ransoms, isInternalReport);
+                Task ransomsTask = ReceivingAndProcessingData(SourceReportItemKey.Ransoms, isInternalReport);
                 await Task.Run(async () => await ransomsTask);
                 ransomsTask.Wait();
             }
 
             // Balance task
-            if (existingKeys.Contains(SourceSKUReportFileKey.Balance))
+            if (existingKeys.Contains(SourceReportItemKey.Balance))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Balance, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Balance, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
 
             // WriteOff points via warehouse task (shortage)
-            if (existingKeys.Contains(SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage))
+            if (existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseShortage))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseShortage, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
 
              // WriteOff points via warehouse task (adjustment)
-            if (existingKeys.Contains(SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment))
+            if (existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
 
             // WriteOff points task 
-            if (existingKeys.Contains(SourceSKUReportFileKey.WriteOffPoints))
+            if (existingKeys.Contains(SourceReportItemKey.WriteOffPoints))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.WriteOffPoints, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPoints, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
 
             // Outgoing products tasks
-            if (existingKeys.Contains(SourceSKUReportFileKey.OutgoingProducts))
+            if (existingKeys.Contains(SourceReportItemKey.OutgoingProducts))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.OutgoingProducts, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.OutgoingProducts, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
 
             // Transfer task
-            if (existingKeys.Contains(SourceSKUReportFileKey.Transfered))
+            if (existingKeys.Contains(SourceReportItemKey.Transfered))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Transfered, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Transfered, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
 
             // Additional task
-            if (existingKeys.Contains(SourceSKUReportFileKey.Additional))
+            if (existingKeys.Contains(SourceReportItemKey.Additional))
             {
-                var currentTask = ReceivingAndProcessingData(SourceSKUReportFileKey.Additional, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Additional, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -265,7 +276,6 @@ internal class Program
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingReceipt),
                     //AnalyticalManager.FixExtraReceipts(ref skuForTargetReports),
                     AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
-                    
                 ];
 
                 for (int i = 0; i < autoResortTasks.Length; i++)
@@ -293,17 +303,17 @@ internal class Program
     /// Receiving and processing data from seller reports.
     /// </summary>
     /// <param name="reportFileKey">Key of source file with report.</param>
-    private static async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey,  bool isInternalReport)
+    private static async Task<double> ReceivingAndProcessingData(SourceReportItemKey reportFileKey,  bool isInternalReport)
     {
         var getReportFileTask = reportFileManager!.GetSourceReport(reportFileKey);
         await Task.Run(async () => await getReportFileTask);
         getReportFileTask.Wait();
-        SourceReportFileForSKU? reportFile = getReportFileTask.Result;
+        SourceReportFileItem? reportFile = getReportFileTask.Result;
        
         if (reportFile is not null)
         {
             // Make ExcelPackage
-            using var package = excelManager!.CreateExcelPackage(reportFileKey, reportFile.FileInfo);
+            using var package = excelManager!.CreateExcelPackage(reportFileKey, reportFile.Info);
 
             // Receiving and processing data
             Task<double>? receivingAndProcessingDataTask = skuManager!.ReceivingAndProcessingData(reportFileKey, isInternalReport, package);
@@ -385,7 +395,6 @@ internal class Program
     {
         Task.Run(async () => await TracingProgramExecution(e));
     }
-    
     private static async Task TracingProgramExecution(ManagerReachedEventArgs args) 
     {
         string flag;

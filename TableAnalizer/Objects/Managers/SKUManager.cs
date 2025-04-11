@@ -91,7 +91,7 @@ namespace TableAnalizer.Objects.Managers
             StatusStrings.Add(SKUSellmentStatus.DelayFromOrganizationAndWarehouse, stringsSection.GetValue<string>("DelayFromOrganizationAndWarehouseStatusString") ?? string.Empty);
         }
 
-        public async Task<double> ReceivingAndProcessingData(SourceSKUReportFileKey reportFileKey, bool isInternalReport, ExcelPackage excelPackage)
+        public async Task<double> ReceivingAndProcessingData(SourceReportItemKey reportFileKey, bool isInternalReport, ExcelPackage excelPackage)
         {            
             double time = 0.00;
 
@@ -126,7 +126,7 @@ namespace TableAnalizer.Objects.Managers
             return time;
         }
 
-        private async Task<double> ProcessingData(SourceSKUReportFileKey reportFileKey, string workSheetName, bool isInternalReport, ExcelPackage excelPackage)
+        private async Task<double> ProcessingData(SourceReportItemKey reportFileKey, string workSheetName, bool isInternalReport, ExcelPackage excelPackage)
         {
             // Start
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -183,15 +183,15 @@ namespace TableAnalizer.Objects.Managers
 
                 switch (reportFileKey)
                 {
-                    case SourceSKUReportFileKey.Ransoms:
+                    case SourceReportItemKey.Ransoms:
                         predicateHandler = FindSkusWithRansoms;
                         message = "Добавлено артикулов из выкупов: ";
                         break;
-                    case SourceSKUReportFileKey.Balance:
+                    case SourceReportItemKey.Balance:
                         predicateHandler = FindSkusWithRemaining;
                         message = "Добавлено артикулов из прихода и остатков на складе: ";
                         break;
-                    case SourceSKUReportFileKey.Additional:
+                    case SourceReportItemKey.Additional:
                         switch (workSheetName)
                         {
                             case ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME:
@@ -208,23 +208,23 @@ namespace TableAnalizer.Objects.Managers
                                 break;
                         };
                         break;
-                    case SourceSKUReportFileKey.OutgoingProducts:
+                    case SourceReportItemKey.OutgoingProducts:
                         predicateHandler = FindSkusWithOutgoingProducts;
                         message = "Артикулов в расходе со склада: ";
                         break;
-                    case SourceSKUReportFileKey.Transfered:
+                    case SourceReportItemKey.Transfered:
                         predicateHandler = FindSkusWithTransfered;
                         message = "Артикулов в передаче со склада (на фулфилмент): ";
                         break;
-                    case SourceSKUReportFileKey.WriteOffPoints:
+                    case SourceReportItemKey.WriteOffPoints:
                         predicateHandler = FindSkusWithWriteOffPoints;
                         message = "Артикулов в списании недостач от точек: ";
                         break;
-                    case SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage:
+                    case SourceReportItemKey.WriteOffPointsViaWarehouseShortage:
                         predicateHandler = FindSkusWithWriteOffPointsViaWarehouseShortage;
                         message = "Артикулов в списании недостач от точек через склад: ";
                         break;
-                    case SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment:
+                    case SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment:
                         predicateHandler = FindSkusWithWriteOffPointsViaWarehouseAdjustment;
                         message = "Артикулов в списании корректировок от точек через склад: ";
                         break;
@@ -251,18 +251,18 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="rowsWithRawData">List of raw data dictionaries.</param>
         /// <returns>Number of keys in final dictionary.</returns>
         /// <exception cref="ArgumentException">Exception when passing an empty dictionary.</exception>
-        public async Task<int> SaveSKUBalanceUnits(SourceSKUReportFileKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData)
+        public async Task<int> SaveSKUBalanceUnits(SourceReportItemKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData)
         {
-            bool isRansoms = reportFileKey == SourceSKUReportFileKey.Ransoms;
-            bool isBalance = reportFileKey == SourceSKUReportFileKey.Balance;
-            bool isOutgoingProducts = reportFileKey == SourceSKUReportFileKey.OutgoingProducts;
-            bool isTransfered = reportFileKey == SourceSKUReportFileKey.Transfered;
-            bool isWriteOffPoints = reportFileKey == SourceSKUReportFileKey.WriteOffPoints;
-            bool isWriteOffPointsViaWarehouseShortage = reportFileKey == SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage;
-            bool isWriteOffPointsViaWarehouseAdjustment = reportFileKey == SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment;
-            bool isCompensation = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
-            bool isResort = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
-            bool isParallel = reportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
+            bool isRansoms = reportFileKey == SourceReportItemKey.Ransoms;
+            bool isBalance = reportFileKey == SourceReportItemKey.Balance;
+            bool isOutgoingProducts = reportFileKey == SourceReportItemKey.OutgoingProducts;
+            bool isTransfered = reportFileKey == SourceReportItemKey.Transfered;
+            bool isWriteOffPoints = reportFileKey == SourceReportItemKey.WriteOffPoints;
+            bool isWriteOffPointsViaWarehouseShortage = reportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseShortage;
+            bool isWriteOffPointsViaWarehouseAdjustment = reportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment;
+            bool isCompensation = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
+            bool isResort = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
+            bool isParallel = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
 
             await Task.Delay(10); // dummy
 
@@ -419,14 +419,14 @@ namespace TableAnalizer.Objects.Managers
 
             return reportFileKey switch
             {
-                SourceSKUReportFileKey.Ransoms => SkuRansomsBalanceUnits.Count(),
-                SourceSKUReportFileKey.Balance => SkuRemainingBalanceUnits.Count(),
-                SourceSKUReportFileKey.OutgoingProducts  => SkuShippedBalanceUnits.Count(),
-                SourceSKUReportFileKey.Transfered => SkuTransferedBalanceUnits.Count(),
-                SourceSKUReportFileKey.WriteOffPoints => SkuWriteOffFromPointsBalanceUnits.Count(),
-                SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage => SkuWriteOffFromPointsViaWarehouseShortageUnits.Count(),
-                SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment => SkuWriteOffFromPointsViaWarehouseAdjustmentUnits.Count(),
-                SourceSKUReportFileKey.Additional => workSheetName switch 
+                SourceReportItemKey.Ransoms => SkuRansomsBalanceUnits.Count(),
+                SourceReportItemKey.Balance => SkuRemainingBalanceUnits.Count(),
+                SourceReportItemKey.OutgoingProducts  => SkuShippedBalanceUnits.Count(),
+                SourceReportItemKey.Transfered => SkuTransferedBalanceUnits.Count(),
+                SourceReportItemKey.WriteOffPoints => SkuWriteOffFromPointsBalanceUnits.Count(),
+                SourceReportItemKey.WriteOffPointsViaWarehouseShortage => SkuWriteOffFromPointsViaWarehouseShortageUnits.Count(),
+                SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment => SkuWriteOffFromPointsViaWarehouseAdjustmentUnits.Count(),
+                SourceReportItemKey.Additional => workSheetName switch 
                 {
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => SkuCompensationBalanceUnits.Count(),
                     ExcelManager.RESORTS_REPORT_WORKSHEET_NAME => SkuResortBalanceUnits.Count(),
@@ -442,18 +442,18 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <exception cref="ArgumentException">Manager does not contain an array of "raw data".</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public async Task UpdateSKUsFromBalanceUnits(SourceSKUReportFileKey skuReportFileKey, string workSheetName, bool isRawReport)
+        public async Task UpdateSKUsFromBalanceUnits(SourceReportItemKey skuReportFileKey, string workSheetName, bool isRawReport)
         {
-            bool isRansoms = skuReportFileKey == SourceSKUReportFileKey.Ransoms;
-            bool isRemaining = skuReportFileKey == SourceSKUReportFileKey.Balance;
-            bool isShipped = skuReportFileKey == SourceSKUReportFileKey.OutgoingProducts;
-            bool isTransfered = skuReportFileKey == SourceSKUReportFileKey.Transfered;
-            bool isWriteOffPoints = skuReportFileKey == SourceSKUReportFileKey.WriteOffPoints;
-            bool isWriteOffPointsViaWarehouseShortage = skuReportFileKey == SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage;
-            bool isWriteOffPointsViaWarehouseAdjustment = skuReportFileKey == SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment;
-            bool isCompensation = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
-            bool isResorts = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
-            bool isParellel = skuReportFileKey == SourceSKUReportFileKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
+            bool isRansoms = skuReportFileKey == SourceReportItemKey.Ransoms;
+            bool isRemaining = skuReportFileKey == SourceReportItemKey.Balance;
+            bool isShipped = skuReportFileKey == SourceReportItemKey.OutgoingProducts;
+            bool isTransfered = skuReportFileKey == SourceReportItemKey.Transfered;
+            bool isWriteOffPoints = skuReportFileKey == SourceReportItemKey.WriteOffPoints;
+            bool isWriteOffPointsViaWarehouseShortage = skuReportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseShortage;
+            bool isWriteOffPointsViaWarehouseAdjustment = skuReportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment;
+            bool isCompensation = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
+            bool isResorts = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
+            bool isParellel = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
 
             // Dummy
             await Task.Delay(1);
@@ -462,21 +462,21 @@ namespace TableAnalizer.Objects.Managers
             Marketplace marketplace;       
             IRepository<int, List<ParsingRowEntity>>? parsingEntityCollection = skuReportFileKey switch
             {
-                SourceSKUReportFileKey.Ransoms =>
+                SourceReportItemKey.Ransoms =>
                    parsingEntityCollection = SkuRansomsBalanceUnits,
-                SourceSKUReportFileKey.Balance =>
+                SourceReportItemKey.Balance =>
                     parsingEntityCollection = SkuRemainingBalanceUnits,
-                SourceSKUReportFileKey.OutgoingProducts =>
+                SourceReportItemKey.OutgoingProducts =>
                     parsingEntityCollection = SkuShippedBalanceUnits,  
-                SourceSKUReportFileKey.Transfered =>
+                SourceReportItemKey.Transfered =>
                     parsingEntityCollection = SkuTransferedBalanceUnits,  
-                SourceSKUReportFileKey.WriteOffPoints =>
+                SourceReportItemKey.WriteOffPoints =>
                     parsingEntityCollection = SkuWriteOffFromPointsBalanceUnits,
-                SourceSKUReportFileKey.WriteOffPointsViaWarehouseShortage =>
+                SourceReportItemKey.WriteOffPointsViaWarehouseShortage =>
                     parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseShortageUnits, 
-                SourceSKUReportFileKey.WriteOffPointsViaWarehouseAdjustment =>
+                SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment =>
                     parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseAdjustmentUnits, 
-                SourceSKUReportFileKey.Additional => workSheetName switch 
+                SourceReportItemKey.Additional => workSheetName switch 
                 {
                     ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => 
                         parsingEntityCollection = SkuCompensationBalanceUnits,

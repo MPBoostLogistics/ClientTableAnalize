@@ -12,7 +12,7 @@ namespace TableAnalizerTest
     {
         #region Fields
         private SourceReportFileForSKU? sourceReportFileForSKURansoms;
-        private SourceSKUReportFileKey ransomsKey;
+        private SourceReportItemKey ransomsKey;
 
         #endregion
 
@@ -24,7 +24,7 @@ namespace TableAnalizerTest
             getSourceReportFilesTask.Wait();
 
             // arrange
-            Task<SourceReportFileForSKU?> getSourceReportTask = reportFileManager.GetSourceReport(SourceSKUReportFileKey.Ransoms);
+            Task<SourceReportFileForSKU?> getSourceReportTask = reportFileManager.GetSourceReport(SourceReportItemKey.Ransoms);
     
             // act
             await Task.Run(() => getSourceReportTask);
@@ -47,7 +47,7 @@ namespace TableAnalizerTest
             });
 
             // act
-            ransomsKey = (SourceSKUReportFileKey)sourceReportFileForSKURansoms!.ReportKey;
+            ransomsKey = (SourceReportItemKey)sourceReportFileForSKURansoms!.ReportKey;
             using var ransomsPackage = excelManager.CreateExcelPackage(ransomsKey, sourceReportFileForSKURansoms!.FileInfo);
             excelManager.GetExcelPackageByKey(ransomsKey, out ExcelPackage? package);
             

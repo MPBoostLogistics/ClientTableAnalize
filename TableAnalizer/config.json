@@ -10,8 +10,9 @@
       "TraceErrorFlag": "[ERROR]: "
     },
     "Numbers": {
+      "DataAgeLimitInDays" : 7,
       "DeadlineDays" : 14,
-      "TracingDelay": 350
+      "TracingDelay": 750
     },
     "Formulas": 
     {

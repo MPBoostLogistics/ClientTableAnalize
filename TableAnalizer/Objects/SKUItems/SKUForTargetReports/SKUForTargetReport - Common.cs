@@ -104,66 +104,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// </summary>
         public int SKURemaining { get; set; }
         #endregion
-        #region Properties - DeliveryDelay  
-        /// <summary>
-        /// Задержка довоза, всего
-        /// </summary>
-        public int SKUDeliveryDelayTotal => SKUDeliveryDelayOrganization + SKUDeliveryDelayPoints + SKUDeliveryDelayWarehouse;
-
-        private int skuDeliveryDelayOrganization = 0;
-
-        /// <summary>
-        /// Задержка оплаты от организации, кол-во
-        /// </summary>
-        public int SKUDeliveryDelayOrganization
-        {
-            get => skuDeliveryDelayOrganization;
-            set => skuDeliveryDelayOrganization = value > 0 ? value : 0;
-        }
-
-        /// <summary>
-        /// Задержка оплаты от организации, сумма руб.
-        /// </summary>
-        public double SKUDeliveryDelayOrganizationSum =>
-            SKUDeliveryDelayOrganization > 0 && isDeadline ?
-            SKUDeliveryDelayOrganization * SKUPrice :
-            0.00;
-
-        private int skuDeliveryDelayPoints = 0;
-        /// <summary>
-        /// Задержка довоза от точек, кол-во
-        /// </summary>
-        public int SKUDeliveryDelayPoints
-        {
-            get => skuDeliveryDelayPoints;
-            set => skuDeliveryDelayPoints = value > 0 ? value : 0;
-        }
-        /// <summary>
-        /// Задержка довоза от точек, сумма руб.
-        /// </summary>
-        public double SKUDeliveryDelayPointsSum =>
-            SKUDeliveryDelayPoints > 0 && isDeadline ?
-            SKUDeliveryDelayPoints * SKUPrice :
-            0.00;
-
-        private int skuDeliveryDelayStorage = 0;
-        /// <summary>
-        /// Задержка довоза от склада, кол-во
-        /// </summary>
-        public int SKUDeliveryDelayWarehouse
-        {
-            get => skuDeliveryDelayStorage;
-            set => skuDeliveryDelayStorage = value > 0 ? value : 0;
-        }
-        /// <summary>
-        /// Задержка довоза от склада, сумма руб.
-        /// </summary>
-        public double SKUDeliveryDelayWarehouseSum =>
-            SKUDeliveryDelayWarehouse > 0 && isDeadline ?
-            SKUDeliveryDelayWarehouse * SKUPrice :
-            0.00;
-
-        #endregion
         #region Properties - Overruns 
         private int skuOverrunsCount = 0;
         /// <summary>
@@ -247,6 +187,12 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                 paidWriteOffReminderResult = paidWriteOffRemainder;
             }
                
+            // Calculation of overruns
+            var totalСonsumptionWithoutResorts = SKUSummarySettlement - SKUResort;
+            if (totalСonsumptionWithoutResorts > SKURansomsWaiting && !IsParallelClientsSKU)
+            {
+                SKUOverrunsCount = totalСonsumptionWithoutResorts - SKURansomsWaiting;
+            }
 
             // Calculation of shortages from points 
             CalculateDelay(SKUSellmentStatus.DelayDeliveryFromPoints);
@@ -254,12 +200,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             // Calculation of shortages from the warehouse
             CalculateDelay(SKUSellmentStatus.DelayFromWarehouse);
 
-            // Calculation of overruns
-            var totalСonsumptionWithoutResorts = SKUSummarySettlement - SKUResort;
-            if (totalСonsumptionWithoutResorts > SKURansomsWaiting && !IsParallelClientsSKU)
-            {
-                SKUOverrunsCount = totalСonsumptionWithoutResorts - SKURansomsWaiting;
-            }
 
             // Setting the status 
             SetStatus();
@@ -350,25 +290,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             }
         }
 
-        private void CalculateDelay(SKUSellmentStatus sellmentStatus)
-        {
-            switch (sellmentStatus)
-            {
-                case SKUSellmentStatus.DelayDeliveryFromPoints:
-                    SKUDeliveryDelayPoints = SKURansomsWaiting > SKUReceiptTotal ? 
-                    SKURansomsWaiting - SKUReceiptTotal :
-                    0;
-                    break;
-                case SKUSellmentStatus.DelayFromWarehouse:
-                    SKUDeliveryDelayWarehouse = (SKURansomsWaiting - SKUSummarySettlement - SKUDeliveryDelayOrganization - SKUDeliveryDelayPoints) > 0 ? 
-                    SKURansomsWaiting - SKUDeliveryDelayPoints - SKUDeliveryDelayOrganization - SKUSummarySettlement : 
-                    0;
-                    break;
-                default:
-                    break;
-            }
-        }
-        
         private void SetStatus()
         {
             // Add status 
