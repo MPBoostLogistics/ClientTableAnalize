@@ -3,10 +3,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 {
     public partial class SKUForTargetReport
     {
-        #region Fields
-        private const string RESORT_CONSUMPTION_FIRST_LINE = "Пересортица расходов:";
-        private const string RESORT_RECEIPT_FIRST_LINE = "Пересортица приходов:";
-        #endregion
         #region Properties
         #region Properties - Common
         public string SKULogins { get; set; }
@@ -60,16 +56,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             set => skuReceipComment = string.IsNullOrEmpty(skuReceipComment) ? skuReceipComment = value : skuReceipComment += $"\n{value}";
         } 
 
-        private string skuResortsComment = string.Empty;
-
-        /// <summary>
-        /// Комментарий к пересортами
-        /// </summary>
-        public string SKUResortsComment
-        {
-            get => skuResortsComment;
-            set => skuResortsComment = string.IsNullOrEmpty(skuResortsComment) ? skuResortsComment = value : skuResortsComment += $"\n{value}";
-        }
         #endregion
         #region Properties - Mutual settlement
 
@@ -93,10 +79,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// </summary>
         public int SKUTransfered { get; set; }
 
-        /// <summary>
-        /// Склад: расход пересортом                
-        /// </summary>
-        public int SKUResort { get; set; }
         #endregion
         #region Properties - Remaining
         /// <summary>
@@ -205,89 +187,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             SetStatus();
 
             return paidWriteOffReminderResult;
-        }
-
-        public void MakeResort(SKUResortTarget target, SKUResortDirection dir, int skuNumber, int sum) 
-        {
-            switch (target)
-            {
-                case SKUResortTarget.ResortingConsumptionByOutgoing: case SKUResortTarget.ResortingConsumptionByTransfer:
-                    if(!SKUResortsComment.Contains(RESORT_CONSUMPTION_FIRST_LINE)) 
-                    {
-                        SKUResortsComment = RESORT_CONSUMPTION_FIRST_LINE;
-                    }
-                    
-                    break;
-                case SKUResortTarget.ResortingReceipt:
-                    if(!SKUResortsComment.Contains(RESORT_RECEIPT_FIRST_LINE)) 
-                    {
-                        SKUResortsComment = RESORT_RECEIPT_FIRST_LINE;
-                    }
-                    break;
-            }
-            
-
-            switch (target)
-            {
-                case SKUResortTarget.ResortingConsumptionByTransfer:
-                    switch (dir)
-                    {
-                        case SKUResortDirection.Incoming:
-                            SKUResort += sum;
-                            SKUResortsComment = $"- от арт. {skuNumber}: {sum} (фф)";
-                            break;
-                        case SKUResortDirection.Outgoing:
-                            SKUTransfered -= sum;
-                            SKUResortsComment = $"- на арт. {skuNumber}: {sum} (фф)";
-                            break;
-                    }
-                    break;
-
-                case SKUResortTarget.ResortingConsumptionByOutgoing:
-                    switch (dir)
-                    {
-                        case SKUResortDirection.Incoming:
-                            SKUResort += sum;
-                            SKUResortsComment = $"- от арт. {skuNumber}: {sum} (р)";
-                            break;
-                        case SKUResortDirection.Outgoing:
-                            SKUOutgoingProducts -= sum;
-                            SKUResortsComment = $"- на арт. {skuNumber}: {sum} (р)";
-                            break;
-                    }
-                    break;
-                
-                case SKUResortTarget.ResortingReceipt:
-                switch (dir) 
-                {
-                    case SKUResortDirection.Incoming:
-                        SKUReceiptGoods += sum;
-                        SKUResortsComment = $"- от арт. {skuNumber}: {sum} (п)";
-                        break;
-                    case SKUResortDirection.Outgoing:
-                        SKUReceiptGoods -= sum;
-                        SKUResortsComment = $"- на арт. {skuNumber}: {sum} (п)";
-                        break;
-                    case SKUResortDirection.Internal:
-                    
-                        if(SKUReceiptGoods >= sum) 
-                        {
-                            SKUReceiptGoods -= sum;
-                            SKUResortsComment = $"- приход списано: {sum} (эп)";
-                        } 
-
-                        // Final balance receipt
-                        if(SKUReceiptTotal > SKURansomsWaiting) 
-                        {
-                            SKUReceiptGoods -= SKUReceiptTotal - SKURansomsWaiting;
-                        }
-
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            }
         }
 
         private void SetStatus()
