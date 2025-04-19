@@ -7,7 +7,7 @@ using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.Repositories;
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
@@ -47,7 +47,9 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<int, List<ParsingRowEntity>> SkuWriteOffFromPointsBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseShortageUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseAdjustmentUnits { get; } = new ParsingRowEntityRepo();
-        public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; } = new ParsingRowEntityRepo();
+        //public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; } = new ParsingRowEntityRepo();
+
+        public IRepository<int, List<ParsingRowEntity>> SkuPaidShortagesBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<int, List<ParsingRowEntity>> SkuParallelUnits { get; } = new ParsingRowEntityRepo();
 
@@ -175,7 +177,6 @@ namespace TableAnalizer.Objects.Managers
                 static bool FindSkusWithWriteOffPoints(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPoints > 0;
                 static bool FindSkusWithWriteOffPointsViaWarehouseShortage(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseShortage > 0;
                 static bool FindSkusWithWriteOffPointsViaWarehouseAdjustment(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseAdjustment > 0;
-                static bool FindSkusWithCompensation(SKU sku) => sku.SKUCompensationBalance != null;
                 static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
                 static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
 
@@ -194,10 +195,6 @@ namespace TableAnalizer.Objects.Managers
                     case SourceReportItemKey.Additional:
                         switch (workSheetName)
                         {
-                            case ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME:
-                                predicateHandler = FindSkusWithCompensation;
-                                message = "Артикулов из компенсации недостач: ";
-                                break;
                             case ExcelManager.RESORTS_REPORT_WORKSHEET_NAME:
                                 predicateHandler = FindSkusWithResort;
                                 message = "Артикулов из пересортов: ";
@@ -260,9 +257,9 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOffPoints = reportFileKey == SourceReportItemKey.WriteOffPoints;
             bool isWriteOffPointsViaWarehouseShortage = reportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseShortage;
             bool isWriteOffPointsViaWarehouseAdjustment = reportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment;
-            bool isCompensation = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResort = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isParallel = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
+            bool isPaidShortages = reportFileKey == SourceReportItemKey.PaidShortages;
 
             await Task.Delay(10); // dummy
 
@@ -366,22 +363,6 @@ namespace TableAnalizer.Objects.Managers
                     SkuWriteOffFromPointsViaWarehouseShortageUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             }
-            else if(isCompensation) 
-            {
-                var skuCompensationDataUnits = from rowWithRawData in rowsWithRawData
-                                    let unit = new SKUCompensationDataUnit(rowWithRawData)
-                                    group unit by unit.SKUNumber 
-                                    into unitGroup  
-                                    select unitGroup;
-
-                foreach (var group in skuCompensationDataUnits)
-                {
-                    var list = (((List<SKUCompensationDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ?? 
-                        throw new InvalidCastException("Невозможно привести List<SKUCompensationDataUnit> к List<ParsingRowEntity>");
-                    
-                    SkuCompensationBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
-                }
-            }
             else if(isResort) 
             {
                 var skuResortDataUnits = from rowWithRawData in rowsWithRawData
@@ -416,6 +397,27 @@ namespace TableAnalizer.Objects.Managers
                     SkuParallelUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
                 }
             } 
+            else if(isPaidShortages) 
+            {
+                var skuPaidShortageDataUnits = from rowWithRawData in rowsWithRawData
+                                               let unit = new SKUPaidShortageDataUnit(rowWithRawData)
+                                               where !string.IsNullOrEmpty(unit.ClientLogin) && ClientLogins.Contains(unit.ClientLogin)
+                                               group unit by unit.SKUNumber 
+                                               into unitGroup  
+                                               select unitGroup;
+
+                foreach (var group in skuPaidShortageDataUnits)
+                {
+                    var list = (((List<SKUPaidShortageDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ?? 
+                        throw new InvalidCastException($"Cannot cast {nameof(List<SKUPaidShortageDataUnit>)} to {nameof(List<ParsingRowEntity>)}.");
+                    
+                    
+                    if(group != null && group.Key.HasValue) 
+                    {
+                        SkuPaidShortagesBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key.Value, list);
+                    }
+                }
+            }
 
             return reportFileKey switch
             {
@@ -428,11 +430,11 @@ namespace TableAnalizer.Objects.Managers
                 SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment => SkuWriteOffFromPointsViaWarehouseAdjustmentUnits.Count(),
                 SourceReportItemKey.Additional => workSheetName switch 
                 {
-                    ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => SkuCompensationBalanceUnits.Count(),
                     ExcelManager.RESORTS_REPORT_WORKSHEET_NAME => SkuResortBalanceUnits.Count(),
                     ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME => SkuParallelUnits.Count(),
                     _ => 0
                 },
+                SourceReportItemKey.PaidShortages => SkuPaidShortagesBalanceUnits.Count(),
                 _ => 0
             };
         }
@@ -451,9 +453,9 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOffPoints = skuReportFileKey == SourceReportItemKey.WriteOffPoints;
             bool isWriteOffPointsViaWarehouseShortage = skuReportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseShortage;
             bool isWriteOffPointsViaWarehouseAdjustment = skuReportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment;
-            bool isCompensation = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME;
             bool isResorts = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isParellel = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
+            bool isPaidShortages = skuReportFileKey == SourceReportItemKey.PaidShortages;
 
             // Dummy
             await Task.Delay(1);
@@ -478,14 +480,13 @@ namespace TableAnalizer.Objects.Managers
                     parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseAdjustmentUnits, 
                 SourceReportItemKey.Additional => workSheetName switch 
                 {
-                    ExcelManager.COMPENSATION_REPORT_WORKSHEET_NAME => 
-                        parsingEntityCollection = SkuCompensationBalanceUnits,
                     ExcelManager.RESORTS_REPORT_WORKSHEET_NAME => 
                         parsingEntityCollection = SkuResortBalanceUnits,
                     ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME => 
                         parsingEntityCollection = SkuParallelUnits,
                     _ => parsingEntityCollection = null
                 },
+                SourceReportItemKey.PaidShortages => SkuPaidShortagesBalanceUnits,
                 _ => parsingEntityCollection = null,
             };
 
@@ -584,14 +585,6 @@ namespace TableAnalizer.Objects.Managers
                             SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
                         }
                     }
-                    else if(isCompensation) 
-                    {
-                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUCompensationDataUnit>().ToList()) ??
-                            throw new InvalidCastException("Cannot cast collection to IList<SKUCompensationDataUnit>.");
-
-                        SKUCompensationBalance skuCompensationBalance = new(skuNumber, units.ToList());
-                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuCompensationBalance));
-                    }
                     else if(isResorts)
                     {
                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUResortDataUnit>().ToList()) ??
@@ -609,6 +602,15 @@ namespace TableAnalizer.Objects.Managers
                         {
                             SKUs.RetrieveAndUpdateOrAddValue(unit.SKUNumber, new(unit.SKUNumber, true));
                         }
+                    }
+                    else if(isPaidShortages) 
+                    {
+                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUPaidShortageDataUnit>().ToList()) ??
+                            throw new InvalidCastException($"Cannot cast collection to {nameof(IList<SKUPaidShortageDataUnit>)}.");
+
+                        SKUPaidShortageBalance skuPaidShortageBalance = new(skuNumber, [.. units]);
+
+                        SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuPaidShortageBalance));
                     }
                 }
             }

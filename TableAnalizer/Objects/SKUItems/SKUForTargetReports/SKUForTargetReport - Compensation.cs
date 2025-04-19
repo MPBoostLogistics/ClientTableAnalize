@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage;
 
 namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports 
 {
@@ -36,17 +36,23 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// Фактическая денежная компенсация от склада и организации (точек) в адрес клиента. 
         /// </summary>
         public int SKUCompensatedTotalToClient => 
-            SKUCompensatedWarehouse +  SKUCompensatedOrganization;
+            SKUPaidShortageWarehouse + SKUPaidShortageOrganization + SKUPaidShortageOrganizationAndWarehouse;
 
         /// <summary>
         /// Денежная компенсация от склада в адрес клиента
         /// </summary>                       
-        public int SKUCompensatedWarehouse { get; set; } = 0;
+        public int SKUPaidShortageWarehouse { get; set; } = 0;
 
-         /// <summary>
+        /// <summary>
         /// Денежная компенсация от организации (точек) в адрес клиента
         /// </summary>                       
-        public int SKUCompensatedOrganization { get; set; } = 0;
+        public int SKUPaidShortageOrganization { get; set; } = 0;
+
+        /// <summary>
+        /// Денежная компенсация от организации (точек) и склада в адрес клиента
+        /// </summary> 
+        public int SKUPaidShortageOrganizationAndWarehouse { get; set; } = 0;
+
         #endregion
    
         #region Functionality
@@ -58,17 +64,22 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             SKUWriteOffFromPointsViaWarehouseShortage = writeOffBalance.SKUWriteOffPointsViaWarehouseShortage;
             SKUWrittenOffFromPointsViaWarehouseAdjustment = writeOffBalance.SKUWriteOffPointsViaWarehouseAdjustment;
         }
-        private void SetSKUCompensateds(SKUCompensationBalance?  compensationBalance) 
+
+        private void SetSKUCompensateds(SKUPaidShortageBalance? skuPaidShortageBalance) 
         {
-            if(compensationBalance is null) return;
+            if(skuPaidShortageBalance is null) return;
 
-            SKUCompensatedWarehouse += compensationBalance.CompensationItems
-                .Where(el => el.Key == CompensationTarget.Warehouse)
-                .Aggregate(0, (acc, i) => acc + i.Value.count);
+            SKUPaidShortageWarehouse += skuPaidShortageBalance.PaidShortageItems
+                .Where(el => el.Key ==  ClaimExecutor.Warehouse)
+                .Aggregate(0, (acc, i) => acc + i.Value.sum);
 
-            SKUCompensatedOrganization += compensationBalance.CompensationItems
-                .Where(el => el.Key == CompensationTarget.PickupPoint)
-                .Aggregate(0, (acc, i) => acc + i.Value.count);
+            SKUPaidShortageOrganization += skuPaidShortageBalance.PaidShortageItems
+                .Where(el => el.Key == ClaimExecutor.Organization)
+                .Aggregate(0, (acc, i) => acc + i.Value.sum);
+
+            SKUPaidShortageOrganizationAndWarehouse += skuPaidShortageBalance.PaidShortageItems
+                .Where(el => el.Key == ClaimExecutor.OrganizationAndWarehouse)
+                .Aggregate(0, (acc, i) => acc + i.Value.sum);
         }
         
         /// <summary>

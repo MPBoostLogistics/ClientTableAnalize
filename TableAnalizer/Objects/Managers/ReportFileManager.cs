@@ -15,6 +15,7 @@ namespace TableAnalizer.Objects.Managers
         private const string SHIPPED_REPORT_REGEX_PATTERN  = @"\d+\s+\bрасходы\b";
         private const string TRANSFER_REPORT_REGEX_PATTERN  = @"\d+\s+\bперемещения\b";
         private const string ADDITIONAL_REPORT_REGEX_PATTERN  = @"\d+\s+\bдополнительный\b";
+        private const string PAID_SHORTAGES_REGEX_PATTERN  = @"\bОплаченные\sнедостачи\b";
         private const string WRITEOFF_POINTS_VIA_WAREHOUSE_SHORTAGE_REPORT_REGEX_PATTERN = @"\bСписание\sточек\sчерез\sсклад\sнедостачи\b";
         private const string WRITEOFF_POINTS_VIA_WAREHOUSE_ADJUSTMENT_REPORT_REGEX_PATTERN = @"\bСписание\sточек\sчерез\sсклад\sкорректировки\b";
         private const string WRITEOFF_POINTS_REPORT_REGEX_PATTERN = @"\bСписание\sточек\b";
@@ -33,7 +34,7 @@ namespace TableAnalizer.Objects.Managers
         /// <summary>
         /// Коллекция с файлами исходных отчетов.
         /// </summary>
-        public Dictionary<SourceReportItemKey, SourceReportFileItem> SourceReportFiles { get; private set; } = [];
+        public Dictionary<SourceReportItemKey, SourceReportFileItem> SourceReportFileItems { get; private set; } = [];
 
         public static DirectoryInfo? DirInfoForClientTargetReports { get; private set; }
         public static string? InputReportsFilePath { get; set; } = string.Empty;
@@ -89,6 +90,12 @@ namespace TableAnalizer.Objects.Managers
                 [
                     new(ADDITIONAL_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
                 ]
+            },
+            {
+                SourceReportItemKey.PaidShortages, 
+                [
+                    new(PAID_SHORTAGES_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
+                ]
             }
 
         };
@@ -121,7 +128,7 @@ namespace TableAnalizer.Objects.Managers
 
             try
             {
-                GetSourceReportExcelFiles(reportsPath, out FileInfo[] files);
+                GetFileInfosSourceReports(reportsPath, out FileInfo[] files);
       
                 Task<int>? getFilesTask;
 
@@ -190,7 +197,7 @@ namespace TableAnalizer.Objects.Managers
             return existingKeys;
         }
 
-        private void GetSourceReportExcelFiles(string reportsPath, out FileInfo[] files)
+        private void GetFileInfosSourceReports(string reportsPath, out FileInfo[] files)
         {
             // Check writeOff directory path 
             var writeOffDirectoryPath = Path.Combine(reportsPath, WRITEOFF_DIRECTORY_NAME);
@@ -231,8 +238,9 @@ namespace TableAnalizer.Objects.Managers
 
             if (files is null || files.Length == 0)
             {
-                message.Append("Directory with files for processing does not exist or is empty, check it.");
-                isError = true;
+                var errorMessage = "Directory with files for processing does not exist or is empty, check it.";
+                message.Append(errorMessage);
+                throw new Exception(errorMessage);
             }
             else
             {
@@ -261,41 +269,34 @@ namespace TableAnalizer.Objects.Managers
                                 SourceReportItemKey.Ransoms or 
                                 SourceReportItemKey.Balance or 
                                 SourceReportItemKey.OutgoingProducts or
-                                SourceReportItemKey.WriteOffPoints 
+                                //SourceReportItemKey.WriteOffPoints or
+                                SourceReportItemKey.PaidShortages
                                 => true,
                                 _ => false
                             };
 
                             try
                             {
-                                var sorceReportFile = new SourceReportFileItem(key.Value, fileInfo, isControlAgeOfData, DataAgeLimitInDays);
-
-                                if(key.Value == SourceReportItemKey.Ransoms && !string.IsNullOrEmpty(loginsFileName)) 
-                                {
-                                    ClientLogins = GetLoginsFromFilename(loginsFileName);
-                                }
-
-                                // Store SourceReportFiles
-                                SourceReportFiles[key.Value] = sorceReportFile;
-
+                                MakeSourceReportFileItem(fileInfo, key, loginsFileName, isControlAgeOfData);
                             }
                             catch (System.Exception ex)
                             {
                                 message.Append(ex.Message);
-                                isError = true;
-        
+                                throw new Exception(ex.Message);
                             }  
                         } 
                         else 
                         {
-                            message.Append($"\nUnable to determine key for report file {fileInfo.Name}");
-                            isError = true;
+                            var errorMessage = $"\nUnable to determine key for report file {fileInfo.Name}";
+                            message.Append(errorMessage);
+                            throw new Exception(errorMessage);
                         }
                     }
                     catch (Exception ex)
                     {
-                        message.Append($"\nError SourceReportFileForSKU create: {ex.Message}");
-                        isError = true;
+                        var errorMessage = $"\nError SourceReportFileForSKU create: {ex.Message}";
+                        message.Append(errorMessage);
+                        throw new Exception(errorMessage);
                     }
                 }
 
@@ -316,24 +317,37 @@ namespace TableAnalizer.Objects.Managers
                         }
                         else
                         {
-                            message.Append("\nPath to dir for working with client can`t be an empty string!");
-                            isError = true;
+                            var errorMessage = "\nPath to dir for working with client can`t be an empty string!";
+                            message.Append(errorMessage);
+                            throw new Exception(errorMessage);
+                            
                         }
                     }
                     catch (Exception ex)
                     {
                         message.Append($"\nDefineDirInfoForClientTargetReports Error:\n{ex.Message}");
-                        isError = true;
+                        throw;
                     }
                 }
-
-               
             }
 
             ManagerReachedEventArgs args = new(message.ToString(), isError, false, 2000);
             OnManagerReached(args);
 
-            return SourceReportFiles.Count;
+            return SourceReportFileItems.Count;
+        }
+
+        private void MakeSourceReportFileItem(FileInfo fileInfo, SourceReportItemKey? key, string? loginsFileName, bool isControlAgeOfData)
+        {
+            var sorceReportFile = new SourceReportFileItem(key.Value, fileInfo, isControlAgeOfData, DataAgeLimitInDays);
+
+            if (key.Value == SourceReportItemKey.Ransoms && !string.IsNullOrEmpty(loginsFileName))
+            {
+                ClientLogins = GetLoginsFromFilename(loginsFileName);
+            }
+
+            // Store SourceReportFiles
+            SourceReportFileItems[key.Value] = sorceReportFile;
         }
 
         /// <summary>
@@ -342,7 +356,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="key">Key to search for report file in dict.</param>
         /// <returns>SourceReportFileForSKU as Task (optional).</returns>
         public async Task<SourceReportFileItem?> GetSourceReport(SourceReportItemKey key) =>
-            await Task.Run(() => SourceReportFiles.TryGetValue(key, out var reportFile) ? reportFile : null);
+            await Task.Run(() => SourceReportFileItems.TryGetValue(key, out var reportFile) ? reportFile : null);
 
         /// <summary>
         /// Define directory for client report output.
@@ -408,16 +422,17 @@ namespace TableAnalizer.Objects.Managers
         {
             existingKeys = lostKeys = new([]);
 
-            var isContainsKeyRansoms = SourceReportFiles.ContainsKey(SourceReportItemKey.Ransoms);
-            var isContainsKeyBalance = SourceReportFiles.ContainsKey(SourceReportItemKey.Balance);
-            var isContainsKeyOutgoingProducts = SourceReportFiles.ContainsKey(SourceReportItemKey.OutgoingProducts);
-            var isContainsKeyTransfer = SourceReportFiles.ContainsKey(SourceReportItemKey.Transfered);
-            var isContainsWriteOffPoints = SourceReportFiles.ContainsKey(SourceReportItemKey.WriteOffPoints);
-            var isContainsWriteOffPointsViaWarehouseShortage = SourceReportFiles.ContainsKey(SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
-            var isContainsWriteOffPointsViaWarehouseAdjustment = SourceReportFiles.ContainsKey(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
-            var isContainsAdditional = SourceReportFiles.ContainsKey(SourceReportItemKey.Additional);
+            var isContainsKeyRansoms = SourceReportFileItems.ContainsKey(SourceReportItemKey.Ransoms);
+            var isContainsKeyBalance = SourceReportFileItems.ContainsKey(SourceReportItemKey.Balance);
+            var isContainsKeyOutgoingProducts = SourceReportFileItems.ContainsKey(SourceReportItemKey.OutgoingProducts);
+            var isContainsKeyTransfer = SourceReportFileItems.ContainsKey(SourceReportItemKey.Transfered);
+            var isContainsWriteOffPoints = SourceReportFileItems.ContainsKey(SourceReportItemKey.WriteOffPoints);
+            var isContainsWriteOffPointsViaWarehouseShortage = SourceReportFileItems.ContainsKey(SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
+            var isContainsWriteOffPointsViaWarehouseAdjustment = SourceReportFileItems.ContainsKey(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
+            var isContainsAdditional = SourceReportFileItems.ContainsKey(SourceReportItemKey.Additional);
+            var isContainsPaidShortages = SourceReportFileItems.ContainsKey(SourceReportItemKey.PaidShortages);
 
-            bool success = isContainsKeyRansoms && isContainsKeyBalance && isContainsWriteOffPoints && isContainsWriteOffPointsViaWarehouseShortage && isContainsWriteOffPointsViaWarehouseAdjustment;
+            bool success = isContainsKeyRansoms && isContainsKeyBalance && isContainsWriteOffPoints && isContainsWriteOffPointsViaWarehouseShortage && isContainsWriteOffPointsViaWarehouseAdjustment && isContainsPaidShortages;
 
             if (success)
             {
@@ -444,6 +459,9 @@ namespace TableAnalizer.Objects.Managers
 
                 if (isContainsAdditional)
                     existingKeys.Add(SourceReportItemKey.Additional);
+                
+                if (isContainsPaidShortages)
+                    existingKeys.Add(SourceReportItemKey.PaidShortages);
             }
             else
             {
@@ -464,6 +482,9 @@ namespace TableAnalizer.Objects.Managers
                 
                 if (!isContainsWriteOffPointsViaWarehouseAdjustment)
                     lostKeys.Add(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
+
+                if (!isContainsPaidShortages)
+                    lostKeys.Add(SourceReportItemKey.PaidShortages);
             }
    
             return success;

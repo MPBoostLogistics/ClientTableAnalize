@@ -75,7 +75,11 @@ namespace TableAnalizer.Objects
         /// <summary>
         /// Перемещния на фулфилмент
         /// </summary>       
-        Transfered            
+        Transfered,
+        /// <summary>
+        /// Оплаченные недостачи
+        /// </summary>
+        PaidShortages            
     }
 
     public enum SKURansomsStatus
@@ -105,15 +109,48 @@ namespace TableAnalizer.Objects
 
     public enum ParsingTypeCode
     {
-        IntTypeCode,                // 0
-        DoubleTypeCode,             // 1
-        DataOnlyTypeCode,           // 2
-        StringTypeCode,             // 3
-        SKURansomsStatus,           // 4
-        Marketplace,                // 5
-        SellmentStatus,             // 6
-        BoolTypeCode                // 7
+        IntTypeCode,               
+        DoubleTypeCode,            
+        DataOnlyTypeCode,        
+        StringTypeCode,          
+        SKURansomsStatus,        
+        Marketplace,             
+        SellmentStatus,         
+        BoolTypeCode,               
+        SubjectClaim,
+        ClaimExecutor,
+        ClaimResolutionStatus
+    }
 
+    /// <summary>
+    /// Предмет претензии
+    /// </summary>
+    public enum SubjectClaim 
+    {
+        RefundAccrual,          // Возврат начисления
+        ShortDeliveryGoods      // Недовоз товаров
+    }
+
+    /// <summary>
+    /// Исполнитель претензии
+    /// </summary>
+    public enum ClaimExecutor 
+    {
+        Organization,
+        Warehouse,
+        OrganizationAndWarehouse
+    }
+
+    /// <summary>
+    /// Статус решения претензии.
+    /// </summary>
+    public enum ClaimResolutionStatus 
+    {
+        NotPaid,              // Не оплачено
+        IndependentPurchase,  // Докупаем сами
+        Paid,                 // Оплачено
+        ProductFound,         // Товар найден
+        ReturnedToBalance     // Возвращено на баланс
     }
 
     public enum SourceCellsType 

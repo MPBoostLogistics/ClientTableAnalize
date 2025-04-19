@@ -143,8 +143,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             SetSKUWriteOffs(sku.SKUWriteOffBalance);
 
             // Fill SKUCompensationBalance 
-            SetSKUCompensateds(sku.SKUCompensationBalance);
-            if (sku.SKUCompensationBalance is not null)
+            SetSKUCompensateds(sku.SKUPaidShortageBalance);
         
             // Set is parallel clients SKU
             IsParallelClientsSKU = sku.IsParallelClientsSKU;

@@ -1,6 +1,6 @@
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.Repositories
@@ -153,20 +153,20 @@ namespace TableAnalizer.Objects.Repositories
                     break;
             }
 
-            // SKUCompensationBalance
-            SKUCompensationBalance? skuCompensationBalance = null;
-            switch(retriveValue.SKUCompensationBalance is not null, newValue.SKUCompensationBalance is not null) 
+            // SKUPaidShortageBalance
+            SKUPaidShortageBalance? skuPaidShortageBalance = null;
+            switch(retriveValue.SKUPaidShortageBalance is not null, newValue.SKUPaidShortageBalance is not null) 
             {
                  case (true,false):
-                    skuCompensationBalance = retriveValue.SKUCompensationBalance;
+                    skuPaidShortageBalance = retriveValue.SKUPaidShortageBalance;
                     break;
 
                 case (false,true):
-                    skuCompensationBalance = newValue.SKUCompensationBalance;
+                    skuPaidShortageBalance = newValue.SKUPaidShortageBalance;
                     break;
 
                 case (true,true):
-                    skuCompensationBalance!.Update(newValue.SKUCompensationBalance!.CompensationItems);
+                    skuPaidShortageBalance!.Update(newValue.SKUPaidShortageBalance!.PaidShortageItems);
                     break;
             }
 
@@ -228,7 +228,7 @@ namespace TableAnalizer.Objects.Repositories
             bool isParallel = retriveValue.IsParallelClientsSKU || newValue.IsParallelClientsSKU;
 
             return new SKU(clientLoginsList, marketplace, skuNumber, skuBrand, skuName, skuRansomsBalance, 
-                skuRemainingBalance, skuWriteOffBalance, skuCompensationBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays, isParallel);
+                skuRemainingBalance, skuWriteOffBalance, skuPaidShortageBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays, isParallel);
         }
 
         private static int CombineIntValues(int retriveValue, int newValue, bool isSummary)
