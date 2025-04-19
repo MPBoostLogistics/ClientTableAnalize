@@ -1,6 +1,5 @@
-﻿using System.Diagnostics;
-using TableAnalizer.Objects.SKUItems.SKUBalances;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
+﻿using TableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.SKUItems
@@ -25,7 +24,7 @@ namespace TableAnalizer.Objects.SKUItems
         public SKURansomsBalance? SKURansomsBalance { get; private set;}
         public SKURemainingBalance? SKURemainingBalance { get; private set;}
         public SKUWriteOffBalance? SKUWriteOffBalance { get; private set;}
-        public SKUCompensationBalance? SKUCompensationBalance { get; private set; }
+        public SKUPaidShortageBalance? SKUPaidShortageBalance { get; private set; }
         public SKUResortBalance? SKUResortBalance { get; private set; }
         public double AveragePrice { get; private set;} = AVERAGE_PRICE_DEFAULT;
         public DateOnly MaxRansomsDate { get; private set;} = DATEONLY_DEFAULT;
@@ -102,7 +101,7 @@ namespace TableAnalizer.Objects.SKUItems
         // Constructor for generating a new entity from repository
         public SKU(List<string> clientLogins, Marketplace? marketplace,  int skuNumber, string skuBrand, string skuName, 
             SKURansomsBalance? skuRansomsBalance, SKURemainingBalance? skuRemainingBalance, 
-            SKUWriteOffBalance? skuWriteOffBalance, SKUCompensationBalance? skuCompensationBalance, 
+            SKUWriteOffBalance? skuWriteOffBalance, SKUPaidShortageBalance? skuPaidShortageBalance, 
             SKUResortBalance skuResortBalance, double? averagePrice, 
             DateOnly? maxRansomsDate, int? deadLineDays, bool isParallel) 
        {
@@ -114,7 +113,7 @@ namespace TableAnalizer.Objects.SKUItems
             SKURansomsBalance = skuRansomsBalance;
             SKURemainingBalance = skuRemainingBalance;
             SKUWriteOffBalance = skuWriteOffBalance;
-            SKUCompensationBalance = skuCompensationBalance;
+            SKUPaidShortageBalance = skuPaidShortageBalance;
             SKUResortBalance = skuResortBalance;
 
             if(averagePrice.HasValue && !Equals(averagePrice, AVERAGE_PRICE_DEFAULT)) 
@@ -135,11 +134,11 @@ namespace TableAnalizer.Objects.SKUItems
             IsParallelClientsSKU = isParallel;
         }
 
-        // Constructor for compensationBalance 
-        public SKU(int skuNumber, SKUCompensationBalance skuCompensationBalance) 
+        // Constructor for paid shortage balance 
+        public SKU(int skuNumber, SKUPaidShortageBalance skuPaidShortageBalance) 
         {
             SKUNumber = skuNumber;
-            SKUCompensationBalance = skuCompensationBalance;
+            SKUPaidShortageBalance = skuPaidShortageBalance;
         }
 
         // Constructor for writeOffBalance 

@@ -13,8 +13,7 @@ namespace TableAnalizer.Objects.Managers
 
         #region Properties 
         public string[] ValidFileExtensions { get; } = [".xls", ".xlsx"];
-        public static List<string> ClientLogins { get; protected set;} = [];
-
+        public static List<string> ClientLogins { get; protected set; } = [];
 
         #endregion Properties
 

@@ -120,6 +120,16 @@ namespace TableAnalizer.Objects.Parsing
                         case ParsingTypeCode.BoolTypeCode:
                             property.SetValue(this, (bool)value);
                             break;
+                        case ParsingTypeCode.ClaimExecutor:
+                            property.SetValue(this, (ClaimExecutor)value);
+                            break;
+                        case ParsingTypeCode.SubjectClaim:
+                            property.SetValue(this, (SubjectClaim)value);
+                            break;
+                        case ParsingTypeCode.ClaimResolutionStatus:
+                            property.SetValue(this, (ClaimResolutionStatus)value);
+                            break;
+
                     }
                }
             }
@@ -217,6 +227,37 @@ namespace TableAnalizer.Objects.Parsing
                     value = bool.TryParse(valueString, out bool boolValue) ? 
                         boolValue : 
                         throw new Exception($"Failed to convert string \"{valueString}\" to boolean"); 
+                    break;
+
+                case ParsingTypeCode.SubjectClaim:
+                    value = valueString switch 
+                    {
+                        "Возврат начисления" => SubjectClaim.RefundAccrual,
+                        "Недовоз товаров" => SubjectClaim.ShortDeliveryGoods,
+                        _ => throw new NotImplementedException()
+                    };
+                    break;
+                
+                case ParsingTypeCode.ClaimExecutor:
+                    value = valueString switch 
+                    { 
+                        "Организация" => ClaimExecutor.Organization,
+                        "Организация и склад" => ClaimExecutor.OrganizationAndWarehouse,
+                        "Склад" => ClaimExecutor.Warehouse,
+                        _ => throw new NotImplementedException()
+                    };
+                    break;
+
+                case ParsingTypeCode.ClaimResolutionStatus:
+                    value = valueString switch 
+                    { 
+                        "Не оплачено" => ClaimResolutionStatus.NotPaid,
+                        "Докупаем сами" => ClaimResolutionStatus.IndependentPurchase,
+                        "Оплачено" => ClaimResolutionStatus.Paid,
+                        "Товар найден" => ClaimResolutionStatus.ProductFound,
+                        "Возвращено на баланс" => ClaimResolutionStatus.ReturnedToBalance,
+                        _ => throw new NotImplementedException()
+                    };
                     break;
 
                 default:

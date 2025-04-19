@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
@@ -107,7 +106,6 @@ namespace TableAnalizer.Objects.Managers
         #region Properties 
         private static int PaidWriteOffRemainder {get;set;} = 0; 
         #endregion
-
 
         #region Functionality
 
@@ -361,9 +359,6 @@ namespace TableAnalizer.Objects.Managers
                 {
                     sku.FinalAnalize(0);
                 }
-
-                Trace.WriteLine($"PaidWriteOffRemainder -- {PaidWriteOffRemainder}");
-                Task.Delay(500);
             }
 
             return Task.CompletedTask;

@@ -7,7 +7,7 @@ using OfficeOpenXml.Style;
 using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
@@ -25,7 +25,7 @@ namespace TableAnalizer.Objects.Managers
         public const string OUTPUT_REPORT_DELAYREPORT_NAME = "Отчет по задержкам";
         public const string OUTPUT_REPORT_OVERRUNSREPORT_NAME = "Отчет по перерасходам";
         public const string OUTPUT_REPORT_ANALYTICS_RERORT_NAME = "Аналитика";
-        public const string COMPENSATION_REPORT_WORKSHEET_NAME = "Недостачи";
+        public const string PAID_SHORTAGES_REPORT_WORKSHEET_NAME = "Претензии";
         public const string RESORTS_REPORT_WORKSHEET_NAME = "Пересорты";
         public const string PARALLEL_SKUS_WORKSHEET_NAME = "Параллельные";
         public const string RANSOMS_WORKSHEET_NAME = "Выкупы";
@@ -62,7 +62,22 @@ namespace TableAnalizer.Objects.Managers
         private static string SumFormila = string.Empty;
 
         // Colors
-        private static readonly Color dangerColor = System.Drawing.ColorTranslator.FromHtml("#d8675b"); // #d8675b
+        private static readonly Color dangerColor = ColorTranslator.FromHtml("#d8675b"); // #d8675b
+
+        private static readonly Dictionary<SubjectClaim, string> SubjectClaimStrings = new()
+        {
+            { SubjectClaim.RefundAccrual, "Возврат начисления" },
+            { SubjectClaim.ShortDeliveryGoods, "Недовоз товаров" },
+        };
+
+         private static readonly Dictionary<ClaimResolutionStatus, string> ClaimResolutionStatusStrings = new()
+        {
+            { ClaimResolutionStatus.IndependentPurchase, "Докупаем сами" },
+            { ClaimResolutionStatus.NotPaid, "Не оплачено" },
+            { ClaimResolutionStatus.Paid, "Оплачено" },
+            { ClaimResolutionStatus.ProductFound, "Товар найден" },
+            { ClaimResolutionStatus.ReturnedToBalance, "Возвращено на баланс" },
+        };
 
         #endregion
 
@@ -136,13 +151,7 @@ namespace TableAnalizer.Objects.Managers
             new(4, nameof(SKUTransferDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
             new(34, nameof(SKUTransferDataUnit.SKUTransferedCount), ParsingTypeCode.IntTypeCode, true)
         ];
-        public static List<SourceColumn> CompensationSourceCells { get; } =
-        [
-            new(1, nameof(SKUCompensationDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
-            new(2, nameof(SKUCompensationDataUnit.CompensationCount), ParsingTypeCode.IntTypeCode, true),
-            new(3, nameof(SKUCompensationDataUnit.CompensationSum), ParsingTypeCode.DoubleTypeCode, true),
-            new(4, nameof(SKUCompensationDataUnit.CompensationComment), ParsingTypeCode.StringTypeCode, false)
-        ];
+
         public static List<SourceColumn> ResortSourceCells { get; } =
         [
             new(1, nameof(SKUResortDataUnit.SKUFromResortNumber), ParsingTypeCode.IntTypeCode, true),
@@ -166,6 +175,17 @@ namespace TableAnalizer.Objects.Managers
         [
             new(5, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
             new(39, nameof(SKUWriteOffDataUnit.SKUWriteOffCount), ParsingTypeCode.IntTypeCode, true)
+        ];
+
+        public static List<SourceColumn> PaidShortagesSourceCells { get; } =
+        [
+            new(3, nameof(SKUPaidShortageDataUnit.ClientLogin), ParsingTypeCode.StringTypeCode, true),
+            new(4, nameof(SKUPaidShortageDataUnit.SubjectClaim), ParsingTypeCode.SubjectClaim, true, [SubjectClaimStrings[SubjectClaim.ShortDeliveryGoods]]),
+            new(5, nameof(SKUPaidShortageDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, false),
+            new(10, nameof(SKUPaidShortageDataUnit.SKUSum), ParsingTypeCode.IntTypeCode, true),
+            new(12, nameof(SKUPaidShortageDataUnit.SKUAmount), ParsingTypeCode.DoubleTypeCode, true),
+            new(13, nameof(SKUPaidShortageDataUnit.ClaimExecutor), ParsingTypeCode.ClaimExecutor, true),
+            new(18, nameof(SKUPaidShortageDataUnit.ClaimResolutionStatus), ParsingTypeCode.ClaimResolutionStatus, true, [ClaimResolutionStatusStrings[ClaimResolutionStatus.Paid], ClaimResolutionStatusStrings[ClaimResolutionStatus.ReturnedToBalance]]),
         ];
 
         public TargetCell[] cellsReportingMain =
@@ -371,50 +391,53 @@ namespace TableAnalizer.Objects.Managers
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReport.SKUCompensatedTotalToClient),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
             new (colNumber: 13, colName: "от склада", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReport.SKUCompensatedWarehouse),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 2),
+                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReport.SKUPaidShortageWarehouse),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 3),
             new (colNumber: 14, colName: "от организации", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
-                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReport.SKUCompensatedOrganization),
+                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReport.SKUPaidShortageOrganization),
+                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
+            new (colNumber: 15, colName: "от организации и склада", colWidth: 7, format: STRING_OR_INT_CELL_FORMAT,
+                wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReport.SKUPaidShortageOrganizationAndWarehouse),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 15, colName: "в том числе товарами", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 16, colName: "в том числе товарами", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUSettlementByGoods) ,
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
-            new (colNumber: 16, colName: "отгружено товарами", colWidth: 7.5f, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 17, colName: "отгружено товарами", colWidth: 7.5f, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUOutgoingProducts) ,
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings, groupCellsFromCurrent: 4),
-            new (colNumber: 17, colName: "передано на фулфилмент", colWidth: 7.5f, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 18, colName: "передано на фулфилмент", colWidth: 7.5f, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUTransfered) ,
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 18, colName: "отгружено пересортом от других арт.", colWidth: 8.5f, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 19, colName: "отгружено пересортом от других арт.", colWidth: 8.5f, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 90, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReport.SKUResort),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 19, colName: "Комментарий к пересортами", colWidth: 25, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 20, colName: "Комментарий к пересортами", colWidth: 25, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReport.SKUResortsComment),
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 20, colName: "Склад: Остаток по учету", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 21, colName: "Склад: Остаток по учету", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKURemaining),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x < 0, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
 
-            new (colNumber: 21, colName: "Артикул нормализован", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 22, colName: "Артикул нормализован", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.IsSkuNormalize),
             parsingTypeCode: ParsingTypeCode.BoolTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 22, colName: "Долг по оплате компенсации перед клиентом", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 23, colName: "Долг по оплате компенсации перед клиентом", colWidth: 14, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUDebtToClientForCompensationSum),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 23, colName: "Нужны входящие пересорты прихода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 24, colName: "Нужны входящие пересорты прихода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Приход меньше ожидания", propertyName: nameof(SKUForTargetReport.LessReceiptThanWaiting),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 24, colName: "Возможны исходящие пересорты прихода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 25, colName: "Возможны исходящие пересорты прихода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Приход больше ожидания", propertyName: nameof(SKUForTargetReport.MoreReceiptThanWaiting),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 25, colName: "Нужны входящие пересорты расхода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 26, colName: "Нужны входящие пересорты расхода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Взаиморасчет меньше ожидания", propertyName: nameof(SKUForTargetReport.LessMutualSettlementThanWaiting),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 26, colName: "Возможны исходящие пересорты расхода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 27, colName: "Возможны исходящие пересорты расхода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Взаиморасчет больше ожидания", propertyName: nameof(SKUForTargetReport.MoreMutualSettlementThanWaiting),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
         ];
@@ -567,7 +590,6 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="reportFileKey">Report file key.</param>
         /// <param name="workSheetNames">Collection of Excel workbook sheet names.</param>
         /// <returns>Boolean operation execution flag.</returns>
-        /// <remarks><i>New version</i></remarks>
         public static bool GetExcelWorksheetStringNamesByKey(SourceReportItemKey reportFileKey, out List<string>? workSheetNames)
         {
             workSheetNames = reportFileKey switch
@@ -578,7 +600,8 @@ namespace TableAnalizer.Objects.Managers
                     or SourceReportItemKey.WriteOffPoints 
                     or SourceReportItemKey.WriteOffPointsViaWarehouseShortage  
                     or SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
-                SourceReportItemKey.Additional => [COMPENSATION_REPORT_WORKSHEET_NAME, RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
+                SourceReportItemKey.Additional => [RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
+                SourceReportItemKey.PaidShortages => [PAID_SHORTAGES_REPORT_WORKSHEET_NAME],
                 _ => null,
             };
             return workSheetNames is not null && workSheetNames.Count != 0;
@@ -589,7 +612,7 @@ namespace TableAnalizer.Objects.Managers
             if (string.IsNullOrEmpty(ReportFileManager.OutputClientReportFilePath))
             {
                 ManagerReachedEventArgs args = new("Output client report file path cannot be empty.", true, true);
-                return false;
+                throw new Exception(args.Message);
             }
 
             var fileInfo = new FileInfo(ReportFileManager.OutputClientReportFilePath) ?? throw new Exception("Fileinfo cannot be empty");
@@ -597,7 +620,7 @@ namespace TableAnalizer.Objects.Managers
             if (outputPackage is null)
             {
                 ManagerReachedEventArgs args = new("ExcelPackage for output reports cannot be created.", true, true);
-                return false;
+                throw new Exception(args.Message);
             }
 
             List<SKUForTargetReport> actualData = [.. skuForTargetReports];
@@ -999,7 +1022,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="key">Key for searching ExcelPackage in internal dictionary.</param>
         /// <param name="worksheet">Found Excel worksheet or null.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public async Task<ExcelWorksheet?> GetExcelWorksheetByName(string name, ExcelPackage excelPackage)
+        public static async Task<ExcelWorksheet?> GetExcelWorksheetByName(string name, ExcelPackage excelPackage)
         {
             await Task.Delay(1);
             return excelPackage.Workbook.Worksheets.SingleOrDefault(ws => ws.Name == name);
@@ -1141,7 +1164,7 @@ namespace TableAnalizer.Objects.Managers
                 filterSourceCellsCount = filterSourceCells!.Count;
                 foreach (var filterSourceCell in filterSourceCells)
                 {
-                    if (!IsFilterMatch(filterSourceCell.FilterString!, workSheet.Cells[rowIndex, filterSourceCell.ColIndex].Value))
+                    if (!IsFilterMatch(filterSourceCell.FilterStrings!, workSheet.Cells[rowIndex, filterSourceCell.ColIndex].Value))
                         return false;
                 }
                 return true;
@@ -1181,9 +1204,9 @@ namespace TableAnalizer.Objects.Managers
         {
             cells = sourceCellsType switch
             {
-                SourceCellsType.Required => sourceCells.Where(sc => sc.IsValueRequired).ToList(),
-                SourceCellsType.Filtration => sourceCells.Where(sc => !string.IsNullOrEmpty(sc.FilterString)).ToList(),
-                SourceCellsType.NonFiltration => sourceCells.Where(sc => string.IsNullOrEmpty(sc.FilterString)).ToList(),
+                SourceCellsType.Required => [.. sourceCells.Where(sc => sc.IsValueRequired)],
+                SourceCellsType.Filtration => [.. sourceCells.Where(sc => sc.FilterStrings != null && sc.FilterStrings.Any())],
+                SourceCellsType.NonFiltration => [.. sourceCells.Where(sc => sc.FilterStrings == null || !sc.FilterStrings.Any())],
                 _ => null,
             };
 
@@ -1210,11 +1233,11 @@ namespace TableAnalizer.Objects.Managers
                 SourceReportItemKey.Transfered => [new(TransferSourceCells)],
                 SourceReportItemKey.Additional => workSheetName switch
                 {
-                    COMPENSATION_REPORT_WORKSHEET_NAME => [new(CompensationSourceCells)],
                     RESORTS_REPORT_WORKSHEET_NAME => [new(ResortSourceCells)],
                     PARALLEL_SKUS_WORKSHEET_NAME => [new(ParallelSourceCells)],
                     _ => [],
                 },
+                SourceReportItemKey.PaidShortages => [new(PaidShortagesSourceCells)],
                 _ => [],
             };
 
@@ -1343,10 +1366,10 @@ namespace TableAnalizer.Objects.Managers
             rangeSourceReportRows = outputRanges;
         }
 
-        private static bool IsFilterMatch(string filter, object value) =>
-            value is not null &&
-            !string.IsNullOrEmpty(value.ToString()) &&
-            string.Equals(filter.Trim().ToLower(), value.ToString()!.Trim().ToLower());
+        private static bool IsFilterMatch(string[] filters, object value) => 
+            value is not null && 
+            !string.IsNullOrEmpty(value!.ToString()) && 
+            filters.Contains(value!.ToString());
 
         private static List<SKUForTargetReport> GetDelay(List<SKUForTargetReport> list)
         {

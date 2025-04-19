@@ -137,22 +137,20 @@ internal class Program
         // Availability necessary reports
         Task<List<SourceReportItemKey>?>? availabilityNecessaryTask = null;
         List<SourceReportItemKey>? existingKeys = null;
-        //while(existingKeys == null) 
-        //{
-            try
-            {
-                availabilityNecessaryTask = reportFileManager!.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName);
-                await Task.Run(() => availabilityNecessaryTask);
-                availabilityNecessaryTask.Wait();
-                existingKeys = availabilityNecessaryTask.Result;
-            }
-            catch (System.Exception ex)
-            {
-                existingKeys = null;
-                await TracingProgramExecution(new(ex.Message, true, true));
-                //break;
-            }
-        //}
+
+        try
+        {
+            availabilityNecessaryTask = reportFileManager!.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName);
+            await Task.Run(() => availabilityNecessaryTask);
+            availabilityNecessaryTask.Wait();
+            existingKeys = availabilityNecessaryTask.Result;
+        }
+        catch (System.Exception ex)
+        {
+            existingKeys = null;
+            await TracingProgramExecution(new(ex.Message, true, true));
+            //break;
+        }
 
         if(!availabilityNecessaryTask!.IsFaulted && existingKeys != null && existingKeys.Count > 0)  
         {
@@ -169,7 +167,6 @@ internal class Program
 
         return existingKeys; 
     }
-
     private static async Task AnalyzeСlientReport(List<SourceReportItemKey>? existingKeys) 
     {
         bool isInternalReport = ReportFileManager.ReportRecipientType.HasValue && ReportFileManager.ReportRecipientType.Value == TargetReportRecipientType.Internal;
@@ -241,6 +238,14 @@ internal class Program
                 currentTask.Wait();
             }
 
+            // Paid shortages task
+            if (existingKeys.Contains(SourceReportItemKey.PaidShortages))
+            {
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.PaidShortages, isInternalReport);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            }
+
             // Delete old logistic report 
             if(isTracing) 
             {
@@ -290,7 +295,6 @@ internal class Program
             var makeReportTask = excelManager!.MakeReports(skuForTargetReports, isTracing, isInternalReport);
             await Task.Run(() => makeReportTask);
             makeReportTask.Wait();
-
         } 
         else 
         {
