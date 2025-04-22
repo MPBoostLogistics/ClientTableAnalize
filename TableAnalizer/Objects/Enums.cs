@@ -191,7 +191,11 @@ namespace TableAnalizer.Objects
         /// <summary>
         /// Внутренний пересорт.
         /// </summary>
-        Internal
+        Internal,
+        /// <summary>
+        /// Внутренний пересорт (параллельный клиент).
+        /// </summary>
+        InternalParallel
     }
 
     public enum CompensationTarget 

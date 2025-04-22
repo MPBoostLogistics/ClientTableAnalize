@@ -6,7 +6,6 @@
 // Внедрить DI
 
 using System.Diagnostics;
-using System.Reflection;
 using System.Text;
 using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
@@ -275,6 +274,7 @@ internal class Program
             {
                 Task[] autoResortTasks =
                 [
+                    AnalyticalManager.FixReceiptBySKUsOfParallelClients(ref skuForTargetReports),
                     AnalyticalManager.FixWriteOffByPoints(ref skuForTargetReports),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByOutgoing),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByTransfer),
@@ -335,7 +335,7 @@ internal class Program
             await TracingProgramExecution(new($"No report for key: {reportFileKey}", true, true));
             return 0;
         }
-    } 
+    }     
     
     private static async Task<DirectoryInfo?> GetSourceReportsPathFromConsole(int delay) 
     {

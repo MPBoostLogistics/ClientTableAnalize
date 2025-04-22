@@ -8,6 +8,11 @@ namespace TableAnalizer.Objects.Managers
     {
         #region Fields
         
+        /// <summary>
+        /// Предикат: артикул параллельных клинтов и ожидание меньше общего прихода
+        /// </summary>
+        private static Func<SKUForTargetReport, bool> ParallelClientSkuWithExtraReceiptPredicate => sku => sku.IsParallelClientsSKU && sku.SKURansomsWaiting < sku.SKUReceiptTotal;
+
         private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByOutgoingProducts => sku => !sku.IsSkuNormalize && sku.MoreMutualSettlementThanWaiting > 0 && int.IsPositive(sku.SKUOutgoingProducts - sku.MoreMutualSettlementThanWaiting);
 
         private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByTransfer => sku => !sku.IsSkuNormalize && sku.MoreMutualSettlementThanWaiting > 0 && int.IsPositive(sku.SKUTransfered - sku.MoreMutualSettlementThanWaiting);
@@ -26,7 +31,7 @@ namespace TableAnalizer.Objects.Managers
             (sku.SKUSummarySettlement + sku.SKURemaining) == sku.SKURansomsWaiting && 
             sku.SKUReceiptTotal > sku.SKURansomsWaiting;
 
-         private static Func<SKUForTargetReport, bool> ExtraPredicateByReceiptFinal => 
+        private static Func<SKUForTargetReport, bool> ExtraPredicateByReceiptFinal => 
             sku => !sku.IsSkuNormalize && 
             sku.SKUReceiptTotal > sku.SKURansomsWaiting;
 
@@ -73,6 +78,8 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         private static List<SKUForTargetReport>? writeOffPointsByAdjustment;
 
+        private static List<SKUForTargetReport>? parallelClientSkuWithExtraReceipt;
+
 
         /// <summary>
         ///  Артикулы с недорасходами (по приходу)
@@ -101,6 +108,11 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         private static bool isWriteOffPointsThroughWarehouseAdjustment;
 
+        /// <summary>
+        /// Флаг: Есть артикулы параллельных клиентов где ожидание меньше общего прихода.
+        /// </summary>
+        private static bool isParallelClientSkuWithExtraReceipt;
+
         #endregion
 
         #region Properties 
@@ -111,6 +123,9 @@ namespace TableAnalizer.Objects.Managers
 
         private static Task UpdateDataForResorts(ref List<SKUForTargetReport> skuForTargetReports)
         {
+            parallelClientSkuWithExtraReceipt = GetSkus(ref skuForTargetReports, [ParallelClientSkuWithExtraReceiptPredicate])?.OrderByDescending(el => el.SKUNumber).ToList();;
+            isParallelClientSkuWithExtraReceipt = parallelClientSkuWithExtraReceipt is not null && parallelClientSkuWithExtraReceipt.Count > 0;
+
             writeOffPointsByShortage = GetSkus(ref skuForTargetReports, [WrittenOffFromPointsViaWarehouseByShortage])?.OrderByDescending(el => el.SKUNumber).ToList();;
             isWriteOffPointsThroughWarehouseShortages = writeOffPointsByShortage is not null && writeOffPointsByShortage.Count > 0;
 
@@ -326,21 +341,34 @@ namespace TableAnalizer.Objects.Managers
                 return;
             } 
 
+            bool isIndicesEqual = underSkuIndex == overSkuIndex;
+            bool isIndicesNotEqual = underSkuIndex != overSkuIndex;
+
+             // Пересорты приходов (артикулы параллельных клиентов)
+            if (skuForTargetReports[underSkuIndex].IsParallelClientsSKU && 
+                isIndicesEqual && target == SKUResortTarget.ResortingReceipt) 
+            {
+                skuForTargetReports[underSkuIndex].MakeResort(target, SKUResortDirection.InternalParallel, skuForTargetReports[overSkuIndex].SKUNumber, sum);
+            }
+
+
             // Пересорты расходов
-            if(underSkuIndex != overSkuIndex && (target == SKUResortTarget.ResortingConsumptionByOutgoing || target == SKUResortTarget.ResortingConsumptionByTransfer)) 
+            if(isIndicesNotEqual && 
+                (target == SKUResortTarget.ResortingConsumptionByOutgoing || target == SKUResortTarget.ResortingConsumptionByTransfer)) 
             {
                 skuForTargetReports[underSkuIndex].MakeResort(target, SKUResortDirection.Incoming, skuForTargetReports[overSkuIndex].SKUNumber, sum);
                 skuForTargetReports[overSkuIndex].MakeResort(target, SKUResortDirection.Outgoing, skuForTargetReports[underSkuIndex].SKUNumber, sum);
             }
 
             // Пересорты приходов
-            if (underSkuIndex != overSkuIndex && target == SKUResortTarget.ResortingReceipt) 
+            if (isIndicesNotEqual 
+                && target == SKUResortTarget.ResortingReceipt) 
             {
                 skuForTargetReports[underSkuIndex].MakeResort(target, SKUResortDirection.Incoming, skuForTargetReports[overSkuIndex].SKUNumber, sum);
             }
 
             // Списание экстра приходов
-            if (underSkuIndex == overSkuIndex && target == SKUResortTarget.ResortingReceipt) 
+            if (isIndicesEqual && target == SKUResortTarget.ResortingReceipt) 
             {
                 skuForTargetReports[underSkuIndex].MakeResort(target, SKUResortDirection.Internal, skuForTargetReports[overSkuIndex].SKUNumber, sum);
             }
@@ -370,6 +398,27 @@ namespace TableAnalizer.Objects.Managers
                    from predicate in skuPredicates
                    where predicate(skuForTarget)
                    select skuForTarget;
+        }
+
+        public static Task FixReceiptBySKUsOfParallelClients(ref List<SKUForTargetReport> skuForTargetReports)
+        {
+            // Initial set collections
+            var updateDataTask = UpdateDataForResorts(ref skuForTargetReports);
+            Task.Run(() => updateDataTask);
+            updateDataTask.Wait();
+
+            if (isParallelClientSkuWithExtraReceipt)
+            {
+                foreach (var sku in parallelClientSkuWithExtraReceipt!)
+                {
+                    int sum = sku.SKUReceiptTotal - sku.SKURansomsWaiting;
+                    int skuIndex = skuForTargetReports.IndexOf(sku);
+
+                    MakeResort(ref skuForTargetReports, SKUResortTarget.ResortingReceipt, skuIndex, skuIndex, sum);
+                }
+            }
+
+            return Task.CompletedTask;
         }
 
         #endregion

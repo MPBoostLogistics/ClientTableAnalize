@@ -1,4 +1,6 @@
 
+using System.Diagnostics;
+
 namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 {
     public partial class SKUForTargetReport
@@ -168,19 +170,18 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                 paidWriteOffReminderResult = paidWriteOffRemainder;
             }
                
-            // Calculation of overruns
-            var totalСonsumptionWithoutResorts = SKUSummarySettlement - SKUResort;
-            if (totalСonsumptionWithoutResorts > SKURansomsWaiting && !IsParallelClientsSKU)
-            {
-                SKUOverrunsCount = totalСonsumptionWithoutResorts - SKURansomsWaiting;
-            }
-
             // Calculation of shortages from points 
             CalculateDelay(SKUSellmentStatus.DelayDeliveryFromPoints);
       
             // Calculation of shortages from the warehouse
             CalculateDelay(SKUSellmentStatus.DelayFromWarehouse);
 
+            // Calculation of overruns
+            var totalСonsumptionWithoutResorts = SKUSummarySettlement - SKUResort;
+            if (totalСonsumptionWithoutResorts > SKUReceiptTotal && !IsParallelClientsSKU)
+            {
+                SKUOverrunsCount = totalСonsumptionWithoutResorts - SKUReceiptTotal;
+            }
 
             // Setting the status 
             SetStatus();

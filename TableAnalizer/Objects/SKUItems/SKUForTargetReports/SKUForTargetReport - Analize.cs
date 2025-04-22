@@ -9,7 +9,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Parallel Clients SKU.
         /// </summary>
-        private bool IsParallelClientsSKU { get; } = false; 
+        public bool IsParallelClientsSKU { get; } = false; 
 
         /// <summary>
         /// Приход товаров нормализован (соответствует ожиданию).

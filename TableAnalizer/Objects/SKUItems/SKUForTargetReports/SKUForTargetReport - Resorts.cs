@@ -87,6 +87,13 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                         SKUReceiptGoods -= sum;
                         SKUResortsComment = $"- на арт. {skuNumber}: {sum} (п)";
                         break;
+                    case SKUResortDirection.InternalParallel:
+                        if(SKUReceiptGoods >= sum) 
+                        {
+                            SKUReceiptGoods -= sum;
+                            SKUResortsComment = $"- приход списано: {sum} (апк)";
+                        } 
+                        break;
                     case SKUResortDirection.Internal:
                     
                         if(SKUReceiptGoods >= sum) 

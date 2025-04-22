@@ -140,7 +140,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <returns>Остаток от компенсации.</returns>
         private void CalculateDelay(out int paidWriteOffRemainder, in int compensation)
         {
-            Trace.WriteLine($"{SKUNumber}, Сompensation in: {compensation}");
+            //Trace.WriteLine($"{SKUNumber}, Сompensation in: {compensation}");
 
             SKUDeliveryDelayOrganization = LessMutualSettlementThanWaiting >= compensation ? 
                 compensation :
@@ -148,8 +148,8 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 
             paidWriteOffRemainder = compensation - SKUDeliveryDelayOrganization; 
 
-            Trace.WriteLine($"{SKUNumber}, SKUDeliveryDelayOrganization: {SKUDeliveryDelayOrganization}");
-            Trace.WriteLine($"{SKUNumber}, Сompensation out: {paidWriteOffRemainder}");
+            //Trace.WriteLine($"{SKUNumber}, SKUDeliveryDelayOrganization: {SKUDeliveryDelayOrganization}");
+            //Trace.WriteLine($"{SKUNumber}, Сompensation out: {paidWriteOffRemainder}");
         }
 
         #endregion
