@@ -275,10 +275,10 @@ internal class Program
                 Task[] fixAndAutoResortTasks =
                 [
                     AnalyticalManager.FixReceiptBySKUsOfParallelClients(ref skuForTargetReports),
-                    AnalyticalManager.FixWriteOffByPoints(ref skuForTargetReports),
-                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByOutgoing),
-                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByTransfer),
-                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingReceipt),
+                    AnalyticalManager.FixWriteOffByPointsThroughWarehouse(ref skuForTargetReports),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByOutgoing, true),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByTransfer, true),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, true),
                     AnalyticalManager.FixExtraReceipts(ref skuForTargetReports),
                     AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
                 ];

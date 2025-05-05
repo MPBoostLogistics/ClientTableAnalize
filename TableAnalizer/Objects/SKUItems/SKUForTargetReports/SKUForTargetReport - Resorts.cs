@@ -28,11 +28,11 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         #endregion
 
         #region Functionality
-        public void MakeResort(SKUResortTarget target, SKUResortDirection dir, int skuNumber, int sum) 
+        public void MakeResort(ResortConsumptionTarget target, SKUResortDirection dir, int skuNumber, int sum) 
         {
             switch (target)
             {
-                case SKUResortTarget.ResortingConsumptionByTransfer:
+                case ResortConsumptionTarget.ResortingConsumptionByTransfer:
                     if(!SKUResortsComment.Contains(RESORT_CONSUMPTION_FIRST_LINE)) 
                     {
                         SKUResortsComment = RESORT_CONSUMPTION_FIRST_LINE;
@@ -51,7 +51,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                     }
                     break;
 
-                case SKUResortTarget.ResortingConsumptionByOutgoing:
+                case ResortConsumptionTarget.ResortingConsumptionByOutgoing:
                     if(!SKUResortsComment.Contains(RESORT_CONSUMPTION_FIRST_LINE)) 
                     {
                         SKUResortsComment = RESORT_CONSUMPTION_FIRST_LINE;
@@ -70,7 +70,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                     }
                     break;
                 
-                case SKUResortTarget.ResortingReceipt:
+                case ResortConsumptionTarget.ResortingReceipt:
 
                 if(!SKUResortsComment.Contains(RESORT_RECEIPT_FIRST_LINE)) 
                 {

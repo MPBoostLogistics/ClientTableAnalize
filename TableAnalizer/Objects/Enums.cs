@@ -160,10 +160,13 @@ namespace TableAnalizer.Objects
         NonFiltration
     }
 
-    public enum SKUResortTarget 
+    /// <summary>
+    /// Цель пересортицы по расходу товаров.
+    /// </summary>
+    public enum ResortConsumptionTarget 
     {
         /// <summary>
-        /// Пересортица расходов на расход товаров 
+        /// Пересортица расходов на расход товаров& 
         /// </summary>
         ResortingConsumptionByOutgoing, 
 

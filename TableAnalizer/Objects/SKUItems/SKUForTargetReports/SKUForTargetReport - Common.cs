@@ -14,7 +14,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         public string SKUName { get; set; }
         public double SKUPrice { get; set; }
         public DateOnly SKUDate { get; set; }
-        private readonly bool isDeadline = false;
+        public readonly bool isDeadline = false;
         public SellmentStatus SellmentStatus { get; private set; } = new SellmentStatus(SKUSellmentStatus.Unknown);
         public string SellmentStatusString => SellmentStatus.StatusLabel;
 
