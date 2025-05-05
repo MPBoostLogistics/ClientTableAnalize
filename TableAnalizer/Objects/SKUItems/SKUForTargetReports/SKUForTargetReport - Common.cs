@@ -177,11 +177,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             CalculateDelay(SKUSellmentStatus.DelayFromWarehouse);
 
             // Calculation of overruns
-            var totalСonsumptionWithoutResorts = SKUSummarySettlement - SKUResort;
-            if (totalСonsumptionWithoutResorts > SKUReceiptTotal && !IsParallelClientsSKU)
-            {
-                SKUOverrunsCount = totalСonsumptionWithoutResorts - SKUReceiptTotal;
-            }
+            CalculateOverruns();
 
             // Setting the status 
             SetStatus();

@@ -272,23 +272,23 @@ internal class Program
             // Article analysis and automatic re-sorting
             if(isAutoResorting) 
             {
-                Task[] autoResortTasks =
+                Task[] fixAndAutoResortTasks =
                 [
                     AnalyticalManager.FixReceiptBySKUsOfParallelClients(ref skuForTargetReports),
                     AnalyticalManager.FixWriteOffByPoints(ref skuForTargetReports),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByOutgoing),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingConsumptionByTransfer),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, SKUResortTarget.ResortingReceipt),
-                    //AnalyticalManager.FixExtraReceipts(ref skuForTargetReports),
+                    AnalyticalManager.FixExtraReceipts(ref skuForTargetReports),
                     AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
                 ];
 
-                for (int i = 0; i < autoResortTasks.Length; i++)
+                for (int i = 0; i < fixAndAutoResortTasks.Length; i++)
                 {
-                    await Task.Run(() => autoResortTasks[i]);
+                    await Task.Run(() => fixAndAutoResortTasks[i]);
                 }
                 
-                Task.WaitAll(autoResortTasks);
+                Task.WaitAll(fixAndAutoResortTasks);
             }
             
             // Save work 

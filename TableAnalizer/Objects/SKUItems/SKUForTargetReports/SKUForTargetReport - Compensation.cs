@@ -104,7 +104,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                     SKUReceipComment = $"Приход уменьшен на списанное от точек: {difference}";
 
                     // Если взиморасчет меньше ожидания и оплаченная компенсация меньше полученной от точек
-                    if(LessMutualSettlementThanWaiting > 0 && 
+                    if(UnderMutualSettlement > 0 && 
                         SKUDeliveryDelayOrganization == 0 && 
                         SKUCompensatedTotalToClient < difference) 
                     {
@@ -142,9 +142,9 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         {
             //Trace.WriteLine($"{SKUNumber}, Сompensation in: {compensation}");
 
-            SKUDeliveryDelayOrganization = LessMutualSettlementThanWaiting >= compensation ? 
+            SKUDeliveryDelayOrganization = UnderMutualSettlement >= compensation ? 
                 compensation :
-                LessMutualSettlementThanWaiting;
+                UnderMutualSettlement;
 
             paidWriteOffRemainder = compensation - SKUDeliveryDelayOrganization; 
 

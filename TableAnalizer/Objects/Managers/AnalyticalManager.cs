@@ -13,15 +13,15 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         private static Func<SKUForTargetReport, bool> ParallelClientSkuWithExtraReceiptPredicate => sku => sku.IsParallelClientsSKU && sku.SKURansomsWaiting < sku.SKUReceiptTotal;
 
-        private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByOutgoingProducts => sku => !sku.IsSkuNormalize && sku.MoreMutualSettlementThanWaiting > 0 && int.IsPositive(sku.SKUOutgoingProducts - sku.MoreMutualSettlementThanWaiting);
+        private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByOutgoingProducts => sku => !sku.IsSkuNormalize && sku.OverMutualSettlement > 0 && int.IsPositive(sku.SKUOutgoingProducts - sku.OverMutualSettlement);
 
-        private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByTransfer => sku => !sku.IsSkuNormalize && sku.MoreMutualSettlementThanWaiting > 0 && int.IsPositive(sku.SKUTransfered - sku.MoreMutualSettlementThanWaiting);
+        private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByTransfer => sku => !sku.IsSkuNormalize && sku.OverMutualSettlement > 0 && int.IsPositive(sku.SKUTransfered - sku.OverMutualSettlement);
 
-        private static Func<SKUForTargetReport, bool> UnderPredicateByConsumption => sku => !sku.IsSkuNormalize && sku.LessMutualSettlementThanWaiting > 0;
+        private static Func<SKUForTargetReport, bool> UnderPredicateByConsumption => sku => !sku.IsSkuNormalize && sku.UnderMutualSettlement > 0;
 
-        private static Func<SKUForTargetReport, bool> OverPredicateByReceipt=> sku => !sku.IsSkuNormalize && sku.MoreReceiptThanWaiting > 0 && int.IsPositive(sku.SKUReceiptGoods - sku.MoreReceiptThanWaiting);
+        private static Func<SKUForTargetReport, bool> OverPredicateByReceipt=> sku => !sku.IsSkuNormalize && sku.OverReceipt > 0 && int.IsPositive(sku.SKUReceiptGoods - sku.OverReceipt);
 
-        private static Func<SKUForTargetReport, bool> UnderPredicateByReceipt => sku => !sku.IsSkuNormalize && sku.LessReceiptThanWaiting > 0;
+        private static Func<SKUForTargetReport, bool> UnderPredicateByReceipt => sku => !sku.IsSkuNormalize && sku.UnderReceipt > 0;
 
         /// <summary>
         /// Артикул не номализован, взаиморасчет + остаток = ожидание и общий приход больше ожидания
@@ -92,7 +92,14 @@ namespace TableAnalizer.Objects.Managers
         private static List<SKUForTargetReport>? extraSkusByReceipt;
         private static bool isNeedUnderspendingByConsumption;
         private static bool isPossibilityOverspendingByConsumption;
+
+        /// <summary>
+        /// Есть артикулы с недорасходами (по приходу)
+        /// </summary>
         private static bool isNeedUnderspendingByReceipt;
+        /// <summary>
+        /// Есть артикулы с перерасходами (по приходу)
+        /// </summary>
         private static bool isPossibilityOverspendingByReceipt;
         /// <summary>
         /// Есть артикулы с экстра-приходом
@@ -176,13 +183,14 @@ namespace TableAnalizer.Objects.Managers
                 _ => null
             };
 
-             LinkedList<SKUForTargetReport>? ussWorkList = resortTarget switch  
+            LinkedList<SKUForTargetReport>? ussWorkList = resortTarget switch  
             {
                 SKUResortTarget.ResortingConsumptionByOutgoing or SKUResortTarget.ResortingConsumptionByTransfer => underspendingSkusByConsumption,
                 SKUResortTarget.ResortingReceipt => underspendingSkusByReceipt,
                 _ => null
 
             };
+            
 
             if (workFlag != null && (bool)workFlag && ossWorkList != null && ussWorkList != null)
             {
@@ -196,8 +204,8 @@ namespace TableAnalizer.Objects.Managers
 
                     bool zeroСondition = resortTarget switch 
                     {
-                        SKUResortTarget.ResortingConsumptionByOutgoing or SKUResortTarget.ResortingConsumptionByTransfer => overSku.MoreMutualSettlementThanWaiting == 0,
-                        SKUResortTarget.ResortingReceipt => overSku.MoreReceiptThanWaiting == 0,
+                        SKUResortTarget.ResortingConsumptionByOutgoing or SKUResortTarget.ResortingConsumptionByTransfer => overSku.OverMutualSettlement == 0,
+                        SKUResortTarget.ResortingReceipt => overSku.OverReceipt == 0,
                         _ => true
                     };
 
@@ -207,18 +215,18 @@ namespace TableAnalizer.Objects.Managers
                         continue;
                     }
 
-                    int result = 0;
+                    int resortSum = 0;
                     switch(resortTarget) 
                     {
                         case SKUResortTarget.ResortingConsumptionByOutgoing or SKUResortTarget.ResortingConsumptionByTransfer:
-                            if (overSku.MoreMutualSettlementThanWaiting >= underSku.LessMutualSettlementThanWaiting)
+                            if (overSku.OverMutualSettlement >= underSku.UnderMutualSettlement)
                             {
-                                result = underSku.LessMutualSettlementThanWaiting;
+                                resortSum = underSku.UnderMutualSettlement;
                                 underNode = underNode.Next;
                             }
                             else
                             {
-                                result = overSku.MoreMutualSettlementThanWaiting;
+                                resortSum = overSku.OverMutualSettlement;
                                 overNode = overNode.Next;
                             }
 
@@ -235,27 +243,30 @@ namespace TableAnalizer.Objects.Managers
                                 int underConsumtionSkuIndex = skuForTargetReports.IndexOf(underSku);
                                 int overConsumtionSkuIndex = skuForTargetReports.IndexOf(overSku);
                             
-                                MakeResort(ref skuForTargetReports, target, underConsumtionSkuIndex, overConsumtionSkuIndex, result);
+                                MakeResort(ref skuForTargetReports, target, underConsumtionSkuIndex, overConsumtionSkuIndex, resortSum);
                             }
 
                             break;
 
                         case SKUResortTarget.ResortingReceipt:
-                            if (overSku.MoreReceiptThanWaiting >= underSku.LessReceiptThanWaiting)
+                            // Экстра-приход больше недоприхода
+                            if (overSku.OverReceipt >= underSku.UnderReceipt)
                             {
-                                result = underSku.LessReceiptThanWaiting;
+                                resortSum = underSku.UnderReceipt;
                                 underNode = underNode.Next;
                             }
+                            // Экстра-приход меньше недоприхода
                             else
                             {
-                                result = overSku.MoreReceiptThanWaiting;
+                                resortSum = overSku.OverReceipt;
                                 overNode = overNode.Next;
                             }
 
                             int underReceiptSkuIndex = skuForTargetReports.IndexOf(underSku);
                             int overReceiptSkuIndex = skuForTargetReports.IndexOf(overSku);
                             
-                            MakeResort(ref skuForTargetReports, resortTarget, underReceiptSkuIndex, overReceiptSkuIndex, result);
+                            MakeResort(ref skuForTargetReports, resortTarget, underReceiptSkuIndex, overReceiptSkuIndex, resortSum);
+                            
                             break;
                         default:
                             break;
@@ -365,6 +376,7 @@ namespace TableAnalizer.Objects.Managers
                 && target == SKUResortTarget.ResortingReceipt) 
             {
                 skuForTargetReports[underSkuIndex].MakeResort(target, SKUResortDirection.Incoming, skuForTargetReports[overSkuIndex].SKUNumber, sum);
+                skuForTargetReports[overSkuIndex].MakeResort(target, SKUResortDirection.Outgoing, skuForTargetReports[underSkuIndex].SKUNumber, sum);
             }
 
             // Списание экстра приходов

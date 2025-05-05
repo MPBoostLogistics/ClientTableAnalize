@@ -433,16 +433,16 @@ namespace TableAnalizer.Objects.Managers
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
 
             new (colNumber: 25, colName: "Нужны входящие пересорты прихода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Приход меньше ожидания", propertyName: nameof(SKUForTargetReport.LessReceiptThanWaiting),
+            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Приход меньше ожидания", propertyName: nameof(SKUForTargetReport.UnderReceipt),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 26, colName: "Возможны исходящие пересорты прихода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Приход больше ожидания", propertyName: nameof(SKUForTargetReport.MoreReceiptThanWaiting),
+            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Приход больше ожидания", propertyName: nameof(SKUForTargetReport.OverReceipt),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 27, colName: "Нужны входящие пересорты расхода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Взаиморасчет меньше ожидания", propertyName: nameof(SKUForTargetReport.LessMutualSettlementThanWaiting),
+            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Взаиморасчет меньше ожидания", propertyName: nameof(SKUForTargetReport.UnderMutualSettlement),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 28, colName: "Возможны исходящие пересорты расхода", colWidth: 13, format: STRING_OR_INT_CELL_FORMAT,
-            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Взаиморасчет больше ожидания", propertyName: nameof(SKUForTargetReport.MoreMutualSettlementThanWaiting),
+            wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: "Взаиморасчет больше ожидания", propertyName: nameof(SKUForTargetReport.OverMutualSettlement),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x > 0, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
         ];
 
@@ -487,8 +487,24 @@ namespace TableAnalizer.Objects.Managers
         {
             if (!GetExcelPackageByKey(key, out ExcelPackage? package) && package is null)
             {
-                ExcelPackage excelPackage = new(fileInfo);
-                ExcelPackages[key] = excelPackage;
+                ExcelPackage? excelPackage;
+
+                try
+                {
+                    excelPackage = new(fileInfo, false);
+                }
+                catch (System.Exception ex)
+                {
+                    ManagerReachedEventArgs args = new($"Error creating ExcelPackage: {ex.Message}\nKey: {key}\nFile: {fileInfo.FullName}", true, true);
+                    OnManagerReached(args);
+                    throw;
+                }
+
+                if(excelPackage is not null)
+                {
+                    ExcelPackages[key] = excelPackage;
+                }
+                
             }
 
             GetExcelPackageByKey(key, out ExcelPackage? existingPackage);

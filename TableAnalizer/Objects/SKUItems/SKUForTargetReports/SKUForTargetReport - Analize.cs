@@ -19,7 +19,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Склад: Приход от точек меньше ожидания
         /// </summary>
-        public int LessReceiptThanWaiting =>
+        public int UnderReceipt =>
             SKUReceiptTotal < SKURansomsWaiting ?
             SKURansomsWaiting - SKUReceiptTotal :
             0;
@@ -27,7 +27,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Склад: Приход от точек больше ожидания (экстра-приход)
         /// </summary>
-        public int MoreReceiptThanWaiting =>
+        public int OverReceipt =>
             SKUReceiptTotal > SKURansomsWaiting ?
             SKUReceiptTotal - SKURansomsWaiting :
             0;
@@ -45,7 +45,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Общий взаиморасчет меньше ожидания клиента
         /// </summary>
-        public int LessMutualSettlementThanWaiting => 
+        public int UnderMutualSettlement => 
             SKUSummarySettlement < SKURansomsWaiting ? 
                 SKURemaining > 0 ? 
                 SKURansomsWaiting - SKUSummarySettlement - SKURemaining >= 0 ?
@@ -59,7 +59,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Общий взаиморасчет больше ожидания клиента
         /// </summary>
-        public int MoreMutualSettlementThanWaiting =>
+        public int OverMutualSettlement =>
             SKUSummarySettlement > SKURansomsWaiting ?
             SKUSummarySettlement - SKURansomsWaiting :
             0;

@@ -81,17 +81,17 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                 {
                     case SKUResortDirection.Incoming:
                         SKUReceiptGoods += sum;
-                        SKUResortsComment = $"- от арт. {skuNumber}: {sum} (п)";
+                        SKUResortsComment = $"- от арт. {skuNumber}: {sum} (п+)";
                         break;
                     case SKUResortDirection.Outgoing:
                         SKUReceiptGoods -= sum;
-                        SKUResortsComment = $"- на арт. {skuNumber}: {sum} (п)";
+                        SKUResortsComment = $"- на арт. {skuNumber}: {sum} (п-)";
                         break;
                     case SKUResortDirection.InternalParallel:
                         if(SKUReceiptGoods >= sum) 
                         {
                             SKUReceiptGoods -= sum;
-                            SKUResortsComment = $"- приход списано: {sum} (апк)";
+                            SKUResortsComment = $"- приход списано: {sum} (апк-)";
                         } 
                         break;
                     case SKUResortDirection.Internal:
