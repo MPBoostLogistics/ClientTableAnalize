@@ -279,7 +279,7 @@ internal class Program
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByOutgoing, true),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByTransfer, true),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, true),
-                    AnalyticalManager.FixExtraReceipts(ref skuForTargetReports),
+                    AnalyticalManager.FixExtraReceipts(ref skuForTargetReports, true),
                     AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
                 ];
 
