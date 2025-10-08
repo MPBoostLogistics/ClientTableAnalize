@@ -10,24 +10,35 @@ namespace TableAnalizer.Objects.Managers
     {
         #region Fields 
         private const string RANSOMS_SINGLE_REPORT_REGEX_PATTERN = @"Отчет\sвыкупов\sпо\sклиенту\s\S+";
-        private const string RANSOMS_MULTY_REPORT_REGEX_PATTERM = @"Отчет_выкупов_по_клиентам_\S+";
-        private const string BALANCE_REPORT_REGEX_PATTERN  = @"\d+\s+\bбаланс\b";
-        private const string SHIPPED_REPORT_REGEX_PATTERN  = @"\d+\s+\bрасходы\b";
-        private const string TRANSFER_REPORT_REGEX_PATTERN  = @"\d+\s+\bперемещения\b";
-        private const string ADDITIONAL_REPORT_REGEX_PATTERN  = @"\d+\s+\bдополнительный\b";
-        private const string PAID_SHORTAGES_REGEX_PATTERN  = @"\bОплаченные\sнедостачи\b";
+        private const string RANSOMS_MULTY_REPORT_REGEX_PATTERN = @"Отчет_выкупов_по_клиентам_\S+";
+        private const string BALANCE_REPORT_REGEX_PATTERN = @"\d+\s+\bбаланс\b";
+        private const string SHIPPED_REPORT_REGEX_PATTERN = @"\d+\s+\bрасходы\b";
+        private const string TRANSFER_REPORT_REGEX_PATTERN = @"\d+\s+\bперемещения\b";
+        private const string ADDITIONAL_REPORT_REGEX_PATTERN = @"\d+\s+\bдополнительный\b";
+        private const string PAID_SHORTAGES_REGEX_PATTERN = @"\bОплаченные\sнедостачи\b";
         private const string WRITEOFF_POINTS_VIA_WAREHOUSE_SHORTAGE_REPORT_REGEX_PATTERN = @"\bСписание\sточек\sчерез\sсклад\sнедостачи\b";
         private const string WRITEOFF_POINTS_VIA_WAREHOUSE_ADJUSTMENT_REPORT_REGEX_PATTERN = @"\bСписание\sточек\sчерез\sсклад\sкорректировки\b";
         private const string WRITEOFF_POINTS_REPORT_REGEX_PATTERN = @"\bСписание\sточек\b";
         private const string WRITEOFF_DIRECTORY_NAME = "Списание";
 
-        private int DataAgeLimitInDays { get; set;}
+        private int DataAgeLimitInDays { get; set; }
 
         private string? logisticsReportFirstName;
+
+        private static Dictionary<PermanentDataKey, (Regex regex, int bestBeforeDate)> constantDataSourcePaths = new()
+        {
+            { PermanentDataKey.PointsAndCouriers, (new(@"Write-off\s\-\spoints\sand\scouriers", RegexOptions.None, TimeSpan.FromSeconds(1)), 7)},
+            //{ WriteOffSource.ShortagesPaid, ("Write-off - shortages paid.xlsx", 7)}
+            // { WriteOffSource.PointsViaWarehouseShortage, ("Write-off - points through the warehouse (shortages).xlsx", 0) },
+            // { WriteOffSource.PointsViaWarehouseAdjustment, ("Write-off - points through the warehouse (adjustments).xlsx", 0) },
+            // { WriteOffSource.PointsAndCouriers, ("Write-off - points and couriers.xlsx", 7)},
+            // { WriteOffSource.Warehouse, "Write-off - warehouse.xlsx" }
+        };
 
         #endregion
 
         #region Properties
+        private string PermanentDataSourcePath { get; set; } = string.Empty;
 
         public static TargetReportRecipientType? ReportRecipientType { get; set; }
 
@@ -42,57 +53,57 @@ namespace TableAnalizer.Objects.Managers
 
         public static Dictionary<SourceReportItemKey, List<Regex>> RegexesForSourceReports { get; } = new Dictionary<SourceReportItemKey, List<Regex>>
         {
-            { 
-                SourceReportItemKey.Ransoms,  
-                [ 
-                    new(RANSOMS_SINGLE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-                    new(RANSOMS_MULTY_REPORT_REGEX_PATTERM, RegexOptions.None, TimeSpan.FromSeconds(1)) 
-                ] 
-            }, 
             {
-                SourceReportItemKey.Balance, 
+                SourceReportItemKey.Ransoms,
+                [
+                    new(RANSOMS_SINGLE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
+                    new(RANSOMS_MULTY_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
+                ]
+            },
+            {
+                SourceReportItemKey.Balance,
                 [
                     new(BALANCE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
                 ]
             },
             {
-                SourceReportItemKey.WriteOffPoints, 
+                SourceReportItemKey.WriteOffPoints,
                 [
                     new(WRITEOFF_POINTS_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
                 ]
             },
             {
-                SourceReportItemKey.WriteOffPointsViaWarehouseShortage, 
+                SourceReportItemKey.WriteOffPointsViaWarehouseShortage,
                 [
                     new(WRITEOFF_POINTS_VIA_WAREHOUSE_SHORTAGE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
                 ]
             },
               {
-                SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, 
+                SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment,
                 [
                     new(WRITEOFF_POINTS_VIA_WAREHOUSE_ADJUSTMENT_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
                 ]
             },
             {
-                SourceReportItemKey.OutgoingProducts, 
+                SourceReportItemKey.OutgoingProducts,
                 [
                     new(SHIPPED_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
                 ]
             },
             {
-                SourceReportItemKey.Transfered, 
+                SourceReportItemKey.Transfered,
                 [
                     new(TRANSFER_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
                 ]
             },
             {
-                SourceReportItemKey.Additional, 
+                SourceReportItemKey.Additional,
                 [
                     new(ADDITIONAL_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
                 ]
             },
             {
-                SourceReportItemKey.PaidShortages, 
+                SourceReportItemKey.PaidShortages,
                 [
                     new(PAID_SHORTAGES_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
                 ]
@@ -108,12 +119,86 @@ namespace TableAnalizer.Objects.Managers
         {
             base.AddConfigVariables();
 
+            IConfigurationSection? stringsSessions = config!.GetSection("Strings");
+            PermanentDataSourcePath = stringsSessions.GetValue<string>("PermanentDataSourcePath");
+
             IConfigurationSection? numbersSessions = config!.GetSection("Numbers");
             DataAgeLimitInDays = numbersSessions.GetValue<int>("DataAgeLimitInDays");
 
             IConfigurationSection? stringSessions = config!.GetSection("Strings");
             logisticsReportFirstName = stringSessions.GetValue<string>("LogisticsReportFirstName");
         }
+
+        /// <summary>
+        /// Checks availability and expiration date of permanent information.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<Dictionary<PermanentDataKey, FileInfo>?> CheckOfAvailailityPermanentData()
+        {
+            // Checking of a directory existence  
+            FileService.GetDirectoryInfo(PermanentDataSourcePath, out DirectoryInfo? directoryInfo);
+            if (directoryInfo == null)
+            {
+                OnManagerReached(new($"Path to constant data source is not set or directory does not exist: '{PermanentDataSourcePath}'", true, true));
+                return null;
+            }
+
+            // Checking of a files existence in directory
+            if (!FileService.SearchFilesInDirectory(PermanentDataSourcePath, out FileInfo[]? fileInfos, [".xlsx"]) || fileInfos == null || fileInfos.Length == 0)
+            {
+                OnManagerReached(new($"Directory '{PermanentDataSourcePath}' is empty or there are no files equal to the specified extensions.", true, true));
+                return null;
+            }
+
+            // Iterate over a dictionary, check for regex and expiration date
+            Dictionary<PermanentDataKey, FileInfo> resultsDict = [];
+            foreach (var (key, value) in constantDataSourcePaths)
+            {
+                // Searching for a file using a regex
+                var fileInfo = fileInfos.SingleOrDefault(fi => value.regex.IsMatch(fi.Name));
+                if (fileInfo == null)
+                {
+                    OnManagerReached(new($"File with data for key '{key}' is missing from directory.", true, true));
+                    return null;
+                }
+
+                // Checking a file's expiration date  
+                if (fileInfo!.LastWriteTime.AddDays(value.bestBeforeDate) < DateTime.Now)
+                {
+                    OnManagerReached(new($"Data in file by key '{key}' has expired. Please update file.", true, true));
+                    return null;
+                }
+
+                resultsDict[key] = fileInfo;
+            }
+
+            // Dummy
+            await Task.Delay(10);
+            return resultsDict;
+
+
+            // Write-off - points through the warehouse (adjustments).xlsx - списание точек через склад, не обновляется
+            // Write-off - shortages paid.xlsx - оплаченные недостачи, обновляется 1 раз в 7 дней
+
+            // Write-off - warehouse.xlsx - списание со склада, обновляется 1 раз в 7 дней
+
+            // Проверить что файлы обновлены (какие необходимо)
+        }
+
+
+        private static DirectoryInfo? GetDirectory(string path, ref bool isError)
+        {
+            isError = false;
+
+            if (!FileService.GetDirectoryInfo(path, out DirectoryInfo? dirInfo) || dirInfo == null)
+            {
+                isError = true;
+                return null;
+            }
+
+            return dirInfo;
+        }
+
 
         /// <summary>
         /// Checks availability of necessary files for data analysis.
@@ -129,7 +214,7 @@ namespace TableAnalizer.Objects.Managers
             try
             {
                 GetFileInfosSourceReports(reportsPath, out FileInfo[] files);
-      
+
                 Task<int>? getFilesTask;
 
                 try
@@ -183,7 +268,7 @@ namespace TableAnalizer.Objects.Managers
                 }
 
                 OnManagerReached(new(stringBuilder.ToString(), isError, isError));
-                if(isError) 
+                if (isError)
                 {
                     return await Task.FromResult<List<SourceReportItemKey>?>(null);
                 }
@@ -248,7 +333,7 @@ namespace TableAnalizer.Objects.Managers
                 foreach (var validFileExtension in ValidFileExtensions)
                 {
                     extString = string.Concat(extString, validFileExtension, " ");
-                }     
+                }
 
                 message.Append($"\nNumber of files in dir with ext \"{extString}\": {files!.Length}");
 
@@ -262,12 +347,12 @@ namespace TableAnalizer.Objects.Managers
 
                         var (key, loginsFileName) = getSourceReportKeyByRegexTask.Result;
 
-                        if(key.HasValue) 
+                        if (key.HasValue)
                         {
                             var isControlAgeOfData = key switch
                             {
-                                SourceReportItemKey.Ransoms or 
-                                SourceReportItemKey.Balance or 
+                                SourceReportItemKey.Ransoms or
+                                SourceReportItemKey.Balance or
                                 SourceReportItemKey.OutgoingProducts or
                                 //SourceReportItemKey.WriteOffPoints or
                                 SourceReportItemKey.PaidShortages
@@ -283,9 +368,9 @@ namespace TableAnalizer.Objects.Managers
                             {
                                 message.Append(ex.Message);
                                 throw new Exception(ex.Message);
-                            }  
-                        } 
-                        else 
+                            }
+                        }
+                        else
                         {
                             var errorMessage = $"\nUnable to determine key for report file {fileInfo.Name}";
                             message.Append(errorMessage);
@@ -300,7 +385,7 @@ namespace TableAnalizer.Objects.Managers
                     }
                 }
 
-                if(!isError) 
+                if (!isError)
                 {
                     try
                     {
@@ -320,7 +405,7 @@ namespace TableAnalizer.Objects.Managers
                             var errorMessage = "\nPath to dir for working with client can`t be an empty string!";
                             message.Append(errorMessage);
                             throw new Exception(errorMessage);
-                            
+
                         }
                     }
                     catch (Exception ex)
@@ -380,24 +465,24 @@ namespace TableAnalizer.Objects.Managers
             for (int i = 0; i < ClientLogins.Count; i++)
             {
                 stringBuilder.Append(ClientLogins[i]);
-                if(ClientLogins.Last() != ClientLogins[i])
+                if (ClientLogins.Last() != ClientLogins[i])
                 {
                     stringBuilder.Append(", ");
                 }
             }
 
             var dirClientsTargetReportsPath = Path.Combine(mpBoostClientsPath, stringBuilder.ToString());
-            if(FileService.GetDirectoryInfo(dirClientsTargetReportsPath, out DirectoryInfo? dirInfoForClientTargetReports, true)) 
+            if (FileService.GetDirectoryInfo(dirClientsTargetReportsPath, out DirectoryInfo? dirInfoForClientTargetReports, true))
             {
                 DirInfoForClientTargetReports = dirInfoForClientTargetReports;
-            } 
-            else 
+            }
+            else
             {
                 await Task.Delay(100);
                 args = new("Error creating directory for final reports", true, true);
                 OnManagerReached(args);
                 return null;
-            } 
+            }
 
             var reportDateTime = DateTime.Now.ToString("dd-MM-yyyy");
 
@@ -448,18 +533,18 @@ namespace TableAnalizer.Objects.Managers
                 if (isContainsKeyTransfer)
                     existingKeys.Add(SourceReportItemKey.Transfered);
 
-                if(isContainsWriteOffPoints)
+                if (isContainsWriteOffPoints)
                     existingKeys.Add(SourceReportItemKey.WriteOffPoints);
 
-                if(isContainsWriteOffPointsViaWarehouseShortage)
+                if (isContainsWriteOffPointsViaWarehouseShortage)
                     existingKeys.Add(SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
 
-                if(isContainsWriteOffPointsViaWarehouseAdjustment)
+                if (isContainsWriteOffPointsViaWarehouseAdjustment)
                     existingKeys.Add(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
 
                 if (isContainsAdditional)
                     existingKeys.Add(SourceReportItemKey.Additional);
-                
+
                 if (isContainsPaidShortages)
                     existingKeys.Add(SourceReportItemKey.PaidShortages);
             }
@@ -479,19 +564,17 @@ namespace TableAnalizer.Objects.Managers
 
                 if (!isContainsWriteOffPointsViaWarehouseShortage)
                     lostKeys.Add(SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
-                
+
                 if (!isContainsWriteOffPointsViaWarehouseAdjustment)
                     lostKeys.Add(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
 
                 if (!isContainsPaidShortages)
                     lostKeys.Add(SourceReportItemKey.PaidShortages);
             }
-   
+
             return success;
         }
 
-        // TODO: Перенести в отдельный пакет     
-        static readonly string persDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
         /// ???
         static readonly string[] pathKeyNames = Enum.GetNames(typeof(PathKey));
 
@@ -501,25 +584,25 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="fileInfo">Object to parse the file name for.</param>
         /// <returns>Report file key or null, the name of the file with client logins or null.</returns>
         /// <remarks><i>Rework, testing</i></remarks>
-        private static async Task<(SourceReportItemKey? key, string? loginsFileName)> GetSourceReportKeyByRegex(FileInfo fileInfo) 
+        private static async Task<(SourceReportItemKey? key, string? loginsFileName)> GetSourceReportKeyByRegex(FileInfo fileInfo)
         {
             SourceReportItemKey? key = null;
             string? loginsFileName = null;
 
             var fileName = Path.GetFileName(fileInfo.Name);
 
-            if(fileName.StartsWith("~$")) 
-                fileName = fileName.TrimStart('~','$');
-            
+            if (fileName.StartsWith("~$"))
+                fileName = fileName.TrimStart('~', '$');
+
             foreach (var regexesSourceReport in RegexesForSourceReports)
             {
                 foreach (var regex in regexesSourceReport.Value)
                 {
                     var regexMatch = regex.Match(fileName);
-                    if(regexMatch is not null && regexMatch.Success) 
+                    if (regexMatch is not null && regexMatch.Success)
                     {
-                        key =  regexesSourceReport.Key;
-                        if(key == SourceReportItemKey.Ransoms) 
+                        key = regexesSourceReport.Key;
+                        if (key == SourceReportItemKey.Ransoms)
                         {
                             loginsFileName = fileName;
                         }
@@ -531,57 +614,57 @@ namespace TableAnalizer.Objects.Managers
 
             return (key, loginsFileName);
         }
-        
+
         /// <summary>
         /// Gets client logins from the report file name.
         /// </summary>
         /// <param name="filename">Report file name.</param>
         /// <returns>Client login sheet.</returns>
-         /// <remarks><i>Rework, testing</i></remarks>
-        public static List<string> GetLoginsFromFilename(string filename) 
+        /// <remarks><i>Rework, testing</i></remarks>
+        public static List<string> GetLoginsFromFilename(string filename)
         {
-            static void RemoveChars(bool start, bool end, char[] chars, ref string str) 
+            static void RemoveChars(bool start, bool end, char[] chars, ref string str)
             {
-                if(start) 
+                if (start)
                 {
                     foreach (var c in chars)
                     {
-                        if(str.StartsWith(c))
+                        if (str.StartsWith(c))
                             str = str.TrimStart(c);
                     }
                 }
 
-                if(end) 
+                if (end)
                 {
                     foreach (var c in chars)
                     {
-                        if(str.EndsWith(c))
+                        if (str.EndsWith(c))
                             str = str.TrimEnd(c);
                     }
                 }
             }
-            
+
             List<string>? filenameStrings;
 
-            var isSummary =  filename.Contains('_');
-            filenameStrings = isSummary ? [.. filename.Split('_', '.')] : [.. filename.Split(' ', '.')];
-       
-            filenameStrings.RemoveRange(0,4);
+            var isSummary = filename.Contains('_');
+            filenameStrings = isSummary ? [.. filename.Split('_', '.', ',')] : [.. filename.Split(' ', '.')];
+
+            filenameStrings.RemoveRange(0, 4);
             filenameStrings.RemoveRange(filenameStrings.Count - 1, 1); // remove xlsx
 
             // Single login
-            if(filenameStrings.Count == 1) 
+            if (filenameStrings.Count == 1)
             {
                 var element = filenameStrings[0];
 
-                if(element.StartsWith('+'))
+                if (element.StartsWith('+'))
                     RemoveChars(true, false, ['+'], ref element);
-                
+
                 filenameStrings[0] = element;
 
-            } 
+            }
             // Many logins
-            else 
+            else
             {
                 for (int i = 0; i < filenameStrings.Count; i++)
                 {
@@ -589,12 +672,12 @@ namespace TableAnalizer.Objects.Managers
 
                     RemoveChars(start: true, end: false, ['+'], ref element);
                     RemoveChars(start: false, end: true, [','], ref element);
-                    
+
                     filenameStrings[i] = element.Trim();
                 }
             }
 
-            return filenameStrings; 
+            return filenameStrings;
         }
 
         #endregion

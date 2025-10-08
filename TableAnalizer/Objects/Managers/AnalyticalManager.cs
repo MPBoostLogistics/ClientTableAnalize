@@ -7,86 +7,86 @@ namespace TableAnalizer.Objects.Managers
     public class AnalyticalManager(IConfiguration config) : BaseManager(config)
     {
         #region Fields
-        
+
         /// <summary>
         /// Предикат: артикул параллельных клинтов и ожидание меньше общего прихода
         /// </summary>
         private static Func<SKUForTargetReport, bool> ParallelClientSkuWithExtraReceiptPredicate => sku => sku.IsParallelClientsSKU && sku.SKURansomsWaiting < sku.SKUReceiptTotal;
 
-        private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByOutgoingProducts => sku => 
-            !sku.IsSkuNormalize 
-            && sku.OverMutualSettlement > 0 && 
+        private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByOutgoingProducts => sku =>
+            !sku.IsSkuNormalize
+            && sku.OverMutualSettlement > 0 &&
             int.IsPositive(sku.SKUOutgoingProducts - sku.OverMutualSettlement);
 
-        private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByOutgoingProductsWithoutProgress => sku => 
+        private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByOutgoingProductsWithoutProgress => sku =>
             sku.isDeadline &&
-            !sku.IsSkuNormalize 
-            && sku.OverMutualSettlement > 0 && 
+            !sku.IsSkuNormalize
+            && sku.OverMutualSettlement > 0 &&
             int.IsPositive(sku.SKUOutgoingProducts - sku.OverMutualSettlement);
 
-        private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByTransfer => sku => 
-            !sku.IsSkuNormalize && 
-            sku.OverMutualSettlement > 0 && 
+        private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByTransfer => sku =>
+            !sku.IsSkuNormalize &&
+            sku.OverMutualSettlement > 0 &&
             int.IsPositive(sku.SKUTransfered - sku.OverMutualSettlement);
 
-        private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByTransferWithoutProgress => sku => 
+        private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByTransferWithoutProgress => sku =>
             sku.isDeadline &&
-            !sku.IsSkuNormalize && 
-            sku.OverMutualSettlement > 0 && 
+            !sku.IsSkuNormalize &&
+            sku.OverMutualSettlement > 0 &&
             int.IsPositive(sku.SKUTransfered - sku.OverMutualSettlement);
 
-        private static Func<SKUForTargetReport, bool> UnderPredicateByConsumption => sku => 
+        private static Func<SKUForTargetReport, bool> UnderPredicateByConsumption => sku =>
             !sku.IsSkuNormalize && sku.UnderMutualSettlement > 0;
 
-        private static Func<SKUForTargetReport, bool> UnderPredicateByConsumptionWithoutProgress => sku => 
+        private static Func<SKUForTargetReport, bool> UnderPredicateByConsumptionWithoutProgress => sku =>
             sku.isDeadline &&
-            !sku.IsSkuNormalize && 
+            !sku.IsSkuNormalize &&
             sku.UnderMutualSettlement > 0;
 
-        private static Func<SKUForTargetReport, bool> OverPredicateByReceipt=> sku => 
-            !sku.IsSkuNormalize && 
-            sku.OverReceipt > 0 && 
-            int.IsPositive(sku.SKUReceiptGoods - sku.OverReceipt);
-        
-        private static Func<SKUForTargetReport, bool> OverPredicateByReceiptWithotProgress => sku => 
-            sku.isDeadline &&
-            !sku.IsSkuNormalize && 
-            sku.OverReceipt > 0 && 
+        private static Func<SKUForTargetReport, bool> OverPredicateByReceipt => sku =>
+            !sku.IsSkuNormalize &&
+            sku.OverReceipt > 0 &&
             int.IsPositive(sku.SKUReceiptGoods - sku.OverReceipt);
 
-        private static Func<SKUForTargetReport, bool> UnderPredicateByReceipt => sku => 
-            !sku.IsSkuNormalize && 
+        private static Func<SKUForTargetReport, bool> OverPredicateByReceiptWithotProgress => sku =>
+            sku.isDeadline &&
+            !sku.IsSkuNormalize &&
+            sku.OverReceipt > 0 &&
+            int.IsPositive(sku.SKUReceiptGoods - sku.OverReceipt);
+
+        private static Func<SKUForTargetReport, bool> UnderPredicateByReceipt => sku =>
+            !sku.IsSkuNormalize &&
             sku.UnderReceipt > 0;
 
-        private static Func<SKUForTargetReport, bool> UnderPredicateByReceiptWithoutProgress => sku => 
+        private static Func<SKUForTargetReport, bool> UnderPredicateByReceiptWithoutProgress => sku =>
             sku.isDeadline &&
-            !sku.IsSkuNormalize && 
+            !sku.IsSkuNormalize &&
             sku.UnderReceipt > 0;
 
         /// <summary>
         /// Артикул не нормализован, взаиморасчет + остаток = ожидание и общий приход больше ожидания
         /// </summary>
-        private static Func<SKUForTargetReport, bool> ExtraPredicateByReceipt => sku => 
-            !sku.IsSkuNormalize && 
-            (sku.SKUSummarySettlement + sku.SKURemaining) == sku.SKURansomsWaiting && 
+        private static Func<SKUForTargetReport, bool> ExtraPredicateByReceipt => sku =>
+            !sku.IsSkuNormalize &&
+            (sku.SKUSummarySettlement + sku.SKURemaining) == sku.SKURansomsWaiting &&
             sku.SKUReceiptTotal > sku.SKURansomsWaiting;
 
-        private static Func<SKUForTargetReport, bool> ExtraPredicateByReceiptWithoutProgress => sku => 
-            sku.isDeadline && 
-            !sku.IsSkuNormalize && 
-            (sku.SKUSummarySettlement + sku.SKURemaining) == sku.SKURansomsWaiting && 
+        private static Func<SKUForTargetReport, bool> ExtraPredicateByReceiptWithoutProgress => sku =>
+            sku.isDeadline &&
+            !sku.IsSkuNormalize &&
+            (sku.SKUSummarySettlement + sku.SKURemaining) == sku.SKURansomsWaiting &&
             sku.SKUReceiptTotal > sku.SKURansomsWaiting;
 
         /// <summary>
         /// Были списания недостач точек через склад
         /// </summary>
-        private static Func<SKUForTargetReport, bool> WrittenOffFromPointsViaWarehouseByShortage => 
+        private static Func<SKUForTargetReport, bool> WrittenOffFromPointsViaWarehouseByShortage =>
             sku => sku.SKUWriteOffFromPointsViaWarehouseShortage > 0;
 
         /// <summary>
         /// Были списания корректировки от точек через склад
         /// </summary>
-        private static Func<SKUForTargetReport, bool> WrittenOffFromPointsViaWarehouseByAdjustment => 
+        private static Func<SKUForTargetReport, bool> WrittenOffFromPointsViaWarehouseByAdjustment =>
             sku => sku.SKUWrittenOffFromPointsViaWarehouseAdjustment > 0;
 
         /// <summary>
@@ -129,7 +129,7 @@ namespace TableAnalizer.Objects.Managers
         ///  Артикулы с недорасходами (по приходу)
         /// </summary>
         //private static LinkedList<SKUForTargetReports>? underspendingSkusByReceipt; // WrittenOffFromPointsViaWarehouseByReceipt
- 
+
         /// <summary>
         ///  Артикулы с экстра приходом=
         /// </summary>
@@ -163,7 +163,7 @@ namespace TableAnalizer.Objects.Managers
         /// Флаг: Есть артикулы параллельных клиентов где ожидание меньше общего прихода.
         /// </summary>
         private static bool isParallelClientSkuWithExtraReceipt;
-       
+
         /// <summary>
         /// Предикат для получения артикулов, дедлайн по которым не прошел.
         /// </summary>
@@ -172,7 +172,7 @@ namespace TableAnalizer.Objects.Managers
         #endregion
 
         #region Properties 
-        private static int PaidWriteOffRemainder {get;set;} = 0; 
+        private static int PaidWriteOffRemainder { get; set; } = 0;
         #endregion
 
         #region Functionality
@@ -185,41 +185,41 @@ namespace TableAnalizer.Objects.Managers
         /// <returns>Флаг выполнения задачи.</returns>
         private static Task UpdateDataForResorts(ref List<SKUForTargetReport> skuForTargetReports, bool isDontConsiderSKUsInProgress)
         {
-            parallelClientSkuWithExtraReceipt = GetSkus(ref skuForTargetReports, [ParallelClientSkuWithExtraReceiptPredicate])?.OrderByDescending(el => el.SKUNumber).ToList();;
+            parallelClientSkuWithExtraReceipt = GetSkus(ref skuForTargetReports, [ParallelClientSkuWithExtraReceiptPredicate])?.OrderByDescending(el => el.SKUNumber).ToList(); ;
             isParallelClientSkuWithExtraReceipt = parallelClientSkuWithExtraReceipt is not null && parallelClientSkuWithExtraReceipt.Count > 0;
 
-            writeOffPointsByShortage = GetSkus(ref skuForTargetReports, [WrittenOffFromPointsViaWarehouseByShortage])?.OrderByDescending(el => el.SKUNumber).ToList();;
+            writeOffPointsByShortage = GetSkus(ref skuForTargetReports, [WrittenOffFromPointsViaWarehouseByShortage])?.OrderByDescending(el => el.SKUNumber).ToList(); ;
             isWriteOffPointsThroughWarehouseShortages = writeOffPointsByShortage is not null && writeOffPointsByShortage.Count > 0;
 
-            writeOffPointsByAdjustment = GetSkus(ref skuForTargetReports, [WrittenOffFromPointsViaWarehouseByAdjustment])?.OrderByDescending(el => el.SKUNumber).ToList();;
+            writeOffPointsByAdjustment = GetSkus(ref skuForTargetReports, [WrittenOffFromPointsViaWarehouseByAdjustment])?.OrderByDescending(el => el.SKUNumber).ToList(); ;
             isWriteOffPointsThroughWarehouseAdjustment = writeOffPointsByAdjustment is not null && writeOffPointsByAdjustment.Count > 0;
 
-            var overspendingByConsumption = isDontConsiderSKUsInProgress ? 
-                GetSkus(ref skuForTargetReports, [OverPredicateConsumptionByOutgoingProductsWithoutProgress, OverPredicateConsumptionByTransferWithoutProgress]) : 
+            var overspendingByConsumption = isDontConsiderSKUsInProgress ?
+                GetSkus(ref skuForTargetReports, [OverPredicateConsumptionByOutgoingProductsWithoutProgress, OverPredicateConsumptionByTransferWithoutProgress]) :
                 GetSkus(ref skuForTargetReports, [OverPredicateConsumptionByOutgoingProducts, OverPredicateConsumptionByTransfer]);
             overspendingSkusByConsumption = overspendingByConsumption is not null ? new LinkedList<SKUForTargetReport>(overspendingByConsumption.OrderByDescending(el => el.SKUNumber)) : null;
             isPossibilityOverspendingByConsumption = overspendingSkusByConsumption is not null && overspendingSkusByConsumption.Count != 0;
 
-            var underspendingByConsumption = isDontConsiderSKUsInProgress ? 
-                GetSkus(ref skuForTargetReports, [UnderPredicateByConsumptionWithoutProgress]) : 
+            var underspendingByConsumption = isDontConsiderSKUsInProgress ?
+                GetSkus(ref skuForTargetReports, [UnderPredicateByConsumptionWithoutProgress]) :
                 GetSkus(ref skuForTargetReports, [UnderPredicateByConsumption]);
             underspendingSkusByConsumption = underspendingByConsumption is not null ? new LinkedList<SKUForTargetReport>(underspendingByConsumption.OrderByDescending(el => el.SKUNumber)) : null;
             isNeedUnderspendingByConsumption = underspendingSkusByConsumption is not null && underspendingSkusByConsumption.Count != 0;
 
-            var overspendingByReceipt = isDontConsiderSKUsInProgress ? 
-                GetSkus(ref skuForTargetReports, [OverPredicateByReceiptWithotProgress]) : 
+            var overspendingByReceipt = isDontConsiderSKUsInProgress ?
+                GetSkus(ref skuForTargetReports, [OverPredicateByReceiptWithotProgress]) :
                 GetSkus(ref skuForTargetReports, [OverPredicateByReceipt]);
             overspendingSkusByReceipt = overspendingByReceipt is not null ? new LinkedList<SKUForTargetReport>(overspendingByReceipt.OrderByDescending(el => el.SKUNumber)) : null;
             isPossibilityOverspendingByReceipt = overspendingSkusByReceipt is not null && overspendingSkusByReceipt.Count != 0;
 
-            var underspendingByReceipt = isDontConsiderSKUsInProgress ? 
-                GetSkus(ref skuForTargetReports, [UnderPredicateByReceiptWithoutProgress]) : 
+            var underspendingByReceipt = isDontConsiderSKUsInProgress ?
+                GetSkus(ref skuForTargetReports, [UnderPredicateByReceiptWithoutProgress]) :
                 GetSkus(ref skuForTargetReports, [UnderPredicateByReceipt]);
             underspendingSkusByReceipt = underspendingByReceipt is not null ? new LinkedList<SKUForTargetReport>(underspendingByReceipt.OrderByDescending(el => el.SKUNumber)) : null;
             isNeedUnderspendingByReceipt = underspendingSkusByReceipt is not null && underspendingSkusByReceipt.Count != 0;
 
-            var extraByReceipt = isDontConsiderSKUsInProgress ? 
-                GetSkus(ref skuForTargetReports, [ExtraPredicateByReceiptWithoutProgress])?.OrderByDescending(el => el.SKUNumber).ToList() : 
+            extraSkusByReceipt = isDontConsiderSKUsInProgress ?
+                GetSkus(ref skuForTargetReports, [ExtraPredicateByReceiptWithoutProgress])?.OrderByDescending(el => el.SKUNumber).ToList() :
                 GetSkus(ref skuForTargetReports, [ExtraPredicateByReceipt])?.OrderByDescending(el => el.SKUNumber).ToList();
             isThereAreSkusWithExtraReceipt = extraSkusByReceipt is not null && extraSkusByReceipt.Count != 0;
 
@@ -338,9 +338,9 @@ namespace TableAnalizer.Objects.Managers
             Task.Run(() => updateDataTask);
             updateDataTask.Wait();
 
-            if(workFlag != null && (bool)workFlag && resortTarget != ResortConsumptionTarget.ResortingReceipt) 
+            if (workFlag != null && (bool)workFlag && resortTarget != ResortConsumptionTarget.ResortingReceipt)
             {
-                return SetAutoResorts(ref skuForTargetReports,  resortTarget, false);
+                return SetAutoResorts(ref skuForTargetReports, resortTarget, false);
             }
 
             return Task.CompletedTask;
@@ -361,8 +361,8 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <param name="resortTarget">Resort target case.</param>
         /// <returns>List with overspending (optional).</returns>
-        private static LinkedList<SKUForTargetReport>? DefinesListWithOverspending(ResortConsumptionTarget resortTarget) 
-        { 
+        private static LinkedList<SKUForTargetReport>? DefinesListWithOverspending(ResortConsumptionTarget resortTarget)
+        {
             return resortTarget switch
             {
                 ResortConsumptionTarget.ResortingConsumptionByOutgoing or ResortConsumptionTarget.ResortingConsumptionByTransfer => overspendingSkusByConsumption,
@@ -370,13 +370,13 @@ namespace TableAnalizer.Objects.Managers
                 _ => null
             };
         }
-      
+
         /// <summary>
         /// Фиксация недовозов, списанных с точек через склад.
         /// </summary>
         /// <param name="skuForTargetReports">Коллекция SKUForTargetReport (ссылка).</param>
         /// <returns></returns>
-        public static Task FixWriteOffByPointsThroughWarehouse(ref List<SKUForTargetReport> skuForTargetReports) 
+        public static Task FixWriteOffByPointsThroughWarehouse(ref List<SKUForTargetReport> skuForTargetReports)
         {
             // Initial set collections
             var updateDataTask = UpdateDataForResorts(ref skuForTargetReports, false);
@@ -387,7 +387,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var sku in writeOffPointsByShortage!)
                 {
-                    MakeCorrectionWriteOffs(ref skuForTargetReports, WriteOffSource.PointsViaWarehouseShortage, skuForTargetReports.IndexOf(sku));
+                    MakeCorrectionWriteOffs(ref skuForTargetReports, PermanentDataKey.PointsViaWarehouseShortage, skuForTargetReports.IndexOf(sku));
                 }
             }
 
@@ -395,14 +395,14 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var sku in writeOffPointsByAdjustment!)
                 {
-                    MakeCorrectionWriteOffs(ref skuForTargetReports, WriteOffSource.PointsViaWarehouseAdjustment, skuForTargetReports.IndexOf(sku));
+                    MakeCorrectionWriteOffs(ref skuForTargetReports, PermanentDataKey.PointsViaWarehouseAdjustment, skuForTargetReports.IndexOf(sku));
                 }
             }
 
             return Task.CompletedTask;
         }
 
-        public static Task FixExtraReceipts(ref List<SKUForTargetReport> skuForTargetReports, bool isDontConsiderInProgress) 
+        public static Task FixExtraReceipts(ref List<SKUForTargetReport> skuForTargetReports, bool isDontConsiderInProgress)
         {
             // Initial set collections
             var updateDataTask = UpdateDataForResorts(ref skuForTargetReports, isDontConsiderInProgress);
@@ -420,17 +420,17 @@ namespace TableAnalizer.Objects.Managers
                 }
             }
 
-            return isThereAreSkusWithExtraReceipt ? 
-                FixExtraReceipts(ref skuForTargetReports, false) : 
+            return isThereAreSkusWithExtraReceipt ?
+                FixExtraReceipts(ref skuForTargetReports, false) :
                 Task.CompletedTask;
         }
 
-        public static void MakeCorrectionWriteOffs(ref List<SKUForTargetReport> skuForTargetReports, WriteOffSource writeOffSource, int skuIndex) 
+        public static void MakeCorrectionWriteOffs(ref List<SKUForTargetReport> skuForTargetReports, PermanentDataKey writeOffSource, int skuIndex)
         {
-            if(int.IsNegative(skuIndex)) return;
+            if (int.IsNegative(skuIndex)) return;
 
             var paidWriteOffRemainder = skuForTargetReports[skuIndex].MakeCorrectionOnWriteOffShortages(writeOffSource);
-            if(paidWriteOffRemainder > 0) 
+            if (paidWriteOffRemainder > 0)
             {
                 PaidWriteOffRemainder += paidWriteOffRemainder;
             }
@@ -443,55 +443,55 @@ namespace TableAnalizer.Objects.Managers
 
         private static void MakeResort(ref List<SKUForTargetReport> skuForTargetReports, ResortConsumptionTarget target, int underSkuIndex, int overSkuIndex, int sum)
         {
-            if(int.IsNegative(underSkuIndex) || int.IsNegative(overSkuIndex)) 
+            if (int.IsNegative(underSkuIndex) || int.IsNegative(overSkuIndex))
             {
                 return;
-            } 
+            }
 
             bool isIndicesEqual = underSkuIndex == overSkuIndex;
             bool isIndicesNotEqual = underSkuIndex != overSkuIndex;
 
-             // Пересорты приходов (артикулы параллельных клиентов)
-            if (skuForTargetReports[underSkuIndex].IsParallelClientsSKU && 
-                isIndicesEqual && target == ResortConsumptionTarget.ResortingReceipt) 
+            // Пересорты приходов (артикулы параллельных клиентов)
+            if (skuForTargetReports[underSkuIndex].IsParallelClientsSKU &&
+                isIndicesEqual && target == ResortConsumptionTarget.ResortingReceipt)
             {
                 skuForTargetReports[underSkuIndex].MakeResort(target, SKUResortDirection.InternalParallel, skuForTargetReports[overSkuIndex].SKUNumber, sum);
             }
 
 
             // Пересорты расходов
-            if(isIndicesNotEqual && 
-                (target == ResortConsumptionTarget.ResortingConsumptionByOutgoing || target == ResortConsumptionTarget.ResortingConsumptionByTransfer)) 
+            if (isIndicesNotEqual &&
+                (target == ResortConsumptionTarget.ResortingConsumptionByOutgoing || target == ResortConsumptionTarget.ResortingConsumptionByTransfer))
             {
                 skuForTargetReports[underSkuIndex].MakeResort(target, SKUResortDirection.Incoming, skuForTargetReports[overSkuIndex].SKUNumber, sum);
                 skuForTargetReports[overSkuIndex].MakeResort(target, SKUResortDirection.Outgoing, skuForTargetReports[underSkuIndex].SKUNumber, sum);
             }
 
             // Пересорты приходов
-            if (isIndicesNotEqual 
-                && target == ResortConsumptionTarget.ResortingReceipt) 
+            if (isIndicesNotEqual
+                && target == ResortConsumptionTarget.ResortingReceipt)
             {
                 skuForTargetReports[underSkuIndex].MakeResort(target, SKUResortDirection.Incoming, skuForTargetReports[overSkuIndex].SKUNumber, sum);
                 skuForTargetReports[overSkuIndex].MakeResort(target, SKUResortDirection.Outgoing, skuForTargetReports[underSkuIndex].SKUNumber, sum);
             }
 
             // Списание экстра приходов
-            if (isIndicesEqual && target == ResortConsumptionTarget.ResortingReceipt) 
+            if (isIndicesEqual && target == ResortConsumptionTarget.ResortingReceipt)
             {
                 skuForTargetReports[underSkuIndex].MakeResort(target, SKUResortDirection.Internal, skuForTargetReports[overSkuIndex].SKUNumber, sum);
             }
         }
 
-        public static Task FinalAnalizeSkus(ref List<SKUForTargetReport> skuForTargetReports) 
+        public static Task FinalAnalizeSkus(ref List<SKUForTargetReport> skuForTargetReports)
         {
             foreach (var sku in skuForTargetReports)
             {
-                if(!sku.IsSkuNormalize && PaidWriteOffRemainder > 0) 
+                if (!sku.IsSkuNormalize && PaidWriteOffRemainder > 0)
                 {
                     var reminder = sku.FinalAnalize(PaidWriteOffRemainder);
                     PaidWriteOffRemainder = reminder;
-                } 
-                else 
+                }
+                else
                 {
                     sku.FinalAnalize(0);
                 }

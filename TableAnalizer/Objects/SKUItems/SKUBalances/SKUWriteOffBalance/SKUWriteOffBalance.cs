@@ -20,23 +20,23 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         #endregion Properties
 
         #region Constructors
-        public SKUWriteOffBalance(int skuNumber, List<SKUWriteOffDataUnit> skuWriteOffDataUnit, WriteOffSource source)
+        public SKUWriteOffBalance(int skuNumber, List<SKUWriteOffDataUnit> skuWriteOffDataUnit, PermanentDataKey source)
         {
             SKUNumber = skuNumber;
 
             switch (source)
             {
-                case WriteOffSource.Points:
+                case PermanentDataKey.PointsAndCouriers:
                     SKUWriteOffPoints = skuWriteOffDataUnit
                         .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
                     break;
-                case WriteOffSource.PointsViaWarehouseShortage:
-                     SKUWriteOffPointsViaWarehouseShortage = skuWriteOffDataUnit
-                        .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
+                case PermanentDataKey.PointsViaWarehouseShortage:
+                    SKUWriteOffPointsViaWarehouseShortage = skuWriteOffDataUnit
+                       .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
                     break;
-                case WriteOffSource.PointsViaWarehouseAdjustment:
-                     SKUWriteOffPointsViaWarehouseAdjustment = skuWriteOffDataUnit
-                        .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
+                case PermanentDataKey.PointsViaWarehouseAdjustment:
+                    SKUWriteOffPointsViaWarehouseAdjustment = skuWriteOffDataUnit
+                       .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
                     break;
             }
         }
@@ -54,10 +54,10 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
 
         #region 
         public bool Equals(SKUWriteOffBalance? other) =>
-            SKUNumber == other?.SKUNumber && 
-            SKUWriteOffPoints == other?.SKUWriteOffPoints && 
-            SKUWriteOffPointsViaWarehouseShortage == other?.SKUWriteOffPointsViaWarehouseShortage && 
-            SKUWriteOffPointsViaWarehouseAdjustment == other?.SKUWriteOffPointsViaWarehouseAdjustment 
+            SKUNumber == other?.SKUNumber &&
+            SKUWriteOffPoints == other?.SKUWriteOffPoints &&
+            SKUWriteOffPointsViaWarehouseShortage == other?.SKUWriteOffPointsViaWarehouseShortage &&
+            SKUWriteOffPointsViaWarehouseAdjustment == other?.SKUWriteOffPointsViaWarehouseAdjustment
             ;
 
         public override bool Equals(object? other)

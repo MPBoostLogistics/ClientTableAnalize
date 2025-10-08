@@ -2,12 +2,12 @@ using System.Diagnostics;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage;
 
-namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports 
+namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 {
     /// <summary>
     /// Сompensation / shortages part of "SKUForTargetReport" type.
     /// </summary>
-    public partial class SKUForTargetReport 
+    public partial class SKUForTargetReport
     {
         #region Properties
         /// <summary>
@@ -35,7 +35,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Фактическая денежная компенсация от склада и организации (точек) в адрес клиента. 
         /// </summary>
-        public int SKUCompensatedTotalToClient => 
+        public int SKUCompensatedTotalToClient =>
             SKUPaidShortageWarehouse + SKUPaidShortageOrganization + SKUPaidShortageOrganizationAndWarehouse;
 
         /// <summary>
@@ -54,23 +54,23 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         public int SKUPaidShortageOrganizationAndWarehouse { get; set; } = 0;
 
         #endregion
-   
+
         #region Functionality
-        private void SetSKUWriteOffs(SKUWriteOffBalance? writeOffBalance) 
+        private void SetSKUWriteOffs(SKUWriteOffBalance? writeOffBalance)
         {
-            if(writeOffBalance is null) return;
+            if (writeOffBalance is null) return;
 
             SKUWriteOffFromPoints = writeOffBalance.SKUWriteOffPoints;
             SKUWriteOffFromPointsViaWarehouseShortage = writeOffBalance.SKUWriteOffPointsViaWarehouseShortage;
             SKUWrittenOffFromPointsViaWarehouseAdjustment = writeOffBalance.SKUWriteOffPointsViaWarehouseAdjustment;
         }
 
-        private void SetSKUCompensateds(SKUPaidShortageBalance? skuPaidShortageBalance) 
+        private void SetSKUCompensateds(SKUPaidShortageBalance? skuPaidShortageBalance)
         {
-            if(skuPaidShortageBalance is null) return;
+            if (skuPaidShortageBalance is null) return;
 
             SKUPaidShortageWarehouse += skuPaidShortageBalance.PaidShortageItems
-                .Where(el => el.Key ==  ClaimExecutor.Warehouse)
+                .Where(el => el.Key == ClaimExecutor.Warehouse)
                 .Aggregate(0, (acc, i) => acc + i.Value.sum);
 
             SKUPaidShortageOrganization += skuPaidShortageBalance.PaidShortageItems
@@ -81,21 +81,21 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                 .Where(el => el.Key == ClaimExecutor.OrganizationAndWarehouse)
                 .Aggregate(0, (acc, i) => acc + i.Value.sum);
         }
-        
+
         /// <summary>
         /// Производит корректировку недостач, списанных с точек.
         /// </summary>
         /// <param name="writeOffSource">Источник списания.</param>
         /// <remarks>Производит сравнение экстра прихода и списания с точек через склад (предыдущие периоды).</remarks>
         /// <returns>Остаток после списания, ...</returns>
-        public int MakeCorrectionOnWriteOffShortages(WriteOffSource writeOffSource) 
+        public int MakeCorrectionOnWriteOffShortages(PermanentDataKey writeOffSource)
         {
             int difference;
             switch (writeOffSource)
             {
-                case WriteOffSource.PointsViaWarehouseShortage:
+                case PermanentDataKey.PointsViaWarehouseShortage:
 
-                    if(SKUWriteOffFromPointsViaWarehouseShortage == 0) return 0;
+                    if (SKUWriteOffFromPointsViaWarehouseShortage == 0) return 0;
 
                     difference = SKUWriteOffFromPointsViaWarehouseShortage;
                     SKUReceiptGoods -= difference;
@@ -104,28 +104,28 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                     SKUReceipComment = $"Приход уменьшен на списанное от точек: {difference}";
 
                     // Если взиморасчет меньше ожидания и оплаченная компенсация меньше полученной от точек
-                    if(UnderMutualSettlement > 0 && 
-                        SKUDeliveryDelayOrganization == 0 && 
-                        SKUCompensatedTotalToClient < difference) 
+                    if (UnderMutualSettlement > 0 &&
+                        SKUDeliveryDelayOrganization == 0 &&
+                        SKUCompensatedTotalToClient < difference)
                     {
                         var dif = difference - SKUCompensatedTotalToClient;
                         CalculateDelay(out int paidWriteOffRemainder, in dif);
                         return paidWriteOffRemainder;
-                    } 
-                    else 
+                    }
+                    else
                     {
                         return 0;
                     }
-                case WriteOffSource.PointsViaWarehouseAdjustment:
+                case PermanentDataKey.PointsViaWarehouseAdjustment:
 
-                    if(SKUWrittenOffFromPointsViaWarehouseAdjustment == 0) return 0;
+                    if (SKUWrittenOffFromPointsViaWarehouseAdjustment == 0) return 0;
 
                     difference = SKUWrittenOffFromPointsViaWarehouseAdjustment;
                     SKUReceiptGoods -= difference;
                     SKUWrittenOffFromPointsViaWarehouseAdjustment = 0;
 
                     SKUReceipComment = $"Приход уменьшен на коррект. от точек: {difference}";
-                    
+
                     return 0;
                 default:
                     return 0;
@@ -142,11 +142,11 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         {
             //Trace.WriteLine($"{SKUNumber}, Сompensation in: {compensation}");
 
-            SKUDeliveryDelayOrganization = UnderMutualSettlement >= compensation ? 
+            SKUDeliveryDelayOrganization = UnderMutualSettlement >= compensation ?
                 compensation :
                 UnderMutualSettlement;
 
-            paidWriteOffRemainder = compensation - SKUDeliveryDelayOrganization; 
+            paidWriteOffRemainder = compensation - SKUDeliveryDelayOrganization;
 
             //Trace.WriteLine($"{SKUNumber}, SKUDeliveryDelayOrganization: {SKUDeliveryDelayOrganization}");
             //Trace.WriteLine($"{SKUNumber}, Сompensation out: {paidWriteOffRemainder}");

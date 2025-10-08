@@ -18,19 +18,20 @@ using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 internal class Program
 {
     #region Variables and constants   
-    private static int DeadlineDays { get; set; }
+    private static string appVersion = string.Empty;
     private static string goodByMessage = string.Empty;
     private static bool isTracing;
     private static bool isAutoResorting;
-    private static int TracingDelay { get; set; }
 
-    private static string TraceInfoFlag { get; set; } = string.Empty;
-    private static string TraceErrorFlag { get; set; } = string.Empty;
-    private static IConfiguration? config;
+    private static IConfiguration? appConfig;
 
     #endregion
 
     #region Properties 
+    private static int DeadlineDays { get; set; }
+    private static int TracingDelay { get; set; }
+    private static string TraceInfoFlag { get; set; } = string.Empty;
+    private static string TraceErrorFlag { get; set; } = string.Empty;
     private static ReportFileManager? reportFileManager;
     private static ExcelManager? excelManager;
     private static SKUManager? skuManager;
@@ -42,32 +43,35 @@ internal class Program
     {
         SetAppConfig();
 
-        if(config is not null) 
+        if (appConfig is not null)
         {
-            reportFileManager = new(config);
-            excelManager = new(config);
-            skuManager = new(config, DeadlineDays, excelManager);
-            anManager = new(config);
+            reportFileManager = new(appConfig);
+            excelManager = new(appConfig);
+            skuManager = new(appConfig, DeadlineDays, excelManager);
+            anManager = new(appConfig);
         }
-        else 
+        else
         {
             ManagerReachedEventArgs a = new("Error in assembling application configuration", true, true);
             await TracingProgramExecution(a);
         }
 
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-    
+
         Trace.Listeners.Add(new ConsoleTraceListener());
 
         var analizeTask = Analyze();
         await Task.Run(() => analizeTask);
         analizeTask.Wait();
 
-        var exitTask = TracingProgramExecution(new(goodByMessage,false,true));
+        var exitTask = TracingProgramExecution(new(goodByMessage, false, true));
         await Task.Run(() => exitTask);
         exitTask.Wait();
     }
 
+    /// <summary>
+    /// Setting up the app configuration
+    /// </summary>
     private static void SetAppConfig()
     {
         if (FileService.GetProjectDirectory(out DirectoryInfo? projectDirectory)
@@ -77,24 +81,31 @@ internal class Program
                 .SetBasePath(projectDirectory.FullName)
                 .AddJsonFile("config.json", optional: false);
 
-            config = builder.Build();
+            appConfig = builder.Build();
 
-            IConfigurationSection? flagsSection = config.GetSection("Flags");
+            IConfigurationSection? stringsSection = appConfig.GetSection("Strings");
+            appVersion = stringsSection.GetValue<string>("AppVersion");
+
+            IConfigurationSection? flagsSection = appConfig.GetSection("Flags");
             isTracing = flagsSection.GetValue<bool>("isTracing");
             isAutoResorting = flagsSection.GetValue<bool>("isAutoResorting");
 
-            IConfigurationSection? messagesSection = config.GetSection("Messages");
+            IConfigurationSection? messagesSection = appConfig.GetSection("Messages");
             goodByMessage = messagesSection.GetValue<string>("GoodbyMessage");
             TraceInfoFlag = messagesSection.GetValue<string>("TraceInfoFlag");
             TraceErrorFlag = messagesSection.GetValue<string>("TraceErrorFlag");
 
-            IConfigurationSection? numbersSection = config.GetSection("Numbers");
+            IConfigurationSection? numbersSection = appConfig.GetSection("Numbers");
             TracingDelay = numbersSection.GetValue<int>("TracingDelay");
             DeadlineDays = numbersSection.GetValue<int>("DeadlineDays");
         }
     }
+
     private static async Task Analyze()
     {
+        await Task.Delay(10); // dummy
+
+
         reportFileManager!.ManagerReached += Report;
         excelManager!.ManagerReached += Report;
         skuManager!.ManagerReached += Report;
@@ -102,34 +113,66 @@ internal class Program
 
         Console.Clear();
 
-        // Get data
-        Task<List<SourceReportItemKey>?>? getDataFromConsoleTask = GetDataFromConsole();
-        await Task.Run(() => getDataFromConsoleTask);
-        getDataFromConsoleTask.Wait();
-        List<SourceReportItemKey>? existingKeys = getDataFromConsoleTask.Result;
+        // Check permanent data 
+        Dictionary<PermanentDataKey, FileInfo>? permanentDataFiles = reportFileManager.CheckOfAvailailityPermanentData().Result;
+        if (permanentDataFiles == null)
+        {
+            ManagerReachedEventArgs e = new("infos is null", true, true);
+            await TracingProgramExecution(e);
+        }
 
-        //Start analize
-        await TracingProgramExecution(new("Report analysis task has started...", false, false));
-        var analyzeСlientReportTask = AnalyzeСlientReport(existingKeys);
-        await Task.Run(() => analyzeСlientReportTask);
-        analyzeСlientReportTask?.Wait();
+        if (permanentDataFiles != null && permanentDataFiles.Count == 0)
+        {
+            ManagerReachedEventArgs e = new("infos length == 0", true, true);
+        }
+
+
+        foreach (var info in permanentDataFiles!)
+        {
+            Console.WriteLine($"{info.Key}, {info.Value.FullName}");
+        }
+
+
+        // // Get data
+        // Task<List<SourceReportItemKey>?>? getDataFromConsoleTask = GetDataFromConsole();
+        // await Task.Run(() => getDataFromConsoleTask);
+        // getDataFromConsoleTask.Wait();
+        // List<SourceReportItemKey>? existingKeys = getDataFromConsoleTask.Result;
+
+        // // Start analize
+        // await TracingProgramExecution(new("Report analysis task has started...", false, false));
+        // var analyzeСlientReportTask = AnalyzeСlientReport(existingKeys);
+        // await Task.Run(() => analyzeСlientReportTask);
+        // analyzeСlientReportTask?.Wait();
 
         reportFileManager.ManagerReached -= Report;
         excelManager.ManagerReached -= Report;
         skuManager.ManagerReached -= Report;
     }
 
-    private static async Task<List<SourceReportItemKey>?> GetDataFromConsole() 
+    private static void CheckContantData(ConstantDataSource source = ConstantDataSource.Directory)
+    {
+        if (source == ConstantDataSource.Directory)
+        {
+
+        }
+        // Если из файлов:
+        // - Директория постоянных отчетов
+        // - Регулярки постоянных отчетов
+        // - Проверка дат постоянных отчетов
+    }
+
+    private static async Task<List<SourceReportItemKey>?> GetDataFromConsole()
     {
         // Get source reports path
         DirectoryInfo? getSourceReportDirInfo = null;
-        while(getSourceReportDirInfo is null) 
+        while (getSourceReportDirInfo is null)
         {
             Task<DirectoryInfo?> getSourceReportsPathTask = GetSourceReportsPathFromConsole(TracingDelay);
             await Task.Run(() => getSourceReportsPathTask);
             getSourceReportsPathTask.Wait();
             getSourceReportDirInfo = getSourceReportsPathTask.Result;
-        } 
+        }
 
         await TracingProgramExecution(new($"Reports path: {getSourceReportDirInfo.Name}", false, false));
 
@@ -151,10 +194,10 @@ internal class Program
             //break;
         }
 
-        if(!availabilityNecessaryTask!.IsFaulted && existingKeys != null && existingKeys.Count > 0)  
+        if (!availabilityNecessaryTask!.IsFaulted && existingKeys != null && existingKeys.Count > 0)
         {
             // Select report direction
-            while(ReportFileManager.ReportRecipientType is null) 
+            while (ReportFileManager.ReportRecipientType is null)
             {
                 Task<TargetReportRecipientType?> getTargetReportRecipientTypeTask = GetTargetReportRecipientTypeFromConsole(TracingDelay);
                 await Task.Run(() => getTargetReportRecipientTypeTask);
@@ -164,17 +207,18 @@ internal class Program
             Console.Clear();
         }
 
-        return existingKeys; 
+        return existingKeys;
     }
-    private static async Task AnalyzeСlientReport(List<SourceReportItemKey>? existingKeys) 
+
+    private static async Task AnalyzeСlientReport(List<SourceReportItemKey>? existingKeys)
     {
         bool isInternalReport = ReportFileManager.ReportRecipientType.HasValue && ReportFileManager.ReportRecipientType.Value == TargetReportRecipientType.Internal;
 
         // Report analysis tasks
-        if (existingKeys is not null && existingKeys.Count > 0) 
+        if (existingKeys is not null && existingKeys.Count > 0)
         {
             // Ransoms task
-            if(existingKeys.Contains(SourceReportItemKey.Ransoms))
+            if (existingKeys.Contains(SourceReportItemKey.Ransoms))
             {
                 Task ransomsTask = ReceivingAndProcessingData(SourceReportItemKey.Ransoms, isInternalReport);
                 await Task.Run(async () => await ransomsTask);
@@ -197,7 +241,7 @@ internal class Program
                 currentTask.Wait();
             }
 
-             // WriteOff points via warehouse task (adjustment)
+            // WriteOff points via warehouse task (adjustment)
             if (existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment))
             {
                 var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, isInternalReport);
@@ -246,15 +290,15 @@ internal class Program
             }
 
             // Delete old logistic report 
-            if(isTracing) 
+            if (isTracing)
             {
-                await TracingProgramExecution(new($"Deleting old files at path {ReportFileManager.OutputClientReportFilePath}...", false,false));
+                await TracingProgramExecution(new($"Deleting old files at path {ReportFileManager.OutputClientReportFilePath}...", false, false));
             }
 
-            if(File.Exists(ReportFileManager.OutputClientReportFilePath)) 
+            if (File.Exists(ReportFileManager.OutputClientReportFilePath))
             {
                 File.Delete(ReportFileManager.OutputClientReportFilePath);
-                await TracingProgramExecution(new("Old files have been deleted.", false,false));
+                await TracingProgramExecution(new("Old files have been deleted.", false, false));
             }
 
             // Make skus for target report
@@ -262,7 +306,7 @@ internal class Program
             await Task.Run(() => skusForTargetReportTask);
             skusForTargetReportTask.Wait();
 
-            if(isTracing) 
+            if (isTracing)
             {
                 await TracingProgramExecution(new($"Articles for final report: {skusForTargetReportTask.Result.Count}.", false, false));
             }
@@ -270,7 +314,7 @@ internal class Program
             List<SKUForTargetReport> skuForTargetReports = skusForTargetReportTask.Result;
 
             // Article analysis and automatic re-sorting
-            if(isAutoResorting) 
+            if (isAutoResorting)
             {
                 Task[] fixAndAutoResortTasks =
                 [
@@ -287,16 +331,16 @@ internal class Program
                 {
                     await Task.Run(() => fixAndAutoResortTasks[i]);
                 }
-                
+
                 Task.WaitAll(fixAndAutoResortTasks);
             }
-            
+
             // Save work 
             var makeReportTask = excelManager!.MakeReports(skuForTargetReports, isTracing, isInternalReport);
             await Task.Run(() => makeReportTask);
             makeReportTask.Wait();
-        } 
-        else 
+        }
+        else
         {
             // Error exit 
             await TracingProgramExecution(new(string.Concat("There are no reports available for analysis.\n", goodByMessage), true, true));
@@ -307,13 +351,13 @@ internal class Program
     /// Receiving and processing data from seller reports.
     /// </summary>
     /// <param name="reportFileKey">Key of source file with report.</param>
-    private static async Task<double> ReceivingAndProcessingData(SourceReportItemKey reportFileKey,  bool isInternalReport)
+    private static async Task<double> ReceivingAndProcessingData(SourceReportItemKey reportFileKey, bool isInternalReport)
     {
         var getReportFileTask = reportFileManager!.GetSourceReport(reportFileKey);
         await Task.Run(async () => await getReportFileTask);
         getReportFileTask.Wait();
         SourceReportFileItem? reportFile = getReportFileTask.Result;
-       
+
         if (reportFile is not null)
         {
             // Make ExcelPackage
@@ -321,7 +365,7 @@ internal class Program
 
             // Receiving and processing data
             Task<double>? receivingAndProcessingDataTask = skuManager!.ReceivingAndProcessingData(reportFileKey, isInternalReport, package);
-            if(receivingAndProcessingDataTask is not null) 
+            if (receivingAndProcessingDataTask is not null)
             {
                 await Task.Run(async () => await receivingAndProcessingDataTask);
                 receivingAndProcessingDataTask.Wait();
@@ -335,12 +379,12 @@ internal class Program
             await TracingProgramExecution(new($"No report for key: {reportFileKey}", true, true));
             return 0;
         }
-    }     
-    
-    private static async Task<DirectoryInfo?> GetSourceReportsPathFromConsole(int delay) 
+    }
+
+    private static async Task<DirectoryInfo?> GetSourceReportsPathFromConsole(int delay)
     {
         string reportsPathTitleMessage = "Specify path to dir with the client's source reports and press 'Enter':\n ";
-        string reportsPathErrorMessage = "Path to report files is incorrect.\nPlease try again.";    
+        string reportsPathErrorMessage = "Path to report files is incorrect.\nPlease try again.";
 
         DirectoryInfo? reportsPathDirectoryInfo;
         string reportsPathString = ConsoleAppService.GetUserStringFromConsole(reportsPathTitleMessage);
@@ -352,17 +396,17 @@ internal class Program
                 return await GetSourceReportsPathFromConsole(delay);
             case false:
                 var isDirInfoSuccess = FileService.GetDirectoryInfo(reportsPathString, out reportsPathDirectoryInfo);
-                switch(isDirInfoSuccess && reportsPathDirectoryInfo is not null) 
+                switch (isDirInfoSuccess && reportsPathDirectoryInfo is not null)
                 {
                     case true:
                         return reportsPathDirectoryInfo;
                     case false:
                         await TracingProgramExecution(new(reportsPathErrorMessage, true, false));
-                        return await GetSourceReportsPathFromConsole(delay); 
+                        return await GetSourceReportsPathFromConsole(delay);
                 }
         }
     }
-    
+
     private static async Task<TargetReportRecipientType?> GetTargetReportRecipientTypeFromConsole(int delay)
     {
         StringBuilder rawReportStringBuilder = new("Select the report direction:\n");
@@ -373,14 +417,14 @@ internal class Program
 
         ConsoleKey[] validkeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
         ConsoleKey? selectKey = ConsoleAppService.GetUserKeyFromConsole(createRawReportString);
-        
-        switch (selectKey is null || !validkeys.Contains((ConsoleKey)selectKey)) 
+
+        switch (selectKey is null || !validkeys.Contains((ConsoleKey)selectKey))
         {
             case true:
                 await TracingProgramExecution(new("Invalid value, please try again.", true, false));
                 return await GetTargetReportRecipientTypeFromConsole(delay);
-            case false: 
-                switch((ConsoleKey)selectKey) 
+            case false:
+                switch ((ConsoleKey)selectKey)
                 {
                     case ConsoleKey.D1:
                         return TargetReportRecipientType.Internal;
@@ -394,17 +438,17 @@ internal class Program
                 }
         }
     }
- 
+
     private static void Report(object? sender, ManagerReachedEventArgs e)
     {
         Task.Run(async () => await TracingProgramExecution(e));
     }
-    private static async Task TracingProgramExecution(ManagerReachedEventArgs args) 
+    private static async Task TracingProgramExecution(ManagerReachedEventArgs args)
     {
         string flag;
-        if(isTracing) 
+        if (isTracing)
         {
-            switch (args.IsError) 
+            switch (args.IsError)
             {
                 case false:
                     Console.ForegroundColor = ConsoleColor.DarkBlue;
@@ -421,7 +465,7 @@ internal class Program
             Console.ResetColor();
         }
 
-        if (args.IsExit) 
+        if (args.IsExit)
         {
             skuManager!.ManagerReached -= Report;
             excelManager!.ManagerReached -= Report;

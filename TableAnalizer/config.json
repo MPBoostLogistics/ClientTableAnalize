@@ -1,37 +1,38 @@
 {
-    "Flags": 
-    {
-      "isTracing": true,
-      "isAutoResorting": true
-    },
-    "Messages": {
-      "GoodbyMessage": "\nThank you for using the program.\nHave a productive day!",
-      "TraceInfoFlag": "[INFO]: ",
-      "TraceErrorFlag": "[ERROR]: "
-    },
-    "Numbers": {
-      "DataAgeLimitInDays" : 7,
-      "DeadlineDays" : 14,
-      "TracingDelay": 750
-    },
-    "Formulas": 
-    {
-      "SumFormula" : "SUM"
-    },
-    "Collections": 
-    {
-      "validFileExtensions" : [".xls", ".xlsx"]
-    },
-    "Strings" : 
-    {
-      "LogisticsReportFirstName" : "LogisticsReport",
-      "FullSetStatusString": "Полный расчет", 
-      "InWorkStatusString": "В работе",
-      "DelayDeliveryFromPointsAndWarehouseStatusString": "Задержка от точек и склада",
-      "DelayDeliveryFromWarehouseStatusString" : "Задержка от склада",
-      "DelayDeliveryFromPointsStatusString" : "Задержка от точек",
-      "DelayFromOrganizationStatusString" : "Задержка от организации",
-      "DelayFromOrganizationAndWarehouseStatusString" : "Задержка от организации и склада",
-      "UnknownStatusString" : "Не определен"
-    }
+  "Flags": {
+    "isTracing": true,
+    "isAutoResorting": true
+  },
+  "Messages": {
+    "GoodbyMessage": "\nThank you for using the program.\nHave a productive day!",
+    "TraceInfoFlag": "[INFO]: ",
+    "TraceErrorFlag": "[ERROR]: "
+  },
+  "Numbers": {
+    "DataAgeLimitInDays": 7,
+    "DeadlineDays": 14,
+    "TracingDelay": 750
+  },
+  "Formulas": {
+    "SumFormula": "SUM"
+  },
+  "Collections": {
+    "validFileExtensions": [
+      ".xls",
+      ".xlsx"
+    ]
+  },
+  "Strings": {
+    "PermanentDataSourcePath": "/Users/dmitrijsamarcev/Library/Mobile Documents/com~apple~CloudDocs/MPBoost/Clients/ConstantDataPath",
+    "AppVersion": "Repack Logistics Report (C#), 2.2.0",
+    "LogisticsReportFirstName": "LogisticsReport",
+    "FullSetStatusString": "Полный расчет",
+    "InWorkStatusString": "В работе",
+    "DelayDeliveryFromPointsAndWarehouseStatusString": "Задержка от точек и склада",
+    "DelayDeliveryFromWarehouseStatusString": "Задержка от склада",
+    "DelayDeliveryFromPointsStatusString": "Задержка от точек",
+    "DelayFromOrganizationStatusString": "Задержка от организации",
+    "DelayFromOrganizationAndWarehouseStatusString": "Задержка от организации и склада",
+    "UnknownStatusString": "Не определен"
   }
+}
