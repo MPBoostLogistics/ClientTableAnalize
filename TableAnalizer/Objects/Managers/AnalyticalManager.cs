@@ -387,7 +387,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var sku in writeOffPointsByShortage!)
                 {
-                    MakeCorrectionWriteOffs(ref skuForTargetReports, PermanentDataKey.PointsViaWarehouseShortage, skuForTargetReports.IndexOf(sku));
+                    MakeCorrectionWriteOffs(ref skuForTargetReports, PermanentDataKey.PointsViaWarehouseShortages, skuForTargetReports.IndexOf(sku));
                 }
             }
 

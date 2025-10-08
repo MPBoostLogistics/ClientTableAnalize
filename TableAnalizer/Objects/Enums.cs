@@ -239,11 +239,17 @@ namespace TableAnalizer.Objects
         External
     }
 
+    /// <summary>
+    /// Ключи постоянной или редуо меняющейся информации, общей для всех отчетов
+    /// </summary>
     public enum PermanentDataKey
     {
         /// <summary>
         /// Недостачи, оплаченые Клиентам напрямую от организации и склада
         /// </summary>
+        /// <remarks>
+        /// Копируется из Google Sheets "Учет клиентов логистики", лист "Перетензии"
+        /// </remarks>
         ShortagesPaid,
         /// <summary>
         /// Списание недостач с точек и курьеров по решению организации
@@ -261,9 +267,17 @@ namespace TableAnalizer.Objects
         /// <summary>
         /// Списание недостач с точек через склад
         /// </summary>
-        PointsViaWarehouseShortage,
+        /// <remarks>
+        /// 1С: Склад и доставка – Излишки, недостачи, порчи 
+        /// Тип документа: Ордер на отражение недостач товаров
+        /// Комментарий: Содердит "ПВЗ или курьеры - недостачи -"
+        /// Выделить все, Печать: Ордеры на отражение недостач товаров
+        /// Имя файла: Write-off - points through the warehouse shortages
+        /// </remarks>
+        PointsViaWarehouseShortages,
+
         /// <summary>
-        /// Списание коррекировок точек через склад
+        /// Списание коррекировок точек через склад ???
         /// </summary>
         PointsViaWarehouseAdjustment
     }

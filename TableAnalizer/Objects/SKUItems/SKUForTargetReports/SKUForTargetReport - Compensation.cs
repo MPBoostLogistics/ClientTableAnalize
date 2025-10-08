@@ -93,7 +93,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             int difference;
             switch (writeOffSource)
             {
-                case PermanentDataKey.PointsViaWarehouseShortage:
+                case PermanentDataKey.PointsViaWarehouseShortages:
 
                     if (SKUWriteOffFromPointsViaWarehouseShortage == 0) return 0;
 

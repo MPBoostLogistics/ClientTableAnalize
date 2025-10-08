@@ -25,14 +25,15 @@ namespace TableAnalizer.Objects.Managers
 
         private string? logisticsReportFirstName;
 
-        private static Dictionary<PermanentDataKey, (Regex regex, int bestBeforeDate)> constantDataSourcePaths = new()
+        // Write-off - points through the warehouse (adjustments).xlsx - списание точек через склад (корректировуи)
+
+        private static readonly Dictionary<PermanentDataKey, (Regex regex, int bestBeforeDate)> permanentDataSourcePaths = new()
         {
             { PermanentDataKey.PointsAndCouriers, (new(@"Write-off\s\-\spoints\sand\scouriers", RegexOptions.None, TimeSpan.FromSeconds(1)), 7)},
-            //{ WriteOffSource.ShortagesPaid, ("Write-off - shortages paid.xlsx", 7)}
-            // { WriteOffSource.PointsViaWarehouseShortage, ("Write-off - points through the warehouse (shortages).xlsx", 0) },
+            { PermanentDataKey.ShortagesPaid, (new(@"Write-off\s\-\sshortages\spaid", RegexOptions.None, TimeSpan.FromSeconds(1)), 7)},
+            { PermanentDataKey.PointsViaWarehouseShortages, (new(@"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sshortages", RegexOptions.None, TimeSpan.FromSeconds(1)), 0)},
             // { WriteOffSource.PointsViaWarehouseAdjustment, ("Write-off - points through the warehouse (adjustments).xlsx", 0) },
-            // { WriteOffSource.PointsAndCouriers, ("Write-off - points and couriers.xlsx", 7)},
-            // { WriteOffSource.Warehouse, "Write-off - warehouse.xlsx" }
+
         };
 
         #endregion
@@ -113,7 +114,7 @@ namespace TableAnalizer.Objects.Managers
 
         #endregion
 
-        #region  Functionality
+        #region Functionality
 
         protected override void AddConfigVariables()
         {
@@ -150,9 +151,15 @@ namespace TableAnalizer.Objects.Managers
                 return null;
             }
 
+            if (fileInfos!.Length < permanentDataSourcePaths.Count)
+            {
+                OnManagerReached(new($"Directory '{PermanentDataSourcePath}' contains less files than required ({permanentDataSourcePaths.Count}).", true, true));
+                return null;
+            }
+
             // Iterate over a dictionary, check for regex and expiration date
             Dictionary<PermanentDataKey, FileInfo> resultsDict = [];
-            foreach (var (key, value) in constantDataSourcePaths)
+            foreach (var (key, value) in permanentDataSourcePaths)
             {
                 // Searching for a file using a regex
                 var fileInfo = fileInfos.SingleOrDefault(fi => value.regex.IsMatch(fi.Name));
@@ -163,7 +170,7 @@ namespace TableAnalizer.Objects.Managers
                 }
 
                 // Checking a file's expiration date  
-                if (fileInfo!.LastWriteTime.AddDays(value.bestBeforeDate) < DateTime.Now)
+                if (value.bestBeforeDate > 0 && fileInfo!.LastWriteTime.AddDays(value.bestBeforeDate) < DateTime.Now)
                 {
                     OnManagerReached(new($"Data in file by key '{key}' has expired. Please update file.", true, true));
                     return null;
@@ -175,16 +182,7 @@ namespace TableAnalizer.Objects.Managers
             // Dummy
             await Task.Delay(10);
             return resultsDict;
-
-
-            // Write-off - points through the warehouse (adjustments).xlsx - списание точек через склад, не обновляется
-            // Write-off - shortages paid.xlsx - оплаченные недостачи, обновляется 1 раз в 7 дней
-
-            // Write-off - warehouse.xlsx - списание со склада, обновляется 1 раз в 7 дней
-
-            // Проверить что файлы обновлены (какие необходимо)
         }
-
 
         private static DirectoryInfo? GetDirectory(string path, ref bool isError)
         {
