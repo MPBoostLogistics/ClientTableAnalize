@@ -4,6 +4,9 @@ using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
 using TableAnalizer.Objects.ReportItems;
 
+// TODO: Из вновь получаемых постоянных файлов понять какие данные где записывам и используем, 
+// упразднить прежнее использование
+
 namespace TableAnalizer.Objects.Managers
 {
     public class ReportFileManager(IConfiguration config) : BaseManager(config)
@@ -25,15 +28,13 @@ namespace TableAnalizer.Objects.Managers
 
         private string? logisticsReportFirstName;
 
-        // Write-off - points through the warehouse (adjustments).xlsx - списание точек через склад (корректировуи)
+        // Write-off - points through the warehouse (adjustments).xlsx - списание точек через склад (корректировуи) ?? 
 
-        private static readonly Dictionary<PermanentDataKey, (Regex regex, int bestBeforeDate)> permanentDataSourcePaths = new()
+        public static Dictionary<SourceReportItemKey, PrimaryReportFileItem> PrimaryReportFiles { get; private set; } = new()
         {
-            { PermanentDataKey.PointsAndCouriers, (new(@"Write-off\s\-\spoints\sand\scouriers", RegexOptions.None, TimeSpan.FromSeconds(1)), 7)},
-            { PermanentDataKey.ShortagesPaid, (new(@"Write-off\s\-\sshortages\spaid", RegexOptions.None, TimeSpan.FromSeconds(1)), 7)},
-            { PermanentDataKey.PointsViaWarehouseShortages, (new(@"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sshortages", RegexOptions.None, TimeSpan.FromSeconds(1)), 0)},
-            // { WriteOffSource.PointsViaWarehouseAdjustment, ("Write-off - points through the warehouse (adjustments).xlsx", 0) },
-
+            { SourceReportItemKey.ShortagesPaid, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\sshortages\spaid", 7, false)},
+            { SourceReportItemKey.WriteOffPointsAndCouriers, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\spoints\sand\scouriers", 7, false)},
+            { SourceReportItemKey.WriteOffPointsViaWarehouseShortage, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sshortages", 7, false)}
         };
 
         #endregion
@@ -52,65 +53,65 @@ namespace TableAnalizer.Objects.Managers
         public static string? InputReportsFilePath { get; set; } = string.Empty;
         public static string OutputClientReportFilePath { get; private set; } = string.Empty;
 
-        public static Dictionary<SourceReportItemKey, List<Regex>> RegexesForSourceReports { get; } = new Dictionary<SourceReportItemKey, List<Regex>>
-        {
-            {
-                SourceReportItemKey.Ransoms,
-                [
-                    new(RANSOMS_SINGLE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-                    new(RANSOMS_MULTY_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
-                ]
-            },
-            {
-                SourceReportItemKey.Balance,
-                [
-                    new(BALANCE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-                ]
-            },
-            {
-                SourceReportItemKey.WriteOffPoints,
-                [
-                    new(WRITEOFF_POINTS_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
-                ]
-            },
-            {
-                SourceReportItemKey.WriteOffPointsViaWarehouseShortage,
-                [
-                    new(WRITEOFF_POINTS_VIA_WAREHOUSE_SHORTAGE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
-                ]
-            },
-              {
-                SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment,
-                [
-                    new(WRITEOFF_POINTS_VIA_WAREHOUSE_ADJUSTMENT_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
-                ]
-            },
-            {
-                SourceReportItemKey.OutgoingProducts,
-                [
-                    new(SHIPPED_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-                ]
-            },
-            {
-                SourceReportItemKey.Transfered,
-                [
-                    new(TRANSFER_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-                ]
-            },
-            {
-                SourceReportItemKey.Additional,
-                [
-                    new(ADDITIONAL_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-                ]
-            },
-            {
-                SourceReportItemKey.PaidShortages,
-                [
-                    new(PAID_SHORTAGES_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-                ]
-            }
+        // public static Dictionary<SourceReportItemKey, List<Regex>> RegexesForSourceReports { get; } = new Dictionary<SourceReportItemKey, List<Regex>>
+        // {
+        //     {
+        //         SourceReportItemKey.Ransoms,
+        //         [
+        //             new(RANSOMS_SINGLE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
+        //             new(RANSOMS_MULTY_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
+        //         ]
+        //     },
+        //     {
+        //         SourceReportItemKey.Balance,
+        //         [
+        //             new(BALANCE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
+        //         ]
+        //     },
+        //     {
+        //         SourceReportItemKey.WriteOffPoints,
+        //         [
+        //             new(WRITEOFF_POINTS_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
+        //         ]
+        //     },
+        //     {
+        //         SourceReportItemKey.WriteOffPointsViaWarehouseShortage,
+        //         [
+        //             new(WRITEOFF_POINTS_VIA_WAREHOUSE_SHORTAGE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
+        //         ]
+        //     },
+        //       {
+        //         SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment,
+        //         [
+        //             new(WRITEOFF_POINTS_VIA_WAREHOUSE_ADJUSTMENT_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
+        //         ]
+        //     },
+        //     {
+        //         SourceReportItemKey.OutgoingProducts,
+        //         [
+        //             new(SHIPPED_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
+        //         ]
+        //     },
+        //     {
+        //         SourceReportItemKey.Transfered,
+        //         [
+        //             new(TRANSFER_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
+        //         ]
+        //     },
+        //     {
+        //         SourceReportItemKey.Additional,
+        //         [
+        //             new(ADDITIONAL_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
+        //         ]
+        //     },
+        //     {
+        //         SourceReportItemKey.ShortagePaid,
+        //         [
+        //             new(PAID_SHORTAGES_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
+        //         ]
+        //     }
 
-        };
+        // };
 
         #endregion
 
@@ -131,293 +132,140 @@ namespace TableAnalizer.Objects.Managers
         }
 
         /// <summary>
-        /// Checks availability and expiration date of permanent information.
+        /// Get directory of primary data.
         /// </summary>
-        /// <returns></returns>
-        public async Task<Dictionary<PermanentDataKey, FileInfo>?> CheckOfAvailailityPermanentData()
+        /// <param name="clientDataPath">String variable of a path for client data. (Optional)</param>
+        /// <param name="primaryDataKey">Key of primary data.</param>
+        /// <param name="directoryInfo">Item of a searching directory.</param>
+        private bool GetDirectoryOfPrimaryData(string? clientDataPath, PrimaryDataType primaryDataKey, ref DirectoryInfo? directoryInfo)
         {
+            // Checking of string variable for a path to client data source.
+            if (primaryDataKey == PrimaryDataType.Variable && string.IsNullOrEmpty(clientDataPath))
+            {
+                OnManagerReached(new($"Path to variable data source is not set or directory does not exist: '{clientDataPath}'", true, true));
+            }
+
             // Checking of a directory existence  
-            FileService.GetDirectoryInfo(PermanentDataSourcePath, out DirectoryInfo? directoryInfo);
+            FileService.GetDirectoryInfo(primaryDataKey == PrimaryDataType.Permanent ? PermanentDataSourcePath : clientDataPath!, out directoryInfo);
             if (directoryInfo == null)
             {
-                OnManagerReached(new($"Path to constant data source is not set or directory does not exist: '{PermanentDataSourcePath}'", true, true));
-                return null;
+                var path = primaryDataKey == PrimaryDataType.Variable ? clientDataPath : PermanentDataSourcePath;
+                OnManagerReached(new($"Path to data source for key '{primaryDataKey}' is not set or directory does not exist: '{path}'", true, true));
             }
 
-            // Checking of a files existence in directory
-            if (!FileService.SearchFilesInDirectory(PermanentDataSourcePath, out FileInfo[]? fileInfos, [".xlsx"]) || fileInfos == null || fileInfos.Length == 0)
-            {
-                OnManagerReached(new($"Directory '{PermanentDataSourcePath}' is empty or there are no files equal to the specified extensions.", true, true));
-                return null;
-            }
-
-            if (fileInfos!.Length < permanentDataSourcePaths.Count)
-            {
-                OnManagerReached(new($"Directory '{PermanentDataSourcePath}' contains less files than required ({permanentDataSourcePaths.Count}).", true, true));
-                return null;
-            }
-
-            // Iterate over a dictionary, check for regex and expiration date
-            Dictionary<PermanentDataKey, FileInfo> resultsDict = [];
-            foreach (var (key, value) in permanentDataSourcePaths)
-            {
-                // Searching for a file using a regex
-                var fileInfo = fileInfos.SingleOrDefault(fi => value.regex.IsMatch(fi.Name));
-                if (fileInfo == null)
-                {
-                    OnManagerReached(new($"File with data for key '{key}' is missing from directory.", true, true));
-                    return null;
-                }
-
-                // Checking a file's expiration date  
-                if (value.bestBeforeDate > 0 && fileInfo!.LastWriteTime.AddDays(value.bestBeforeDate) < DateTime.Now)
-                {
-                    OnManagerReached(new($"Data in file by key '{key}' has expired. Please update file.", true, true));
-                    return null;
-                }
-
-                resultsDict[key] = fileInfo;
-            }
-
-            // Dummy
-            await Task.Delay(10);
-            return resultsDict;
+            return directoryInfo != null;
         }
-
-        private static DirectoryInfo? GetDirectory(string path, ref bool isError)
-        {
-            isError = false;
-
-            if (!FileService.GetDirectoryInfo(path, out DirectoryInfo? dirInfo) || dirInfo == null)
-            {
-                isError = true;
-                return null;
-            }
-
-            return dirInfo;
-        }
-
 
         /// <summary>
-        /// Checks availability of necessary files for data analysis.
+        /// Get files of primary data.
         /// </summary>
-        /// <param name="reportsPath">Directory with client reports.</param>
-        /// <returns>List of existing keys as Task result.</returns>
-        /// <remarks><i>Rework, testing</i></remarks>
-        public async Task<List<SourceReportItemKey>?> ChecksAvailabilityNecessaryFiles(string reportsPath)
+        /// <param name="directoryInfo">DirectoryInfo object for a searching files.</param>
+        /// <param name="fileInfos">An array of FileInfos objects or null.</param>
+        /// <param name="extensions">An Extensions of files.</param>
+        /// <returns>Flag of an existence of files.</returns>
+        private bool GetFilesOfPrimaryData(DirectoryInfo directoryInfo, ref FileInfo[]? fileInfos, string[] extensions)
         {
-            List<SourceReportItemKey> existingKeys = [];
+            if (!FileService.SearchFilesInDirectory(directoryInfo.FullName, out fileInfos, extensions) || fileInfos == null || fileInfos.Length == 0)
+            {
+                OnManagerReached(new($"Directory '{directoryInfo.FullName}' contains no files with extensions: '{string.Join(", ", extensions)}'.", true, true));
+                return false;
+            }
+
+            return fileInfos is not null || fileInfos!.Length > 0;
+        }
+
+        /// <summary>
+        /// Checks of availaility of primary data.
+        /// </summary>
+        /// <param name="clientDataPath">Client data path (optional, only for cliet's data).</param>
+        /// <param name="primaryDataKey">Key of a data.</param>
+        /// <returns>Execution flag of operation and message.</returns>
+        public async Task<(bool isError, string message)> CheckOfAvailailityData(string? clientDataPath, PrimaryDataType primaryDataKey)
+        {
             bool isError = false;
+            StringBuilder stringBuilder = new();
 
-            try
+            var dataPath = primaryDataKey == PrimaryDataType.Variable ? clientDataPath : PermanentDataSourcePath;
+
+            int permanentDataTypeCount = PrimaryReportFiles
+                .Count(p => p.Value.DataType is PrimaryDataType.Permanent && !p.Value.IsOptionalReport);
+
+            DirectoryInfo? directoryInfo = null;
+            FileInfo[]? fileInfos = null;
+
+            if (GetDirectoryOfPrimaryData(clientDataPath, primaryDataKey, ref directoryInfo) && directoryInfo != null)
             {
-                GetFileInfosSourceReports(reportsPath, out FileInfo[] files);
-
-                Task<int>? getFilesTask;
-
-                try
+                if (GetFilesOfPrimaryData(directoryInfo, ref fileInfos, ValidFileExtensions) && fileInfos is not null && fileInfos.Length > 0)
                 {
-                    getFilesTask = GetSourceReportFiles(files);
-                    await Task.Run(() => getFilesTask);
-                    getFilesTask?.Wait();
-                }
-                catch (System.Exception ex)
-                {
-                    OnManagerReached(new(ex.Message, true, true));
-                    return await Task.FromResult<List<SourceReportItemKey>?>(null);
-                }
-
-                var getReportFilesResult = getFilesTask?.Result;
-
-                if (getFilesTask?.Result == 0)
-                {
-                    OnManagerReached(new(string.Empty, true, true));
-                }
-
-                StringBuilder stringBuilder = new();
-
-                if (IsRequiredFilesProvided(out List<SourceReportItemKey>? lostKeys, out existingKeys) && existingKeys.Count > 0)
-                {
-                    stringBuilder.Append($"Provided {existingKeys.Count} source reports on keys: ");
-                    foreach (var existingKey in existingKeys)
+                    // Checking the number of files (only for permanent data)
+                    if (primaryDataKey == PrimaryDataType.Permanent && fileInfos!.Length < PrimaryReportFiles.Count(p => p.Value.DataType is PrimaryDataType.Permanent))
                     {
-                        stringBuilder.Append($"{existingKey}");
-                        if (existingKeys.Last() != existingKey)
-                        {
-                            stringBuilder.Append($", ");
-                        }
+                        isError = true;
+                        stringBuilder.Append($"Directory '{PermanentDataSourcePath}' contains less files than required ({permanentDataTypeCount}).\n");
                     }
 
-                    isError = false;
-                }
-                else if (lostKeys.Count > 0)
-                {
-                    stringBuilder.Append($"No provided {lostKeys.Count} required source reports on keys: ");
-                    foreach (var lostKey in lostKeys)
-                    {
-                        stringBuilder.Append($"{lostKey}");
-                        if (existingKeys.Last() != lostKey)
-                        {
-                            stringBuilder.Append($", ");
-                        }
-                    }
+                    var checkingReportsTask = CheckingReportsByPrimaryDataType(primaryDataKey, fileInfos!, PrimaryReportFiles);
+                    await Task.Run(() => checkingReportsTask);
+                    checkingReportsTask.Wait();
 
+                    isError = checkingReportsTask.Result.isError;
+                    stringBuilder.Append(checkingReportsTask.Result.message);
+                }
+                else
+                {
                     isError = true;
+                    stringBuilder.Append($"Directory '{dataPath}' is empty or there are no files equal to the specified extensions.\n");
                 }
-
-                OnManagerReached(new(stringBuilder.ToString(), isError, isError));
-                if (isError)
-                {
-                    return await Task.FromResult<List<SourceReportItemKey>?>(null);
-                }
-            }
-            catch (Exception ex)
-            {
-                OnManagerReached(new($"Data error: {ex.Message}\n", true, true));
-                return await Task.FromResult<List<SourceReportItemKey>?>(null);
-            }
-
-            return existingKeys;
-        }
-
-        private void GetFileInfosSourceReports(string reportsPath, out FileInfo[] files)
-        {
-            // Check writeOff directory path 
-            var writeOffDirectoryPath = Path.Combine(reportsPath, WRITEOFF_DIRECTORY_NAME);
-            if (!Directory.Exists(writeOffDirectoryPath))
-            {
-                ManagerReachedEventArgs args = new($"Required directory named \"{WRITEOFF_DIRECTORY_NAME}\" is missing", true, true);
-                OnManagerReached(args);
-            }
-
-            // Reading files in writeOff directory
-            FileService.SearchFilesInDirectory(writeOffDirectoryPath, out FileInfo[]? writeOffFiles, ValidFileExtensions);
-
-            // Reading files in root directory
-            FileService.SearchFilesInDirectory(reportsPath, out FileInfo[]? commonFiles, ValidFileExtensions);
-
-            // Combine files 
-            if (writeOffFiles == null || writeOffFiles.Length == 0 || commonFiles == null || commonFiles.Length == 0)
-            {
-                ManagerReachedEventArgs args = new($"Failed to retrieve all source report files", true, true);
-                OnManagerReached(args);
-            }
-
-            files = new FileInfo[writeOffFiles!.Length + commonFiles!.Length];
-            Array.Copy(writeOffFiles, files, writeOffFiles.Length);
-            Array.Copy(commonFiles, 0, files, writeOffFiles.Length, commonFiles.Length);
-        }
-
-        /// <summary>
-        /// Parses file name against a regex, creates a SourceReportFileForSKU and writes it to manager's internal collection.
-        /// </summary>
-        /// <param name="files">Path to files.</param>
-        /// <returns>Number of recognized source files.</returns>
-        /// <remarks><i>Rework, testing</i></remarks>
-        public async Task<int>? GetSourceReportFiles(FileInfo[]? files)
-        {
-            StringBuilder message = new();
-            var isError = false;
-
-            if (files is null || files.Length == 0)
-            {
-                var errorMessage = "Directory with files for processing does not exist or is empty, check it.";
-                message.Append(errorMessage);
-                throw new Exception(errorMessage);
             }
             else
             {
-                string extString = string.Empty;
-                foreach (var validFileExtension in ValidFileExtensions)
+                isError = true;
+                stringBuilder.Append($"Directory '{dataPath}' does not exist.\n");
+            }
+
+            return (isError, stringBuilder.ToString());
+        }
+
+        /// <summary>
+        /// Checks files by primary data type.
+        /// </summary>
+        /// <param name="primaryDataType">Primary data type key.</param>
+        /// <param name="fileInfos">Searching files.</param>
+        /// <param name="dataDict">Source dictionary.</param>
+        /// <returns>Execution flag of operation and message.</returns>
+        private static async Task<(bool isError, string message)> CheckingReportsByPrimaryDataType(PrimaryDataType primaryDataType, FileInfo[] fileInfos, Dictionary<SourceReportItemKey, PrimaryReportFileItem> dataDict)
+        {
+            bool isError = false;
+            StringBuilder stringBuilder = new();
+
+            foreach (var fileInfo in fileInfos)
+            {
+                var primaryReportFileItem = dataDict
+                    .FirstOrDefault(fi => fi.Value.RegexForFileName.IsMatch(fileInfo.Name));
+
+                if (primaryReportFileItem.Value != null)
                 {
-                    extString = string.Concat(extString, validFileExtension, " ");
-                }
-
-                message.Append($"\nNumber of files in dir with ext \"{extString}\": {files!.Length}");
-
-                foreach (var fileInfo in files!)
-                {
-                    try
+                    // Checking a file's expiration date  
+                    if (primaryReportFileItem.Value.BestBeforeDate > 0 && fileInfo.LastWriteTime.AddDays(primaryReportFileItem.Value.BestBeforeDate) < DateTime.Now)
                     {
-                        var getSourceReportKeyByRegexTask = GetSourceReportKeyByRegex(fileInfo);
-                        await Task.Run(() => getSourceReportKeyByRegexTask);
-                        getSourceReportKeyByRegexTask.Wait();
-
-                        var (key, loginsFileName) = getSourceReportKeyByRegexTask.Result;
-
-                        if (key.HasValue)
-                        {
-                            var isControlAgeOfData = key switch
-                            {
-                                SourceReportItemKey.Ransoms or
-                                SourceReportItemKey.Balance or
-                                SourceReportItemKey.OutgoingProducts or
-                                //SourceReportItemKey.WriteOffPoints or
-                                SourceReportItemKey.PaidShortages
-                                => true,
-                                _ => false
-                            };
-
-                            try
-                            {
-                                MakeSourceReportFileItem(fileInfo, key, loginsFileName, isControlAgeOfData);
-                            }
-                            catch (System.Exception ex)
-                            {
-                                message.Append(ex.Message);
-                                throw new Exception(ex.Message);
-                            }
-                        }
-                        else
-                        {
-                            var errorMessage = $"\nUnable to determine key for report file {fileInfo.Name}";
-                            message.Append(errorMessage);
-                            throw new Exception(errorMessage);
-                        }
+                        isError = true;
+                        stringBuilder.Append($"Data in file by key '{primaryReportFileItem.Key}' has expired. Please update file.\n");
                     }
-                    catch (Exception ex)
-                    {
-                        var errorMessage = $"\nError SourceReportFileForSKU create: {ex.Message}";
-                        message.Append(errorMessage);
-                        throw new Exception(errorMessage);
-                    }
-                }
 
-                if (!isError)
-                {
-                    try
-                    {
-                        // Get output directory and report filename
-                        var personalPath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
-                        var clientOutputPathTask = DefineDirInfoForClientTargetReports(personalPath);
-                        await Task.Run(async () => await clientOutputPathTask);
-                        clientOutputPathTask.Wait();
-                        var clientOutputPath = clientOutputPathTask.Result;
-
-                        if (!string.IsNullOrEmpty(clientOutputPath))
-                        {
-                            message.Append($"\nDirectory for target report: {clientOutputPath}");
-                        }
-                        else
-                        {
-                            var errorMessage = "\nPath to dir for working with client can`t be an empty string!";
-                            message.Append(errorMessage);
-                            throw new Exception(errorMessage);
-
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        message.Append($"\nDefineDirInfoForClientTargetReports Error:\n{ex.Message}");
-                        throw;
-                    }
+                    primaryReportFileItem.Value.Set(fileInfo);
                 }
             }
 
-            ManagerReachedEventArgs args = new(message.ToString(), isError, false, 2000);
-            OnManagerReached(args);
+            dataDict.Where(d => d.Value.DataType == primaryDataType).ToList().ForEach(d =>
+            {
+                if (d.Value.Info == null && !d.Value.IsOptionalReport)
+                {
+                    isError = true;
+                    stringBuilder.Append($"File with data for key '{d.Key}' is missing from directory.\n");
+                }
+            });
 
-            return SourceReportFileItems.Count;
+            return (isError, stringBuilder.ToString());
         }
 
         private void MakeSourceReportFileItem(FileInfo fileInfo, SourceReportItemKey? key, string? loginsFileName, bool isControlAgeOfData)
@@ -494,124 +342,45 @@ namespace TableAnalizer.Objects.Managers
             return DirInfoForClientTargetReports.FullName ?? null;
         }
 
-        /// <summary>
-        /// Checks whether required files have been added to create a client report.
-        /// </summary>
-        /// <param name="lostKeys">A collection of required file keys that were not provided.</param>
-        /// <param name="existingKeys">A collection of the required file keys that were provided.</param>
-        /// <returns>Boolean flag indicating whether the operation has been performed.</returns>
-        /// <remarks><i>Rework, testing</i></remarks>
-        public bool IsRequiredFilesProvided(out List<SourceReportItemKey> lostKeys, out List<SourceReportItemKey> existingKeys)
-        {
-            existingKeys = lostKeys = new([]);
-
-            var isContainsKeyRansoms = SourceReportFileItems.ContainsKey(SourceReportItemKey.Ransoms);
-            var isContainsKeyBalance = SourceReportFileItems.ContainsKey(SourceReportItemKey.Balance);
-            var isContainsKeyOutgoingProducts = SourceReportFileItems.ContainsKey(SourceReportItemKey.OutgoingProducts);
-            var isContainsKeyTransfer = SourceReportFileItems.ContainsKey(SourceReportItemKey.Transfered);
-            var isContainsWriteOffPoints = SourceReportFileItems.ContainsKey(SourceReportItemKey.WriteOffPoints);
-            var isContainsWriteOffPointsViaWarehouseShortage = SourceReportFileItems.ContainsKey(SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
-            var isContainsWriteOffPointsViaWarehouseAdjustment = SourceReportFileItems.ContainsKey(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
-            var isContainsAdditional = SourceReportFileItems.ContainsKey(SourceReportItemKey.Additional);
-            var isContainsPaidShortages = SourceReportFileItems.ContainsKey(SourceReportItemKey.PaidShortages);
-
-            bool success = isContainsKeyRansoms && isContainsKeyBalance && isContainsWriteOffPoints && isContainsWriteOffPointsViaWarehouseShortage && isContainsWriteOffPointsViaWarehouseAdjustment && isContainsPaidShortages;
-
-            if (success)
-            {
-                if (isContainsKeyRansoms)
-                    existingKeys.Add(SourceReportItemKey.Ransoms);
-
-                if (isContainsKeyBalance)
-                    existingKeys.Add(SourceReportItemKey.Balance);
-
-                if (isContainsKeyOutgoingProducts)
-                    existingKeys.Add(SourceReportItemKey.OutgoingProducts);
-
-                if (isContainsKeyTransfer)
-                    existingKeys.Add(SourceReportItemKey.Transfered);
-
-                if (isContainsWriteOffPoints)
-                    existingKeys.Add(SourceReportItemKey.WriteOffPoints);
-
-                if (isContainsWriteOffPointsViaWarehouseShortage)
-                    existingKeys.Add(SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
-
-                if (isContainsWriteOffPointsViaWarehouseAdjustment)
-                    existingKeys.Add(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
-
-                if (isContainsAdditional)
-                    existingKeys.Add(SourceReportItemKey.Additional);
-
-                if (isContainsPaidShortages)
-                    existingKeys.Add(SourceReportItemKey.PaidShortages);
-            }
-            else
-            {
-                if (!isContainsKeyRansoms)
-                    lostKeys.Add(SourceReportItemKey.Ransoms);
-
-                if (!isContainsKeyBalance)
-                    lostKeys.Add(SourceReportItemKey.Balance);
-
-                if (!isContainsKeyOutgoingProducts)
-                    lostKeys.Add(SourceReportItemKey.OutgoingProducts);
-
-                if (!isContainsWriteOffPoints)
-                    lostKeys.Add(SourceReportItemKey.WriteOffPoints);
-
-                if (!isContainsWriteOffPointsViaWarehouseShortage)
-                    lostKeys.Add(SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
-
-                if (!isContainsWriteOffPointsViaWarehouseAdjustment)
-                    lostKeys.Add(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
-
-                if (!isContainsPaidShortages)
-                    lostKeys.Add(SourceReportItemKey.PaidShortages);
-            }
-
-            return success;
-        }
-
         /// ???
         static readonly string[] pathKeyNames = Enum.GetNames(typeof(PathKey));
 
-        /// <summary>
-        /// Gets the report file key using regex and the name of the file with client logins.
-        /// </summary>
-        /// <param name="fileInfo">Object to parse the file name for.</param>
-        /// <returns>Report file key or null, the name of the file with client logins or null.</returns>
-        /// <remarks><i>Rework, testing</i></remarks>
-        private static async Task<(SourceReportItemKey? key, string? loginsFileName)> GetSourceReportKeyByRegex(FileInfo fileInfo)
-        {
-            SourceReportItemKey? key = null;
-            string? loginsFileName = null;
+        // /// <summary>
+        // /// Gets the report file key using regex and the name of the file with client logins.
+        // /// </summary>
+        // /// <param name="fileInfo">Object to parse the file name for.</param>
+        // /// <returns>Report file key or null, the name of the file with client logins or null.</returns>
+        // /// <remarks><i>Rework, testing</i></remarks>
+        // private static async Task<(SourceReportItemKey? key, string? loginsFileName)> GetSourceReportKeyByRegex(FileInfo fileInfo)
+        // {
+        //     SourceReportItemKey? key = null;
+        //     string? loginsFileName = null;
 
-            var fileName = Path.GetFileName(fileInfo.Name);
+        //     var fileName = Path.GetFileName(fileInfo.Name);
 
-            if (fileName.StartsWith("~$"))
-                fileName = fileName.TrimStart('~', '$');
+        //     if (fileName.StartsWith("~$"))
+        //         fileName = fileName.TrimStart('~', '$');
 
-            foreach (var regexesSourceReport in RegexesForSourceReports)
-            {
-                foreach (var regex in regexesSourceReport.Value)
-                {
-                    var regexMatch = regex.Match(fileName);
-                    if (regexMatch is not null && regexMatch.Success)
-                    {
-                        key = regexesSourceReport.Key;
-                        if (key == SourceReportItemKey.Ransoms)
-                        {
-                            loginsFileName = fileName;
-                        }
-                    }
-                }
-            }
+        //     foreach (var regexesSourceReport in RegexesForSourceReports)
+        //     {
+        //         foreach (var regex in regexesSourceReport.Value)
+        //         {
+        //             var regexMatch = regex.Match(fileName);
+        //             if (regexMatch is not null && regexMatch.Success)
+        //             {
+        //                 key = regexesSourceReport.Key;
+        //                 if (key == SourceReportItemKey.Ransoms)
+        //                 {
+        //                     loginsFileName = fileName;
+        //                 }
+        //             }
+        //         }
+        //     }
 
-            await Task.Delay(10);
+        //     await Task.Delay(10);
 
-            return (key, loginsFileName);
-        }
+        //     return (key, loginsFileName);
+        // }
 
         /// <summary>
         /// Gets client logins from the report file name.

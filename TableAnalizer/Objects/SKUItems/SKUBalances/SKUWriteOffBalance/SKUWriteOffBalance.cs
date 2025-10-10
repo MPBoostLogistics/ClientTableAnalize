@@ -20,21 +20,21 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         #endregion Properties
 
         #region Constructors
-        public SKUWriteOffBalance(int skuNumber, List<SKUWriteOffDataUnit> skuWriteOffDataUnit, PermanentDataKey source)
+        public SKUWriteOffBalance(int skuNumber, List<SKUWriteOffDataUnit> skuWriteOffDataUnit, SourceReportItemKey source)
         {
             SKUNumber = skuNumber;
 
             switch (source)
             {
-                case PermanentDataKey.PointsAndCouriers:
+                case SourceReportItemKey.WriteOffPointsAndCouriers:
                     SKUWriteOffPoints = skuWriteOffDataUnit
                         .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
                     break;
-                case PermanentDataKey.PointsViaWarehouseShortages:
+                case SourceReportItemKey.WriteOffPointsViaWarehouseShortage:
                     SKUWriteOffPointsViaWarehouseShortage = skuWriteOffDataUnit
                        .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
                     break;
-                case PermanentDataKey.PointsViaWarehouseAdjustment:
+                case SourceReportItemKey.PointsViaWarehouseAdjustment:
                     SKUWriteOffPointsViaWarehouseAdjustment = skuWriteOffDataUnit
                        .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
                     break;

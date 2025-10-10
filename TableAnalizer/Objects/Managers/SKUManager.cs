@@ -260,7 +260,7 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOffPointsViaWarehouseAdjustment = reportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment;
             bool isResort = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isParallel = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
-            bool isPaidShortages = reportFileKey == SourceReportItemKey.PaidShortages;
+            bool isPaidShortages = reportFileKey == SourceReportItemKey.ShortagesPaid;
 
             await Task.Delay(10); // dummy
 
@@ -435,7 +435,7 @@ namespace TableAnalizer.Objects.Managers
                     ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME => SkuParallelUnits.Count(),
                     _ => 0
                 },
-                SourceReportItemKey.PaidShortages => SkuPaidShortagesBalanceUnits.Count(),
+                SourceReportItemKey.ShortagesPaid => SkuPaidShortagesBalanceUnits.Count(),
                 _ => 0
             };
         }
@@ -456,7 +456,7 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOffPointsViaWarehouseAdjustment = skuReportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment;
             bool isResorts = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.RESORTS_REPORT_WORKSHEET_NAME;
             bool isParellel = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
-            bool isPaidShortages = skuReportFileKey == SourceReportItemKey.PaidShortages;
+            bool isPaidShortages = skuReportFileKey == SourceReportItemKey.ShortagesPaid;
 
             // Dummy
             await Task.Delay(1);
@@ -487,7 +487,7 @@ namespace TableAnalizer.Objects.Managers
                         parsingEntityCollection = SkuParallelUnits,
                     _ => parsingEntityCollection = null
                 },
-                SourceReportItemKey.PaidShortages => SkuPaidShortagesBalanceUnits,
+                SourceReportItemKey.ShortagesPaid => SkuPaidShortagesBalanceUnits,
                 _ => parsingEntityCollection = null,
             };
 
@@ -560,7 +560,7 @@ namespace TableAnalizer.Objects.Managers
 
                         if (SKUs.GetValue(skuNumber, out SKU? sKU))
                         {
-                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units], PermanentDataKey.PointsAndCouriers);
+                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units], SourceReportItemKey.WriteOffPointsAndCouriers);
                             SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
                         }
                     }
@@ -571,7 +571,7 @@ namespace TableAnalizer.Objects.Managers
 
                         if (SKUs.GetValue(skuNumber, out SKU? sKU))
                         {
-                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units], PermanentDataKey.PointsViaWarehouseShortages);
+                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units], SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
                             SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
                         }
                     }
@@ -582,7 +582,7 @@ namespace TableAnalizer.Objects.Managers
 
                         if (SKUs.GetValue(skuNumber, out SKU? sKU))
                         {
-                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units], PermanentDataKey.PointsViaWarehouseAdjustment);
+                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units], SourceReportItemKey.PointsViaWarehouseAdjustment);
                             SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
                         }
                     }

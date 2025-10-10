@@ -88,12 +88,12 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <param name="writeOffSource">Источник списания.</param>
         /// <remarks>Производит сравнение экстра прихода и списания с точек через склад (предыдущие периоды).</remarks>
         /// <returns>Остаток после списания, ...</returns>
-        public int MakeCorrectionOnWriteOffShortages(PermanentDataKey writeOffSource)
+        public int MakeCorrectionOnWriteOffShortages(SourceReportItemKey writeOffSource)
         {
             int difference;
             switch (writeOffSource)
             {
-                case PermanentDataKey.PointsViaWarehouseShortages:
+                case SourceReportItemKey.WriteOffPointsViaWarehouseShortage:
 
                     if (SKUWriteOffFromPointsViaWarehouseShortage == 0) return 0;
 
@@ -116,7 +116,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                     {
                         return 0;
                     }
-                case PermanentDataKey.PointsViaWarehouseAdjustment:
+                case SourceReportItemKey.PointsViaWarehouseAdjustment:
 
                     if (SKUWrittenOffFromPointsViaWarehouseAdjustment == 0) return 0;
 

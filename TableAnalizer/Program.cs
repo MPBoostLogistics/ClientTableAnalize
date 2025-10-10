@@ -7,6 +7,7 @@
 
 using System.Diagnostics;
 using System.Text;
+using System.Threading.Tasks;
 using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
@@ -56,7 +57,8 @@ internal class Program
             await TracingProgramExecution(a);
         }
 
-        ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        //ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+        // https://epplussoftware.com/en/Home/GettingStartedCommunityLicense
 
         Trace.Listeners.Add(new ConsoleTraceListener());
 
@@ -105,7 +107,6 @@ internal class Program
     {
         await Task.Delay(10); // dummy
 
-
         reportFileManager!.ManagerReached += Report;
         excelManager!.ManagerReached += Report;
         skuManager!.ManagerReached += Report;
@@ -113,24 +114,45 @@ internal class Program
 
         Console.Clear();
 
-        // Check permanent data 
-        Dictionary<PermanentDataKey, FileInfo>? permanentDataFiles = reportFileManager.CheckOfAvailailityPermanentData().Result;
-        if (permanentDataFiles == null)
-        {
-            ManagerReachedEventArgs e = new("infos is null", true, true);
-            await TracingProgramExecution(e);
-        }
+        var constantDataSourceTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Permanent);
+        await Task.Run(() => constantDataSourceTask);
+        constantDataSourceTask.Wait();
 
-        if (permanentDataFiles != null && permanentDataFiles.Count == 0)
+        // Поверям наличие постоянных данных
+        if (!constantDataSourceTask.Result.isError)
         {
-            ManagerReachedEventArgs e = new("infos length == 0", true, true);
+            await TracingProgramExecution(new("Primary data is available", false, false));
+
+            foreach (var (key, value) in ReportFileManager.PrimaryReportFiles)
+            {
+                await TracingProgramExecution(new($"{key}:  {value.Info?.Name}", false, false));
+            }
         }
+        else
+        {
+            await TracingProgramExecution(new("constantDataSourceTask.Result.isError", true, true));
+        }
+        
 
 
-        foreach (var info in permanentDataFiles!)
-        {
-            Console.WriteLine($"{info.Key}, {info.Value.FullName}");
-        }
+        // // Check permanent data 
+        // Dictionary<PermanentDataKey, FileInfo>? permanentDataFiles = reportFileManager.CheckOfAvailailityData().Result;
+        // if (permanentDataFiles == null)
+        // {
+        //     ManagerReachedEventArgs e = new("infos is null", true, true);
+        //     await TracingProgramExecution(e);
+        // }
+
+        // if (permanentDataFiles != null && permanentDataFiles.Count == 0)
+        // {
+        //     ManagerReachedEventArgs e = new("infos length == 0", true, true);
+        // }
+
+
+        // foreach (var info in permanentDataFiles!)
+        // {
+        //     Console.WriteLine($"{info.Key}, {info.Value.FullName}");
+        // }
 
 
         // // Get data
@@ -150,65 +172,53 @@ internal class Program
         skuManager.ManagerReached -= Report;
     }
 
-    private static void CheckContantData(ConstantDataSource source = ConstantDataSource.Directory)
-    {
-        if (source == ConstantDataSource.Directory)
-        {
+    // private static async Task<List<SourceReportItemKey>?> GetDataFromConsole()
+    // {
+    //     // Get source reports path
+    //     DirectoryInfo? getSourceReportDirInfo = null;
+    //     while (getSourceReportDirInfo is null)
+    //     {
+    //         Task<DirectoryInfo?> getSourceReportsPathTask = GetSourceReportsPathFromConsole(TracingDelay);
+    //         await Task.Run(() => getSourceReportsPathTask);
+    //         getSourceReportsPathTask.Wait();
+    //         getSourceReportDirInfo = getSourceReportsPathTask.Result;
+    //     }
 
-        }
-        // Если из файлов:
-        // - Директория постоянных отчетов
-        // - Регулярки постоянных отчетов
-        // - Проверка дат постоянных отчетов
-    }
+    //     await TracingProgramExecution(new($"Reports path: {getSourceReportDirInfo.Name}", false, false));
 
-    private static async Task<List<SourceReportItemKey>?> GetDataFromConsole()
-    {
-        // Get source reports path
-        DirectoryInfo? getSourceReportDirInfo = null;
-        while (getSourceReportDirInfo is null)
-        {
-            Task<DirectoryInfo?> getSourceReportsPathTask = GetSourceReportsPathFromConsole(TracingDelay);
-            await Task.Run(() => getSourceReportsPathTask);
-            getSourceReportsPathTask.Wait();
-            getSourceReportDirInfo = getSourceReportsPathTask.Result;
-        }
+    //     // Availability necessary reports
+    //     Task<List<SourceReportItemKey>?>? availabilityNecessaryTask = null;
+    //     List<SourceReportItemKey>? existingKeys = null;
 
-        await TracingProgramExecution(new($"Reports path: {getSourceReportDirInfo.Name}", false, false));
+    //     try
+    //     {
+    //         availabilityNecessaryTask = reportFileManager!.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName);
+    //         await Task.Run(() => availabilityNecessaryTask);
+    //         availabilityNecessaryTask.Wait();
+    //         existingKeys = availabilityNecessaryTask.Result;
+    //     }
+    //     catch (System.Exception ex)
+    //     {
+    //         existingKeys = null;
+    //         await TracingProgramExecution(new(ex.Message, true, true));
+    //         //break;
+    //     }
 
-        // Availability necessary reports
-        Task<List<SourceReportItemKey>?>? availabilityNecessaryTask = null;
-        List<SourceReportItemKey>? existingKeys = null;
+    //     if (!availabilityNecessaryTask!.IsFaulted && existingKeys != null && existingKeys.Count > 0)
+    //     {
+    //         // Select report direction
+    //         while (ReportFileManager.ReportRecipientType is null)
+    //         {
+    //             Task<TargetReportRecipientType?> getTargetReportRecipientTypeTask = GetTargetReportRecipientTypeFromConsole(TracingDelay);
+    //             await Task.Run(() => getTargetReportRecipientTypeTask);
+    //             getTargetReportRecipientTypeTask.Wait();
+    //             ReportFileManager.ReportRecipientType = getTargetReportRecipientTypeTask.Result;
+    //         }
+    //         Console.Clear();
+    //     }
 
-        try
-        {
-            availabilityNecessaryTask = reportFileManager!.ChecksAvailabilityNecessaryFiles(getSourceReportDirInfo.FullName);
-            await Task.Run(() => availabilityNecessaryTask);
-            availabilityNecessaryTask.Wait();
-            existingKeys = availabilityNecessaryTask.Result;
-        }
-        catch (System.Exception ex)
-        {
-            existingKeys = null;
-            await TracingProgramExecution(new(ex.Message, true, true));
-            //break;
-        }
-
-        if (!availabilityNecessaryTask!.IsFaulted && existingKeys != null && existingKeys.Count > 0)
-        {
-            // Select report direction
-            while (ReportFileManager.ReportRecipientType is null)
-            {
-                Task<TargetReportRecipientType?> getTargetReportRecipientTypeTask = GetTargetReportRecipientTypeFromConsole(TracingDelay);
-                await Task.Run(() => getTargetReportRecipientTypeTask);
-                getTargetReportRecipientTypeTask.Wait();
-                ReportFileManager.ReportRecipientType = getTargetReportRecipientTypeTask.Result;
-            }
-            Console.Clear();
-        }
-
-        return existingKeys;
-    }
+    //     return existingKeys;
+    // }
 
     private static async Task AnalyzeСlientReport(List<SourceReportItemKey>? existingKeys)
     {
@@ -281,13 +291,13 @@ internal class Program
                 currentTask.Wait();
             }
 
-            // Paid shortages task
-            if (existingKeys.Contains(SourceReportItemKey.PaidShortages))
-            {
-                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.PaidShortages, isInternalReport);
-                await Task.Run(async () => await currentTask);
-                currentTask.Wait();
-            }
+            // // Paid shortages task
+            // if (existingKeys.Contains(SourceReportItemKey.ShortagePaid))
+            // {
+            //     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.ShortagePaid, isInternalReport);
+            //     await Task.Run(async () => await currentTask);
+            //     currentTask.Wait();
+            // }
 
             // Delete old logistic report 
             if (isTracing)

@@ -45,19 +45,19 @@ namespace TableAnalizer.Objects.Managers
 
         // Accent target cell settings
         private static readonly Color accentTextColor = Color.FromArgb(100, 59, 89, 104);        //rgb(59, 89, 104)8  
-        private static readonly int accentTextSize = 15;     
+        private static readonly int accentTextSize = 15;
 
         // Summary target cell settings
         private static readonly Color summaryTextColor = Color.FromArgb(100, 79, 79, 94);        //rgb(79, 79, 94) 
-        private static readonly int summaryTextSize = 15;                                       
+        private static readonly int summaryTextSize = 15;
 
         private static readonly TargetCellSettings defaultTargetCellSettings =
             new(textСolor: defaultTextColor, textSize: defaultTextSize, cellFillColor: null, false);
         private static readonly TargetCellSettings accentTargetCellSettings =
-            new(textСolor: accentTextColor, textSize: accentTextSize, cellFillColor: Color.FromArgb(100, 249,249, 251), true); //rgb(249, 249, 251)
+            new(textСolor: accentTextColor, textSize: accentTextSize, cellFillColor: Color.FromArgb(100, 249, 249, 251), true); //rgb(249, 249, 251)
 
         private static readonly TargetCellSettings summaryTargetCellSettings =
-            new(textСolor: summaryTextColor, textSize: summaryTextSize, cellFillColor: null); 
+            new(textСolor: summaryTextColor, textSize: summaryTextSize, cellFillColor: null);
 
         private static string SumFormila = string.Empty;
 
@@ -70,7 +70,7 @@ namespace TableAnalizer.Objects.Managers
             { SubjectClaim.ShortDeliveryGoods, "Недовоз товаров" },
         };
 
-         private static readonly Dictionary<ClaimResolutionStatus, string> ClaimResolutionStatusStrings = new()
+        private static readonly Dictionary<ClaimResolutionStatus, string> ClaimResolutionStatusStrings = new()
         {
             { ClaimResolutionStatus.IndependentPurchase, "Докупаем сами" },
             { ClaimResolutionStatus.NotPaid, "Не оплачено" },
@@ -241,7 +241,7 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 16, colName: "в том числе компенсацией", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName:  nameof(SKUForTargetReport.SKUCompensatedTotalToClient),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
-  
+
             new (colNumber: 17, colName: "в том числе товарами", colWidth: 11, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUSettlementByGoods) ,
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
@@ -500,11 +500,11 @@ namespace TableAnalizer.Objects.Managers
                     throw;
                 }
 
-                if(excelPackage is not null)
+                if (excelPackage is not null)
                 {
                     ExcelPackages[key] = excelPackage;
                 }
-                
+
             }
 
             GetExcelPackageByKey(key, out ExcelPackage? existingPackage);
@@ -596,7 +596,7 @@ namespace TableAnalizer.Objects.Managers
                     range.Style.Font.Bold = true;
                     range.Style.Font.Color.SetColor(summaryTargetCellSettings.TextСolor);
 
-                    range.Style.Border.Top.Style = ExcelBorderStyle.Thin;  
+                    range.Style.Border.Top.Style = ExcelBorderStyle.Thin;
                     range.Style.Border.Top.Color.SetColor(summaryTargetCellSettings.TextСolor);
                 }
             }
@@ -615,13 +615,13 @@ namespace TableAnalizer.Objects.Managers
             workSheetNames = reportFileKey switch
             {
                 SourceReportItemKey.Ransoms => [RANSOMS_WORKSHEET_NAME],
-                SourceReportItemKey.Balance or SourceReportItemKey.OutgoingProducts 
-                    or SourceReportItemKey.Transfered 
-                    or SourceReportItemKey.WriteOffPoints 
-                    or SourceReportItemKey.WriteOffPointsViaWarehouseShortage  
+                SourceReportItemKey.Balance or SourceReportItemKey.OutgoingProducts
+                    or SourceReportItemKey.Transfered
+                    or SourceReportItemKey.WriteOffPoints
+                    or SourceReportItemKey.WriteOffPointsViaWarehouseShortage
                     or SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
                 SourceReportItemKey.Additional => [RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
-                SourceReportItemKey.PaidShortages => [PAID_SHORTAGES_REPORT_WORKSHEET_NAME],
+                SourceReportItemKey.ShortagesPaid => [PAID_SHORTAGES_REPORT_WORKSHEET_NAME],
                 _ => null,
             };
             return workSheetNames is not null && workSheetNames.Count != 0;
@@ -1257,7 +1257,7 @@ namespace TableAnalizer.Objects.Managers
                     PARALLEL_SKUS_WORKSHEET_NAME => [new(ParallelSourceCells)],
                     _ => [],
                 },
-                SourceReportItemKey.PaidShortages => [new(PaidShortagesSourceCells)],
+                SourceReportItemKey.ShortagesPaid => [new(PaidShortagesSourceCells)],
                 _ => [],
             };
 
@@ -1386,19 +1386,19 @@ namespace TableAnalizer.Objects.Managers
             rangeSourceReportRows = outputRanges;
         }
 
-        private static bool IsFilterMatch(string[] filters, object value) => 
-            value is not null && 
-            !string.IsNullOrEmpty(value!.ToString()) && 
+        private static bool IsFilterMatch(string[] filters, object value) =>
+            value is not null &&
+            !string.IsNullOrEmpty(value!.ToString()) &&
             filters.Contains(value!.ToString());
 
         private static List<SKUForTargetReport> GetDelay(List<SKUForTargetReport> list)
         {
             var items = from el in list
-                        where el.SKUDeliveryDelayTotal > 0 && 
+                        where el.SKUDeliveryDelayTotal > 0 &&
                             (el.SellmentStatus.Status is SKUSellmentStatus.DelayDeliveryFromPoints ||
-                            el.SellmentStatus.Status is SKUSellmentStatus.DelayFromWarehouse || 
+                            el.SellmentStatus.Status is SKUSellmentStatus.DelayFromWarehouse ||
                             el.SellmentStatus.Status is SKUSellmentStatus.DelayFromPointsAndWarehouse ||
-                            el.SellmentStatus.Status is SKUSellmentStatus.DelayFromOrganization || 
+                            el.SellmentStatus.Status is SKUSellmentStatus.DelayFromOrganization ||
                             el.SellmentStatus.Status is SKUSellmentStatus.DelayFromOrganizationAndWarehouse)
                         select el;
 

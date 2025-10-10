@@ -387,7 +387,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var sku in writeOffPointsByShortage!)
                 {
-                    MakeCorrectionWriteOffs(ref skuForTargetReports, PermanentDataKey.PointsViaWarehouseShortages, skuForTargetReports.IndexOf(sku));
+                    MakeCorrectionWriteOffs(ref skuForTargetReports, SourceReportItemKey.WriteOffPointsViaWarehouseShortage, skuForTargetReports.IndexOf(sku));
                 }
             }
 
@@ -395,7 +395,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var sku in writeOffPointsByAdjustment!)
                 {
-                    MakeCorrectionWriteOffs(ref skuForTargetReports, PermanentDataKey.PointsViaWarehouseAdjustment, skuForTargetReports.IndexOf(sku));
+                    MakeCorrectionWriteOffs(ref skuForTargetReports, SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, skuForTargetReports.IndexOf(sku));
                 }
             }
 
@@ -425,7 +425,7 @@ namespace TableAnalizer.Objects.Managers
                 Task.CompletedTask;
         }
 
-        public static void MakeCorrectionWriteOffs(ref List<SKUForTargetReport> skuForTargetReports, PermanentDataKey writeOffSource, int skuIndex)
+        public static void MakeCorrectionWriteOffs(ref List<SKUForTargetReport> skuForTargetReports, SourceReportItemKey writeOffSource, int skuIndex)
         {
             if (int.IsNegative(skuIndex)) return;
 

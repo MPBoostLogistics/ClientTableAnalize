@@ -15,8 +15,8 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="EPPlus" Version="7.6.1" />
-    <PackageReference Include="Vegiwoo.CSharpHelpers" Version="1.0.20" />
+    <PackageReference Include="EPPlus" Version="8.2.1" />
+    <PackageReference Include="Vegiwoo.CSharpHelpers" Version="1.0.21" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Objects\" />
