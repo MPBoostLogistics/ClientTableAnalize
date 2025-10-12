@@ -8,6 +8,7 @@
 using System.Diagnostics;
 using System.Drawing.Printing;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CSharpHelpers.Services;
@@ -137,16 +138,14 @@ internal class Program
         Console.Clear();
 
         // Get client report path, type of target report from console.
-        var getDataFromConsoleTask = GetDataFromConsole();
+        var getDataFromConsoleTask = GetPrimaryDataFromConsole();
         await Task.Run(async () => getDataFromConsoleTask);
         getDataFromConsoleTask.Wait();
 
-
-
-        // // Checking for the presence of data (permanent and new).
-        // var checkingForPresenceDataTask = CheckingForPresenceData();
-        // await Task.Run(async () => checkingForPresenceDataTask);
-        // checkingForPresenceDataTask.Wait();
+        // Checking for the presence of data (permanent and new).
+        var checkingForPresenceDataTask = CheckingForPresenceData();
+        await Task.Run(async () => checkingForPresenceDataTask);
+        checkingForPresenceDataTask.Wait();
 
         // // // Start analize
         // // await TracingProgramExecution(new("Report analysis task has started...", false, false));
@@ -184,17 +183,21 @@ internal class Program
 
 
 
-
-    private static async Task GetDataFromConsole()
+    /// <summary>
+    /// Get primary data from manager in console.
+    /// </summary>
+    /// <returns>Async Task</returns>
+    /// <remarks>oct 2025 ver.</remarks>
+    private static async Task GetPrimaryDataFromConsole()
     {
         // Get client reports path
         DataFromConsole cletientReportPathData = new(
-            questionMessage: "Укажите путь к директории с клинетскими данными: ",
+            questionMessage: "Укажите путь к директории с клиентскими данными: ",
             errorMessage: "Путь к директории с клиентскими данными не указан или указан неверно.\nПроверьте правильность ввода и повторите попытку.",
             typeCode: ParsingTypeCode.DirectoryTypeCode,
             isRequred: true);
 
-        var getReportsTask = GetFromConsole<DirectoryInfo?>(cletientReportPathData);
+        var getReportsTask = GetValueFromConsole<DirectoryInfo?>(cletientReportPathData);
         await Task.Run(() => getReportsTask);
         getReportsTask.Wait();
 
@@ -208,30 +211,40 @@ internal class Program
           typeCode: ParsingTypeCode.DataOnlyTypeCode,
           isRequred: true);
 
-        var getStartDateTask = GetFromConsole<DateOnly?>(orderPeriodStartDateData);
+        var getStartDateTask = GetValueFromConsole<DateOnly?>(orderPeriodStartDateData);
         await Task.Run(() => getStartDateTask);
         getStartDateTask.Wait();
 
         DateOnly? orderPeriodStartDateTask = getStartDateTask.Result;
         await TracingProgramExecution(new($"Дата начала заказов: {orderPeriodStartDateTask}", false, false));
 
-        // // Select report direction
-        // while (ReportFileManager.ReportRecipientType is null)
-        // {
-        //     Task<TargetReportRecipientType?> getTargetReportRecipientTypeTask = GetTargetReportRecipientTypeFromConsole(TracingDelay);
-        //     await Task.Run(() => getTargetReportRecipientTypeTask);
-        //     getTargetReportRecipientTypeTask.Wait();
-        //     ReportFileManager.ReportRecipientType = getTargetReportRecipientTypeTask.Result;
-        // }
+        // Select report direction
+        DataFromConsole reportDirectionData = new(
+            questionMessage: "Выберите целевой тип отчета:\n1. Внутренний (для работы отдела логистики)\n2. Внешний (для предоставления клиенту)\nESC: Выход из программы.",
+            errorMessage: "Клавиша нажата неверно.\nПроверьте правильность ввода и повторите попытку.",
+            typeCode: ParsingTypeCode.StringTypeCode, // Dummy
+            isRequred: true);
 
-        Console.WriteLine("!!!");
-        Console.ReadKey();
+        List<ConsoleKey> validKeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
+        var reportDirectionTask = GetKeyFromConsole(reportDirectionData, validKeys);
+        await Task.Run(() => reportDirectionTask);
+        reportDirectionTask.Wait();
 
-        Console.Clear();
+        switch (reportDirectionTask.Result)
+        {
+            case ConsoleKey.D1:
+                ReportFileManager.ReportRecipientType = TargetReportRecipientType.Internal;
+                break;
+            case ConsoleKey.D2:
+                ReportFileManager.ReportRecipientType = TargetReportRecipientType.External;
+                break;
+            case ConsoleKey.Escape:
+                await TracingProgramExecution(new("Выбран выход из программы", false, true));
+                break;
+        }
+
+        await TracingProgramExecution(new($"Выбран тип отчета: {ReportFileManager.ReportRecipientType.ToString()}", false, false));
     }
-
-    //     return existingKeys;
-    // }
 
     private static async Task AnalyzeСlientReport(List<SourceReportItemKey>? existingKeys)
     {
@@ -404,32 +417,6 @@ internal class Program
         }
     }
 
-    private static async Task<DirectoryInfo?> GetSourceReportsPathFromConsole(int delay)
-    {
-        string titleMessage = "Specify path to dir with the client's source reports and press 'Enter':\n ";
-        string errorMessage = "Path to report files is incorrect.\nPlease try again.";
-
-        DirectoryInfo? reportsPathDirectoryInfo;
-        string reportsPathString = ConsoleAppService.GetUserStringFromConsole(titleMessage);
-
-        switch (string.IsNullOrEmpty(reportsPathString))
-        {
-            case true:
-                await TracingProgramExecution(new(errorMessage, true, false));
-                return await GetSourceReportsPathFromConsole(delay);
-            case false:
-                var isDirInfoSuccess = FileService.GetDirectoryInfo(reportsPathString, out reportsPathDirectoryInfo);
-                switch (isDirInfoSuccess && reportsPathDirectoryInfo is not null)
-                {
-                    case true:
-                        return reportsPathDirectoryInfo;
-                    case false:
-                        await TracingProgramExecution(new(errorMessage, true, false));
-                        return await GetSourceReportsPathFromConsole(delay);
-                }
-        }
-    }
-
     private static async Task<TargetReportRecipientType?> GetTargetReportRecipientTypeFromConsole(int delay)
     {
         StringBuilder rawReportStringBuilder = new("Select the report direction:\n");
@@ -462,53 +449,14 @@ internal class Program
         }
     }
 
-    private static async Task<DateOnly?> GetOrderPeriodStartDate(int delay)
-    {
-        StringBuilder orderPeriodStartDateStringBuilder = new("Select order period start (ENTER: Default, Write + ENTER: Date, ESC: Exit): \n");
-
-        ConsoleKey? selectKey = ConsoleAppService.GetUserKeyFromConsole(orderPeriodStartDateStringBuilder.ToString());
-        var dateString = Console.ReadLine();
-
-        switch (selectKey is null)
-        {
-            case true:
-                await TracingProgramExecution(new("Invalid value, please try again.", true, false));
-                return await GetOrderPeriodStartDate(delay);
-            case false:
-                switch ((ConsoleKey)selectKey)
-                {
-                    case ConsoleKey.Enter:
-                        return orderPeriodStartDateDefault;
-
-                    case ConsoleKey.Escape:
-                        ConsoleAppService.ConsoleAppExit(goodByMessage);
-                        return null;
-                    default:
-                        if (string.IsNullOrEmpty(dateString))
-                        {
-                            return null;
-                        }
-                        else
-                        {
-                            Console.WriteLine("HELLOOO!");
-                            Console.WriteLine(dateString);
-                            await Task.Delay(3000);
-
-                            if (DateOnly.TryParseExact(dateString.Trim(), [.. IParsingRowEntity.DateOnlyFormats], out DateOnly dateOnlyValue))
-                            {
-                                return dateOnlyValue;
-                            }
-                            else
-                            {
-                                await TracingProgramExecution(new("Invalid value, please try again.", true, false));
-                                return await GetOrderPeriodStartDate(delay);
-                            }
-                        }
-                }
-        }
-    }
-
-    private static async Task<T?> GetFromConsole<T>(DataFromConsole data)
+    /// <summary>
+    /// Get value from manager in console.
+    /// </summary>
+    /// <typeparam name="T">Type of returned value.</typeparam>
+    /// <param name="data">DataFromConsole object with parsing data.</param>
+    /// <returns>Value for generic type or null.</returns>
+    /// <remarks>oct 2025 ver.</remarks>
+    private static async Task<T?> GetValueFromConsole<T>(DataFromConsole data)
     {
         T? type = default;
         while (type is null)
@@ -538,18 +486,21 @@ internal class Program
         return type;
     }
 
-    private static async Task<string?> GetStringFromConsole(DataFromConsole dataFromConsole)
+    /// <summary>
+    /// Get string value from manager in console.
+    /// </summary>
+    /// <param name="data">DataFromConsole object with parsing data.</param>
+    /// <returns>String value or null.</returns>
+    private static async Task<string?> GetStringFromConsole(DataFromConsole data)
     {
         string? value = null;
         while (value is null)
         {
             Console.Clear();
-
             Console.ForegroundColor = ConsoleColor.DarkBlue;
-            Console.WriteLine(dataFromConsole.QuestionMessage);
+            Console.WriteLine(data.QuestionMessage);
 
             value = Console.ReadLine();
-
             if (!string.IsNullOrEmpty(value))
             {
                 break;
@@ -557,13 +508,39 @@ internal class Program
             else
             {
                 Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine(dataFromConsole.ErrorMessage);
+                Console.WriteLine(data.ErrorMessage);
                 await Task.Delay(TraceDelay + 1000);
-                await GetStringFromConsole(dataFromConsole);
+                await GetStringFromConsole(data);
             }
         }
 
         return value;
+    }
+
+    private static async Task<ConsoleKey> GetKeyFromConsole(DataFromConsole data, List<ConsoleKey> validKeys)
+    {
+        ConsoleKey? key = null;
+        while (!key.HasValue)
+        {
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.DarkBlue;
+            Console.WriteLine(data.QuestionMessage);
+
+            key = Console.ReadKey().Key;
+            
+            if (validKeys.Contains(key.Value))
+            {
+                break;
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine($"\n{data.ErrorMessage}");
+                await Task.Delay(TraceDelay + 1000);
+                await GetKeyFromConsole(data, validKeys);
+            }
+        }
+        return key.Value;
     }
 
     private static void Report(object? sender, ManagerReachedEventArgs e)
