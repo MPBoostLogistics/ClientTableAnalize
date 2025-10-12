@@ -174,6 +174,7 @@ namespace TableAnalizer.Objects.Managers
             return fileInfos is not null || fileInfos!.Length > 0;
         }
 
+
         /// <summary>
         /// Checks of availaility of primary data.
         /// </summary>

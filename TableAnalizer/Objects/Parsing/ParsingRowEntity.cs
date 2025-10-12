@@ -1,7 +1,5 @@
-using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
-using Org.BouncyCastle.Crypto.Engines;
 using TableAnalizer.Interfaces;
 
 namespace TableAnalizer.Objects.Parsing
@@ -20,7 +18,7 @@ namespace TableAnalizer.Objects.Parsing
         public PropertyInfo[] PropertyInfos { get; private set; }
         #endregion
 
-        #region  Constructors
+        #region Constructors
         public ParsingRowEntity(in Dictionary<string, ItemForParsing> parsingElements)
         {
             PropertyInfos = GetType().GetProperties();
@@ -67,7 +65,6 @@ namespace TableAnalizer.Objects.Parsing
                 }
             }
         }
-
         private void ParseValue(in KeyValuePair<string, ItemForParsing> element, ref PropertyInfo property)
         {
             string? elementValueString = element.Value.Value;
@@ -266,6 +263,7 @@ namespace TableAnalizer.Objects.Parsing
 
             return value is not null;
         }
+
 
         #endregion
     }

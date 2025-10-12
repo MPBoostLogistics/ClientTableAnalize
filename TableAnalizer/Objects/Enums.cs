@@ -164,6 +164,7 @@ namespace TableAnalizer.Objects
         IntTypeCode,
         DoubleTypeCode,
         DataOnlyTypeCode,
+        DateTimeTypeCode,
         StringTypeCode,
         SKURansomsStatus,
         Marketplace,
@@ -171,7 +172,8 @@ namespace TableAnalizer.Objects
         BoolTypeCode,
         SubjectClaim,
         ClaimExecutor,
-        ClaimResolutionStatus
+        ClaimResolutionStatus,
+        DirectoryTypeCode,
     }
 
     /// <summary>

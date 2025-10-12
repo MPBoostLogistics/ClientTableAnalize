@@ -11,7 +11,7 @@
   "Numbers": {
     "DataAgeLimitInDays": 7,
     "DeadlineDays": 14,
-    "TracingDelay": 750
+    "TraceDelay": 1000
   },
   "Formulas": {
     "SumFormula": "SUM"
