@@ -23,17 +23,6 @@ using TableAnalizer.Objects.ReportItems;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 
-public class DataFromConsole(string questionMessage, string errorMessage, ParsingTypeCode typeCode, bool isRequred)
-{
-    #region Properties
-    public string QuestionMessage { get; } = questionMessage;
-    public string ErrorMessage { get; } = errorMessage;
-    public ParsingTypeCode TypeCode { get; } = typeCode;
-    public bool IsRequred { get; } = isRequred;
-    #endregion
-}
-
-
 internal class Program
 {
     #region Variables and constants   
@@ -161,27 +150,33 @@ internal class Program
     private static async Task CheckingForPresenceData()
     {
         // Checking for the presence of permanent data
-        var constantDataSourceTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Permanent);
-        await Task.Run(() => constantDataSourceTask);
-        constantDataSourceTask.Wait();
+        var getPermanentDataTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Permanent);
+        await Task.Run(() => getPermanentDataTask);
+        getPermanentDataTask.Wait();
 
-        if (!constantDataSourceTask.Result.isError)
+        if (!getPermanentDataTask.Result.isError)
         {
-            await TracingProgramExecution(new("Primary data is available", constantDataSourceTask.Result.isError, false));
+            await TracingProgramExecution(new("Primary permanent data is available", getPermanentDataTask.Result.isError, false));
         }
         else
         {
-            await TracingProgramExecution(new(constantDataSourceTask.Result.message, constantDataSourceTask.Result.isError, true));
+            await TracingProgramExecution(new(getPermanentDataTask.Result.message, getPermanentDataTask.Result.isError, true));
         }
 
-        //Checking for the presence of new data
-        // TODO: Add new data check
+        // Checking for the presence of permanent data
+        var getVariableDataTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Variable);
+        await Task.Run(() => getVariableDataTask);
+        getVariableDataTask.Wait();
+
+        if (!getVariableDataTask.Result.isError)
+        {
+            await TracingProgramExecution(new("Primary variable data is available", getVariableDataTask.Result.isError, false));
+        }
+        else
+        {
+            await TracingProgramExecution(new(getVariableDataTask.Result.message, getVariableDataTask.Result.isError, true));
+        }
     }
-
-    // Use order period start:
-
-
-
 
     /// <summary>
     /// Get primary data from manager in console.

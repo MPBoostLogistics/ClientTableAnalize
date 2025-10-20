@@ -174,13 +174,13 @@ namespace TableAnalizer.Objects.Managers
             return fileInfos is not null || fileInfos!.Length > 0;
         }
 
-
         /// <summary>
         /// Checks of availaility of primary data.
         /// </summary>
         /// <param name="clientDataPath">Client data path (optional, only for cliet's data).</param>
         /// <param name="primaryDataKey">Key of a data.</param>
         /// <returns>Execution flag of operation and message.</returns>
+        /// <remarks>oct 2025 ver.<>/remarks>
         public async Task<(bool isError, string message)> CheckOfAvailailityData(string? clientDataPath, PrimaryDataType primaryDataKey)
         {
             bool isError = false;
@@ -268,7 +268,6 @@ namespace TableAnalizer.Objects.Managers
 
             return (isError, stringBuilder.ToString());
         }
-
         private void MakeSourceReportFileItem(FileInfo fileInfo, SourceReportItemKey? key, string? loginsFileName, bool isControlAgeOfData)
         {
             var sorceReportFile = new SourceReportFileItem(key.Value, fileInfo, isControlAgeOfData, DataAgeLimitInDays);
