@@ -22,6 +22,15 @@ using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.ReportItems;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
+/*
+    1. Запросить из консоли путь к диреторию с переменными данными 
+    2. Прверить постоянные данные 
+        2.1. Если нет или данные устарели - сообщить об этом и выйти 
+    3. Проверить переменные данные
+        3.1. Если нет или данные устарели - сообщить об этом и выйти
+*/
+
+
 
 internal class Program
 {
@@ -115,8 +124,16 @@ internal class Program
         }
     }
 
+    /// <remarks>oct 2025 ver.</remarks>
     private static async Task Analyze()
     {
+        static void UnsubscribeFromEvents()
+        {
+            reportFileManager!.ManagerReached -= Report;
+            excelManager!.ManagerReached -= Report;
+            skuManager!.ManagerReached -= Report;
+        }
+
         await Task.Delay(10); // dummy
 
         reportFileManager!.ManagerReached += Report;
@@ -131,53 +148,30 @@ internal class Program
         await Task.Run(async () => getDataFromConsoleTask);
         getDataFromConsoleTask.Wait();
 
-        // Checking for the presence of data (permanent and new).
-        var checkingForPresenceDataTask = CheckingForPresenceData();
-        await Task.Run(async () => checkingForPresenceDataTask);
-        checkingForPresenceDataTask.Wait();
-
-        // // // Start analize
-        // // await TracingProgramExecution(new("Report analysis task has started...", false, false));
-        // // var analyzeСlientReportTask = AnalyzeСlientReport(existingKeys);
-        // // await Task.Run(() => analyzeСlientReportTask);
-        // // analyzeСlientReportTask?.Wait();
-
-        reportFileManager.ManagerReached -= Report;
-        excelManager.ManagerReached -= Report;
-        skuManager.ManagerReached -= Report;
-    }
-
-    private static async Task CheckingForPresenceData()
-    {
-        // Checking for the presence of permanent data
-        var getPermanentDataTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Permanent);
-        await Task.Run(() => getPermanentDataTask);
-        getPermanentDataTask.Wait();
-
-        if (!getPermanentDataTask.Result.isError)
+        if (!ReportFileManager.ReportRecipientType.HasValue)
         {
-            await TracingProgramExecution(new("Primary permanent data is available", getPermanentDataTask.Result.isError, false));
+            await TracingProgramExecution(new("Выбран выход из программы", false, true));
+            UnsubscribeFromEvents();
         }
         else
         {
-            await TracingProgramExecution(new(getPermanentDataTask.Result.message, getPermanentDataTask.Result.isError, true));
-        }
+            await TracingProgramExecution(new($"Выбран тип отчета: {ReportFileManager.ReportRecipientType.ToString()}", false, false));
 
-        // Checking for the presence of permanent data
-        var getVariableDataTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Variable);
-        await Task.Run(() => getVariableDataTask);
-        getVariableDataTask.Wait();
+            // Checking for the presence of data (permanent and new).
+            var checkingForPresenceDataTask = CheckingForPresenceData();
+            await Task.Run(async () => checkingForPresenceDataTask);
+            checkingForPresenceDataTask.Wait();
 
-        if (!getVariableDataTask.Result.isError)
-        {
-            await TracingProgramExecution(new("Primary variable data is available", getVariableDataTask.Result.isError, false));
-        }
-        else
-        {
-            await TracingProgramExecution(new(getVariableDataTask.Result.message, getVariableDataTask.Result.isError, true));
+            // // // Start analize
+            // // await TracingProgramExecution(new("Report analysis task has started...", false, false));
+            // // var analyzeСlientReportTask = AnalyzeСlientReport(existingKeys);
+            // // await Task.Run(() => analyzeСlientReportTask);
+            // // analyzeСlientReportTask?.Wait();
+
+            UnsubscribeFromEvents();
         }
     }
-
+    
     /// <summary>
     /// Get primary data from manager in console.
     /// </summary>
@@ -219,9 +213,8 @@ internal class Program
             errorMessage: "Клавиша нажата неверно.\nПроверьте правильность ввода и повторите попытку.",
             typeCode: ParsingTypeCode.StringTypeCode, // Dummy
             isRequred: true);
-
-        List<ConsoleKey> validKeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
-        var reportDirectionTask = GetKeyFromConsole(reportDirectionData, validKeys);
+            
+        var reportDirectionTask = GetKeyFromConsole(reportDirectionData, [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape]);
         await Task.Run(() => reportDirectionTask);
         reportDirectionTask.Wait();
 
@@ -234,11 +227,40 @@ internal class Program
                 ReportFileManager.ReportRecipientType = TargetReportRecipientType.External;
                 break;
             case ConsoleKey.Escape:
-                await TracingProgramExecution(new("Выбран выход из программы", false, true));
+                ReportFileManager.ReportRecipientType = null;
                 break;
         }
+    }
 
-        await TracingProgramExecution(new($"Выбран тип отчета: {ReportFileManager.ReportRecipientType.ToString()}", false, false));
+    private static async Task CheckingForPresenceData()
+    {
+        // Checking for the presence of permanent data
+        var getPermanentDataTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Permanent);
+        await Task.Run(() => getPermanentDataTask);
+        getPermanentDataTask.Wait();
+
+        if (!getPermanentDataTask.Result.isError)
+        {
+            await TracingProgramExecution(new("Primary permanent data is available", getPermanentDataTask.Result.isError, false));
+        }
+        else
+        {
+            await TracingProgramExecution(new(getPermanentDataTask.Result.message, getPermanentDataTask.Result.isError, true));
+        }
+
+        // Checking for the presence of permanent data
+        var getVariableDataTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Variable);
+        await Task.Run(() => getVariableDataTask);
+        getVariableDataTask.Wait();
+
+        if (!getVariableDataTask.Result.isError)
+        {
+            await TracingProgramExecution(new("Primary variable data is available", getVariableDataTask.Result.isError, false));
+        }
+        else
+        {
+            await TracingProgramExecution(new(getVariableDataTask.Result.message, getVariableDataTask.Result.isError, true));
+        }
     }
 
     private static async Task AnalyzeСlientReport(List<SourceReportItemKey>? existingKeys)
@@ -522,9 +544,10 @@ internal class Program
             Console.WriteLine(data.QuestionMessage);
 
             key = Console.ReadKey().Key;
-            
+
             if (validKeys.Contains(key.Value))
             {
+                Console.Clear();
                 break;
             }
             else
