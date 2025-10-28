@@ -127,20 +127,8 @@ internal class Program
     /// <remarks>oct 2025 ver.</remarks>
     private static async Task Analyze()
     {
-        static void UnsubscribeFromEvents()
-        {
-            reportFileManager!.ManagerReached -= Report;
-            excelManager!.ManagerReached -= Report;
-            skuManager!.ManagerReached -= Report;
-        }
-
         await Task.Delay(10); // dummy
-
-        reportFileManager!.ManagerReached += Report;
-        excelManager!.ManagerReached += Report;
-        skuManager!.ManagerReached += Report;
-        anManager!.ManagerReached += Report;
-
+        SubscribeManagersToEvents();
         Console.Clear();
 
         // Get client report path, type of target report from console.
@@ -151,7 +139,7 @@ internal class Program
         if (!ReportFileManager.ReportRecipientType.HasValue)
         {
             await TracingProgramExecution(new("Выбран выход из программы", false, true));
-            UnsubscribeFromEvents();
+            UnsubscribeManagersFromEvents();
         }
         else
         {
@@ -168,10 +156,10 @@ internal class Program
             // // await Task.Run(() => analyzeСlientReportTask);
             // // analyzeСlientReportTask?.Wait();
 
-            UnsubscribeFromEvents();
+            UnsubscribeManagersFromEvents();
         }
     }
-    
+
     /// <summary>
     /// Get primary data from manager in console.
     /// </summary>
@@ -213,7 +201,7 @@ internal class Program
             errorMessage: "Клавиша нажата неверно.\nПроверьте правильность ввода и повторите попытку.",
             typeCode: ParsingTypeCode.StringTypeCode, // Dummy
             isRequred: true);
-            
+
         var reportDirectionTask = GetKeyFromConsole(reportDirectionData, [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape]);
         await Task.Run(() => reportDirectionTask);
         reportDirectionTask.Wait();
@@ -239,16 +227,13 @@ internal class Program
         await Task.Run(() => getPermanentDataTask);
         getPermanentDataTask.Wait();
 
-        if (!getPermanentDataTask.Result.isError)
-        {
-            await TracingProgramExecution(new("Primary permanent data is available", getPermanentDataTask.Result.isError, false));
-        }
-        else
-        {
-            await TracingProgramExecution(new(getPermanentDataTask.Result.message, getPermanentDataTask.Result.isError, true));
-        }
+        await TracingProgramExecution(
+            new(!getPermanentDataTask.Result.isError ?
+                "Primary permanent data is available" :
+                getPermanentDataTask.Result.message,
+                getPermanentDataTask.Result.isError, getPermanentDataTask.Result.isError));
 
-        // Checking for the presence of permanent data
+        // Checking for the presence of variable data
         var getVariableDataTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Variable);
         await Task.Run(() => getVariableDataTask);
         getVariableDataTask.Wait();
@@ -595,6 +580,20 @@ internal class Program
 
             Trace.Flush();
         }
+    }
+
+    private static void SubscribeManagersToEvents()
+    {
+        List<BaseManager?> managers = [reportFileManager, excelManager, skuManager, anManager];
+        foreach (var item in managers)
+            if (item != null) item.ManagerReached += Report;
+    }
+
+    private static void UnsubscribeManagersFromEvents()
+    {
+        List<BaseManager?> managers = [reportFileManager, excelManager, skuManager, anManager];
+        foreach (var item in managers)
+            if (item != null) item.ManagerReached -= Report;
     }
     #endregion
 }

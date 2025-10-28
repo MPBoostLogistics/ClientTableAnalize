@@ -75,6 +75,8 @@ namespace TableAnalizer.Objects
         Balance,
         /// <summary>
         /// Списание недостач с точек через склад
+        /// Прошлый алгоритм списания точек через склад.
+        /// Write-off - points through the warehouse shortages.xlsx
         /// </summary>
         WriteOffPointsViaWarehouseShortage,
         /// <summary>
@@ -98,7 +100,7 @@ namespace TableAnalizer.Objects
         /// </summary>       
         Transfered,
         /// <summary>
-        /// Недостачи, оплаченые Клиентам напрямую от организации и склада
+        /// Недостачи, оплаченые Клиенту организацией и склодом наппрямую
         /// </summary>
         /// <remarks>
         /// Копируется из Google Sheets "Учет клиентов логистики", лист "Перетензии"
@@ -127,11 +129,7 @@ namespace TableAnalizer.Objects
         /// Выделить все, Печать: Ордеры на отражение недостач товаров
         /// Имя файла: Write-off - points through the warehouse shortages
         /// </remarks>
-        WriteOffPointsViaWarehouse,
-        /// <summary>
-        /// Списание коррекировок точек через склад ???
-        /// </summary>
-        PointsViaWarehouseAdjustment
+        WriteOffPointsViaWarehouse
     }
 
     public enum SKURansomsStatus

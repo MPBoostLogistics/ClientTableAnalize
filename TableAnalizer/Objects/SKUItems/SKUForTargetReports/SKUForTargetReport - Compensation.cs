@@ -116,7 +116,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                     {
                         return 0;
                     }
-                case SourceReportItemKey.PointsViaWarehouseAdjustment:
+                case SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment:
 
                     if (SKUWrittenOffFromPointsViaWarehouseAdjustment == 0) return 0;
 

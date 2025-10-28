@@ -582,7 +582,7 @@ namespace TableAnalizer.Objects.Managers
 
                         if (SKUs.GetValue(skuNumber, out SKU? sKU))
                         {
-                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units], SourceReportItemKey.PointsViaWarehouseAdjustment);
+                            SKUWriteOffBalance writeOffBalance = new(skuNumber, [.. units], SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
                             SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
                         }
                     }

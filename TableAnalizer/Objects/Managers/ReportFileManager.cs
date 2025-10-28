@@ -28,13 +28,12 @@ namespace TableAnalizer.Objects.Managers
 
         private string? logisticsReportFirstName;
 
-        // Write-off - points through the warehouse (adjustments).xlsx - списание точек через склад (корректировуи) ?? 
-
         public static Dictionary<SourceReportItemKey, PrimaryReportFileItem> PrimaryReportFiles { get; private set; } = new()
         {
-            { SourceReportItemKey.ShortagesPaid, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\sshortages\spaid", 7, false)},
-            { SourceReportItemKey.WriteOffPointsAndCouriers, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\spoints\sand\scouriers", 7, false)},
-            { SourceReportItemKey.WriteOffPointsViaWarehouseShortage, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sshortages", 7, false)}
+            { SourceReportItemKey.ShortagesPaid, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\sshortages\spaid", 7, isOptionalReport: false)},
+            { SourceReportItemKey.WriteOffPointsAndCouriers, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\spoints\sand\scouriers", 7, isOptionalReport: false)},
+            { SourceReportItemKey.WriteOffPointsViaWarehouseShortage, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sshortages", 0, isOptionalReport: false) }, 
+            { SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sadjustment", 0, isOptionalReport: false)}
         };
 
         #endregion

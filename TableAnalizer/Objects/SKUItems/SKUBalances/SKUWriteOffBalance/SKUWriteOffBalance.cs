@@ -34,7 +34,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
                     SKUWriteOffPointsViaWarehouseShortage = skuWriteOffDataUnit
                        .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
                     break;
-                case SourceReportItemKey.PointsViaWarehouseAdjustment:
+                case SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment:
                     SKUWriteOffPointsViaWarehouseAdjustment = skuWriteOffDataUnit
                        .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
                     break;
