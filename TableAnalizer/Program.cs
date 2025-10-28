@@ -51,7 +51,7 @@ internal class Program
     private static int TraceDelay { get; set; }
     private static string TraceInfoFlag { get; set; } = string.Empty;
     private static string TraceErrorFlag { get; set; } = string.Empty;
-
+    private static DirectoryInfo? ClientReportsDirectoryPath { get; set; } = null;
     private static DateOnly OrderPeriodStartDate { get; set; } = orderPeriodStartDateDefault;
 
     private static ReportFileManager? reportFileManager;
@@ -178,8 +178,8 @@ internal class Program
         await Task.Run(() => getReportsTask);
         getReportsTask.Wait();
 
-        DirectoryInfo clientReportsDirectory = getReportsTask.Result!;
-        await TracingProgramExecution(new($"Директория с клиентскими данными: {clientReportsDirectory.Name}", false, false));
+        ClientReportsDirectoryPath = getReportsTask.Result!;
+        await TracingProgramExecution(new($"Директория с клиентскими данными: {ClientReportsDirectoryPath.Name}", false, false));
 
         // Get order period start date  
         DataFromConsole orderPeriodStartDateData = new(
@@ -192,8 +192,8 @@ internal class Program
         await Task.Run(() => getStartDateTask);
         getStartDateTask.Wait();
 
-        DateOnly? orderPeriodStartDateTask = getStartDateTask.Result;
-        await TracingProgramExecution(new($"Дата начала заказов: {orderPeriodStartDateTask}", false, false));
+        OrderPeriodStartDate = getStartDateTask.Result ?? orderPeriodStartDateDefault;
+        await TracingProgramExecution(new($"Дата начала заказов: {OrderPeriodStartDate}", false, false));
 
         // Select report direction
         DataFromConsole reportDirectionData = new(
@@ -234,7 +234,7 @@ internal class Program
                 getPermanentDataTask.Result.isError, getPermanentDataTask.Result.isError));
 
         // Checking for the presence of variable data
-        var getVariableDataTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Variable);
+        var getVariableDataTask = reportFileManager!.CheckOfAvailailityData(ClientReportsDirectoryPath!.FullName, PrimaryDataType.Variable);
         await Task.Run(() => getVariableDataTask);
         getVariableDataTask.Wait();
 

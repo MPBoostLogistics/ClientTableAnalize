@@ -4,25 +4,11 @@ using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
 using TableAnalizer.Objects.ReportItems;
 
-// TODO: Из вновь получаемых постоянных файлов понять какие данные где записывам и используем, 
-// упразднить прежнее использование
-
 namespace TableAnalizer.Objects.Managers
 {
     public class ReportFileManager(IConfiguration config) : BaseManager(config)
     {
         #region Fields 
-        private const string RANSOMS_SINGLE_REPORT_REGEX_PATTERN = @"Отчет\sвыкупов\sпо\sклиенту\s\S+";
-        private const string RANSOMS_MULTY_REPORT_REGEX_PATTERN = @"Отчет_выкупов_по_клиентам_\S+";
-        private const string BALANCE_REPORT_REGEX_PATTERN = @"\d+\s+\bбаланс\b";
-        private const string SHIPPED_REPORT_REGEX_PATTERN = @"\d+\s+\bрасходы\b";
-        private const string TRANSFER_REPORT_REGEX_PATTERN = @"\d+\s+\bперемещения\b";
-        private const string ADDITIONAL_REPORT_REGEX_PATTERN = @"\d+\s+\bдополнительный\b";
-        private const string PAID_SHORTAGES_REGEX_PATTERN = @"\bОплаченные\sнедостачи\b";
-        private const string WRITEOFF_POINTS_VIA_WAREHOUSE_SHORTAGE_REPORT_REGEX_PATTERN = @"\bСписание\sточек\sчерез\sсклад\sнедостачи\b";
-        private const string WRITEOFF_POINTS_VIA_WAREHOUSE_ADJUSTMENT_REPORT_REGEX_PATTERN = @"\bСписание\sточек\sчерез\sсклад\sкорректировки\b";
-        private const string WRITEOFF_POINTS_REPORT_REGEX_PATTERN = @"\bСписание\sточек\b";
-        private const string WRITEOFF_DIRECTORY_NAME = "Списание";
 
         private int DataAgeLimitInDays { get; set; }
 
@@ -30,17 +16,21 @@ namespace TableAnalizer.Objects.Managers
 
         public static Dictionary<SourceReportItemKey, PrimaryReportFileItem> PrimaryReportFiles { get; private set; } = new()
         {
-            { SourceReportItemKey.ShortagesPaid, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\sshortages\spaid", 7, isOptionalReport: false)},
-            { SourceReportItemKey.WriteOffPointsAndCouriers, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\spoints\sand\scouriers", 7, isOptionalReport: false)},
-            { SourceReportItemKey.WriteOffPointsViaWarehouseShortage, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sshortages", 0, isOptionalReport: false) }, 
-            { SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, new PrimaryReportFileItem(PrimaryDataType.Permanent, @"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sadjustment", 0, isOptionalReport: false)}
+            { SourceReportItemKey.ShortagesPaid, new PrimaryReportFileItem(PrimaryDataType.Permanent, [@"Write-off\s\-\sshortages\spaid"], 7, isOptionalReport: false)},
+            { SourceReportItemKey.WriteOffPointsAndCouriers, new PrimaryReportFileItem(PrimaryDataType.Permanent, [@"Write-off\s\-\spoints\sand\scouriers"], 7, isOptionalReport: false)},
+            { SourceReportItemKey.WriteOffPointsViaWarehouseShortage, new PrimaryReportFileItem(PrimaryDataType.Permanent, [@"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sshortages"], 0, isOptionalReport: false) },
+            { SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, new PrimaryReportFileItem(PrimaryDataType.Permanent, [@"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sadjustment"], 0, isOptionalReport: false)},
+            { SourceReportItemKey.Ransoms, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"Отчет\sвыкупов\sпо\sклиенту\s\S+", @"Отчет_выкупов_по_клиентам_\S+"], 7, isOptionalReport: false)},
+            { SourceReportItemKey.Balance, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bбаланс\b"], 7, isOptionalReport: false)},
+            { SourceReportItemKey.OutgoingProducts, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bрасходы\b"], 7, isOptionalReport: true)},
+            { SourceReportItemKey.Transfered, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bперемещения\b"], 7, isOptionalReport: true)},
+            { SourceReportItemKey.Additional, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bдополнительный\b"], 7, isOptionalReport: true)},
         };
 
         #endregion
 
         #region Properties
         private string PermanentDataSourcePath { get; set; } = string.Empty;
-
         public static TargetReportRecipientType? ReportRecipientType { get; set; }
 
         /// <summary>
@@ -49,7 +39,7 @@ namespace TableAnalizer.Objects.Managers
         public Dictionary<SourceReportItemKey, SourceReportFileItem> SourceReportFileItems { get; private set; } = [];
 
         public static DirectoryInfo? DirInfoForClientTargetReports { get; private set; }
-        public static string? InputReportsFilePath { get; set; } = string.Empty;
+        //public static string? InputReportsFilePath { get; set; } = string.Empty;
         public static string OutputClientReportFilePath { get; private set; } = string.Empty;
 
         // public static Dictionary<SourceReportItemKey, List<Regex>> RegexesForSourceReports { get; } = new Dictionary<SourceReportItemKey, List<Regex>>
@@ -190,6 +180,9 @@ namespace TableAnalizer.Objects.Managers
             int permanentDataTypeCount = PrimaryReportFiles
                 .Count(p => p.Value.DataType is PrimaryDataType.Permanent && !p.Value.IsOptionalReport);
 
+            int variableDataTypeCount = PrimaryReportFiles
+                .Count(p => p.Value.DataType is PrimaryDataType.Variable && !p.Value.IsOptionalReport);
+
             DirectoryInfo? directoryInfo = null;
             FileInfo[]? fileInfos = null;
 
@@ -241,7 +234,8 @@ namespace TableAnalizer.Objects.Managers
             foreach (var fileInfo in fileInfos)
             {
                 var primaryReportFileItem = dataDict
-                    .FirstOrDefault(fi => fi.Value.RegexForFileName.IsMatch(fileInfo.Name));
+                    .FirstOrDefault(prfi => prfi.Value.RegexesForFileName
+                        .FirstOrDefault(r => r.IsMatch(fileInfo.Name)) != null);
 
                 if (primaryReportFileItem.Value != null)
                 {
