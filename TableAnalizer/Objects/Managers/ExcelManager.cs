@@ -922,6 +922,7 @@ namespace TableAnalizer.Objects.Managers
         /// Saves received data to an Excel workbook file.
         /// </summary>
         /// <param name="path">Directory to save file.</param>
+        /// <remarks></remarks>
         public static bool SaveReceivedData(string path, ref ExcelPackage package)
         {
             using (var fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite))
