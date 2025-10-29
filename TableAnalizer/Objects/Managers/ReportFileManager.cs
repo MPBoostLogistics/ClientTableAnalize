@@ -37,70 +37,9 @@ namespace TableAnalizer.Objects.Managers
         /// Коллекция с файлами исходных отчетов.
         /// </summary>
         public Dictionary<SourceReportItemKey, SourceReportFileItem> SourceReportFileItems { get; private set; } = [];
-
         public static DirectoryInfo? DirInfoForClientTargetReports { get; private set; }
-        //public static string? InputReportsFilePath { get; set; } = string.Empty;
         public static string OutputClientReportFilePath { get; private set; } = string.Empty;
 
-        // public static Dictionary<SourceReportItemKey, List<Regex>> RegexesForSourceReports { get; } = new Dictionary<SourceReportItemKey, List<Regex>>
-        // {
-        //     {
-        //         SourceReportItemKey.Ransoms,
-        //         [
-        //             new(RANSOMS_SINGLE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-        //             new(RANSOMS_MULTY_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
-        //         ]
-        //     },
-        //     {
-        //         SourceReportItemKey.Balance,
-        //         [
-        //             new(BALANCE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-        //         ]
-        //     },
-        //     {
-        //         SourceReportItemKey.WriteOffPoints,
-        //         [
-        //             new(WRITEOFF_POINTS_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
-        //         ]
-        //     },
-        //     {
-        //         SourceReportItemKey.WriteOffPointsViaWarehouseShortage,
-        //         [
-        //             new(WRITEOFF_POINTS_VIA_WAREHOUSE_SHORTAGE_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
-        //         ]
-        //     },
-        //       {
-        //         SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment,
-        //         [
-        //             new(WRITEOFF_POINTS_VIA_WAREHOUSE_ADJUSTMENT_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1))
-        //         ]
-        //     },
-        //     {
-        //         SourceReportItemKey.OutgoingProducts,
-        //         [
-        //             new(SHIPPED_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-        //         ]
-        //     },
-        //     {
-        //         SourceReportItemKey.Transfered,
-        //         [
-        //             new(TRANSFER_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-        //         ]
-        //     },
-        //     {
-        //         SourceReportItemKey.Additional,
-        //         [
-        //             new(ADDITIONAL_REPORT_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-        //         ]
-        //     },
-        //     {
-        //         SourceReportItemKey.ShortagePaid,
-        //         [
-        //             new(PAID_SHORTAGES_REGEX_PATTERN, RegexOptions.None, TimeSpan.FromSeconds(1)),
-        //         ]
-        //     }
-
-        // };
 
         #endregion
 

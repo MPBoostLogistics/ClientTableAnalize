@@ -150,11 +150,11 @@ internal class Program
             await Task.Run(async () => checkingForPresenceDataTask);
             checkingForPresenceDataTask.Wait();
 
-            // // // Start analize
-            // // await TracingProgramExecution(new("Report analysis task has started...", false, false));
-            // // var analyzeСlientReportTask = AnalyzeСlientReport(existingKeys);
-            // // await Task.Run(() => analyzeСlientReportTask);
-            // // analyzeСlientReportTask?.Wait();
+            // Start analize
+            await TracingProgramExecution(new("Report analysis task has started...", false, false));
+            var analyzeСlientReportTask = AnalyzeСlientReport(existingKeys);
+            await Task.Run(() => analyzeСlientReportTask);
+            analyzeСlientReportTask?.Wait();
 
             UnsubscribeManagersFromEvents();
         }
@@ -220,6 +220,11 @@ internal class Program
         }
     }
 
+    /// <summary>
+    /// Checking for the presence of permanent and variable data.
+    /// </summary>
+    /// <returns>Async task as void</returns>
+    /// <remarks>oct 2025 ver.</remarks>
     private static async Task CheckingForPresenceData()
     {
         // Checking for the presence of permanent data
