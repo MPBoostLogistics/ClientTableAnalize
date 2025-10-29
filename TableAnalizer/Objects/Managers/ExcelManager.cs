@@ -630,14 +630,14 @@ namespace TableAnalizer.Objects.Managers
 
         public async Task<bool> MakeReports(List<SKUForTargetReport> skuForTargetReports, bool isTracing, bool isInternalReport)
         {
-            if (string.IsNullOrEmpty(ReportFileManager.OutputClientReportFilePath))
+            if (string.IsNullOrEmpty(ReportFileManager.FinalReportFileName))
             {
                 ManagerReachedEventArgs args = new("Output client report file path cannot be empty.", true, true);
                 throw new Exception(args.Message);
             }
 
-            var fileInfo = new FileInfo(ReportFileManager.OutputClientReportFilePath) ?? throw new Exception("Fileinfo cannot be empty");
-            var outputPackage = new ExcelPackage(new FileInfo(ReportFileManager.OutputClientReportFilePath));
+            var fileInfo = new FileInfo(ReportFileManager.FinalReportFileName) ?? throw new Exception("Fileinfo cannot be empty");
+            var outputPackage = new ExcelPackage(new FileInfo(ReportFileManager.FinalReportFileName));
             if (outputPackage is null)
             {
                 ManagerReachedEventArgs args = new("ExcelPackage for output reports cannot be created.", true, true);
@@ -704,7 +704,7 @@ namespace TableAnalizer.Objects.Managers
                 OnManagerReached(args);
             }
             var isSaveWork = false;
-            if (SaveReceivedData(ReportFileManager.OutputClientReportFilePath, ref outputPackage))
+            if (SaveReceivedData(ReportFileManager.FinalReportFileName, ref outputPackage))
             {
                 isSaveWork = true;
                 if (isTracing)
@@ -923,10 +923,15 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="path">Directory to save file.</param>
         public static bool SaveReceivedData(string path, ref ExcelPackage package)
         {
-            FileStream? fileStream = File.Create(path);
-            fileStream.Close();
+            // using (var fileStream = new FileStream(path, FileMode.Create, FileAccess.ReadWrite))
+            // {
+            //     fileStream.Write(package.GetAsByteArray());
+            // }
 
+            FileStream? fileStream = File.Create(path);
+            File.SetAttributes(path, FileAttributes.Normal);
             File.WriteAllBytes(path, package.GetAsByteArray());
+            fileStream.Close();
 
             return File.Exists(path);
         }

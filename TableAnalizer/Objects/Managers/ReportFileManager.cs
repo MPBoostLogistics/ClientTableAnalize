@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
 using TableAnalizer.Objects.ReportItems;
@@ -30,11 +31,19 @@ namespace TableAnalizer.Objects.Managers
             { SourceReportItemKey.Additional, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bдополнительный\b"], 7, isOptionalReport: true)},
         };
 
+        static readonly string[] pathKeyNames = Enum.GetNames(typeof(PathKey));
+
         #endregion
 
         #region Properties
-        private static List<string> ClienstLogins { get; set; } = [];
+        /// <summary>
+        /// Путь к директории с файлами с потоянными данными.
+        /// </summary>
         private string PermanentDataSourcePath { get; set; } = string.Empty;
+        /// <summary>
+        /// Базовая директория для формирования имени файла с итоговым отчетом.
+        /// </summary>
+        public static string BaseFinalReportsDirectoryPath { get; private set; } = string.Empty;
         public static TargetReportRecipientType? ReportRecipientType { get; set; }
 
         /// <summary>
@@ -42,8 +51,10 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         public Dictionary<SourceReportItemKey, SourceReportFileItem> SourceReportFileItems { get; private set; } = [];
         public static DirectoryInfo? DirInfoForClientTargetReports { get; private set; }
-        public static string OutputClientReportFilePath { get; private set; } = string.Empty;
 
+        
+
+        public static string FinalReportFileName { get; private set; } = string.Empty;
 
         #endregion
 
@@ -53,14 +64,14 @@ namespace TableAnalizer.Objects.Managers
         {
             base.AddConfigVariables();
 
-            IConfigurationSection? stringsSessions = config!.GetSection("Strings");
-            PermanentDataSourcePath = stringsSessions.GetValue<string>("PermanentDataSourcePath");
+            IConfigurationSection? stringsSection = config!.GetSection("Strings");
+            PermanentDataSourcePath = stringsSection.GetValue<string>("PermanentDataSourcePath");
+            BaseFinalReportsDirectoryPath = stringsSection.GetValue<string>("BaseFinalReportsDirectoryPath");
+            logisticsReportFirstName = stringsSection.GetValue<string>("LogisticsReportFirstName");
+           
 
-            IConfigurationSection? numbersSessions = config!.GetSection("Numbers");
-            DataAgeLimitInDays = numbersSessions.GetValue<int>("DataAgeLimitInDays");
-
-            IConfigurationSection? stringSessions = config!.GetSection("Strings");
-            logisticsReportFirstName = stringSessions.GetValue<string>("LogisticsReportFirstName");
+            IConfigurationSection? numbersSection = config!.GetSection("Numbers");
+            DataAgeLimitInDays = numbersSection.GetValue<int>("DataAgeLimitInDays");
         }
 
         /// <summary>
@@ -69,6 +80,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="clientDataPath">String variable of a path for client data. (Optional)</param>
         /// <param name="primaryDataKey">Key of primary data.</param>
         /// <param name="directoryInfo">Item of a searching directory.</param>
+        /// <remarks>oct 2025 ver.<>/remarks>
         private bool GetDirectoryOfPrimaryData(string? clientDataPath, PrimaryDataType primaryDataKey, ref DirectoryInfo? directoryInfo)
         {
             // Checking of string variable for a path to client data source.
@@ -95,6 +107,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="fileInfos">An array of FileInfos objects or null.</param>
         /// <param name="extensions">An Extensions of files.</param>
         /// <returns>Flag of an existence of files.</returns>
+        /// <remarks>oct 2025 ver.<>/remarks>
         private bool GetFilesOfPrimaryData(DirectoryInfo directoryInfo, ref FileInfo[]? fileInfos, string[] extensions)
         {
             if (!FileService.SearchFilesInDirectory(directoryInfo.FullName, out fileInfos, extensions) || fileInfos == null || fileInfos.Length == 0)
@@ -159,6 +172,13 @@ namespace TableAnalizer.Objects.Managers
                 stringBuilder.Append($"Directory '{dataPath}' does not exist.\n");
             }
 
+            if (!isError)
+            {
+                // var finalReportFileNameTask = DefineDirInfoForClientTargetReports(BaseFinalReportsPath);
+                // await Task.Run(() => finalReportFileNameTask);
+                // finalReportFileNameTask.Wait();
+            }
+
             return (isError, stringBuilder.ToString());
         }
 
@@ -170,7 +190,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="dataDict">Source dictionary.</param>
         /// <returns>Execution flag of operation and message.</returns>
         /// <remarks>oct 2025 ver.<>/remarks>
-        private static async Task<(bool isError, string message)> CheckingReportsByPrimaryDataType(PrimaryDataType primaryDataType, FileInfo[] fileInfos)
+        private async Task<(bool isError, string message)> CheckingReportsByPrimaryDataType(PrimaryDataType primaryDataType, FileInfo[] fileInfos)
         {
             bool isError = false;
             StringBuilder stringBuilder = new();
@@ -190,10 +210,12 @@ namespace TableAnalizer.Objects.Managers
                         stringBuilder.Append($"Data in file by key '{primaryReportFileItem.Key}' has expired. Please update file.\n");
                     }
 
-                    // Get client's logins
+                    // Get client's logins and target report path
                     if (primaryReportFileItem.Key == SourceReportItemKey.Ransoms)
                     {
-                        ClienstLogins = GetLoginsFromFilename(fileInfo.Name);
+                        var getLoginsAndFinalReportPathTask = GetLoginsAndFinalReportPath(fileInfo);
+                        await Task.Run(() => getLoginsAndFinalReportPathTask);
+                        getLoginsAndFinalReportPathTask.Wait();
                     }
 
                     primaryReportFileItem.Value.Set(fileInfo);
@@ -212,6 +234,22 @@ namespace TableAnalizer.Objects.Managers
 
             return (isError, stringBuilder.ToString());
         }
+
+        /// <summary>
+        /// Gets logins from filename and set final report file path.
+        /// </summary>
+        /// <param name="fileInfo">File info object for getting logins.</param>
+        /// <returns>Task object as void.</returns>
+         /// <remarks>oct 2025 ver.<>/remarks>
+        private async Task GetLoginsAndFinalReportPath(FileInfo fileInfo)
+        {
+            ClientLogins = GetLoginsFromFilename(fileInfo.Name);
+            ManagerReachedEventArgs args = new($"Логины отчета: {string.Join(", ", ClientLogins)}", false, false);
+            OnManagerReached(args);
+
+            await DefineDirInfoForClientTargetReports(BaseFinalReportsDirectoryPath);
+        }
+
         private void MakeSourceReportFileItem(FileInfo fileInfo, SourceReportItemKey? key, string? loginsFileName, bool isControlAgeOfData)
         {
             var sorceReportFile = new SourceReportFileItem(key.Value, fileInfo, isControlAgeOfData, DataAgeLimitInDays);
@@ -237,8 +275,8 @@ namespace TableAnalizer.Objects.Managers
         /// Define directory for client report output.
         /// </summary>
         /// <returns>Path string to directory to save data.</returns>
-        /// <remarks><i>New version, tested</i></remarks>
-        public async Task<string?> DefineDirInfoForClientTargetReports(string basePath)
+        /// <remarks>oct 2025 ver.<>/remarks>
+        public async Task DefineDirInfoForClientTargetReports(string basePath)
         {
             ManagerReachedEventArgs args;
 
@@ -246,10 +284,11 @@ namespace TableAnalizer.Objects.Managers
             {
                 args = new("Clint's login is not defined, so it is impossible to create a directory.", true, true);
                 OnManagerReached(args);
-                return null;
+                return;
             }
 
             var mpBoostClientsPath = Path.Combine(basePath, pathKeyNames[0], pathKeyNames[1]);
+            // /Users/dmitrijsamarcev/Documents/MPBoostClients
 
             StringBuilder stringBuilder = new();
             for (int i = 0; i < ClientLogins.Count; i++)
@@ -261,70 +300,30 @@ namespace TableAnalizer.Objects.Managers
                 }
             }
 
-            var dirClientsTargetReportsPath = Path.Combine(mpBoostClientsPath, stringBuilder.ToString());
-            if (FileService.GetDirectoryInfo(dirClientsTargetReportsPath, out DirectoryInfo? dirInfoForClientTargetReports, true))
+            var finalReportDirectoryPath = Path.Combine(mpBoostClientsPath, stringBuilder.ToString());
+            // /Users/dmitrijsamarcev/Documents/MPBoostClients/79136726993
+
+            DirectoryInfo? finalReportDirectory;
+            if (FileService.GetDirectoryInfo(finalReportDirectoryPath, out DirectoryInfo? dirInfoForClientTargetReports, true))
             {
-                DirInfoForClientTargetReports = dirInfoForClientTargetReports;
+                finalReportDirectory = dirInfoForClientTargetReports;
             }
             else
             {
                 await Task.Delay(100);
                 args = new("Error creating directory for final reports", true, true);
                 OnManagerReached(args);
-                return null;
+                return;
             }
 
             var reportDateTime = DateTime.Now.ToString("dd-MM-yyyy");
 
-            OutputClientReportFilePath = ClientLogins.Count == 1 ?
-                $"{DirInfoForClientTargetReports!.FullName}/{logisticsReportFirstName} {ClientLogins[0]} {reportDateTime}.xlsx" :
-                $"{DirInfoForClientTargetReports!.FullName}/{logisticsReportFirstName} {stringBuilder.ToString()} {reportDateTime}.xlsx";
-
-            args = new($"Directory for target reports:\n{DirInfoForClientTargetReports.FullName}\nClients target report file name:\n{OutputClientReportFilePath}", false, false);
-            OnManagerReached(args);
-
-            return DirInfoForClientTargetReports.FullName ?? null;
+            FinalReportFileName = ClientLogins.Count == 1 ?
+                $"{finalReportDirectory!.FullName}/{logisticsReportFirstName} {ClientLogins[0]} {reportDateTime}.xlsx" :
+                $"{finalReportDirectory!.FullName}/{logisticsReportFirstName} {stringBuilder.ToString()} {reportDateTime}.xlsx";
+            // /Users/dmitrijsamarcev/Documents/MPBoostClients/79136726993/LogisticsReport 79136726993 30-10-2025.xlsx
+            return;
         }
-
-        /// ???
-        static readonly string[] pathKeyNames = Enum.GetNames(typeof(PathKey));
-
-        // /// <summary>
-        // /// Gets the report file key using regex and the name of the file with client logins.
-        // /// </summary>
-        // /// <param name="fileInfo">Object to parse the file name for.</param>
-        // /// <returns>Report file key or null, the name of the file with client logins or null.</returns>
-        // /// <remarks><i>Rework, testing</i></remarks>
-        // private static async Task<(SourceReportItemKey? key, string? loginsFileName)> GetSourceReportKeyByRegex(FileInfo fileInfo)
-        // {
-        //     SourceReportItemKey? key = null;
-        //     string? loginsFileName = null;
-
-        //     var fileName = Path.GetFileName(fileInfo.Name);
-
-        //     if (fileName.StartsWith("~$"))
-        //         fileName = fileName.TrimStart('~', '$');
-
-        //     foreach (var regexesSourceReport in RegexesForSourceReports)
-        //     {
-        //         foreach (var regex in regexesSourceReport.Value)
-        //         {
-        //             var regexMatch = regex.Match(fileName);
-        //             if (regexMatch is not null && regexMatch.Success)
-        //             {
-        //                 key = regexesSourceReport.Key;
-        //                 if (key == SourceReportItemKey.Ransoms)
-        //                 {
-        //                     loginsFileName = fileName;
-        //                 }
-        //             }
-        //         }
-        //     }
-
-        //     await Task.Delay(10);
-
-        //     return (key, loginsFileName);
-        // }
 
         /// <summary>
         /// Gets client logins from the report file name.
@@ -390,6 +389,33 @@ namespace TableAnalizer.Objects.Managers
 
             return filenameStrings;
         }
+        
+        public async Task DeletOldReports(bool isTracing)
+        {
+            if (File.Exists(FinalReportFileName))
+            {
+                if (isTracing)
+                {
+                    ManagerReachedEventArgs args = new($"Deleting old files at path {FinalReportFileName}...", false, false);
+                    OnManagerReached(args);
+                }
+
+                File.SetAttributes(FinalReportFileName, FileAttributes.Normal);
+                File.Delete(FinalReportFileName);
+
+                if (!File.Exists(FinalReportFileName))
+                {
+                    ManagerReachedEventArgs args = new($"Old files have been deleted.", false, false);
+                    OnManagerReached(args);
+                }
+            }
+            else
+            {
+                ManagerReachedEventArgs args = new($"There is no previous report file at the specified path:\n{FinalReportFileName}", false, false);
+                OnManagerReached(args);
+            }
+        }
+        
         #endregion
     }
 }

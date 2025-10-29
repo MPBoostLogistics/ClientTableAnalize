@@ -124,7 +124,6 @@ namespace TableAnalizer.Objects.Managers
                 }
             }
 
-            // Finish
             return time;
         }
 

@@ -3,7 +3,11 @@
 
 // Unicode:  https://www.compart.com/en/unicode/
 
-// Внедрить DI
+/*
+    1. Получить логины клиентов из имени файла
+    2. На основании логинов сформировать путь к диретокории с итоговыми отчетами
+
+*/
 
 using System.Diagnostics;
 using System.Drawing.Printing;
@@ -78,9 +82,6 @@ internal class Program
             await TracingProgramExecution(a);
         }
 
-        //ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-        // https://epplussoftware.com/en/Home/GettingStartedCommunityLicense
-
         Trace.Listeners.Add(new ConsoleTraceListener());
 
         var analizeTask = Analyze();
@@ -151,10 +152,10 @@ internal class Program
             checkingForPresenceDataTask.Wait();
 
             // Start analize
-            await TracingProgramExecution(new("Report analysis task has started...", false, false));
-            var analyzeСlientReportTask = AnalyzePresenceData();
-            await Task.Run(() => analyzeСlientReportTask);
-            analyzeСlientReportTask?.Wait();
+            // await TracingProgramExecution(new("Report analysis task has started...", false, false));
+            // var analyzeСlientReportTask = AnalyzePresenceData();
+            // await Task.Run(() => analyzeСlientReportTask);
+            // analyzeСlientReportTask?.Wait();
 
             UnsubscribeManagersFromEvents();
         }
@@ -168,31 +169,34 @@ internal class Program
     private static async Task GetPrimaryDataFromConsole()
     {
         // Get client reports path
-        DataFromConsole cletientReportPathData = new(
-            questionMessage: "Укажите путь к директории с клиентскими данными: ",
-            errorMessage: "Путь к директории с клиентскими данными не указан или указан неверно.\nПроверьте правильность ввода и повторите попытку.",
-            typeCode: ParsingTypeCode.DirectoryTypeCode,
-            isRequred: true);
+        // DataFromConsole cletientReportPathData = new(
+        //     questionMessage: "Укажите путь к директории с клиентскими данными: ",
+        //     errorMessage: "Путь к директории с клиентскими данными не указан или указан неверно.\nПроверьте правильность ввода и повторите попытку.",
+        //     typeCode: ParsingTypeCode.DirectoryTypeCode,
+        //     isRequred: true);
 
-        var getReportsTask = GetValueFromConsole<DirectoryInfo?>(cletientReportPathData);
-        await Task.Run(() => getReportsTask);
-        getReportsTask.Wait();
+        // var getReportsTask = GetValueFromConsole<DirectoryInfo?>(cletientReportPathData);
+        // await Task.Run(() => getReportsTask);
+        // getReportsTask.Wait();
 
-        ClientReportsDirectoryPath = getReportsTask.Result!;
+        //ClientReportsDirectoryPath = getReportsTask.Result!;
+
+        ClientReportsDirectoryPath = new DirectoryInfo("/Users/dmitrijsamarcev/Library/Mobile Documents/com~apple~CloudDocs/MPBoost/Clients/79136726993 (Игрозаврик)");
         await TracingProgramExecution(new($"Директория с клиентскими данными: {ClientReportsDirectoryPath.Name}", false, false));
 
         // Get order period start date  
-        DataFromConsole orderPeriodStartDateData = new(
-          questionMessage: "Укажите дату начала заказов клиента: ",
-          errorMessage: "Дата начала заказов не указана или указана неверно.\nПроверьте правильность ввода и повторите попытку.",
-          typeCode: ParsingTypeCode.DataOnlyTypeCode,
-          isRequred: true);
+        // DataFromConsole orderPeriodStartDateData = new(
+        //   questionMessage: "Укажите дату начала заказов клиента: ",
+        //   errorMessage: "Дата начала заказов не указана или указана неверно.\nПроверьте правильность ввода и повторите попытку.",
+        //   typeCode: ParsingTypeCode.DataOnlyTypeCode,
+        //   isRequred: true);
 
-        var getStartDateTask = GetValueFromConsole<DateOnly?>(orderPeriodStartDateData);
-        await Task.Run(() => getStartDateTask);
-        getStartDateTask.Wait();
+        // var getStartDateTask = GetValueFromConsole<DateOnly?>(orderPeriodStartDateData);
+        // await Task.Run(() => getStartDateTask);
+        // getStartDateTask.Wait();
 
-        OrderPeriodStartDate = getStartDateTask.Result ?? orderPeriodStartDateDefault;
+        //OrderPeriodStartDate = getStartDateTask.Result ?? orderPeriodStartDateDefault;
+        OrderPeriodStartDate = new DateOnly(2022, 12, 26);
         await TracingProgramExecution(new($"Дата начала заказов: {OrderPeriodStartDate}", false, false));
 
         // Select report direction
@@ -234,7 +238,7 @@ internal class Program
 
         await TracingProgramExecution(
             new(!getPermanentDataTask.Result.isError ?
-                "Primary permanent data is available" :
+                "Первичнные постоянные данные валидны." :
                 getPermanentDataTask.Result.message,
                 getPermanentDataTask.Result.isError, getPermanentDataTask.Result.isError));
 
@@ -243,14 +247,11 @@ internal class Program
         await Task.Run(() => getVariableDataTask);
         getVariableDataTask.Wait();
 
-        if (!getVariableDataTask.Result.isError)
-        {
-            await TracingProgramExecution(new("Primary variable data is available", getVariableDataTask.Result.isError, false));
-        }
-        else
-        {
-            await TracingProgramExecution(new(getVariableDataTask.Result.message, getVariableDataTask.Result.isError, true));
-        }
+        await TracingProgramExecution(new(!getVariableDataTask.Result.isError ?
+             "Первичнные переменный данные валидны." :
+             getVariableDataTask.Result.message,
+         getVariableDataTask.Result.isError,
+         getVariableDataTask.Result.isError));
     }
 
     private static async Task AnalyzePresenceData()
@@ -327,25 +328,18 @@ internal class Program
             // }
 
             // // Paid shortages task
-            // if (existingKeys.Contains(SourceReportItemKey.ShortagePaid))
+            // if (existingKeys.Contains(SourceReportItemKey.ShortagesPaid))
             // {
-            //     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.ShortagePaid, isInternalReport);
+            //     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.ShortagesPaid, isInternalReport);
             //     await Task.Run(async () => await currentTask);
             //     currentTask.Wait();
             // }
 
-            // Delete old logistic report 
-            if (isTracing)
-            {
-                await TracingProgramExecution(new($"Deleting old files at path {ReportFileManager.OutputClientReportFilePath}...", false, false));
-            }
-
-            if (File.Exists(ReportFileManager.OutputClientReportFilePath))
-            {
-                File.Delete(ReportFileManager.OutputClientReportFilePath);
-                await TracingProgramExecution(new("Old files have been deleted.", false, false));
-            }
-
+            // Delete old files
+            Task deletOldReportsTask = reportFileManager!.DeletOldReports(isTracing);
+            await Task.Run(() => deletOldReportsTask);
+            deletOldReportsTask.Wait();
+     
             // Make skus for target report
             Task<List<SKUForTargetReport>>? skusForTargetReportTask = skuManager!.MakeSkusForTargetReport();
             await Task.Run(() => skusForTargetReportTask);
@@ -358,27 +352,27 @@ internal class Program
 
             List<SKUForTargetReport> skuForTargetReports = skusForTargetReportTask.Result;
 
-            // Article analysis and automatic re-sorting
-            if (isAutoResorting)
-            {
-                Task[] fixAndAutoResortTasks =
-                [
-                    AnalyticalManager.FixReceiptBySKUsOfParallelClients(ref skuForTargetReports),
-                    AnalyticalManager.FixWriteOffByPointsThroughWarehouse(ref skuForTargetReports),
-                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByOutgoing, true),
-                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByTransfer, true),
-                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, true),
-                    AnalyticalManager.FixExtraReceipts(ref skuForTargetReports, true),
-                    AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
-                ];
+            // //Article analysis and automatic re-sorting
+            // if (isAutoResorting)
+            // {
+            //     Task[] fixAndAutoResortTasks =
+            //     [
+            //         AnalyticalManager.FixReceiptBySKUsOfParallelClients(ref skuForTargetReports),
+            //         AnalyticalManager.FixWriteOffByPointsThroughWarehouse(ref skuForTargetReports),
+            //         AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByOutgoing, true),
+            //         AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByTransfer, true),
+            //         AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, true),
+            //         AnalyticalManager.FixExtraReceipts(ref skuForTargetReports, true),
+            //         AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
+            //     ];
 
-                for (int i = 0; i < fixAndAutoResortTasks.Length; i++)
-                {
-                    await Task.Run(() => fixAndAutoResortTasks[i]);
-                }
+            //     for (int i = 0; i < fixAndAutoResortTasks.Length; i++)
+            //     {
+            //         await Task.Run(() => fixAndAutoResortTasks[i]);
+            //     }
 
-                Task.WaitAll(fixAndAutoResortTasks);
-            }
+            //     Task.WaitAll(fixAndAutoResortTasks);
+            // }
 
             // Save work 
             var makeReportTask = excelManager!.MakeReports(skuForTargetReports, isTracing, isInternalReport);
@@ -401,6 +395,7 @@ internal class Program
         var getReportFileTask = ReportFileManager.GetSourceReport(reportFileKey);
         await Task.Run(async () => await getReportFileTask);
         getReportFileTask.Wait();
+
         PrimaryReportFileItem? reportFile = getReportFileTask.Result;
 
         if (reportFile is not null && reportFile.Info is not null)
