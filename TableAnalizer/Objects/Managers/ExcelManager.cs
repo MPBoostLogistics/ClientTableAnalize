@@ -1,6 +1,7 @@
 //https://www.color-hex.com/color-palette/1054961
 
 using System.Drawing;
+using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
@@ -923,15 +924,15 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="path">Directory to save file.</param>
         public static bool SaveReceivedData(string path, ref ExcelPackage package)
         {
-            // using (var fileStream = new FileStream(path, FileMode.Create, FileAccess.ReadWrite))
-            // {
-            //     fileStream.Write(package.GetAsByteArray());
-            // }
+            using (var fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite))
+            {
+                fs.Write(package.GetAsByteArray());
+            }
 
-            FileStream? fileStream = File.Create(path);
-            File.SetAttributes(path, FileAttributes.Normal);
-            File.WriteAllBytes(path, package.GetAsByteArray());
-            fileStream.Close();
+            //FileStream? fileStream = File.Create(path);
+            //File.SetAttributes(path, FileAttributes.Normal);
+            //File.WriteAllBytes(path, package.GetAsByteArray());
+            //fileStream.Close();
 
             return File.Exists(path);
         }

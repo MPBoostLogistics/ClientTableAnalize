@@ -3,12 +3,6 @@
 
 // Unicode:  https://www.compart.com/en/unicode/
 
-/*
-    1. Получить логины клиентов из имени файла
-    2. На основании логинов сформировать путь к диретокории с итоговыми отчетами
-
-*/
-
 using System.Diagnostics;
 using System.Drawing.Printing;
 using System.Globalization;
@@ -152,10 +146,10 @@ internal class Program
             checkingForPresenceDataTask.Wait();
 
             // Start analize
-            // await TracingProgramExecution(new("Report analysis task has started...", false, false));
-            // var analyzeСlientReportTask = AnalyzePresenceData();
-            // await Task.Run(() => analyzeСlientReportTask);
-            // analyzeСlientReportTask?.Wait();
+            await TracingProgramExecution(new("Анализ первичных данных начат...", false, false));
+            var analyzeСlientReportTask = AnalyzePresenceData();
+            await Task.Run(() => analyzeСlientReportTask);
+            analyzeСlientReportTask?.Wait();
 
             UnsubscribeManagersFromEvents();
         }
@@ -248,7 +242,7 @@ internal class Program
         getVariableDataTask.Wait();
 
         await TracingProgramExecution(new(!getVariableDataTask.Result.isError ?
-             "Первичнные переменный данные валидны." :
+             "Первичнные переменные данные валидны." :
              getVariableDataTask.Result.message,
          getVariableDataTask.Result.isError,
          getVariableDataTask.Result.isError));
