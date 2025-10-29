@@ -140,7 +140,7 @@ namespace TableAnalizer.Objects.Managers
                         stringBuilder.Append($"Directory '{PermanentDataSourcePath}' contains less files than required ({permanentDataTypeCount}).\n");
                     }
 
-                    var checkingReportsTask = CheckingReportsByPrimaryDataType(primaryDataKey, fileInfos!, PrimaryReportFiles);
+                    var checkingReportsTask = CheckingReportsByPrimaryDataType(primaryDataKey, fileInfos!);
                     await Task.Run(() => checkingReportsTask);
                     checkingReportsTask.Wait();
 
@@ -169,14 +169,15 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="fileInfos">Searching files.</param>
         /// <param name="dataDict">Source dictionary.</param>
         /// <returns>Execution flag of operation and message.</returns>
-        private static async Task<(bool isError, string message)> CheckingReportsByPrimaryDataType(PrimaryDataType primaryDataType, FileInfo[] fileInfos, Dictionary<SourceReportItemKey, PrimaryReportFileItem> dataDict)
+        /// <remarks>oct 2025 ver.<>/remarks>
+        private static async Task<(bool isError, string message)> CheckingReportsByPrimaryDataType(PrimaryDataType primaryDataType, FileInfo[] fileInfos)
         {
             bool isError = false;
             StringBuilder stringBuilder = new();
 
             foreach (var fileInfo in fileInfos)
             {
-                var primaryReportFileItem = dataDict
+                var primaryReportFileItem = PrimaryReportFiles
                     .FirstOrDefault(prfi => prfi.Value.RegexesForFileName
                         .FirstOrDefault(r => r.IsMatch(fileInfo.Name)) != null);
 
@@ -199,7 +200,8 @@ namespace TableAnalizer.Objects.Managers
                 }
             }
 
-            dataDict.Where(d => d.Value.DataType == primaryDataType).ToList().ForEach(d =>
+            // Checking missing files
+            PrimaryReportFiles.Where(d => d.Value.DataType == primaryDataType).ToList().ForEach(d =>
             {
                 if (d.Value.Info == null && !d.Value.IsOptionalReport)
                 {
@@ -228,8 +230,8 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <param name="key">Key to search for report file in dict.</param>
         /// <returns>SourceReportFileForSKU as Task (optional).</returns>
-        public async Task<SourceReportFileItem?> GetSourceReport(SourceReportItemKey key) =>
-            await Task.Run(() => SourceReportFileItems.TryGetValue(key, out var reportFile) ? reportFile : null);
+        public static async Task<PrimaryReportFileItem?> GetSourceReport(SourceReportItemKey key) =>
+            await Task.Run(() => PrimaryReportFiles.TryGetValue(key, out var reportFile) ? reportFile : null);
 
         /// <summary>
         /// Define directory for client report output.
@@ -388,7 +390,6 @@ namespace TableAnalizer.Objects.Managers
 
             return filenameStrings;
         }
-
         #endregion
     }
 }

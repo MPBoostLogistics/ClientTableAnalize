@@ -453,6 +453,7 @@ namespace TableAnalizer.Objects.Managers
         #region Constructors && destructors
         public ExcelManager(IConfiguration config) : base(config)
         {
+            ExcelPackage.License.SetNonCommercialPersonal("vegiwoo");
             sellmentStatusColomnNum = cellsReportingMain
                 .First(el => el.PropertyName == nameof(SKUForTargetReport.SellmentStatusString)).ColNumber;
         }

@@ -17,15 +17,15 @@ namespace TableAnalizerTest
         #endregion
 
         [Test, Order(2)]
-        public async Task GetSourceReport_Test() 
+        public async Task GetSourceReport_Test()
         {
             var getSourceReportFilesTask = reportFileManager.GetSourceReportFiles(testSingleClientFileInfos);
             await Task.Run(() => getSourceReportFilesTask);
             getSourceReportFilesTask.Wait();
 
             // arrange
-            Task<SourceReportFileForSKU?> getSourceReportTask = reportFileManager.GetSourceReport(SourceReportItemKey.Ransoms);
-    
+            Task<SourceReportFileForSKU?> getSourceReportTask = ReportFileManager.GetSourceReport(SourceReportItemKey.Ransoms);
+
             // act
             await Task.Run(() => getSourceReportTask);
             getSourceReportTask.Wait();
@@ -36,7 +36,7 @@ namespace TableAnalizerTest
         }
 
         [Test, Order(3)]
-        public void CreateExcelPackageForRansoms_Test() 
+        public void CreateExcelPackageForRansoms_Test()
         {
             // arrange
             Assert.Multiple(() =>
@@ -50,13 +50,13 @@ namespace TableAnalizerTest
             ransomsKey = (SourceReportItemKey)sourceReportFileForSKURansoms!.ReportKey;
             using var ransomsPackage = excelManager.CreateExcelPackage(ransomsKey, sourceReportFileForSKURansoms!.FileInfo);
             excelManager.GetExcelPackageByKey(ransomsKey, out ExcelPackage? package);
-            
+
             // assert 
             Assert.That(package, Is.Not.Null);
         }
 
         [Test, Order(4)]
-        public void GetExcelWorksheetByName_Test() 
+        public void GetExcelWorksheetByName_Test()
         {
             // arrange
             // ...
@@ -69,7 +69,7 @@ namespace TableAnalizerTest
         }
 
         [Test, Order(5)]
-        public void GetExcelWorksheetStringNamesByKey_Test() 
+        public void GetExcelWorksheetStringNamesByKey_Test()
         {
             // arrange
             // ...
@@ -84,7 +84,7 @@ namespace TableAnalizerTest
         }
 
         [Test, Order(6)]
-        public void MakeRangeSourceReportRowsByKey_Test() 
+        public void MakeRangeSourceReportRowsByKey_Test()
         {
             // arrange
             // ...
@@ -99,11 +99,11 @@ namespace TableAnalizerTest
         }
 
         [Test, Order(7)]
-        public async Task GetRangeSourceReportRows_Test() 
+        public async Task GetRangeSourceReportRows_Test()
         {
-            var excelPackage = new ExcelPackage (sourceReportFileForSKURansoms!.FileInfo);
+            var excelPackage = new ExcelPackage(sourceReportFileForSKURansoms!.FileInfo);
 
-            var currentWorksheetTask = excelManager?.GetExcelWorksheetByName(ExcelManager.RANSOMS_WORKSHEET_NAME, ransomsKey, excelPackage!) ;
+            var currentWorksheetTask = excelManager?.GetExcelWorksheetByName(ExcelManager.RANSOMS_WORKSHEET_NAME, ransomsKey, excelPackage!);
             await Task.Run(() => currentWorksheetTask);
             currentWorksheetTask?.Wait();
             var ransomsWorkSheet = currentWorksheetTask?.Result;
@@ -130,10 +130,10 @@ namespace TableAnalizerTest
         }
 
         [Test, Order(8)]
-        public async Task GetRawDataFromExcelRows_Test() 
+        public async Task GetRawDataFromExcelRows_Test()
         {
             // arrange
-            using var excelPackage = new ExcelPackage (sourceReportFileForSKURansoms!.FileInfo);
+            using var excelPackage = new ExcelPackage(sourceReportFileForSKURansoms!.FileInfo);
 
             ExcelManager.GetExcelWorksheetStringNamesByKey(ransomsKey, out List<string>? workSheetNames);
 
@@ -141,7 +141,7 @@ namespace TableAnalizerTest
             Assert.That(workSheetNames, Has.Count.EqualTo(1));
             Assert.That(workSheetNames[0], Is.EqualTo(ExcelManager.RANSOMS_WORKSHEET_NAME));
 
-            var currentWorksheetTask = excelManager?.GetExcelWorksheetByName(workSheetNames[0], ransomsKey, excelPackage) ;
+            var currentWorksheetTask = excelManager?.GetExcelWorksheetByName(workSheetNames[0], ransomsKey, excelPackage);
             await Task.Run(() => currentWorksheetTask);
             currentWorksheetTask?.Wait();
             var currentWorksheet = currentWorksheetTask?.Result;
