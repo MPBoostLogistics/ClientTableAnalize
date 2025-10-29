@@ -14,6 +14,9 @@ namespace TableAnalizer.Objects.Managers
 
         private string? logisticsReportFirstName;
 
+        /// <summary>
+        /// Dictionary of primary report files.
+        /// </summary>
         public static Dictionary<SourceReportItemKey, PrimaryReportFileItem> PrimaryReportFiles { get; private set; } = new()
         {
             { SourceReportItemKey.ShortagesPaid, new PrimaryReportFileItem(PrimaryDataType.Permanent, [@"Write-off\s\-\sshortages\spaid"], 7, isOptionalReport: false)},
@@ -30,6 +33,7 @@ namespace TableAnalizer.Objects.Managers
         #endregion
 
         #region Properties
+        private static List<string> ClienstLogins { get; set; } = [];
         private string PermanentDataSourcePath { get; set; } = string.Empty;
         public static TargetReportRecipientType? ReportRecipientType { get; set; }
 
@@ -185,6 +189,12 @@ namespace TableAnalizer.Objects.Managers
                         stringBuilder.Append($"Data in file by key '{primaryReportFileItem.Key}' has expired. Please update file.\n");
                     }
 
+                    // Get client's logins
+                    if (primaryReportFileItem.Key == SourceReportItemKey.Ransoms)
+                    {
+                        ClienstLogins = GetLoginsFromFilename(fileInfo.Name);
+                    }
+
                     primaryReportFileItem.Value.Set(fileInfo);
                 }
             }
@@ -319,7 +329,7 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <param name="filename">Report file name.</param>
         /// <returns>Client login sheet.</returns>
-        /// <remarks><i>Rework, testing</i></remarks>
+        /// <remarks>oct 2025 ver.<>/remarks>
         public static List<string> GetLoginsFromFilename(string filename)
         {
             static void RemoveChars(bool start, bool end, char[] chars, ref string str)

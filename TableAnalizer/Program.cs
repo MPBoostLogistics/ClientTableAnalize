@@ -151,10 +151,10 @@ internal class Program
             checkingForPresenceDataTask.Wait();
 
             // Start analize
-            await TracingProgramExecution(new("Report analysis task has started...", false, false));
-            var analyzeСlientReportTask = AnalyzeСlientReport(existingKeys);
-            await Task.Run(() => analyzeСlientReportTask);
-            analyzeСlientReportTask?.Wait();
+            // await TracingProgramExecution(new("Report analysis task has started...", false, false));
+            // var analyzeСlientReportTask = AnalyzeСlientReport(existingKeys);
+            // await Task.Run(() => analyzeСlientReportTask);
+            // analyzeСlientReportTask?.Wait();
 
             UnsubscribeManagersFromEvents();
         }
@@ -253,8 +253,13 @@ internal class Program
         }
     }
 
-    private static async Task AnalyzeСlientReport(List<SourceReportItemKey>? existingKeys)
+    private static async Task AnalyzeСlientReport()
     {
+        // TODO: Понять и сохранить логины Клиентов 
+
+
+        List<SourceReportItemKey> existingKeys = ReportFileManager.PrimaryReportFiles.Select(el => el.Key).ToList();
+
         bool isInternalReport = ReportFileManager.ReportRecipientType.HasValue && ReportFileManager.ReportRecipientType.Value == TargetReportRecipientType.Internal;
 
         // Report analysis tasks
