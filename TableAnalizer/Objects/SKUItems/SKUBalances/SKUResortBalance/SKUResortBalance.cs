@@ -7,9 +7,9 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
     {
         public ResortConsumptionTarget BalanceTarget { get; } = balanceTarget;
 
-        public Dictionary<int ,int> ResortTo { get; private set; } = []; 
+        public Dictionary<long ,int> ResortTo { get; private set; } = []; 
 
-        public void Update(int sku, int sum) 
+        public void Update(long sku, int sum) 
         {
             if(ResortTo.TryGetValue(sku, out int value)) 
             {
@@ -36,11 +36,11 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
         /// <summary>
         /// Sku FROM WHICH re-sorting is what was <b>not delivered</b> and is <b>written off</b> in 1C system
         /// </summary>
-        public int SKUFromResortNumber { get; private set; }
+        public long SKUFromResortNumber { get; private set; }
         /// <summary>
         /// SKUs FOR WHICH re-sorting - what was <b>re-graded</b> and <b>entered</b> into 1C system: key - sku to resort: value - target of resorting, count.
         /// </summary>
-        public readonly Dictionary<int, Dictionary<ResortConsumptionTarget, int>> SKUsToResort = []; 
+        public readonly Dictionary<long, Dictionary<ResortConsumptionTarget, int>> SKUsToResort = []; 
         
         public int MoreReceiptThanWaiting {get; private set;} = 0;
         
@@ -51,7 +51,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
         //public delegate bool FindSkusInBalanceDelegate((SKUResortBalanceTarget target, int count) item); 
 
         #region Constructors
-        public SKUResortBalance(int skuFromResortNumber, List<SKUResortDataUnit> skuToResortUnits)
+        public SKUResortBalance(long skuFromResortNumber, List<SKUResortDataUnit> skuToResortUnits)
         {
             SKUFromResortNumber = skuFromResortNumber;
             Update(skuToResortUnits);
@@ -136,7 +136,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             }
         }
 
-        public void Update(Dictionary<int, Dictionary<ResortConsumptionTarget, int>>? resortSKUsInNewValues) 
+        public void Update(Dictionary<long, Dictionary<ResortConsumptionTarget, int>>? resortSKUsInNewValues) 
         {       
             if(resortSKUsInNewValues is null || resortSKUsInNewValues.Count == 0) return;
 

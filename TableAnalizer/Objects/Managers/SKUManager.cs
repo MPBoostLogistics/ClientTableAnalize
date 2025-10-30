@@ -39,19 +39,19 @@ namespace TableAnalizer.Objects.Managers
 
         #region Properties 
         public int DeadlineDays { get; } = deadLineDays;
-        public IRepository<int, SKU> SKUs { get; } = new SKURepo();
-        public IRepository<int, List<ParsingRowEntity>> SkuRansomsBalanceUnits { get; } = new ParsingRowEntityRepo();
-        public IRepository<int, List<ParsingRowEntity>> SkuRemainingBalanceUnits { get; } = new ParsingRowEntityRepo();
-        public IRepository<int, List<ParsingRowEntity>> SkuShippedBalanceUnits { get; } = new ParsingRowEntityRepo();
-        public IRepository<int, List<ParsingRowEntity>> SkuTransferedBalanceUnits { get; } = new ParsingRowEntityRepo();
-        public IRepository<int, List<ParsingRowEntity>> SkuWriteOffFromPointsBalanceUnits { get; } = new ParsingRowEntityRepo();
-        public IRepository<int, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseShortageUnits { get; } = new ParsingRowEntityRepo();
-        public IRepository<int, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseAdjustmentUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<long, SKU> SKUs { get; } = new SKURepo();
+        public IRepository<long, List<ParsingRowEntity>> SkuRansomsBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<long, List<ParsingRowEntity>> SkuRemainingBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<long, List<ParsingRowEntity>> SkuShippedBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<long, List<ParsingRowEntity>> SkuTransferedBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<long, List<ParsingRowEntity>> SkuWriteOffFromPointsBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<long, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseShortageUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<long, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseAdjustmentUnits { get; } = new ParsingRowEntityRepo();
         //public IRepository<int, List<ParsingRowEntity>> SkuCompensationBalanceUnits { get; } = new ParsingRowEntityRepo();
 
-        public IRepository<int, List<ParsingRowEntity>> SkuPaidShortagesBalanceUnits { get; } = new ParsingRowEntityRepo();
-        public IRepository<int, List<ParsingRowEntity>> SkuResortBalanceUnits { get; } = new ParsingRowEntityRepo();
-        public IRepository<int, List<ParsingRowEntity>> SkuParallelUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<long, List<ParsingRowEntity>> SkuPaidShortagesBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<long, List<ParsingRowEntity>> SkuResortBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<long, List<ParsingRowEntity>> SkuParallelUnits { get; } = new ParsingRowEntityRepo();
 
         // /// <summary>
         // /// Словарь прересортов в обратном направлении:
@@ -265,18 +265,25 @@ namespace TableAnalizer.Objects.Managers
 
             if (isRansoms)
             {
+                Console.WriteLine(rowsWithRawData.Count);
+
                 var skuRansomsBalanceDataUnits = from rowWithRawData in rowsWithRawData
                                                  let unit = new SKURansomsBalanceDataUnit(rowWithRawData)
                                                  group unit by unit.SKUNumber
                                                  into unitGroup
                                                  select unitGroup;
 
+                //Console.WriteLine(skuRansomsBalanceDataUnits.Count());
+                Console.ReadLine();
+
+               
+         
                 foreach (var group in skuRansomsBalanceDataUnits)
                 {
                     List<ParsingRowEntity>? list = (((List<SKURansomsBalanceDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
                         throw new InvalidCastException("Невозможно привести List<SKURansomsBalanceDataUnit> к List<ParsingRowEntity>");
 
-                    var skuNumber = group.Key;
+                    long skuNumber = group.Key;
                     SkuRansomsBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
                 }
 
@@ -373,7 +380,7 @@ namespace TableAnalizer.Objects.Managers
 
                 foreach (var skuResortGroup in skuResortDataUnits)
                 {
-                    var skuNumber = skuResortGroup.Key;
+                    long skuNumber = skuResortGroup.Key;
                     List<ParsingRowEntity>? list = (((List<SKUResortDataUnit>?)[.. skuResortGroup])?.Cast<ParsingRowEntity>().ToList()) ??
                         throw new InvalidCastException($"Cannot cast List of {nameof(SKUResortDataUnit)} to List of {nameof(ParsingRowEntity)}.");
 
@@ -390,7 +397,7 @@ namespace TableAnalizer.Objects.Managers
 
                 foreach (var skuParallelGroup in skuParallelDataUnits)
                 {
-                    var skuNumber = skuParallelGroup.Key;
+                    long skuNumber = skuParallelGroup.Key;
                     List<ParsingRowEntity>? list = (((List<SKUParallelUnit>?)[.. skuParallelGroup])?.Cast<ParsingRowEntity>().ToList()) ??
                         throw new InvalidCastException($"Cannot cast List of {nameof(SKUParallelUnit)} to List of {nameof(ParsingRowEntity)}.");
 
@@ -462,31 +469,31 @@ namespace TableAnalizer.Objects.Managers
 
             // Definition of a marketplace and collection
             Marketplace marketplace;
-            IRepository<int, List<ParsingRowEntity>>? parsingEntityCollection = skuReportFileKey switch
+            IRepository <long, List<ParsingRowEntity>>? parsingEntityCollection = skuReportFileKey switch
             {
                 SourceReportItemKey.Ransoms =>
                    parsingEntityCollection = SkuRansomsBalanceUnits,
-                SourceReportItemKey.Balance =>
-                    parsingEntityCollection = SkuRemainingBalanceUnits,
-                SourceReportItemKey.OutgoingProducts =>
-                    parsingEntityCollection = SkuShippedBalanceUnits,
-                SourceReportItemKey.Transfered =>
-                    parsingEntityCollection = SkuTransferedBalanceUnits,
-                SourceReportItemKey.WriteOffPoints =>
-                    parsingEntityCollection = SkuWriteOffFromPointsBalanceUnits,
-                SourceReportItemKey.WriteOffPointsViaWarehouseShortage =>
-                    parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseShortageUnits,
-                SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment =>
-                    parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseAdjustmentUnits,
-                SourceReportItemKey.Additional => workSheetName switch
-                {
-                    ExcelManager.RESORTS_REPORT_WORKSHEET_NAME =>
-                        parsingEntityCollection = SkuResortBalanceUnits,
-                    ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME =>
-                        parsingEntityCollection = SkuParallelUnits,
-                    _ => parsingEntityCollection = null
-                },
-                SourceReportItemKey.ShortagesPaid => SkuPaidShortagesBalanceUnits,
+                // SourceReportItemKey.Balance =>
+                //     parsingEntityCollection = SkuRemainingBalanceUnits,
+                // SourceReportItemKey.OutgoingProducts =>
+                //     parsingEntityCollection = SkuShippedBalanceUnits,
+                // SourceReportItemKey.Transfered =>
+                //     parsingEntityCollection = SkuTransferedBalanceUnits,
+                // SourceReportItemKey.WriteOffPoints =>
+                //     parsingEntityCollection = SkuWriteOffFromPointsBalanceUnits,
+                // SourceReportItemKey.WriteOffPointsViaWarehouseShortage =>
+                //     parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseShortageUnits,
+                // SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment =>
+                //     parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseAdjustmentUnits,
+                // SourceReportItemKey.Additional => workSheetName switch
+                // {
+                //     ExcelManager.RESORTS_REPORT_WORKSHEET_NAME =>
+                //         parsingEntityCollection = SkuResortBalanceUnits,
+                //     ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME =>
+                //         parsingEntityCollection = SkuParallelUnits,
+                //     _ => parsingEntityCollection = null
+                // },
+                // SourceReportItemKey.ShortagesPaid => SkuPaidShortagesBalanceUnits,
                 _ => parsingEntityCollection = null,
             };
 
@@ -494,7 +501,7 @@ namespace TableAnalizer.Objects.Managers
 
             if (isCollectionValid)
             {
-                List<(int key, List<ParsingRowEntity> value)>? listCollection = [.. parsingEntityCollection!.GetValuesList()];
+                List<(long key, List<ParsingRowEntity> value)>? listCollection = [.. parsingEntityCollection!.GetValuesList()];
                 if (listCollection is null || listCollection.Count == 0)
                     throw new Exception("It is not possible to process an empty collection of type List<(int key, List<ParsingRowEntity> value)>.");
 

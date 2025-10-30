@@ -10,7 +10,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         #region Properties
         public string? SKUClientLogin { get; set; }
         public Marketplace SKUMarketPlace { get; set; }
-        public int SKUNumber { get;  set; }
+        public long SKUNumber { get;  set; }
         public string? SKUBrandAndName { get; set; }
         public double SKUAveragePrice { get;  set; }
         public DateOnly SKULastPurchaseDate { get;  set; }

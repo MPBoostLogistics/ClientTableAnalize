@@ -6,9 +6,9 @@ using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 namespace TableAnalizer.Objects.Repositories
 //https://learn.microsoft.com/en-us/dotnet/standard/collections/thread-safe/how-to-add-and-remove-items
 {
-    public class SKURepo : BaseRepo<int, SKU>
+    public class SKURepo : BaseRepo<long, SKU>
     {
-        public override bool RetrieveAndUpdateOrAddValue(int id, SKU item, bool isMulty = false)
+        public override bool RetrieveAndUpdateOrAddValue(long id, SKU item, bool isMulty = false)
         {
             if (Entiies.TryGetValue(id, out SKU? retrievedValue) && retrievedValue is not null)
             {
@@ -41,7 +41,7 @@ namespace TableAnalizer.Objects.Repositories
             };
 
             // SKUNumber  
-            int skuNumber = retriveValue.SKUNumber;
+            long skuNumber = retriveValue.SKUNumber;
             
             // SKUBrand
             bool isRetriveValueIncludesSKUBrand = !string.IsNullOrEmpty(retriveValue.SKUBrand) && retriveValue.SKUBrand != SKU.DEFAULT_BRAND ;

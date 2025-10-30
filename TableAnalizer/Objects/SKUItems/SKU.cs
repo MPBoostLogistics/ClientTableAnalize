@@ -18,7 +18,7 @@ namespace TableAnalizer.Objects.SKUItems
         #region Properties
         public List<string> ClientLogins { get; private set; } = [];
         public Marketplace? Marketplace { get; private set; }
-        public int SKUNumber { get; }
+        public long SKUNumber { get; }
         public string SKUBrand { get; private set; } = DEFAULT_BRAND;
         public string SKUName { get; private set; } = DEFAULT_NAME;
         public SKURansomsBalance? SKURansomsBalance { get; private set;}
@@ -36,7 +36,7 @@ namespace TableAnalizer.Objects.SKUItems
         #region Constructors && destructors
 
         // Constructor for ransoms
-        public SKU(Marketplace? marketplace, string? clientLogin, int skuNumber, string? skuBrandAndName, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate, int deadlineDays, bool isRemoveBrandFromName)
+        public SKU(Marketplace? marketplace, string? clientLogin, long skuNumber, string? skuBrandAndName, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate, int deadlineDays, bool isRemoveBrandFromName)
         {
             if(!string.IsNullOrEmpty(clientLogin))
                 ClientLogins.Add(clientLogin);
@@ -55,7 +55,7 @@ namespace TableAnalizer.Objects.SKUItems
         }
 
         // Constructor for remainingBalance 
-        public SKU(int skuNumber, SKURemainingBalance skuRemainingBalance)
+        public SKU(long skuNumber, SKURemainingBalance skuRemainingBalance)
         {
             SKUNumber = skuNumber;
             SKURemainingBalance = skuRemainingBalance;
@@ -99,7 +99,7 @@ namespace TableAnalizer.Objects.SKUItems
         }
 
         // Constructor for generating a new entity from repository
-        public SKU(List<string> clientLogins, Marketplace? marketplace,  int skuNumber, string skuBrand, string skuName, 
+        public SKU(List<string> clientLogins, Marketplace? marketplace,  long skuNumber, string skuBrand, string skuName, 
             SKURansomsBalance? skuRansomsBalance, SKURemainingBalance? skuRemainingBalance, 
             SKUWriteOffBalance? skuWriteOffBalance, SKUPaidShortageBalance? skuPaidShortageBalance, 
             SKUResortBalance skuResortBalance, double? averagePrice, 
@@ -135,28 +135,28 @@ namespace TableAnalizer.Objects.SKUItems
         }
 
         // Constructor for paid shortage balance 
-        public SKU(int skuNumber, SKUPaidShortageBalance skuPaidShortageBalance) 
+        public SKU(long skuNumber, SKUPaidShortageBalance skuPaidShortageBalance) 
         {
             SKUNumber = skuNumber;
             SKUPaidShortageBalance = skuPaidShortageBalance;
         }
 
         // Constructor for writeOffBalance 
-        public SKU(int skuNumber, SKUWriteOffBalance writeOffBalance) 
+        public SKU(long skuNumber, SKUWriteOffBalance writeOffBalance) 
         {
             SKUNumber = skuNumber;
             SKUWriteOffBalance = writeOffBalance;
         }
 
         // Constructor for resortBalance 
-        public SKU(int skuNumber, SKUResortBalance skuResortBalance) 
+        public SKU(long skuNumber, SKUResortBalance skuResortBalance) 
         {
             SKUNumber = skuNumber;
             SKUResortBalance = skuResortBalance;
         }
 
          // Constructor for parallel clients SKU 
-        public SKU(int skuNumber, bool isParallelClientsSKU) 
+        public SKU(long skuNumber, bool isParallelClientsSKU) 
         {
             SKUNumber = skuNumber;
             IsParallelClientsSKU = isParallelClientsSKU;

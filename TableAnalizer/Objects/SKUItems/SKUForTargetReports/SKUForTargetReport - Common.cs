@@ -9,7 +9,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         #region Properties - Common
         public string SKULogins { get; set; }
         public Marketplace? SKUmp { get; set; }
-        public int SKUNumber { get; set; }
+        public long SKUNumber { get; set; }
         public string SKUBrand { get; set; }
         public string SKUName { get; set; }
         public double SKUPrice { get; set; }

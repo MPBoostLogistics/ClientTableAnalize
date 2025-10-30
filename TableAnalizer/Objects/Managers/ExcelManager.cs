@@ -86,6 +86,7 @@ namespace TableAnalizer.Objects.Managers
         private static Dictionary<SourceReportItemKey, ExcelPackage> ExcelPackages { get; } = [];
         private static Type TypeString { get; } = typeof(string);
         private static Type TypeInt { get; } = typeof(int);
+        private static Type TypeLong { get; } = typeof(long);
         private static Type TypeDouble { get; } = typeof(double);
         private static Type TypeDateOnly { get; } = typeof(DateOnly);
         private static Type TypeSKURansomsStatus { get; } = typeof(SKURansomsStatus);
@@ -96,6 +97,7 @@ namespace TableAnalizer.Objects.Managers
         {
             { ParsingTypeCode.StringTypeCode, TypeString },
             { ParsingTypeCode.IntTypeCode, TypeInt },
+            { ParsingTypeCode.LongTypeCode, TypeLong },
             { ParsingTypeCode.DoubleTypeCode, TypeDouble },
             { ParsingTypeCode.DataOnlyTypeCode, TypeDateOnly },
             { ParsingTypeCode.SKURansomsStatus, TypeSKURansomsStatus },
@@ -111,7 +113,7 @@ namespace TableAnalizer.Objects.Managers
             new(1, nameof(SKURansomsBalanceDataUnit.SKUClientLogin), ParsingTypeCode.StringTypeCode, true),
 
             new(2, nameof(SKURansomsBalanceDataUnit.SKUMarketPlace), ParsingTypeCode.Marketplace, true),
-            new(3, nameof(SKURansomsBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(3, nameof(SKURansomsBalanceDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
             new(4, nameof(SKURansomsBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
             new(5, nameof(SKURansomsBalanceDataUnit.SKUAveragePrice), ParsingTypeCode.DoubleTypeCode, true),
             new(6, nameof(SKURansomsBalanceDataUnit.SKULastPurchaseDate), ParsingTypeCode.DataOnlyTypeCode, true),
@@ -125,56 +127,56 @@ namespace TableAnalizer.Objects.Managers
         ];
         public static List<SourceColumn> RemainingFirstRoomSourceCells { get; } =
         [
-            new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
             new(6, nameof(SKURemainingBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
             new(15, nameof(SKURemainingBalanceDataUnit.SKUReceipt), ParsingTypeCode.IntTypeCode, false),
             new(17, nameof(SKURemainingBalanceDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, false)
         ];
         public static List<SourceColumn> RemainingSecondRoomSourceCells { get; } =
         [
-            new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
             new(6, nameof(SKURemainingBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
             new(17, nameof(SKURemainingBalanceDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, false)
         ];
         public static List<SourceColumn> RemainingThirdRoomSourceCells { get; } =
         [
-            new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
             new(6, nameof(SKURemainingBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
             new(17, nameof(SKURemainingBalanceDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, false)
         ];
         public static List<SourceColumn> ShippedSourceCells { get; } =
         [
-            new(4, nameof(SKUShippedDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(4, nameof(SKUShippedDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
             new(28, nameof(SKUShippedDataUnit.SKUShippedCount), ParsingTypeCode.IntTypeCode, true)
         ];
         public static List<SourceColumn> TransferSourceCells { get; } =
         [
-            new(4, nameof(SKUTransferDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(4, nameof(SKUTransferDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
             new(34, nameof(SKUTransferDataUnit.SKUTransferedCount), ParsingTypeCode.IntTypeCode, true)
         ];
 
         public static List<SourceColumn> ResortSourceCells { get; } =
         [
-            new(1, nameof(SKUResortDataUnit.SKUFromResortNumber), ParsingTypeCode.IntTypeCode, true),
-            new(2, nameof(SKUResortDataUnit.SKUToResortNumber), ParsingTypeCode.IntTypeCode, true),
+            new(1, nameof(SKUResortDataUnit.SKUFromResortNumber), ParsingTypeCode.LongTypeCode, true),
+            new(2, nameof(SKUResortDataUnit.SKUToResortNumber), ParsingTypeCode.LongTypeCode, true),
             new(3, nameof(SKUResortDataUnit.SKUToResortNumberCount), ParsingTypeCode.IntTypeCode, true),
             new(4, nameof(SKUResortDataUnit.ResortComment), ParsingTypeCode.StringTypeCode, false)
         ];
 
         public static List<SourceColumn> ParallelSourceCells { get; } =
         [
-            new(1, nameof(SKUParallelUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true)
+            new(1, nameof(SKUParallelUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true)
         ];
 
         public static List<SourceColumn> WriteOffPointsSourceCells { get; } =
         [
-            new(4, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(4, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
             new(27, nameof(SKUWriteOffDataUnit.SKUWriteOffCount), ParsingTypeCode.IntTypeCode, true)
         ];
 
         public static List<SourceColumn> WriteOffPointsViaWarehouseSourceCells { get; } =
         [
-            new(5, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, true),
+            new(5, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
             new(39, nameof(SKUWriteOffDataUnit.SKUWriteOffCount), ParsingTypeCode.IntTypeCode, true)
         ];
 
@@ -182,7 +184,7 @@ namespace TableAnalizer.Objects.Managers
         [
             new(3, nameof(SKUPaidShortageDataUnit.ClientLogin), ParsingTypeCode.StringTypeCode, true),
             new(4, nameof(SKUPaidShortageDataUnit.SubjectClaim), ParsingTypeCode.SubjectClaim, true, [SubjectClaimStrings[SubjectClaim.ShortDeliveryGoods]]),
-            new(5, nameof(SKUPaidShortageDataUnit.SKUNumber), ParsingTypeCode.IntTypeCode, false),
+            new(5, nameof(SKUPaidShortageDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, false),
             new(10, nameof(SKUPaidShortageDataUnit.SKUSum), ParsingTypeCode.IntTypeCode, true),
             new(12, nameof(SKUPaidShortageDataUnit.SKUAmount), ParsingTypeCode.DoubleTypeCode, true),
             new(13, nameof(SKUPaidShortageDataUnit.ClaimExecutor), ParsingTypeCode.ClaimExecutor, true),
@@ -199,7 +201,7 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 3, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUNumber),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.LongTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 4, colName: "Бренд товара", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0,textCommentInHeader: string.Empty,  propertyName: nameof(SKUForTargetReport.SKUBrand),
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
@@ -299,7 +301,7 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 2, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUNumber",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.LongTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUBrand",
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
@@ -335,7 +337,7 @@ namespace TableAnalizer.Objects.Managers
                 parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 2, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUNumber",
-                parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+                parsingTypeCode: ParsingTypeCode.LongTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUBrand",
                 parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
@@ -359,7 +361,7 @@ namespace TableAnalizer.Objects.Managers
             parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 3, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUNumber),
-            parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+            parsingTypeCode: ParsingTypeCode.LongTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 4, colName: "Номенклатура", colWidth: 50, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUName),
             parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
@@ -780,6 +782,13 @@ namespace TableAnalizer.Objects.Managers
                                 value = intValue;
                             }
                             break;
+
+                        case ParsingTypeCode.LongTypeCode:
+                            if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out long longValue))
+                            {
+                                value = longValue;
+                            }
+                            break;
                         case ParsingTypeCode.DoubleTypeCode:
                             if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out double doubleValue))
                             {
@@ -922,7 +931,7 @@ namespace TableAnalizer.Objects.Managers
         /// Saves received data to an Excel workbook file.
         /// </summary>
         /// <param name="path">Directory to save file.</param>
-        /// <remarks></remarks>
+        /// <remarks>oct 2025 ver.</remarks>
         public static bool SaveReceivedData(string path, ref ExcelPackage package)
         {
             using (var fs = new FileStream(path, FileMode.Create, FileAccess.ReadWrite))
@@ -930,13 +939,9 @@ namespace TableAnalizer.Objects.Managers
                 fs.Write(package.GetAsByteArray());
             }
 
-            //FileStream? fileStream = File.Create(path);
-            //File.SetAttributes(path, FileAttributes.Normal);
-            //File.WriteAllBytes(path, package.GetAsByteArray());
-            //fileStream.Close();
-
             return File.Exists(path);
         }
+        // TODO: Вынеси в FileService!
 
         /// <summary>
         /// Creates an Excel worksheet in specified Excel workbook.
@@ -1167,7 +1172,7 @@ namespace TableAnalizer.Objects.Managers
                 var addressValue = address.Value;
                 if (addressValue is not null && !string.IsNullOrEmpty(addressValue.ToString()))
                 {
-                    return ParsingRowEntity.Parse(addressValue.ToString()!, sourceCell.ParsingTypeCode, !sourceCell.IsValueRequired, out object? value) &&
+                    return ParsingManager.Parse(addressValue.ToString()!, sourceCell.ParsingTypeCode, !sourceCell.IsValueRequired, out object? value) &&
                         value is not null;
                 }
                 else

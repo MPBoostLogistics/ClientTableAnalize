@@ -2,11 +2,11 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage
 {
     public class SKUPaidShortageBalance
     {
-        public int SKUNumber { get; private set; }
+        public long SKUNumber { get; private set; }
 
         public Dictionary<ClaimExecutor, (int sum, double amount)> PaidShortageItems { get; private set; } = [];
 
-        public SKUPaidShortageBalance(int skuNumber, List<SKUPaidShortageDataUnit> units)
+        public SKUPaidShortageBalance(long skuNumber, List<SKUPaidShortageDataUnit> units)
         {
             SKUNumber = skuNumber;
             foreach (var unit in units)

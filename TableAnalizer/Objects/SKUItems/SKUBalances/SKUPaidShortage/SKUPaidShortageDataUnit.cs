@@ -10,7 +10,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage
         #region Properties
         public string? ClientLogin { get; private set; }
         public SubjectClaim SubjectClaim { get; private set; }
-        public int? SKUNumber { get; private set; }
+        public long? SKUNumber { get; private set; }
         public int SKUSum { get; private set; }
         public double SKUAmount { get; private set; }
         public ClaimExecutor ClaimExecutor { get; private set; }

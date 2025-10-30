@@ -9,7 +9,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     public class SKURemainingBalanceDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
-        public int SKUNumber { get; private set; }
+        public long SKUNumber { get; private set; }
         public string SKUBrandAndName { get; private set; } = String.Empty;
         public int SKUReceipt { get; private set; }   // Приход товаров
         public int SKURemaining { get; private set; } // Остаток товаров 

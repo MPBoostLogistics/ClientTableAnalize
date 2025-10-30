@@ -160,6 +160,7 @@ namespace TableAnalizer.Objects
     public enum ParsingTypeCode
     {
         IntTypeCode,
+        LongTypeCode,
         DoubleTypeCode,
         DataOnlyTypeCode,
         DateTimeTypeCode,

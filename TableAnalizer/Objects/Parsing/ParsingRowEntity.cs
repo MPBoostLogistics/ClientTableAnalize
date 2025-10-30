@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using TableAnalizer.Interfaces;
+using TableAnalizer.Objects.Managers;
 
 namespace TableAnalizer.Objects.Parsing
 {
@@ -50,7 +51,7 @@ namespace TableAnalizer.Objects.Parsing
                 // Get target property
                 var targetProperty = PropertyInfos
                     .FirstOrDefault(p => p.Name == parsingElement.Key);
-                    
+
                 if (targetProperty is null)
                     ThrowExceptionOnArgument(parsingElement.Key);
 
@@ -82,10 +83,10 @@ namespace TableAnalizer.Objects.Parsing
                 elementValueString = elementValueString.Trim();
             }
 
-            if(Parse(elementValueString, element.Value.TypeCode, isMaybeNullable, out object? value) 
-                && value is not null) 
+            if (ParsingManager.Parse(elementValueString, element.Value.TypeCode, isMaybeNullable, out object? value)
+                && value is not null)
             {
-               if(property.CanWrite) 
+                if (property.CanWrite)
                 {
                     switch (element.Value.TypeCode)
                     {
@@ -95,6 +96,10 @@ namespace TableAnalizer.Objects.Parsing
 
                         case ParsingTypeCode.IntTypeCode:
                             property.SetValue(this, (int)value);
+                            break;
+
+                        case ParsingTypeCode.LongTypeCode:
+                            property.SetValue(this, (long)value);
                             break;
 
                         //22.03.2024 14:00
@@ -128,141 +133,141 @@ namespace TableAnalizer.Objects.Parsing
                             break;
 
                     }
-               }
+                }
             }
         }
 
-        public static bool Parse(string valueString, ParsingTypeCode parsingTypeCode, bool isMaybeNullable,  out object? value) 
-        {
-            value = null;
+        // public static bool Parse(string valueString, ParsingTypeCode parsingTypeCode, bool isMaybeNullable,  out object? value) 
+        // {
+        //     value = null;
 
-            switch (parsingTypeCode)
-            {
-                case ParsingTypeCode.IntTypeCode:
+        //     switch (parsingTypeCode)
+        //     {
+        //         case ParsingTypeCode.IntTypeCode:
 
-                    if (isMaybeNullable && string.IsNullOrEmpty(valueString))
-                    {
-                        value = 0;
-                    }
-                    else
-                    {
-                        value = int.TryParse(valueString, out int intValue) ? intValue : null;
-                    }
+        //             if (isMaybeNullable && string.IsNullOrEmpty(valueString))
+        //             {
+        //                 value = 0;
+        //             }
+        //             else
+        //             {
+        //                 value = int.TryParse(valueString, out int intValue) ? intValue : null;
+        //             }
 
-                    break;
+        //             break;
 
-                case ParsingTypeCode.DoubleTypeCode:
+        //         case ParsingTypeCode.DoubleTypeCode:
 
-                    if (isMaybeNullable && string.IsNullOrEmpty(valueString))
-                    {
-                        value = 0.00;
-                    }
-                    else
-                    {
-                        if (valueString.Split(SPACE_SEPARATOR).Length == 2)
-                            valueString = valueString.Split(SPACE_SEPARATOR)[0];
+        //             if (isMaybeNullable && string.IsNullOrEmpty(valueString))
+        //             {
+        //                 value = 0.00;
+        //             }
+        //             else
+        //             {
+        //                 if (valueString.Split(SPACE_SEPARATOR).Length == 2)
+        //                     valueString = valueString.Split(SPACE_SEPARATOR)[0];
 
-                        value = double.TryParse(valueString, out double doubleValue) ? doubleValue : null;
-                    }
-                    break;
+        //                 value = double.TryParse(valueString, out double doubleValue) ? doubleValue : null;
+        //             }
+        //             break;
 
-                case ParsingTypeCode.DataOnlyTypeCode:
+        //         case ParsingTypeCode.DataOnlyTypeCode:
 
-                    if (isMaybeNullable && string.IsNullOrEmpty(valueString))
-                    {
-                        value = new DateOnly(0001, 01, 01);
-                    }
-                    else
-                    {
-                        if(int.TryParse(valueString, out int intValue)) 
-                        {
-                            value = DateOnly.FromDateTime(DateTime.FromOADate(intValue));  
-                        } 
-                        else 
-                        {
-                            value = DateOnly.TryParseExact(valueString, [.. IParsingRowEntity.DateOnlyFormats], out DateOnly dateOnlyValue) ? dateOnlyValue : null;
-                        }
-                    }
-                    break;
+        //             if (isMaybeNullable && string.IsNullOrEmpty(valueString))
+        //             {
+        //                 value = new DateOnly(0001, 01, 01);
+        //             }
+        //             else
+        //             {
+        //                 if(int.TryParse(valueString, out int intValue)) 
+        //                 {
+        //                     value = DateOnly.FromDateTime(DateTime.FromOADate(intValue));  
+        //                 } 
+        //                 else 
+        //                 {
+        //                     value = DateOnly.TryParseExact(valueString, [.. IParsingRowEntity.DateOnlyFormats], out DateOnly dateOnlyValue) ? dateOnlyValue : null;
+        //                 }
+        //             }
+        //             break;
 
-                case ParsingTypeCode.StringTypeCode:
+        //         case ParsingTypeCode.StringTypeCode:
 
-                    if (isMaybeNullable && string.IsNullOrEmpty(valueString))
-                    {
-                        value = String.Empty;
-                    }
-                    else
-                    {
-                        value = valueString is not null ? valueString!.Trim() : null;
-                    }
-                    break;
+        //             if (isMaybeNullable && string.IsNullOrEmpty(valueString))
+        //             {
+        //                 value = String.Empty;
+        //             }
+        //             else
+        //             {
+        //                 value = valueString is not null ? valueString!.Trim() : null;
+        //             }
+        //             break;
 
-                case ParsingTypeCode.SKURansomsStatus:
+        //         case ParsingTypeCode.SKURansomsStatus:
 
-                    value = valueString switch
-                    {
-                        "Доставлен на ПВЗ" => SKURansomsStatus.DeliveredToPoints,
-                        "Забран с ПВЗ" => SKURansomsStatus.PickedupFromPoints,
-                        "Отменен" => SKURansomsStatus.Canceled,
-                        "В пути" => SKURansomsStatus.InTransit,
-                        _ => throw new NotImplementedException()
-                    };
+        //             value = valueString switch
+        //             {
+        //                 "Доставлен на ПВЗ" => SKURansomsStatus.DeliveredToPoints,
+        //                 "Забран с ПВЗ" => SKURansomsStatus.PickedupFromPoints,
+        //                 "Отменен" => SKURansomsStatus.Canceled,
+        //                 "В пути" => SKURansomsStatus.InTransit,
+        //                 _ => throw new NotImplementedException()
+        //             };
 
-                    break;
+        //             break;
 
-                case ParsingTypeCode.Marketplace:
+        //         case ParsingTypeCode.Marketplace:
 
-                    value = valueString switch
-                    {
-                        "wb" or "WB" or "Wb" or "Wildberries" => Marketplace.WB,
-                        "oz" or "Oz" or "OZ" or "Ozon" => Marketplace.OZ,
-                        _ => throw new NotImplementedException(),
-                    };
-                    break;
+        //             value = valueString switch
+        //             {
+        //                 "wb" or "WB" or "Wb" or "Wildberries" => Marketplace.WB,
+        //                 "oz" or "Oz" or "OZ" or "Ozon" => Marketplace.OZ,
+        //                 _ => throw new NotImplementedException(),
+        //             };
+        //             break;
 
-                case ParsingTypeCode.BoolTypeCode:
-                    value = bool.TryParse(valueString, out bool boolValue) ? 
-                        boolValue : 
-                        throw new Exception($"Failed to convert string \"{valueString}\" to boolean"); 
-                    break;
+        //         case ParsingTypeCode.BoolTypeCode:
+        //             value = bool.TryParse(valueString, out bool boolValue) ? 
+        //                 boolValue : 
+        //                 throw new Exception($"Failed to convert string \"{valueString}\" to boolean"); 
+        //             break;
 
-                case ParsingTypeCode.SubjectClaim:
-                    value = valueString switch 
-                    {
-                        "Возврат начисления" => SubjectClaim.RefundAccrual,
-                        "Недовоз товаров" => SubjectClaim.ShortDeliveryGoods,
-                        _ => throw new NotImplementedException()
-                    };
-                    break;
-                
-                case ParsingTypeCode.ClaimExecutor:
-                    value = valueString switch 
-                    { 
-                        "Организация" => ClaimExecutor.Organization,
-                        "Организация и склад" => ClaimExecutor.OrganizationAndWarehouse,
-                        "Склад" => ClaimExecutor.Warehouse,
-                        _ => throw new NotImplementedException()
-                    };
-                    break;
+        //         case ParsingTypeCode.SubjectClaim:
+        //             value = valueString switch 
+        //             {
+        //                 "Возврат начисления" => SubjectClaim.RefundAccrual,
+        //                 "Недовоз товаров" => SubjectClaim.ShortDeliveryGoods,
+        //                 _ => throw new NotImplementedException()
+        //             };
+        //             break;
 
-                case ParsingTypeCode.ClaimResolutionStatus:
-                    value = valueString switch 
-                    { 
-                        "Не оплачено" => ClaimResolutionStatus.NotPaid,
-                        "Докупаем сами" => ClaimResolutionStatus.IndependentPurchase,
-                        "Оплачено" => ClaimResolutionStatus.Paid,
-                        "Товар найден" => ClaimResolutionStatus.ProductFound,
-                        "Возвращено на баланс" => ClaimResolutionStatus.ReturnedToBalance,
-                        _ => throw new NotImplementedException()
-                    };
-                    break;
+        //         case ParsingTypeCode.ClaimExecutor:
+        //             value = valueString switch 
+        //             { 
+        //                 "Организация" => ClaimExecutor.Organization,
+        //                 "Организация и склад" => ClaimExecutor.OrganizationAndWarehouse,
+        //                 "Склад" => ClaimExecutor.Warehouse,
+        //                 _ => throw new NotImplementedException()
+        //             };
+        //             break;
 
-                default:
-                    throw new NotImplementedException();
-            }
+        //         case ParsingTypeCode.ClaimResolutionStatus:
+        //             value = valueString switch 
+        //             { 
+        //                 "Не оплачено" => ClaimResolutionStatus.NotPaid,
+        //                 "Докупаем сами" => ClaimResolutionStatus.IndependentPurchase,
+        //                 "Оплачено" => ClaimResolutionStatus.Paid,
+        //                 "Товар найден" => ClaimResolutionStatus.ProductFound,
+        //                 "Возвращено на баланс" => ClaimResolutionStatus.ReturnedToBalance,
+        //                 _ => throw new NotImplementedException()
+        //             };
+        //             break;
 
-            return value is not null;
-        }
+        //         default:
+        //             throw new NotImplementedException();
+        //     }
+
+        //     return value is not null;
+        // }
 
 
         #endregion

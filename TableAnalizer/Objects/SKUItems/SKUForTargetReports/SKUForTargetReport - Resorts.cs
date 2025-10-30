@@ -28,7 +28,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         #endregion
 
         #region Functionality
-        public void MakeResort(ResortConsumptionTarget target, SKUResortDirection dir, int skuNumber, int sum) 
+        public void MakeResort(ResortConsumptionTarget target, SKUResortDirection dir, long skuNumber, int sum) 
         {
             switch (target)
             {

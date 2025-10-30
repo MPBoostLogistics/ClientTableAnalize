@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace TableAnalizer.Objects.Parsing
 {
     /// <summary>
@@ -38,6 +40,19 @@ namespace TableAnalizer.Objects.Parsing
             RangeRowIndexesСollection = Enumerable.Range(startRowIndex, count);
 
         public void SetValues(Dictionary<string, ItemForParsing> values) => DataOnReadRowsCollection.Add(values);
+        
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.Append(string.IsNullOrEmpty(Key) ? "" : $"key: {Key}, ");
+            sb.Append(string.IsNullOrEmpty(TerminatingStringValue?.key) ? "" : $"terminating: {TerminatingStringValue?.key}, ");
+            sb.Append($"Source columns count: {SourceCells.Count}, ");
+            sb.Append(RangeRowIndexesСollection != null ?
+                 $"range row indexes count: {RangeRowIndexesСollection.Count()}, " : "");
+
+            return sb.ToString();
+        }
+        
         #endregion Functionality
     }
 }

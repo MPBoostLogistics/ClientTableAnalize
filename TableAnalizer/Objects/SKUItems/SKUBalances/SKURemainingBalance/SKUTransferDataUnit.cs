@@ -8,7 +8,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     public class SKUTransferDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
-        public int SKUNumber { get; private set; }
+        public long SKUNumber { get; private set; }
         public int SKUTransferedCount { get; private set; }  
 
         #endregion

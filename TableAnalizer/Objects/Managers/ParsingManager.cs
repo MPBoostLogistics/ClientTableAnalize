@@ -31,6 +31,19 @@ namespace TableAnalizer.Objects.Managers
 
                     break;
 
+                case ParsingTypeCode.LongTypeCode:
+
+                    if (!isRequred && string.IsNullOrEmpty(valueString))
+                    {
+                        value = 0;
+                    }
+                    else
+                    {
+                        value = long.TryParse(valueString, out long longValue) ? longValue : null;
+                    }
+
+                    break;
+
                 case ParsingTypeCode.DoubleTypeCode:
 
                     if (!isRequred && string.IsNullOrEmpty(valueString))

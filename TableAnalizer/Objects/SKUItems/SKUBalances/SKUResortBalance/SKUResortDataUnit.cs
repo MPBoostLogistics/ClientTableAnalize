@@ -8,8 +8,8 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
     public class SKUResortDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
-        public int SKUFromResortNumber { get; set;}
-        public int SKUToResortNumber { get; set;}
+        public long SKUFromResortNumber { get; set;}
+        public long SKUToResortNumber { get; set;}
         public int SKUToResortNumberCount { get; set; }
         public string? ResortComment { get; set;}
         #endregion Properties

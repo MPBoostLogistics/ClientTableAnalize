@@ -3,7 +3,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     public class SKUWriteOffBalance : IEquatable<SKUWriteOffBalance>
     {
         #region Properties
-        public int SKUNumber { get; private set; } = default;
+        public long SKUNumber { get; private set; } = default;
         /// <summary>
         /// Списано по недостачам с точек
         /// </summary>
@@ -20,7 +20,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         #endregion Properties
 
         #region Constructors
-        public SKUWriteOffBalance(int skuNumber, List<SKUWriteOffDataUnit> skuWriteOffDataUnit, SourceReportItemKey source)
+        public SKUWriteOffBalance(long skuNumber, List<SKUWriteOffDataUnit> skuWriteOffDataUnit, SourceReportItemKey source)
         {
             SKUNumber = skuNumber;
 
@@ -42,7 +42,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         }
 
         // Constructor for sku repo 
-        public SKUWriteOffBalance(int skuNumber, int skuWriteOffPoints, int skuWriteOffPointsViaWarehouseShortage, int skuWriteOffPointsViaWarehouseAdjustment)
+        public SKUWriteOffBalance(long skuNumber, int skuWriteOffPoints, int skuWriteOffPointsViaWarehouseShortage, int skuWriteOffPointsViaWarehouseAdjustment)
         {
             SKUNumber = skuNumber;
             SKUWriteOffPoints = skuWriteOffPoints;
