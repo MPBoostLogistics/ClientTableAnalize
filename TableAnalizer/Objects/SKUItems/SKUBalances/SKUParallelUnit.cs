@@ -11,7 +11,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         /// <summary>
         /// Артикул товара
         /// </summary>
-        public int SKUNumber { get; set; }
+        public long SKUNumber { get; set; }
         #endregion Properties
 
 

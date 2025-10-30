@@ -10,7 +10,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     {
         #region Properties
         public long SKUNumber { get; private set; }
-        public string SKUBrandAndName { get; private set; } = String.Empty;
+        public string SKUBrandAndName { get; private set; } = string.Empty;
         public int SKUReceipt { get; private set; }   // Приход товаров
         public int SKURemaining { get; private set; } // Остаток товаров 
         #endregion

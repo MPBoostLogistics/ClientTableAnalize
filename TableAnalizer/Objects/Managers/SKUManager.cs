@@ -265,18 +265,11 @@ namespace TableAnalizer.Objects.Managers
 
             if (isRansoms)
             {
-                Console.WriteLine(rowsWithRawData.Count);
-
                 var skuRansomsBalanceDataUnits = from rowWithRawData in rowsWithRawData
                                                  let unit = new SKURansomsBalanceDataUnit(rowWithRawData)
                                                  group unit by unit.SKUNumber
                                                  into unitGroup
                                                  select unitGroup;
-
-                //Console.WriteLine(skuRansomsBalanceDataUnits.Count());
-                Console.ReadLine();
-
-               
          
                 foreach (var group in skuRansomsBalanceDataUnits)
                 {
@@ -298,7 +291,7 @@ namespace TableAnalizer.Objects.Managers
 
                 foreach (var group in skuRemainingBalanceDataUnits)
                 {
-                    var list = (((List<SKURemainingBalanceDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ??
+                    var list = (((List<SKURemainingBalanceDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
                         throw new InvalidCastException("Невозможно привести List<SKURemainingBalanceDataUnit> к List<ParsingRowEntity>");
 
                     SkuRemainingBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
@@ -314,7 +307,7 @@ namespace TableAnalizer.Objects.Managers
 
                 foreach (var group in skuShippedDataUnits)
                 {
-                    var list = (((List<SKUShippedDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ??
+                    var list = (((List<SKUShippedDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
                         throw new InvalidCastException("Невозможно привести List<SKUShippedDataUnit> к List<ParsingRowEntity>");
 
                     SkuShippedBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
@@ -346,7 +339,7 @@ namespace TableAnalizer.Objects.Managers
 
                 foreach (var group in skuWriteOffDataUnits)
                 {
-                    var list = (((List<SKUWriteOffDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ??
+                    var list = (((List<SKUWriteOffDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
                         throw new InvalidCastException($"Cannot cast {nameof(List<SKUWriteOffDataUnit>)} to {nameof(List<ParsingRowEntity>)}");
 
 
@@ -363,7 +356,7 @@ namespace TableAnalizer.Objects.Managers
 
                 foreach (var group in skuWriteOffDataUnits)
                 {
-                    var list = (((List<SKUWriteOffDataUnit>?)group.ToList())?.Cast<ParsingRowEntity>().ToList()) ??
+                    var list = (((List<SKUWriteOffDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
                         throw new InvalidCastException($"Cannot cast {nameof(List<SKUWriteOffDataUnit>)} to {nameof(List<ParsingRowEntity>)}");
 
 
@@ -473,27 +466,27 @@ namespace TableAnalizer.Objects.Managers
             {
                 SourceReportItemKey.Ransoms =>
                    parsingEntityCollection = SkuRansomsBalanceUnits,
-                // SourceReportItemKey.Balance =>
-                //     parsingEntityCollection = SkuRemainingBalanceUnits,
-                // SourceReportItemKey.OutgoingProducts =>
-                //     parsingEntityCollection = SkuShippedBalanceUnits,
-                // SourceReportItemKey.Transfered =>
-                //     parsingEntityCollection = SkuTransferedBalanceUnits,
-                // SourceReportItemKey.WriteOffPoints =>
-                //     parsingEntityCollection = SkuWriteOffFromPointsBalanceUnits,
-                // SourceReportItemKey.WriteOffPointsViaWarehouseShortage =>
-                //     parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseShortageUnits,
-                // SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment =>
-                //     parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseAdjustmentUnits,
-                // SourceReportItemKey.Additional => workSheetName switch
-                // {
-                //     ExcelManager.RESORTS_REPORT_WORKSHEET_NAME =>
-                //         parsingEntityCollection = SkuResortBalanceUnits,
-                //     ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME =>
-                //         parsingEntityCollection = SkuParallelUnits,
-                //     _ => parsingEntityCollection = null
-                // },
-                // SourceReportItemKey.ShortagesPaid => SkuPaidShortagesBalanceUnits,
+                SourceReportItemKey.Balance =>
+                    parsingEntityCollection = SkuRemainingBalanceUnits,
+                SourceReportItemKey.OutgoingProducts =>
+                    parsingEntityCollection = SkuShippedBalanceUnits,
+                SourceReportItemKey.Transfered =>
+                    parsingEntityCollection = SkuTransferedBalanceUnits,
+                SourceReportItemKey.WriteOffPoints =>
+                    parsingEntityCollection = SkuWriteOffFromPointsBalanceUnits,
+                SourceReportItemKey.WriteOffPointsViaWarehouseShortage =>
+                    parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseShortageUnits,
+                SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment =>
+                    parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseAdjustmentUnits,
+                SourceReportItemKey.Additional => workSheetName switch
+                {
+                    ExcelManager.RESORTS_REPORT_WORKSHEET_NAME =>
+                        parsingEntityCollection = SkuResortBalanceUnits,
+                    ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME =>
+                        parsingEntityCollection = SkuParallelUnits,
+                    _ => parsingEntityCollection = null
+                },
+                SourceReportItemKey.ShortagesPaid => SkuPaidShortagesBalanceUnits,
                 _ => parsingEntityCollection = null,
             };
 

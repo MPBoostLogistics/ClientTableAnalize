@@ -37,7 +37,7 @@ namespace TableAnalizer.Objects.Managers
 
         #region Properties
         /// <summary>
-        /// Путь к директории с файлами с потоянными данными.
+        /// Путь к директории с файлами с постоянными данными.
         /// </summary>
         private string PermanentDataSourcePath { get; set; } = string.Empty;
         /// <summary>
@@ -49,10 +49,9 @@ namespace TableAnalizer.Objects.Managers
         /// <summary>
         /// Коллекция с файлами исходных отчетов.
         /// </summary>
-        public Dictionary<SourceReportItemKey, SourceReportFileItem> SourceReportFileItems { get; private set; } = [];
+        //public Dictionary<SourceReportItemKey, SourceReportFileItem> SourceReportFileItems { get; private set; } = [];
         public static DirectoryInfo? DirInfoForClientTargetReports { get; private set; }
 
-        
 
         public static string FinalReportFileName { get; private set; } = string.Empty;
 
@@ -68,7 +67,7 @@ namespace TableAnalizer.Objects.Managers
             PermanentDataSourcePath = stringsSection.GetValue<string>("PermanentDataSourcePath");
             BaseFinalReportsDirectoryPath = stringsSection.GetValue<string>("BaseFinalReportsDirectoryPath");
             logisticsReportFirstName = stringsSection.GetValue<string>("LogisticsReportFirstName");
-           
+
 
             IConfigurationSection? numbersSection = config!.GetSection("Numbers");
             DataAgeLimitInDays = numbersSection.GetValue<int>("DataAgeLimitInDays");
@@ -240,7 +239,7 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <param name="fileInfo">File info object for getting logins.</param>
         /// <returns>Task object as void.</returns>
-         /// <remarks>oct 2025 ver.<>/remarks>
+        /// <remarks>oct 2025 ver.<>/remarks>
         private async Task GetLoginsAndFinalReportPath(FileInfo fileInfo)
         {
             ClientLogins = GetLoginsFromFilename(fileInfo.Name);
@@ -250,18 +249,18 @@ namespace TableAnalizer.Objects.Managers
             await DefineDirInfoForClientTargetReports(BaseFinalReportsDirectoryPath);
         }
 
-        private void MakeSourceReportFileItem(FileInfo fileInfo, SourceReportItemKey? key, string? loginsFileName, bool isControlAgeOfData)
-        {
-            var sorceReportFile = new SourceReportFileItem(key.Value, fileInfo, isControlAgeOfData, DataAgeLimitInDays);
+        // private void MakeSourceReportFileItem(FileInfo fileInfo, SourceReportItemKey? key, string? loginsFileName, bool isControlAgeOfData)
+        // {
+        //     var sorceReportFile = new SourceReportFileItem(key.Value, fileInfo, isControlAgeOfData, DataAgeLimitInDays);
 
-            if (key.Value == SourceReportItemKey.Ransoms && !string.IsNullOrEmpty(loginsFileName))
-            {
-                ClientLogins = GetLoginsFromFilename(loginsFileName);
-            }
+        //     if (key.Value == SourceReportItemKey.Ransoms && !string.IsNullOrEmpty(loginsFileName))
+        //     {
+        //         ClientLogins = GetLoginsFromFilename(loginsFileName);
+        //     }
 
-            // Store SourceReportFiles
-            SourceReportFileItems[key.Value] = sorceReportFile;
-        }
+        //     // Store SourceReportFiles
+        //     SourceReportFileItems[key.Value] = sorceReportFile;
+        // }
 
         /// <summary>
         /// Get source report file for one client.
@@ -389,7 +388,7 @@ namespace TableAnalizer.Objects.Managers
 
             return filenameStrings;
         }
-        
+
         public async Task DeletOldReports(bool isTracing)
         {
             if (File.Exists(FinalReportFileName))
@@ -415,7 +414,7 @@ namespace TableAnalizer.Objects.Managers
                 OnManagerReached(args);
             }
         }
-        
+
         #endregion
     }
 }

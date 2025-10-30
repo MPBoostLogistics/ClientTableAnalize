@@ -29,7 +29,6 @@ using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 */
 
 
-
 internal class Program
 {
     #region Variables and constants   
@@ -265,75 +264,75 @@ internal class Program
                 ransomsTask.Wait();
             }
 
-            // // Balance task
-            // if (existingKeys.Contains(SourceReportItemKey.Balance))
-            // {
-            //     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Balance, isInternalReport);
-            //     await Task.Run(async () => await currentTask);
-            //     currentTask.Wait();
-            // }
+            // Balance task
+            if (existingKeys.Contains(SourceReportItemKey.Balance))
+            {
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Balance, isInternalReport);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            }
 
-            // // WriteOff points via warehouse task (shortage)
-            // if (existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseShortage))
-            // {
-            //     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseShortage, isInternalReport);
-            //     await Task.Run(async () => await currentTask);
-            //     currentTask.Wait();
-            // }
+            // WriteOff points via warehouse task (shortage)
+            if (existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseShortage))
+            {
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseShortage, isInternalReport);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            }
 
-            // // WriteOff points via warehouse task (adjustment)
-            // if (existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment))
-            // {
-            //     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, isInternalReport);
-            //     await Task.Run(async () => await currentTask);
-            //     currentTask.Wait();
-            // }
+            // WriteOff points via warehouse task (adjustment)
+            if (existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment))
+            {
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, isInternalReport);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            }
 
-            // // WriteOff points task 
-            // if (existingKeys.Contains(SourceReportItemKey.WriteOffPoints))
-            // {
-            //     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPoints, isInternalReport);
-            //     await Task.Run(async () => await currentTask);
-            //     currentTask.Wait();
-            // }
+            // WriteOff points task 
+            if (existingKeys.Contains(SourceReportItemKey.WriteOffPoints))
+            {
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPoints, isInternalReport);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            }
 
-            // // Outgoing products tasks
-            // if (existingKeys.Contains(SourceReportItemKey.OutgoingProducts))
-            // {
-            //     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.OutgoingProducts, isInternalReport);
-            //     await Task.Run(async () => await currentTask);
-            //     currentTask.Wait();
-            // }
+            // Outgoing products tasks
+            if (existingKeys.Contains(SourceReportItemKey.OutgoingProducts))
+            {
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.OutgoingProducts, isInternalReport);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            }
 
-            // // Transfer task
-            // if (existingKeys.Contains(SourceReportItemKey.Transfered))
-            // {
-            //     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Transfered, isInternalReport);
-            //     await Task.Run(async () => await currentTask);
-            //     currentTask.Wait();
-            // }
+            // Transfer task
+            if (existingKeys.Contains(SourceReportItemKey.Transfered))
+            {
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Transfered, isInternalReport);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            }
 
-            // // Additional task
-            // if (existingKeys.Contains(SourceReportItemKey.Additional))
-            // {
-            //     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Additional, isInternalReport);
-            //     await Task.Run(async () => await currentTask);
-            //     currentTask.Wait();
-            // }
+            // Additional task
+            if (existingKeys.Contains(SourceReportItemKey.Additional))
+            {
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Additional, isInternalReport);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            }
 
-            // // Paid shortages task
-            // if (existingKeys.Contains(SourceReportItemKey.ShortagesPaid))
-            // {
-            //     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.ShortagesPaid, isInternalReport);
-            //     await Task.Run(async () => await currentTask);
-            //     currentTask.Wait();
-            // }
+            // Paid shortages task
+            if (existingKeys.Contains(SourceReportItemKey.ShortagesPaid))
+            {
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.ShortagesPaid, isInternalReport);
+                await Task.Run(async () => await currentTask);
+                currentTask.Wait();
+            }
 
             // Delete old files
             Task deletOldReportsTask = reportFileManager!.DeletOldReports(isTracing);
             await Task.Run(() => deletOldReportsTask);
             deletOldReportsTask.Wait();
-     
+
             // Make skus for target report
             Task<List<SKUForTargetReport>>? skusForTargetReportTask = skuManager!.MakeSkusForTargetReport();
             await Task.Run(() => skusForTargetReportTask);
@@ -346,27 +345,27 @@ internal class Program
 
             List<SKUForTargetReport> skuForTargetReports = skusForTargetReportTask.Result;
 
-            // //Article analysis and automatic re-sorting
-            // if (isAutoResorting)
-            // {
-            //     Task[] fixAndAutoResortTasks =
-            //     [
-            //         AnalyticalManager.FixReceiptBySKUsOfParallelClients(ref skuForTargetReports),
-            //         AnalyticalManager.FixWriteOffByPointsThroughWarehouse(ref skuForTargetReports),
-            //         AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByOutgoing, true),
-            //         AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByTransfer, true),
-            //         AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, true),
-            //         AnalyticalManager.FixExtraReceipts(ref skuForTargetReports, true),
-            //         AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
-            //     ];
+            //Article analysis and automatic re-sorting
+            if (isAutoResorting)
+            {
+                Task[] fixAndAutoResortTasks =
+                [
+                    AnalyticalManager.FixReceiptBySKUsOfParallelClients(ref skuForTargetReports),
+                    AnalyticalManager.FixWriteOffByPointsThroughWarehouse(ref skuForTargetReports),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByOutgoing, true),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByTransfer, true),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, true),
+                    AnalyticalManager.FixExtraReceipts(ref skuForTargetReports, true),
+                    AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
+                ];
 
-            //     for (int i = 0; i < fixAndAutoResortTasks.Length; i++)
-            //     {
-            //         await Task.Run(() => fixAndAutoResortTasks[i]);
-            //     }
+                for (int i = 0; i < fixAndAutoResortTasks.Length; i++)
+                {
+                    await Task.Run(() => fixAndAutoResortTasks[i]);
+                }
 
-            //     Task.WaitAll(fixAndAutoResortTasks);
-            // }
+                Task.WaitAll(fixAndAutoResortTasks);
+            }
 
             // Save work 
             var makeReportTask = excelManager!.MakeReports(skuForTargetReports, isTracing, isInternalReport);
@@ -410,8 +409,8 @@ internal class Program
         }
         else
         {
-            await TracingProgramExecution(new($"No report for key: {reportFileKey}", true, true));
-            return 0;
+            await TracingProgramExecution(new($"No report for key: {reportFileKey}", false, false));
+            return 0.0;
         }
     }
 
@@ -570,10 +569,7 @@ internal class Program
 
         if (args.IsExit)
         {
-            skuManager!.ManagerReached -= Report;
-            excelManager!.ManagerReached -= Report;
-            reportFileManager!.ManagerReached -= Report;
-
+            UnsubscribeManagersFromEvents();
             Trace.Flush();
         }
     }

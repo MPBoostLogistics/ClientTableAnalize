@@ -35,7 +35,7 @@ namespace TableAnalizer.Objects.Managers
 
                     if (!isRequred && string.IsNullOrEmpty(valueString))
                     {
-                        value = 0;
+                        value = (long)0;
                     }
                     else
                     {
