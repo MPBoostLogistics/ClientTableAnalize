@@ -1,8 +1,7 @@
-using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
-using Org.BouncyCastle.Crypto.Engines;
 using TableAnalizer.Interfaces;
+using TableAnalizer.Objects.Managers;
 
 namespace TableAnalizer.Objects.Parsing
 {
@@ -13,14 +12,14 @@ namespace TableAnalizer.Objects.Parsing
     {
         #region Variables and constants
         protected const string SPACE_SEPARATOR = "\u0020";
-        protected readonly List<TypeCode> baseTypeCodes = [TypeCode.Double, TypeCode.Int32, TypeCode.DateTime, TypeCode.String];
+        //protected readonly List<TypeCode> baseTypeCodes = [TypeCode.Double, TypeCode.Int32, TypeCode.DateTime, TypeCode.String];
         #endregion
 
         #region Properties
         public PropertyInfo[] PropertyInfos { get; private set; }
         #endregion
 
-        #region  Constructors
+        #region Constructors
         public ParsingRowEntity(in Dictionary<string, ItemForParsing> parsingElements)
         {
             PropertyInfos = GetType().GetProperties();
@@ -52,7 +51,7 @@ namespace TableAnalizer.Objects.Parsing
                 // Get target property
                 var targetProperty = PropertyInfos
                     .FirstOrDefault(p => p.Name == parsingElement.Key);
-                    
+
                 if (targetProperty is null)
                     ThrowExceptionOnArgument(parsingElement.Key);
 
@@ -67,7 +66,6 @@ namespace TableAnalizer.Objects.Parsing
                 }
             }
         }
-
         private void ParseValue(in KeyValuePair<string, ItemForParsing> element, ref PropertyInfo property)
         {
             string? elementValueString = element.Value.Value;
@@ -85,10 +83,10 @@ namespace TableAnalizer.Objects.Parsing
                 elementValueString = elementValueString.Trim();
             }
 
-            if(Parse(elementValueString, element.Value.TypeCode, isMaybeNullable, out object? value) 
-                && value is not null) 
+            if (ParsingManager.Parse(elementValueString, element.Value.TypeCode, isMaybeNullable, out object? value)
+                && value is not null)
             {
-               if(property.CanWrite) 
+                if (property.CanWrite)
                 {
                     switch (element.Value.TypeCode)
                     {
@@ -98,6 +96,10 @@ namespace TableAnalizer.Objects.Parsing
 
                         case ParsingTypeCode.IntTypeCode:
                             property.SetValue(this, (int)value);
+                            break;
+
+                        case ParsingTypeCode.LongTypeCode:
+                            property.SetValue(this, (long)value);
                             break;
 
                         //22.03.2024 14:00
@@ -120,112 +122,20 @@ namespace TableAnalizer.Objects.Parsing
                         case ParsingTypeCode.BoolTypeCode:
                             property.SetValue(this, (bool)value);
                             break;
+                        case ParsingTypeCode.ClaimExecutor:
+                            property.SetValue(this, (ClaimExecutor)value);
+                            break;
+                        case ParsingTypeCode.SubjectClaim:
+                            property.SetValue(this, (SubjectClaim)value);
+                            break;
+                        case ParsingTypeCode.ClaimResolutionStatus:
+                            property.SetValue(this, (ClaimResolutionStatus)value);
+                            break;
+
                     }
-               }
+                }
             }
         }
-
-        public static bool Parse(string valueString, ParsingTypeCode parsingTypeCode, bool isMaybeNullable,  out object? value) 
-        {
-            value = null;
-
-            switch (parsingTypeCode)
-            {
-                case ParsingTypeCode.IntTypeCode:
-
-                    if (isMaybeNullable && string.IsNullOrEmpty(valueString))
-                    {
-                        value = 0;
-                    }
-                    else
-                    {
-                        value = int.TryParse(valueString, out int intValue) ? intValue : null;
-                    }
-
-                    break;
-
-                case ParsingTypeCode.DoubleTypeCode:
-
-                    if (isMaybeNullable && string.IsNullOrEmpty(valueString))
-                    {
-                        value = 0.00;
-                    }
-                    else
-                    {
-                        if (valueString.Split(SPACE_SEPARATOR).Length == 2)
-                            valueString = valueString.Split(SPACE_SEPARATOR)[0];
-
-                        value = double.TryParse(valueString, out double doubleValue) ? doubleValue : null;
-                    }
-                    break;
-
-                case ParsingTypeCode.DataOnlyTypeCode:
-
-                    if (isMaybeNullable && string.IsNullOrEmpty(valueString))
-                    {
-                        value = new DateOnly(0001, 01, 01);
-                    }
-                    else
-                    {
-                        if(int.TryParse(valueString, out int intValue)) 
-                        {
-                            value = DateOnly.FromDateTime(DateTime.FromOADate(intValue));  
-                        } 
-                        else 
-                        {
-                            value = DateOnly.TryParseExact(valueString, [.. IParsingRowEntity.DateOnlyFormats], out DateOnly dateOnlyValue) ? dateOnlyValue : null;
-                        }
-                    }
-                    break;
-
-                case ParsingTypeCode.StringTypeCode:
-
-                    if (isMaybeNullable && string.IsNullOrEmpty(valueString))
-                    {
-                        value = String.Empty;
-                    }
-                    else
-                    {
-                        value = valueString is not null ? valueString!.Trim() : null;
-                    }
-                    break;
-
-                case ParsingTypeCode.SKURansomsStatus:
-
-                    value = valueString switch
-                    {
-                        "Доставлен на ПВЗ" => SKURansomsStatus.DeliveredToPoints,
-                        "Забран с ПВЗ" => SKURansomsStatus.PickedupFromPoints,
-                        "Отменен" => SKURansomsStatus.Canceled,
-                        "В пути" => SKURansomsStatus.InTransit,
-                        _ => throw new NotImplementedException()
-                    };
-
-                    break;
-
-                case ParsingTypeCode.Marketplace:
-
-                    value = valueString switch
-                    {
-                        "wb" or "WB" or "Wb" or "Wildberries" => Marketplace.WB,
-                        "oz" or "Oz" or "OZ" or "Ozon" => Marketplace.OZ,
-                        _ => throw new NotImplementedException(),
-                    };
-                    break;
-
-                case ParsingTypeCode.BoolTypeCode:
-                    value = bool.TryParse(valueString, out bool boolValue) ? 
-                        boolValue : 
-                        throw new Exception($"Failed to convert string \"{valueString}\" to boolean"); 
-                    break;
-
-                default:
-                    throw new NotImplementedException();
-            }
-
-            return value is not null;
-        }
-
         #endregion
     }
 }

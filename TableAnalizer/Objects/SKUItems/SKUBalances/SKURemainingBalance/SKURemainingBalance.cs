@@ -6,7 +6,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     public class SKURemainingBalance : IEquatable<SKURemainingBalance>
     {
         #region Properties
-        public int SKUNumber { get; private set; } = default;
+        public long SKUNumber { get; private set; } = default;
         /// <summary>
         /// Number of goods received at the warehouse.
         /// </summary>
@@ -27,7 +27,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
 
         #region Constructors
         // For create from SKURemainingBalanceDataUnit collection.
-        public SKURemainingBalance(int skuNumber, List<SKURemainingBalanceDataUnit> skuRemainingUnits)
+        public SKURemainingBalance(long skuNumber, List<SKURemainingBalanceDataUnit> skuRemainingUnits)
         {
             SKUNumber = skuNumber;
 
@@ -38,7 +38,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         }
 
         // For create from SKUShippedDataUnit collection.
-        public SKURemainingBalance(int skuNumber, List<SKUShippedDataUnit> skuShippedDataUnits)
+        public SKURemainingBalance(long skuNumber, List<SKUShippedDataUnit> skuShippedDataUnits)
         {
             SKUNumber = skuNumber;
             SKUOutgoingProducts = skuShippedDataUnits
@@ -46,7 +46,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         }
 
         // For create from SKUTransferDataUnit collection.
-        public SKURemainingBalance(int skuNumber, List<SKUTransferDataUnit> skuTransferedDataUnits)
+        public SKURemainingBalance(long skuNumber, List<SKUTransferDataUnit> skuTransferedDataUnits)
         {
             SKUNumber = skuNumber;
             SKUTransfered = skuTransferedDataUnits
@@ -54,7 +54,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         }
 
         // For create new balance from repo.
-         public SKURemainingBalance(int number, int receipt, int shipped, int transfered, int remaining) 
+         public SKURemainingBalance(long number, int receipt, int shipped, int transfered, int remaining) 
          {
             SKUNumber = number;
 

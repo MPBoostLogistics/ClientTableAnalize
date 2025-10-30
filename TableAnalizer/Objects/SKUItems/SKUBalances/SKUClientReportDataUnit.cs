@@ -6,7 +6,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     {
         #region Properties
         public Marketplace SKUMp { get; set; } 
-        public int SKUNumber { get; set; } 
+        public long SKUNumber { get; set; } 
         public string? SKUBrand { get; set; } 
         public string? SKUName { get; set; } 
         public double? SKUPrice { get; set; } 

@@ -1,14 +1,14 @@
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.Repositories
 //https://learn.microsoft.com/en-us/dotnet/standard/collections/thread-safe/how-to-add-and-remove-items
 {
-    public class SKURepo : BaseRepo<int, SKU>
+    public class SKURepo : BaseRepo<long, SKU>
     {
-        public override bool RetrieveAndUpdateOrAddValue(int id, SKU item, bool isMulty = false)
+        public override bool RetrieveAndUpdateOrAddValue(long id, SKU item, bool isMulty = false)
         {
             if (Entiies.TryGetValue(id, out SKU? retrievedValue) && retrievedValue is not null)
             {
@@ -41,7 +41,7 @@ namespace TableAnalizer.Objects.Repositories
             };
 
             // SKUNumber  
-            int skuNumber = retriveValue.SKUNumber;
+            long skuNumber = retriveValue.SKUNumber;
             
             // SKUBrand
             bool isRetriveValueIncludesSKUBrand = !string.IsNullOrEmpty(retriveValue.SKUBrand) && retriveValue.SKUBrand != SKU.DEFAULT_BRAND ;
@@ -153,20 +153,20 @@ namespace TableAnalizer.Objects.Repositories
                     break;
             }
 
-            // SKUCompensationBalance
-            SKUCompensationBalance? skuCompensationBalance = null;
-            switch(retriveValue.SKUCompensationBalance is not null, newValue.SKUCompensationBalance is not null) 
+            // SKUPaidShortageBalance
+            SKUPaidShortageBalance? skuPaidShortageBalance = null;
+            switch(retriveValue.SKUPaidShortageBalance is not null, newValue.SKUPaidShortageBalance is not null) 
             {
                  case (true,false):
-                    skuCompensationBalance = retriveValue.SKUCompensationBalance;
+                    skuPaidShortageBalance = retriveValue.SKUPaidShortageBalance;
                     break;
 
                 case (false,true):
-                    skuCompensationBalance = newValue.SKUCompensationBalance;
+                    skuPaidShortageBalance = newValue.SKUPaidShortageBalance;
                     break;
 
                 case (true,true):
-                    skuCompensationBalance!.Update(newValue.SKUCompensationBalance!.CompensationItems);
+                    skuPaidShortageBalance!.Update(newValue.SKUPaidShortageBalance!.PaidShortageItems);
                     break;
             }
 
@@ -228,7 +228,7 @@ namespace TableAnalizer.Objects.Repositories
             bool isParallel = retriveValue.IsParallelClientsSKU || newValue.IsParallelClientsSKU;
 
             return new SKU(clientLoginsList, marketplace, skuNumber, skuBrand, skuName, skuRansomsBalance, 
-                skuRemainingBalance, skuWriteOffBalance, skuCompensationBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays, isParallel);
+                skuRemainingBalance, skuWriteOffBalance, skuPaidShortageBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays, isParallel);
         }
 
         private static int CombineIntValues(int retriveValue, int newValue, bool isSummary)

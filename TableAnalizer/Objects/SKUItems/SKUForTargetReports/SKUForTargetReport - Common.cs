@@ -1,4 +1,6 @@
 
+using System.Diagnostics;
+
 namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 {
     public partial class SKUForTargetReport
@@ -7,12 +9,12 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         #region Properties - Common
         public string SKULogins { get; set; }
         public Marketplace? SKUmp { get; set; }
-        public int SKUNumber { get; set; }
+        public long SKUNumber { get; set; }
         public string SKUBrand { get; set; }
         public string SKUName { get; set; }
         public double SKUPrice { get; set; }
         public DateOnly SKUDate { get; set; }
-        private readonly bool isDeadline = false;
+        public readonly bool isDeadline = false;
         public SellmentStatus SellmentStatus { get; private set; } = new SellmentStatus(SKUSellmentStatus.Unknown);
         public string SellmentStatusString => SellmentStatus.StatusLabel;
 
@@ -143,8 +145,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             SetSKUWriteOffs(sku.SKUWriteOffBalance);
 
             // Fill SKUCompensationBalance 
-            SetSKUCompensateds(sku.SKUCompensationBalance);
-            if (sku.SKUCompensationBalance is not null)
+            SetSKUCompensateds(sku.SKUPaidShortageBalance);
         
             // Set is parallel clients SKU
             IsParallelClientsSKU = sku.IsParallelClientsSKU;
@@ -169,19 +170,14 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                 paidWriteOffReminderResult = paidWriteOffRemainder;
             }
                
-            // Calculation of overruns
-            var totalСonsumptionWithoutResorts = SKUSummarySettlement - SKUResort;
-            if (totalСonsumptionWithoutResorts > SKURansomsWaiting && !IsParallelClientsSKU)
-            {
-                SKUOverrunsCount = totalСonsumptionWithoutResorts - SKURansomsWaiting;
-            }
-
             // Calculation of shortages from points 
             CalculateDelay(SKUSellmentStatus.DelayDeliveryFromPoints);
       
             // Calculation of shortages from the warehouse
             CalculateDelay(SKUSellmentStatus.DelayFromWarehouse);
 
+            // Calculation of overruns
+            CalculateOverruns();
 
             // Setting the status 
             SetStatus();

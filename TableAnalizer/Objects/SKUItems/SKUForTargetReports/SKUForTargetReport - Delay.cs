@@ -1,7 +1,7 @@
 namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports 
 {
     /// <summary>
-    /// Delay part of "SKUForTargetReport" type.
+    /// Delay and overruns part of "SKUForTargetReport" type.
     /// </summary>
     public partial class SKUForTargetReport 
     {
@@ -87,7 +87,17 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                     break;
             }
         }
-        #endregion
+       
+        private void CalculateOverruns() 
+        {
+            var sellmentAmount = SKUSummarySettlement + SKURemaining;
+            if(SKURansomsWaiting < sellmentAmount) 
+            {
+                SKUOverrunsCount = SKURansomsWaiting - sellmentAmount;
+            }
+        }
+       
+       #endregion
 
         
     }

@@ -1,5 +1,26 @@
 namespace TableAnalizer.Objects
 {
+    /// <summary>
+    /// Type of primary data for reports
+    /// </summary>
+    public enum PrimaryDataType
+    {
+        /// <summary>
+        /// Постоянные данные (например, сведения об оплатах 
+        /// или списаниях, актуальные для всех Клиентов)
+        /// </summary>
+        Permanent,
+        /// <summary>
+        /// Переменные данные (например, заказы, приходы и 
+        /// расходы по конкретному Клиенту)
+        /// </summary>
+        Variable
+    }
+
+    public enum ConstantDataSource
+    {
+        Directory
+    }
     public enum Marketplace { WB, OZ }
 
     public enum PathKey { Documents, MPBoostClients }
@@ -11,35 +32,35 @@ namespace TableAnalizer.Objects
         /// <summary>
         /// Полный расчет
         /// </summary>
-        FullSet,                   
+        FullSet,
         /// <summary>
         /// В работе
         /// </summary>
-        InWork,                    
+        InWork,
         /// <summary>
         /// Задержка от точек и склада.
         /// </summary>
-        DelayFromPointsAndWarehouse, 
+        DelayFromPointsAndWarehouse,
         /// <summary>
         /// Задержка от склада.
         /// </summary>
-        DelayFromWarehouse,  
+        DelayFromWarehouse,
         /// <summary>
         /// Задержка от организации и склада.
         /// </summary>
-        DelayFromOrganizationAndWarehouse, 
+        DelayFromOrganizationAndWarehouse,
         /// <summary>
         /// Задержка от организации.
         /// </summary>
-        DelayFromOrganization, 
+        DelayFromOrganization,
         /// <summary>
         /// Задержка довоза от точек.
         /// </summary>
-        DelayDeliveryFromPoints,          
+        DelayDeliveryFromPoints,
         /// <summary>
         /// Неопределенный
         /// </summary>
-        Unknown                
+        Unknown
     }
 
     public enum SourceReportItemKey
@@ -51,9 +72,11 @@ namespace TableAnalizer.Objects
         /// <summary>
         /// Баланс (приходы и остатки)
         /// </summary>
-        Balance,      
+        Balance,
         /// <summary>
         /// Списание недостач с точек через склад
+        /// Прошлый алгоритм списания точек через склад.
+        /// Write-off - points through the warehouse shortages.xlsx
         /// </summary>
         WriteOffPointsViaWarehouseShortage,
         /// <summary>
@@ -67,15 +90,46 @@ namespace TableAnalizer.Objects
         /// <summary>
         /// Оплаченные недостачи
         /// </summary>
-        Additional,    
+        Additional,
         /// <summary>
         /// Расходы товаром. 
         /// </summary>
-        OutgoingProducts,      
+        OutgoingProducts,
         /// <summary>
         /// Перемещния на фулфилмент
         /// </summary>       
-        Transfered            
+        Transfered,
+        /// <summary>
+        /// Недостачи, оплаченые Клиенту организацией и склодом наппрямую
+        /// </summary>
+        /// <remarks>
+        /// Копируется из Google Sheets "Учет клиентов логистики", лист "Перетензии"
+        /// </remarks>
+        ShortagesPaid,
+        /// <summary>
+        /// Списание недостач с точек и курьеров по решению организации
+        /// </summary>
+        /// <remarks>
+        /// 1С: Склад и доставка – Излишки, недостачи, порчи – Складские акты
+        /// Настройки списка: 
+        /// - Склад не в списке: Основной склад, Производства (2)
+        ///- Тип: Списание недостач товаров
+        /// - Комментарий: содержит «Списание оплаченных недовозов»
+        /// Выделить все, Печать: Акт о списании товаров
+        /// Имя файла: Write-off - points and couriers.xlsx
+        /// </remarks>
+        WriteOffPointsAndCouriers,
+        /// <summary>
+        /// Списание недостач с точек через склад
+        /// </summary>
+        /// <remarks>
+        /// 1С: Склад и доставка – Излишки, недостачи, порчи 
+        /// Тип документа: Ордер на отражение недостач товаров
+        /// Комментарий: Содердит "ПВЗ или курьеры - недостачи -"
+        /// Выделить все, Печать: Ордеры на отражение недостач товаров
+        /// Имя файла: Write-off - points through the warehouse shortages
+        /// </remarks>
+        WriteOffPointsViaWarehouse
     }
 
     public enum SKURansomsStatus
@@ -83,15 +137,15 @@ namespace TableAnalizer.Objects
         /// <summary>
         /// Заказы доставлены на точки
         /// </summary>
-        DeliveredToPoints, 
+        DeliveredToPoints,
         /// <summary>
         /// Заказы забраны с точек 
         /// </summary>
-        PickedupFromPoints,  
+        PickedupFromPoints,
         /// <summary>
         /// Заказы отменены
         /// </summary>
-        Canceled,  
+        Canceled,
         /// <summary>
         /// Заказы в пути
         /// </summary>
@@ -100,40 +154,79 @@ namespace TableAnalizer.Objects
         /// Неизвестный статус заказов
         /// </summary>
         Unknown
-        
+
     }
 
     public enum ParsingTypeCode
     {
-        IntTypeCode,                // 0
-        DoubleTypeCode,             // 1
-        DataOnlyTypeCode,           // 2
-        StringTypeCode,             // 3
-        SKURansomsStatus,           // 4
-        Marketplace,                // 5
-        SellmentStatus,             // 6
-        BoolTypeCode                // 7
-
+        IntTypeCode,
+        LongTypeCode,
+        DoubleTypeCode,
+        DataOnlyTypeCode,
+        DateTimeTypeCode,
+        StringTypeCode,
+        SKURansomsStatus,
+        Marketplace,
+        SellmentStatus,
+        BoolTypeCode,
+        SubjectClaim,
+        ClaimExecutor,
+        ClaimResolutionStatus,
+        DirectoryTypeCode,
     }
 
-    public enum SourceCellsType 
+    /// <summary>
+    /// Предмет претензии
+    /// </summary>
+    public enum SubjectClaim
+    {
+        RefundAccrual,          // Возврат начисления
+        ShortDeliveryGoods      // Недовоз товаров
+    }
+
+    /// <summary>
+    /// Исполнитель претензии
+    /// </summary>
+    public enum ClaimExecutor
+    {
+        Organization,
+        Warehouse,
+        OrganizationAndWarehouse
+    }
+
+    /// <summary>
+    /// Статус решения претензии.
+    /// </summary>
+    public enum ClaimResolutionStatus
+    {
+        NotPaid,              // Не оплачено
+        IndependentPurchase,  // Докупаем сами
+        Paid,                 // Оплачено
+        ProductFound,         // Товар найден
+        ReturnedToBalance     // Возвращено на баланс
+    }
+
+    public enum SourceCellsType
     {
         Required,
         Filtration,
         NonFiltration
     }
 
-    public enum SKUResortTarget 
+    /// <summary>
+    /// Цель пересортицы по расходу товаров.
+    /// </summary>
+    public enum ResortConsumptionTarget
     {
         /// <summary>
-        /// Пересортица расходов на расход товаров 
+        /// Пересортица расходов на расход товаров& 
         /// </summary>
-        ResortingConsumptionByOutgoing, 
+        ResortingConsumptionByOutgoing,
 
         /// <summary>
         /// Пересортица расходов на перемещение (фулфилмент)
         /// </summary>
-        ResortingConsumptionByTransfer, 
+        ResortingConsumptionByTransfer,
 
         /// <summary>
         /// Пересортица приходов
@@ -141,7 +234,7 @@ namespace TableAnalizer.Objects
         ResortingReceipt
     }
 
-    public enum SKUResortDirection 
+    public enum SKUResortDirection
     {
         /// <summary>
         /// Входящий пересорт.
@@ -154,15 +247,19 @@ namespace TableAnalizer.Objects
         /// <summary>
         /// Внутренний пересорт.
         /// </summary>
-        Internal
+        Internal,
+        /// <summary>
+        /// Внутренний пересорт (параллельный клиент).
+        /// </summary>
+        InternalParallel
     }
 
-    public enum CompensationTarget 
+    public enum CompensationTarget
     {
         /// <summary>
         /// Компенсация от склада
         /// </summary>
-        Warehouse, 
+        Warehouse,
         /// <summary>
         /// Компенсация от точек
         /// </summary>
@@ -174,37 +271,21 @@ namespace TableAnalizer.Objects
         Main, Delay, Overruns, Analytics
     }
 
-    public enum TypesFormulas 
+    public enum TypesFormulas
     {
         Sum
     }
 
-    public enum TargetReportRecipientType 
+    public enum TargetReportRecipientType
     {
         /// <summary>
         /// Внутренний отчет для работы.
         /// </summary>
-        Internal, 
+        Internal,
         /// <summary>
         /// Итоговый отчет для клтента.
         /// </summary>
         External
-    }
-
-    public enum WriteOffSource 
-    {
-        /// <summary>
-        /// Списание недостач с точек
-        /// </summary>
-        Points, 
-        /// <summary>
-        /// Списание недостач с точек через склад
-        /// </summary>
-        PointsViaWarehouseShortage, 
-        /// <summary>
-        /// Списание коррекировок точек через склад
-        /// </summary>
-        PointsViaWarehouseAdjustment 
     }
 
 }

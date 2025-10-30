@@ -1,6 +1,5 @@
-﻿using System.Diagnostics;
-using TableAnalizer.Objects.SKUItems.SKUBalances;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUCompensationBalance;
+﻿using TableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.SKUItems
@@ -19,13 +18,13 @@ namespace TableAnalizer.Objects.SKUItems
         #region Properties
         public List<string> ClientLogins { get; private set; } = [];
         public Marketplace? Marketplace { get; private set; }
-        public int SKUNumber { get; }
+        public long SKUNumber { get; }
         public string SKUBrand { get; private set; } = DEFAULT_BRAND;
         public string SKUName { get; private set; } = DEFAULT_NAME;
         public SKURansomsBalance? SKURansomsBalance { get; private set;}
         public SKURemainingBalance? SKURemainingBalance { get; private set;}
         public SKUWriteOffBalance? SKUWriteOffBalance { get; private set;}
-        public SKUCompensationBalance? SKUCompensationBalance { get; private set; }
+        public SKUPaidShortageBalance? SKUPaidShortageBalance { get; private set; }
         public SKUResortBalance? SKUResortBalance { get; private set; }
         public double AveragePrice { get; private set;} = AVERAGE_PRICE_DEFAULT;
         public DateOnly MaxRansomsDate { get; private set;} = DATEONLY_DEFAULT;
@@ -37,7 +36,7 @@ namespace TableAnalizer.Objects.SKUItems
         #region Constructors && destructors
 
         // Constructor for ransoms
-        public SKU(Marketplace? marketplace, string? clientLogin, int skuNumber, string? skuBrandAndName, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate, int deadlineDays, bool isRemoveBrandFromName)
+        public SKU(Marketplace? marketplace, string? clientLogin, long skuNumber, string? skuBrandAndName, SKURansomsBalance skuRansomsBalance, double averagePrice, DateOnly maxRansomsDate, int deadlineDays, bool isRemoveBrandFromName)
         {
             if(!string.IsNullOrEmpty(clientLogin))
                 ClientLogins.Add(clientLogin);
@@ -56,7 +55,7 @@ namespace TableAnalizer.Objects.SKUItems
         }
 
         // Constructor for remainingBalance 
-        public SKU(int skuNumber, SKURemainingBalance skuRemainingBalance)
+        public SKU(long skuNumber, SKURemainingBalance skuRemainingBalance)
         {
             SKUNumber = skuNumber;
             SKURemainingBalance = skuRemainingBalance;
@@ -100,9 +99,9 @@ namespace TableAnalizer.Objects.SKUItems
         }
 
         // Constructor for generating a new entity from repository
-        public SKU(List<string> clientLogins, Marketplace? marketplace,  int skuNumber, string skuBrand, string skuName, 
+        public SKU(List<string> clientLogins, Marketplace? marketplace,  long skuNumber, string skuBrand, string skuName, 
             SKURansomsBalance? skuRansomsBalance, SKURemainingBalance? skuRemainingBalance, 
-            SKUWriteOffBalance? skuWriteOffBalance, SKUCompensationBalance? skuCompensationBalance, 
+            SKUWriteOffBalance? skuWriteOffBalance, SKUPaidShortageBalance? skuPaidShortageBalance, 
             SKUResortBalance skuResortBalance, double? averagePrice, 
             DateOnly? maxRansomsDate, int? deadLineDays, bool isParallel) 
        {
@@ -114,7 +113,7 @@ namespace TableAnalizer.Objects.SKUItems
             SKURansomsBalance = skuRansomsBalance;
             SKURemainingBalance = skuRemainingBalance;
             SKUWriteOffBalance = skuWriteOffBalance;
-            SKUCompensationBalance = skuCompensationBalance;
+            SKUPaidShortageBalance = skuPaidShortageBalance;
             SKUResortBalance = skuResortBalance;
 
             if(averagePrice.HasValue && !Equals(averagePrice, AVERAGE_PRICE_DEFAULT)) 
@@ -135,29 +134,29 @@ namespace TableAnalizer.Objects.SKUItems
             IsParallelClientsSKU = isParallel;
         }
 
-        // Constructor for compensationBalance 
-        public SKU(int skuNumber, SKUCompensationBalance skuCompensationBalance) 
+        // Constructor for paid shortage balance 
+        public SKU(long skuNumber, SKUPaidShortageBalance skuPaidShortageBalance) 
         {
             SKUNumber = skuNumber;
-            SKUCompensationBalance = skuCompensationBalance;
+            SKUPaidShortageBalance = skuPaidShortageBalance;
         }
 
         // Constructor for writeOffBalance 
-        public SKU(int skuNumber, SKUWriteOffBalance writeOffBalance) 
+        public SKU(long skuNumber, SKUWriteOffBalance writeOffBalance) 
         {
             SKUNumber = skuNumber;
             SKUWriteOffBalance = writeOffBalance;
         }
 
         // Constructor for resortBalance 
-        public SKU(int skuNumber, SKUResortBalance skuResortBalance) 
+        public SKU(long skuNumber, SKUResortBalance skuResortBalance) 
         {
             SKUNumber = skuNumber;
             SKUResortBalance = skuResortBalance;
         }
 
          // Constructor for parallel clients SKU 
-        public SKU(int skuNumber, bool isParallelClientsSKU) 
+        public SKU(long skuNumber, bool isParallelClientsSKU) 
         {
             SKUNumber = skuNumber;
             IsParallelClientsSKU = isParallelClientsSKU;

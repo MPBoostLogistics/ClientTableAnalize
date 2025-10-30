@@ -3,7 +3,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     public class SKUWriteOffBalance : IEquatable<SKUWriteOffBalance>
     {
         #region Properties
-        public int SKUNumber { get; private set; } = default;
+        public long SKUNumber { get; private set; } = default;
         /// <summary>
         /// Списано по недостачам с точек
         /// </summary>
@@ -20,29 +20,29 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         #endregion Properties
 
         #region Constructors
-        public SKUWriteOffBalance(int skuNumber, List<SKUWriteOffDataUnit> skuWriteOffDataUnit, WriteOffSource source)
+        public SKUWriteOffBalance(long skuNumber, List<SKUWriteOffDataUnit> skuWriteOffDataUnit, SourceReportItemKey source)
         {
             SKUNumber = skuNumber;
 
             switch (source)
             {
-                case WriteOffSource.Points:
+                case SourceReportItemKey.WriteOffPointsAndCouriers:
                     SKUWriteOffPoints = skuWriteOffDataUnit
                         .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
                     break;
-                case WriteOffSource.PointsViaWarehouseShortage:
-                     SKUWriteOffPointsViaWarehouseShortage = skuWriteOffDataUnit
-                        .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
+                case SourceReportItemKey.WriteOffPointsViaWarehouseShortage:
+                    SKUWriteOffPointsViaWarehouseShortage = skuWriteOffDataUnit
+                       .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
                     break;
-                case WriteOffSource.PointsViaWarehouseAdjustment:
-                     SKUWriteOffPointsViaWarehouseAdjustment = skuWriteOffDataUnit
-                        .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
+                case SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment:
+                    SKUWriteOffPointsViaWarehouseAdjustment = skuWriteOffDataUnit
+                       .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffCount);
                     break;
             }
         }
 
         // Constructor for sku repo 
-        public SKUWriteOffBalance(int skuNumber, int skuWriteOffPoints, int skuWriteOffPointsViaWarehouseShortage, int skuWriteOffPointsViaWarehouseAdjustment)
+        public SKUWriteOffBalance(long skuNumber, int skuWriteOffPoints, int skuWriteOffPointsViaWarehouseShortage, int skuWriteOffPointsViaWarehouseAdjustment)
         {
             SKUNumber = skuNumber;
             SKUWriteOffPoints = skuWriteOffPoints;
@@ -54,10 +54,10 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
 
         #region 
         public bool Equals(SKUWriteOffBalance? other) =>
-            SKUNumber == other?.SKUNumber && 
-            SKUWriteOffPoints == other?.SKUWriteOffPoints && 
-            SKUWriteOffPointsViaWarehouseShortage == other?.SKUWriteOffPointsViaWarehouseShortage && 
-            SKUWriteOffPointsViaWarehouseAdjustment == other?.SKUWriteOffPointsViaWarehouseAdjustment 
+            SKUNumber == other?.SKUNumber &&
+            SKUWriteOffPoints == other?.SKUWriteOffPoints &&
+            SKUWriteOffPointsViaWarehouseShortage == other?.SKUWriteOffPointsViaWarehouseShortage &&
+            SKUWriteOffPointsViaWarehouseAdjustment == other?.SKUWriteOffPointsViaWarehouseAdjustment
             ;
 
         public override bool Equals(object? other)
