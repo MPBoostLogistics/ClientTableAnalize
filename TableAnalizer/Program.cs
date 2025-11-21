@@ -162,19 +162,18 @@ internal class Program
     private static async Task GetPrimaryDataFromConsole()
     {
         // Get client reports path
-        // DataFromConsole cletientReportPathData = new(
-        //     questionMessage: "Укажите путь к директории с клиентскими данными: ",
-        //     errorMessage: "Путь к директории с клиентскими данными не указан или указан неверно.\nПроверьте правильность ввода и повторите попытку.",
-        //     typeCode: ParsingTypeCode.DirectoryTypeCode,
-        //     isRequred: true);
+        DataFromConsole cletientReportPathData = new(
+            questionMessage: "Укажите путь к директории с клиентскими данными: ",
+            errorMessage: "Путь к директории с клиентскими данными не указан или указан неверно.\nПроверьте правильность ввода и повторите попытку.",
+            typeCode: ParsingTypeCode.DirectoryTypeCode,
+            isRequred: true);
 
-        // var getReportsTask = GetValueFromConsole<DirectoryInfo?>(cletientReportPathData);
-        // await Task.Run(() => getReportsTask);
-        // getReportsTask.Wait();
+        var getReportsTask = GetValueFromConsole<DirectoryInfo?>(cletientReportPathData);
+        await Task.Run(() => getReportsTask);
+        getReportsTask.Wait();
 
-        //ClientReportsDirectoryPath = getReportsTask.Result!;
+        ClientReportsDirectoryPath = getReportsTask.Result!;
 
-        ClientReportsDirectoryPath = new DirectoryInfo("/Users/dmitrijsamarcev/Library/Mobile Documents/com~apple~CloudDocs/MPBoost/Clients/79136726993 (Игрозаврик)");
         await TracingProgramExecution(new($"Директория с клиентскими данными: {ClientReportsDirectoryPath.Name}", false, false));
 
         // Get order period start date  
