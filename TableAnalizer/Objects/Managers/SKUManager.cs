@@ -270,7 +270,7 @@ namespace TableAnalizer.Objects.Managers
                                                  group unit by unit.SKUNumber
                                                  into unitGroup
                                                  select unitGroup;
-         
+
                 foreach (var group in skuRansomsBalanceDataUnits)
                 {
                     List<ParsingRowEntity>? list = (((List<SKURansomsBalanceDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
@@ -291,10 +291,14 @@ namespace TableAnalizer.Objects.Managers
 
                 foreach (var group in skuRemainingBalanceDataUnits)
                 {
-                    var list = (((List<SKURemainingBalanceDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
-                        throw new InvalidCastException("Невозможно привести List<SKURemainingBalanceDataUnit> к List<ParsingRowEntity>");
+                    long skuNumber = group.Key;
+                    if (IsSkuRansomsBalanceUnitsHasKey(skuNumber))
+                    {
+                        var list = (((List<SKURemainingBalanceDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
+                            throw new InvalidCastException("Невозможно привести List<SKURemainingBalanceDataUnit> к List<ParsingRowEntity>");
 
-                    SkuRemainingBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                        SkuRemainingBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                    }
                 }
             }
             else if (isOutgoingProducts)
@@ -307,10 +311,14 @@ namespace TableAnalizer.Objects.Managers
 
                 foreach (var group in skuShippedDataUnits)
                 {
-                    var list = (((List<SKUShippedDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
-                        throw new InvalidCastException("Невозможно привести List<SKUShippedDataUnit> к List<ParsingRowEntity>");
+                    long skuNumber = group.Key;
+                    if (IsSkuRansomsBalanceUnitsHasKey(skuNumber))
+                    {
+                        var list = (((List<SKUShippedDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
+                            throw new InvalidCastException("Невозможно привести List<SKUShippedDataUnit> к List<ParsingRowEntity>");
 
-                    SkuShippedBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                        SkuShippedBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                    }
                 }
             }
             else if (isTransfered)
@@ -323,10 +331,14 @@ namespace TableAnalizer.Objects.Managers
 
                 foreach (var group in skuTransferedDataUnits)
                 {
-                    var list = (((List<SKUTransferDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
-                        throw new InvalidCastException("Невозможно привести List<SKUTransferDataUnit> к List<ParsingRowEntity>");
+                    long skuNumber = group.Key;
+                    if (IsSkuRansomsBalanceUnitsHasKey(skuNumber))
+                    {
+                        var list = (((List<SKUTransferDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
+                            throw new InvalidCastException("Невозможно привести List<SKUTransferDataUnit> к List<ParsingRowEntity>");
 
-                    SkuTransferedBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                        SkuTransferedBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                    }
                 }
             }
             else if (isWriteOffPoints)
@@ -339,11 +351,14 @@ namespace TableAnalizer.Objects.Managers
 
                 foreach (var group in skuWriteOffDataUnits)
                 {
-                    var list = (((List<SKUWriteOffDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
-                        throw new InvalidCastException($"Cannot cast {nameof(List<SKUWriteOffDataUnit>)} to {nameof(List<ParsingRowEntity>)}");
+                    long skuNumber = group.Key;
+                    if (IsSkuRansomsBalanceUnitsHasKey(skuNumber))
+                    {
+                        var list = (((List<SKUWriteOffDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
+                            throw new InvalidCastException($"Cannot cast {nameof(List<SKUWriteOffDataUnit>)} to {nameof(List<ParsingRowEntity>)}");
 
-
-                    SkuWriteOffFromPointsBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                        SkuWriteOffFromPointsBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                    }
                 }
             }
             else if (isWriteOffPointsViaWarehouseShortage)
@@ -356,11 +371,15 @@ namespace TableAnalizer.Objects.Managers
 
                 foreach (var group in skuWriteOffDataUnits)
                 {
-                    var list = (((List<SKUWriteOffDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
-                        throw new InvalidCastException($"Cannot cast {nameof(List<SKUWriteOffDataUnit>)} to {nameof(List<ParsingRowEntity>)}");
+                    var skuNumber = group.Key;
+                    if (IsSkuRansomsBalanceUnitsHasKey(skuNumber))
+                    {
+                        var list = (((List<SKUWriteOffDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
+                            throw new InvalidCastException($"Cannot cast {nameof(List<SKUWriteOffDataUnit>)} to {nameof(List<ParsingRowEntity>)}");
 
+                        SkuWriteOffFromPointsViaWarehouseShortageUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                    }
 
-                    SkuWriteOffFromPointsViaWarehouseShortageUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                 }
             }
             else if (isResort)
@@ -374,10 +393,14 @@ namespace TableAnalizer.Objects.Managers
                 foreach (var skuResortGroup in skuResortDataUnits)
                 {
                     long skuNumber = skuResortGroup.Key;
-                    List<ParsingRowEntity>? list = (((List<SKUResortDataUnit>?)[.. skuResortGroup])?.Cast<ParsingRowEntity>().ToList()) ??
-                        throw new InvalidCastException($"Cannot cast List of {nameof(SKUResortDataUnit)} to List of {nameof(ParsingRowEntity)}.");
 
-                    SkuResortBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
+                    if (IsSkuRansomsBalanceUnitsHasKey(skuNumber))
+                    {
+                        List<ParsingRowEntity>? list = (((List<SKUResortDataUnit>?)[.. skuResortGroup])?.Cast<ParsingRowEntity>().ToList()) ??
+                            throw new InvalidCastException($"Cannot cast List of {nameof(SKUResortDataUnit)} to List of {nameof(ParsingRowEntity)}.");
+
+                        SkuResortBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
+                    }
                 }
             }
             else if (isParallel)
@@ -391,10 +414,13 @@ namespace TableAnalizer.Objects.Managers
                 foreach (var skuParallelGroup in skuParallelDataUnits)
                 {
                     long skuNumber = skuParallelGroup.Key;
-                    List<ParsingRowEntity>? list = (((List<SKUParallelUnit>?)[.. skuParallelGroup])?.Cast<ParsingRowEntity>().ToList()) ??
+                    if (IsSkuRansomsBalanceUnitsHasKey(skuNumber))
+                    {
+                        List<ParsingRowEntity>? list = (((List<SKUParallelUnit>?)[.. skuParallelGroup])?.Cast<ParsingRowEntity>().ToList()) ??
                         throw new InvalidCastException($"Cannot cast List of {nameof(SKUParallelUnit)} to List of {nameof(ParsingRowEntity)}.");
 
-                    SkuParallelUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
+                        SkuParallelUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
+                    }
                 }
             }
             else if (isPaidShortages)
@@ -411,10 +437,13 @@ namespace TableAnalizer.Objects.Managers
                     var list = (((List<SKUPaidShortageDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
                         throw new InvalidCastException($"Cannot cast {nameof(List<SKUPaidShortageDataUnit>)} to {nameof(List<ParsingRowEntity>)}.");
 
-
                     if (group != null && group.Key.HasValue)
                     {
-                        SkuPaidShortagesBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key.Value, list);
+                        var skuNumber = group.Key.Value;
+                        if (IsSkuRansomsBalanceUnitsHasKey(skuNumber))
+                        {
+                            SkuPaidShortagesBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
+                        }
                     }
                 }
             }
@@ -462,7 +491,7 @@ namespace TableAnalizer.Objects.Managers
 
             // Definition of a marketplace and collection
             Marketplace marketplace;
-            IRepository <long, List<ParsingRowEntity>>? parsingEntityCollection = skuReportFileKey switch
+            IRepository<long, List<ParsingRowEntity>>? parsingEntityCollection = skuReportFileKey switch
             {
                 SourceReportItemKey.Ransoms =>
                    parsingEntityCollection = SkuRansomsBalanceUnits,
@@ -631,6 +660,9 @@ namespace TableAnalizer.Objects.Managers
             return [.. skuForTargetReports
                 .OrderByDescending(p => p.SKUDate)];
         }
+
+        private bool IsSkuRansomsBalanceUnitsHasKey(long skuNumber) =>
+            SkuRansomsBalanceUnits.GetValue(skuNumber, out List<ParsingRowEntity>? item) && item != null;
 
         #endregion
     }
