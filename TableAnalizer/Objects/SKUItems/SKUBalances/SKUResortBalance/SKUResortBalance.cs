@@ -3,20 +3,20 @@ using System.Text;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 {
-    public class ResortBalanceUnit (ResortConsumptionTarget balanceTarget)
+    public class ResortBalanceUnit(ResortConsumptionTarget balanceTarget)
     {
         public ResortConsumptionTarget BalanceTarget { get; } = balanceTarget;
 
-        public Dictionary<long ,int> ResortTo { get; private set; } = []; 
+        public Dictionary<long, int> ResortTo { get; private set; } = [];
 
-        public void Update(long sku, int sum) 
+        public void Update(long sku, int sum)
         {
-            if(ResortTo.TryGetValue(sku, out int value)) 
+            if (ResortTo.TryGetValue(sku, out int value))
             {
                 value += sum;
                 ResortTo[sku] = value;
             }
-            else 
+            else
             {
                 ResortTo[sku] = sum;
             }
@@ -40,12 +40,12 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
         /// <summary>
         /// SKUs FOR WHICH re-sorting - what was <b>re-graded</b> and <b>entered</b> into 1C system: key - sku to resort: value - target of resorting, count.
         /// </summary>
-        public readonly Dictionary<long, Dictionary<ResortConsumptionTarget, int>> SKUsToResort = []; 
-        
-        public int MoreReceiptThanWaiting {get; private set;} = 0;
-        
+        public readonly Dictionary<long, Dictionary<ResortConsumptionTarget, int>> SKUsToResort = [];
+
+        public int MoreReceiptThanWaiting { get; private set; } = 0;
+
         public string ResortComment { get; private set; } = string.Empty;
-        
+
         #endregion Properties
 
         //public delegate bool FindSkusInBalanceDelegate((SKUResortBalanceTarget target, int count) item); 
@@ -59,91 +59,91 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
         #endregion
 
         #region Functionality
-        public void Update(List<SKUResortDataUnit> skuResortDataUnits) 
+        public void Update(List<SKUResortDataUnit> skuResortDataUnits)
         {
-            static void SkippedProcedureMessage() 
-            {
-                Trace.WriteLine("Entry for re-sort must contain a correct comment.\nSkipped.");
-            }
+            // static void SkippedProcedureMessage() 
+            // {
+            //     Trace.WriteLine("Entry for re-sort must contain a correct comment.\nSkipped.");
+            // }
 
-            foreach (var skuResortDataUnit in skuResortDataUnits)
-            {
-                // If there is no comment, entry is skipped
-                if(string.IsNullOrEmpty(skuResortDataUnit.ResortComment)) 
-                {
-                    SkippedProcedureMessage();
-                    continue;
-                }
+            // foreach (var skuResortDataUnit in skuResortDataUnits)
+            // {
+            //     // If there is no comment, entry is skipped
+            //     if(string.IsNullOrEmpty(skuResortDataUnit.ResortComment)) 
+            //     {
+            //         SkippedProcedureMessage();
+            //         continue;
+            //     }
 
-                if(!CheckEqualsSkus(skuResortDataUnit))
-                {
-                    continue;
-                }
+            //     if(!CheckEqualsSkus(skuResortDataUnit))
+            //     {
+            //         continue;
+            //     }
 
-                // Get key and target
-                var skuToResortKey = skuResortDataUnit.SKUToResortNumber;
-                ResortConsumptionTarget skuResortBalanceTarget;
+            //     // Get key and target
+            //     var skuToResortKey = skuResortDataUnit.SKUToResortNumber;
+            //     ResortConsumptionTarget skuResortBalanceTarget;
 
-                switch (skuResortDataUnit.ResortComment!.Trim())
-                {
-                    case RESORT_CONSUMPTION_KEY:
-                        skuResortBalanceTarget = ResortConsumptionTarget.ResortingConsumptionByOutgoing;
-                        break;
-                    case RESORT_RECEIPT_KEY:
-                        skuResortBalanceTarget = ResortConsumptionTarget.ResortingReceipt;
-                        break;
-                    default:
-                        SkippedProcedureMessage();
-                        continue;
-                }
+            //     switch (skuResortDataUnit.ResortComment!.Trim())
+            //     {
+            //         case RESORT_CONSUMPTION_KEY:
+            //             skuResortBalanceTarget = ResortConsumptionTarget.ResortingConsumptionByOutgoing;
+            //             break;
+            //         case RESORT_RECEIPT_KEY:
+            //             skuResortBalanceTarget = ResortConsumptionTarget.ResortingReceipt;
+            //             break;
+            //         default:
+            //             SkippedProcedureMessage();
+            //             continue;
+            //     }
 
-                if (SKUsToResort.TryGetValue(skuToResortKey, out Dictionary<ResortConsumptionTarget, int>? value))
-                {
-                    var resortDict = value;
-                    if (resortDict.TryGetValue(skuResortBalanceTarget, out int count))
-                    {
-                        var resortCountByTarget = count + skuResortDataUnit.SKUToResortNumberCount;
-                        resortDict[skuResortBalanceTarget] = resortCountByTarget;
-                    }
-                    else
-                    {
-                        resortDict[skuResortBalanceTarget] = skuResortDataUnit.SKUToResortNumberCount;
-                    }
+            //     if (SKUsToResort.TryGetValue(skuToResortKey, out Dictionary<ResortConsumptionTarget, int>? value))
+            //     {
+            //         var resortDict = value;
+            //         if (resortDict.TryGetValue(skuResortBalanceTarget, out int count))
+            //         {
+            //             var resortCountByTarget = count + skuResortDataUnit.SKUToResortNumberCount;
+            //             resortDict[skuResortBalanceTarget] = resortCountByTarget;
+            //         }
+            //         else
+            //         {
+            //             resortDict[skuResortBalanceTarget] = skuResortDataUnit.SKUToResortNumberCount;
+            //         }
 
-                    SKUsToResort[skuToResortKey] = resortDict;
-                }
-                else
-                {
-                    SKUsToResort[skuToResortKey] = new Dictionary<ResortConsumptionTarget, int>()
-                    {
-                        {skuResortBalanceTarget, skuResortDataUnit.SKUToResortNumberCount}
-                    };
-                }
-            }
+            //         SKUsToResort[skuToResortKey] = resortDict;
+            //     }
+            //     else
+            //     {
+            //         SKUsToResort[skuToResortKey] = new Dictionary<ResortConsumptionTarget, int>()
+            //         {
+            //             {skuResortBalanceTarget, skuResortDataUnit.SKUToResortNumberCount}
+            //         };
+            //     }
+            // }
         }
 
-        private bool CheckEqualsSkus(SKUResortDataUnit skuResortDataUnit)
+        private void CheckEqualsSkus(SKUResortDataUnit skuResortDataUnit)
         {
-            // If balance and resortFrom articles are not equal, entry is skipped.
-            if (!int.Equals(SKUFromResortNumber, skuResortDataUnit.SKUFromResortNumber))
-            {
-                Trace.WriteLine($"Balance ({SKUFromResortNumber}) and resortFrom ({skuResortDataUnit.SKUFromResortNumber}) skus number are not equal. Skipped.");
-                return false;
-            }
-            else 
-            {
-                return true;
-            }
+            // // If balance and resortFrom articles are not equal, entry is skipped.
+            // if (!int.Equals(SKUFromResortNumber, skuResortDataUnit.SKUFromResortNumber))
+            // {
+            //     Trace.WriteLine($"Balance ({SKUFromResortNumber}) and resortFrom ({skuResortDataUnit.SKUFromResortNumber}) skus number are not equal. Skipped.");
+            //     return false;
+            // }
+            // else 
+            // {
+            //     return true;
+            // }
         }
 
-        public void Update(Dictionary<long, Dictionary<ResortConsumptionTarget, int>>? resortSKUsInNewValues) 
-        {       
-            if(resortSKUsInNewValues is null || resortSKUsInNewValues.Count == 0) return;
+        public void Update(Dictionary<long, Dictionary<ResortConsumptionTarget, int>>? resortSKUsInNewValues)
+        {
+            if (resortSKUsInNewValues is null || resortSKUsInNewValues.Count == 0) return;
 
             foreach (var resortSKUsInNewValue in resortSKUsInNewValues)
             {
                 var resortSKUsInNewValueKey = resortSKUsInNewValue.Key;
-                if (SKUsToResort.TryGetValue(resortSKUsInNewValueKey, out Dictionary<ResortConsumptionTarget, int>? value)) 
+                if (SKUsToResort.TryGetValue(resortSKUsInNewValueKey, out Dictionary<ResortConsumptionTarget, int>? value))
                 {
                     var resortDict = value;
 
@@ -162,25 +162,25 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 
                         SKUsToResort[resortSKUsInNewValueKey] = resortDict;
                     }
-                } 
-                else 
+                }
+                else
                 {
                     SKUsToResort[resortSKUsInNewValueKey] = resortSKUsInNewValue.Value;
                 }
             }
         }
 
-        public (int sum, string? comment)? FindSkusInBalanceBy(ResortConsumptionTarget target) 
+        public (int sum, string? comment)? FindSkusInBalanceBy(ResortConsumptionTarget target)
         {
             var resortBalanceUnit = GetSkusResortToSum(target);
-            if(resortBalanceUnit.ResortTo.Count == 0) return null;
+            if (resortBalanceUnit.ResortTo.Count == 0) return null;
 
             var sum = resortBalanceUnit.ResortTo.Aggregate(0, (acc, i) => acc + i.Value);
             var comment = string.Empty;
             StringBuilder stringBuilder = new();
 
             // Исходящие пересорты
-            switch(target) 
+            switch (target)
             {
                 case ResortConsumptionTarget.ResortingConsumptionByOutgoing:
                     stringBuilder.Append(RESORT_CONSUMPTION_FIRST_LINE);
@@ -193,7 +193,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             foreach (var item in resortBalanceUnit.ResortTo)
             {
                 stringBuilder.Append($"{item.Key}, шт - {item.Value}");
-                if(resortBalanceUnit.ResortTo.Keys.Last() != item.Key) 
+                if (resortBalanceUnit.ResortTo.Keys.Last() != item.Key)
                 {
                     stringBuilder.Append(", ");
                 }
@@ -202,17 +202,17 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             // Result
             comment = stringBuilder.ToString();
             return (sum, comment);
-            
+
         }
 
-        public ResortBalanceUnit GetSkusResortToSum(ResortConsumptionTarget target) 
+        public ResortBalanceUnit GetSkusResortToSum(ResortConsumptionTarget target)
         {
             var resort = new ResortBalanceUnit(target);
             foreach (var sku in SKUsToResort)
             {
                 foreach ((ResortConsumptionTarget t, int s) in sku.Value)
                 {
-                    if(t == target) 
+                    if (t == target)
                     {
                         resort.Update(sku.Key, s);
                     }
