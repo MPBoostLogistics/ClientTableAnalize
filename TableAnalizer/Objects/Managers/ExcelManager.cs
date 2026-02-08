@@ -20,6 +20,9 @@ namespace TableAnalizer.Objects.Managers
         public const string FIRST_ROOM_NAME = "1 - Помещение приемки и сортировки";
         public const string SECOND_ROOM_NAME = "2 - Помещение длительного хранения";
         public const string THIRD_ROOM_NAME = "3 - Помещение упаковки и отгрузки";
+        public const string FOUTH_ROOM_NAME = "4 - Участок приемки и ожидания (производство)";
+        public const string FIFTH_ROOM_NAME = "5 - Участок длительного хранения (производство)";
+
         public const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
         public const int LAST_MARKER_KEY_OFFSET = 2;
         public const string OUTPUT_REPORT_MAINREPORT_NAME = "Отчет по логистике";
@@ -1258,7 +1261,10 @@ namespace TableAnalizer.Objects.Managers
             {
                 SourceReportItemKey.Ransoms => [new(RansomsSourceCells)],
                 SourceReportItemKey.Balance => [ new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
-                                                    new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME), new(RemainingThirdRoomSourceCells, THIRD_ROOM_NAME, (LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))],
+                    new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME),
+                    new(RemainingSecondRoomSourceCells, THIRD_ROOM_NAME),
+                    new(RemainingSecondRoomSourceCells, FOUTH_ROOM_NAME),
+                    new(RemainingThirdRoomSourceCells, FIFTH_ROOM_NAME, (LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))],
                 SourceReportItemKey.WriteOffPoints => [new(WriteOffPointsSourceCells)],
                 SourceReportItemKey.WriteOffPointsViaWarehouseShortage => [new(WriteOffPointsViaWarehouseSourceCells)],
                 SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment => [new(WriteOffPointsViaWarehouseSourceCells)],
