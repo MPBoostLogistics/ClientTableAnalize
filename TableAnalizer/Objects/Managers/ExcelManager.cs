@@ -8,6 +8,7 @@ using OfficeOpenXml.Style;
 using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUAliasBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
@@ -30,8 +31,6 @@ namespace TableAnalizer.Objects.Managers
         public const string OUTPUT_REPORT_OVERRUNSREPORT_NAME = "Отчет по перерасходам";
         public const string OUTPUT_REPORT_ANALYTICS_RERORT_NAME = "Аналитика";
         public const string PAID_SHORTAGES_REPORT_WORKSHEET_NAME = "Претензии";
-        public const string RESORTS_REPORT_WORKSHEET_NAME = "Пересорты";
-        public const string PARALLEL_SKUS_WORKSHEET_NAME = "Параллельные";
         public const string RANSOMS_WORKSHEET_NAME = "Выкупы";
         public const string REMAINING_OR_SHIPPED_WORKSHEET_NAME = "TDSheet";
         private const int DEFAULT_TABLE_ROW_HEIGHT = 18;
@@ -160,10 +159,16 @@ namespace TableAnalizer.Objects.Managers
 
         public static List<SourceColumn> ResortSourceCells { get; } =
         [
-            new(1, nameof(SKUResortDataUnit.SKUFromResortNumber), ParsingTypeCode.LongTypeCode, true),
-            new(2, nameof(SKUResortDataUnit.SKUToResortNumber), ParsingTypeCode.LongTypeCode, true),
-            new(3, nameof(SKUResortDataUnit.SKUToResortNumberCount), ParsingTypeCode.IntTypeCode, true),
-            new(4, nameof(SKUResortDataUnit.ResortComment), ParsingTypeCode.StringTypeCode, false)
+            new(1, nameof(SKUResortDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
+            new(2, nameof(SKUResortDataUnit.SKUResortCount), ParsingTypeCode.IntTypeCode, true),
+            new(3, nameof(SKUResortDataUnit.ResortComment), ParsingTypeCode.StringTypeCode, false)
+        ];
+
+        public static List<SourceColumn> AliasesSourceCells { get; } =
+        [
+            new(1, nameof(SKUAliasDataUnit.SKUSourceNumber), ParsingTypeCode.LongTypeCode, true),
+            new(2, nameof(SKUAliasDataUnit.SKUAliasNumbers), ParsingTypeCode.LongTypeArrayCode, true),
+            new(3, nameof(SKUAliasDataUnit.AliasComment), ParsingTypeCode.LongTypeCode, false)
         ];
 
         public static List<SourceColumn> ParallelSourceCells { get; } =
@@ -627,7 +632,7 @@ namespace TableAnalizer.Objects.Managers
                     or SourceReportItemKey.WriteOffPoints
                     or SourceReportItemKey.WriteOffPointsViaWarehouseShortage
                     or SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
-                SourceReportItemKey.Additional => [RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
+                SourceReportItemKey.Additional => [ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME, ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME],
                 SourceReportItemKey.ShortagesPaid => [PAID_SHORTAGES_REPORT_WORKSHEET_NAME],
                 _ => null,
             };
@@ -1272,8 +1277,8 @@ namespace TableAnalizer.Objects.Managers
                 SourceReportItemKey.Transfered => [new(TransferSourceCells)],
                 SourceReportItemKey.Additional => workSheetName switch
                 {
-                    RESORTS_REPORT_WORKSHEET_NAME => [new(ResortSourceCells)],
-                    PARALLEL_SKUS_WORKSHEET_NAME => [new(ParallelSourceCells)],
+                    ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME => [new(ResortSourceCells)],
+                    ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME => [new(AliasesSourceCells)],
                     _ => [],
                 },
                 SourceReportItemKey.ShortagesPaid => [new(PaidShortagesSourceCells)],

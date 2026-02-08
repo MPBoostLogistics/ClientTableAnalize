@@ -16,6 +16,16 @@ namespace TableAnalizer.Objects.Managers
         private string? logisticsReportFirstName;
 
         /// <summary>
+        /// Название листа в доп первичном отчете - "Пересорты"
+        /// </summary>
+        public const string ADDREPORT_RESORTS_WORKSHEET_NAME = "Пересорты";
+
+        /// <summary>
+        /// Название листа в доп первичном отчете - "Алиасы"
+        /// </summary>
+        public const string ADDREPORT_ALIASES_WORKSHEET_NAME = "Алиасы";
+
+        /// <summary>
         /// Dictionary of primary report files.
         /// </summary>
         public static Dictionary<SourceReportItemKey, PrimaryReportFileItem> PrimaryReportFiles { get; private set; } = new()
@@ -28,7 +38,7 @@ namespace TableAnalizer.Objects.Managers
             { SourceReportItemKey.Balance, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bбаланс\b"], 7, isOptionalReport: false)},
             { SourceReportItemKey.OutgoingProducts, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bрасходы\b"], 7, isOptionalReport: true)},
             { SourceReportItemKey.Transfered, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bперемещения\b"], 7, isOptionalReport: true)},
-            { SourceReportItemKey.Additional, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bдополнительный\b"], 7, isOptionalReport: true)},
+            { SourceReportItemKey.Additional, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bдоп\b"], 7, isOptionalReport: true)},
         };
 
         static readonly string[] pathKeyNames = Enum.GetNames(typeof(PathKey));
@@ -40,19 +50,23 @@ namespace TableAnalizer.Objects.Managers
         /// Путь к директории с файлами с постоянными данными.
         /// </summary>
         private string PermanentDataSourcePath { get; set; } = string.Empty;
+
         /// <summary>
         /// Базовая директория для формирования имени файла с итоговым отчетом.
         /// </summary>
         public static string BaseFinalReportsDirectoryPath { get; private set; } = string.Empty;
+
         public static TargetReportRecipientType? ReportRecipientType { get; set; }
 
         /// <summary>
-        /// Коллекция с файлами исходных отчетов.
+        /// Collection of source report files
         /// </summary>
         //public Dictionary<SourceReportItemKey, SourceReportFileItem> SourceReportFileItems { get; private set; } = [];
         public static DirectoryInfo? DirInfoForClientTargetReports { get; private set; }
 
-
+        /// <summary>
+        /// Name of file containing the final report
+        /// </summary>
         public static string FinalReportFileName { get; private set; } = string.Empty;
 
         #endregion
@@ -67,7 +81,6 @@ namespace TableAnalizer.Objects.Managers
             PermanentDataSourcePath = stringsSection.GetValue<string>("PermanentDataSourcePath");
             BaseFinalReportsDirectoryPath = stringsSection.GetValue<string>("BaseFinalReportsDirectoryPath");
             logisticsReportFirstName = stringsSection.GetValue<string>("LogisticsReportFirstName");
-
 
             IConfigurationSection? numbersSection = config!.GetSection("Numbers");
             DataAgeLimitInDays = numbersSection.GetValue<int>("DataAgeLimitInDays");
