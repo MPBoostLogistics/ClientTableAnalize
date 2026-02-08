@@ -28,8 +28,7 @@ using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
         3.1. Если нет или данные устарели - сообщить об этом и выйти
 */
 
-
-internal class Program
+    internal class Program
 {
     #region Variables and constants   
     private static string appVersion = string.Empty;
