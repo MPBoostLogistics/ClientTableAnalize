@@ -28,7 +28,7 @@ using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
         3.1. Если нет или данные устарели - сообщить об этом и выйти
 */
 
-    internal class Program
+internal class Program
 {
     #region Variables and constants   
     private static string appVersion = string.Empty;
@@ -336,14 +336,14 @@ using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
             await Task.Run(() => skusForTargetReportTask);
             skusForTargetReportTask.Wait();
 
-            if (isTracing)
+            // if (isTracing)
             {
                 await TracingProgramExecution(new($"Articles for final report: {skusForTargetReportTask.Result.Count}.", false, false));
             }
 
             List<SKUForTargetReport> skuForTargetReports = skusForTargetReportTask.Result;
 
-            //Article analysis and automatic re-sorting
+            // Article analysis and automatic re-sorting
             if (isAutoResorting)
             {
                 Task[] fixAndAutoResortTasks =

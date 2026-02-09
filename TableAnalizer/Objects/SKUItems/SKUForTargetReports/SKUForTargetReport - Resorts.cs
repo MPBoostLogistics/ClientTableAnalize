@@ -25,6 +25,11 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             get => skuResortsComment;
             set => skuResortsComment = string.IsNullOrEmpty(skuResortsComment) ? skuResortsComment = value : skuResortsComment += $"\n{value}";
         }
+
+        /// <summary>
+        /// Экстра-приход товаров от пересортов в 1С.
+        /// </summary>
+        public int ExtraReceiptFromResortingIn1C {get; private set; } = 0;
         #endregion
 
         #region Functionality

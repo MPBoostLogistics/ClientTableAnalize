@@ -168,7 +168,7 @@ namespace TableAnalizer.Objects.Managers
         [
             new(1, nameof(SKUAliasDataUnit.SKUSourceNumber), ParsingTypeCode.LongTypeCode, true),
             new(2, nameof(SKUAliasDataUnit.SKUAliasNumbers), ParsingTypeCode.LongTypeArrayCode, true),
-            new(3, nameof(SKUAliasDataUnit.AliasComment), ParsingTypeCode.LongTypeCode, false)
+            new(3, nameof(SKUAliasDataUnit.AliasComment), ParsingTypeCode.StringTypeCode, false)
         ];
 
         public static List<SourceColumn> ParallelSourceCells { get; } =

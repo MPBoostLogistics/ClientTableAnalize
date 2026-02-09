@@ -17,6 +17,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <para>Учитывается <b>отчет прямого списания</b> товаров с точек.</para> 
         /// </remarks>
         public int SKUWriteOffFromPoints { get; set; } = 0;
+        
         /// <summary>
         /// Списаны недостачи точек через склад, товаров
         /// </summary>
@@ -24,6 +25,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <para>Учитывается <b>предыдущий алгоритм списания</b> товаров с точек через склад.</para> 
         /// </remarks>
         public int SKUWriteOffFromPointsViaWarehouseShortage { get; set; } = 0;
+        
         /// <summary>
         /// Списаны корректировки точек через склад, товаров
         /// </summary>
@@ -52,7 +54,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// Денежная компенсация от организации (точек) и склада в адрес клиента
         /// </summary> 
         public int SKUPaidShortageOrganizationAndWarehouse { get; set; } = 0;
-
         #endregion
 
         #region Functionality

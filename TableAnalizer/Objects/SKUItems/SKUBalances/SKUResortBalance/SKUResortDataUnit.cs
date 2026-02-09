@@ -16,7 +16,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
         #region Functionality
         public override string ToString()
         {
-            return $"Resort: SKU: {SKUNumber}, count: {SKUResortCount}, comment: {ResortComment}";
+            return $"Resort: SKU {SKUNumber}, count: {SKUResortCount}, comment: {ResortComment}";
         }
         #endregion
     }

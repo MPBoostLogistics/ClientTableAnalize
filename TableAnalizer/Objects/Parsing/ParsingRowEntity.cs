@@ -102,6 +102,10 @@ namespace TableAnalizer.Objects.Parsing
                             property.SetValue(this, (long)value);
                             break;
 
+                        case ParsingTypeCode.LongTypeArrayCode:
+                            property.SetValue(this, (List<long>)value);
+                            break;
+
                         //22.03.2024 14:00
                         //06.11.2024
                         case ParsingTypeCode.DataOnlyTypeCode:
