@@ -82,6 +82,9 @@ namespace TableAnalizer.Objects.Managers
             { ClaimResolutionStatus.ReturnedToBalance, "Возвращено на баланс" },
         };
 
+        private static readonly string SKUNumberColName = "Артикул";
+
+
         #endregion
 
         #region Properties
@@ -207,7 +210,7 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 2, colName: "МП", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUmp),
                 parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 3, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 3, colName: SKUNumberColName, colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUNumber),
                 parsingTypeCode: ParsingTypeCode.LongTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 4, colName: "Бренд товара", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
@@ -307,7 +310,7 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 1, colName: "МП", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0,textCommentInHeader: string.Empty,  propertyName: "SKUmp",
                 parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 2, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 2, colName: SKUNumberColName, colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUNumber",
                 parsingTypeCode: ParsingTypeCode.LongTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
@@ -343,7 +346,7 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 1, colName: "МП", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUmp",
                 parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 2, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 2, colName: SKUNumberColName, colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUNumber",
                 parsingTypeCode: ParsingTypeCode.LongTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
@@ -367,7 +370,7 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 2, colName: "МП", colWidth: 4, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUmp),
             parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 3, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 3, colName: SKUNumberColName, colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUNumber),
             parsingTypeCode: ParsingTypeCode.LongTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 4, colName: "Номенклатура", colWidth: 50, format: STRING_OR_INT_CELL_FORMAT,
@@ -431,11 +434,11 @@ namespace TableAnalizer.Objects.Managers
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKURemaining),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x < 0, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
 
-            new (colNumber: 22, colName: "Артикул параллельных клиентов", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 22, colName: $"{SKUNumberColName} параллельных клиентов", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.IsParallelClientsSKU),
             parsingTypeCode: ParsingTypeCode.BoolTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 23, colName: "Артикул нормализован", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 23, colName: $"{SKUNumberColName} нормализован", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.IsSkuNormalize),
             parsingTypeCode: ParsingTypeCode.BoolTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
 
@@ -779,7 +782,6 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var targetCell in targetCells)
                 {
-
                     object? value = null;
 
                     switch (targetCell.ParsingTypeCode)
@@ -850,7 +852,7 @@ namespace TableAnalizer.Objects.Managers
 
                         if (tableCell is not null)
                         {
-                            ApplySettingsToTableCell(ref tableCell!, value, targetCell, isMainReport, targetReportData.FillColor);
+                            ApplySettingsToTableCell(ref tableCell!, value, targetCell, isMainReport, targetReportData.FillColor, targetReportData.SKUAliasesComment);
                         }
                         else
                         {
@@ -874,7 +876,7 @@ namespace TableAnalizer.Objects.Managers
             return result;
         }
 
-        private void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell, bool isMainReport, Color? statusColor)
+        private void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell, bool isMainReport, Color? statusColor, string? aliasesComment = null)
         {
             // Add value to cell 
             tableCell.Value = value;
@@ -909,29 +911,31 @@ namespace TableAnalizer.Objects.Managers
                 tableCell.Style.Font.Size = targetCell.CellSettings.FontSize;
                 tableCell.Style.Font.Bold = true;
                 tableCell.Style.Font.Color.SetColor(dangerColor);
-
-                // if(!string.IsNullOrEmpty(attentionCell.Comment)) 
-                // {
-                //     var comment = tableCell.AddComment("Анализ отчета:\r\n");
-                //     comment.Font.Color = Color.Black;
-                //     comment.Font.Bold = true;
-
-                //     var message = comment.RichText.Add(attentionCell.Comment);
-                //     message.Color = Color.Black;
-                //     message.Bold = false;
-                //     message.Size = attentionCell.FontSize - 1;
-
-                //     comment.VerticalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignVerticalVml.Top;
-                //     comment.HorizontalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignHorizontalVml.Left;
-
-                //     comment.AutoFit = true;
-                // }
             }
             else
             {
                 tableCell.Style.Font.Size = targetCell.CellSettings.FontSize;
                 tableCell.Style.Font.Bold = targetCell.CellSettings.IsTextBold;
                 tableCell.Style.Font.Color.SetColor(targetCell.CellSettings.TextСolor);
+            }
+
+            // Add comment
+            bool isAliasComment = targetCell.ColName.Trim().Equals(SKUNumberColName.Trim(), StringComparison.CurrentCultureIgnoreCase) && aliasesComment != null && !string.IsNullOrEmpty(aliasesComment);
+            if (isAliasComment)
+            {
+                ExcelComment comm = tableCell.AddComment("");
+                comm.Font.Color = Color.Black;
+                comm.Font.Bold = true;
+
+                var message = comm.RichText.Add(aliasesComment);
+                message.Color = Color.Black;
+                message.Bold = false;
+                message.Size = tableCell.Style.Font.Size - 1;
+
+                comm.VerticalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignVerticalVml.Top;
+                comm.HorizontalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignHorizontalVml.Left;
+
+                comm.AutoFit = true;
             }
         }
 
@@ -959,7 +963,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="worksheet">Excel worksheet that is created.</param>
         /// <param name="tabColor">Worksheet label (tab) color.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public static void CreateExcelWorkSheet(string workSheetName, in ExcelPackage excelPackage, out ExcelWorksheet worksheet, System.Drawing.Color tabColor, bool isTracing)
+        public static void CreateExcelWorkSheet(string workSheetName, in ExcelPackage excelPackage, out ExcelWorksheet worksheet, Color tabColor, bool isTracing)
         {
             // Remove existing worksheet
             var existingWorksheet = excelPackage.Workbook.Worksheets

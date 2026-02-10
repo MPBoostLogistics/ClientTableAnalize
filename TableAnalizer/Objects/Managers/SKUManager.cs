@@ -706,8 +706,135 @@ namespace TableAnalizer.Objects.Managers
                 .OrderByDescending(p => p.SKUDate)];
         }
 
+        public async Task<List<SKUForTargetReport>>? MakeAndCombineSkusForTargetReport()
+        {
+            // Make skus for target report
+            Task<List<SKUForTargetReport>>? skusForTargetReportTask = MakeSkusForTargetReport();
+            await Task.Run(() => skusForTargetReportTask);
+            skusForTargetReportTask.Wait();
+            List<SKUForTargetReport> result = skusForTargetReportTask.Result;
+
+            // Combine skus for target report
+            if (SkuAliasesBalanceUnits.Count() > 0)
+            {
+                CombineSkusForTargetReport(ref result);
+            }
+
+            return result;
+        }
+
+        private void CombineSkusForTargetReport(ref List<SKUForTargetReport> skus)
+        {
+            var aliases = SkuAliasesBalanceUnits.GetValuesList();
+
+            for (int i = 0; i < aliases.Count; i++)
+            {
+                for (int j = 0; j < aliases[i].value.Count; j++)
+                {
+                    SKUAliasDataUnit unit = (SKUAliasDataUnit)aliases[i].value[j];
+                    CombineSkus(unit, ref skus);
+                }
+            }
+        }
+
+        private static void CombineSkus(SKUAliasDataUnit aliasDataUnit, ref List<SKUForTargetReport> skus)
+        {
+            List<SKUForTargetReport> combines = [];
+            List<long> sources = [];
+
+            // Find tagret sku
+            SKUForTargetReport? target = skus.SingleOrDefault(s => s.SKUNumber == aliasDataUnit.SKUSourceNumber);
+            if (target is not null)
+            {
+                combines.Add(target);
+            }
+
+            // Find source skus
+            foreach (var sourceSKUNumber in aliasDataUnit.SKUAliasNumbers)
+            {
+                SKUForTargetReport? source = skus.SingleOrDefault(s => s.SKUNumber == sourceSKUNumber);
+                if (source is not null)
+                {
+                    combines.Add(source);
+                    sources.Add(sourceSKUNumber);
+                }
+            }
+
+            // price
+            combines.First().SKUPrice = combines.Average(el => el.SKUPrice);
+
+            // date 
+            combines.First().SKUDate = combines.Max(el => el.SKUDate);
+
+            // combines ransoms & waiting
+            combines.First().SKURansomsCanceled = combines.Sum(el => el.SKURansomsCanceled);
+            combines.First().SKURansomsOnWay = combines.Sum(el => el.SKURansomsOnWay);
+            combines.First().SKURansomsDelivered = combines.Sum(el => el.SKURansomsDelivered);
+            combines.First().SKURansomsWithDrawn = combines.Sum(el => el.SKURansomsWithDrawn);
+            combines.First().SKURansomsWaiting = combines.Sum(el => el.SKURansomsWaiting);
+
+            // combines receipt, receipt comment  && write off from points
+            combines.First().SKUReceiptGoods = combines.Sum(el => el.SKUReceiptGoods);
+
+            if (combines.Any(el => !string.IsNullOrEmpty(el.SKUReceipComment)))
+            {
+                List<string> comment = [];
+                for (int i = 0; i < combines.Count; i++)
+                {
+                    if (!string.IsNullOrEmpty(combines[i].SKUReceipComment))
+                        comment.Add(combines[i].SKUReceipComment);
+                }
+
+                if (comment.Count != 0)
+                {
+
+                    // "" - start with empty string to handle empty list case.
+                    combines.First().SKUReceipComment = comment.Aggregate("", (current, next) => current + "\n" + next);
+                }
+            }
+            combines.First().SKUWriteOffFromPoints = combines.Sum(el => el.SKUWriteOffFromPoints);
+
+            // сombine paid shortage
+            combines.First().SKUPaidShortageWarehouse = combines.Sum(el => el.SKUPaidShortageWarehouse);
+            combines.First().SKUPaidShortageOrganization = combines.Sum(el => el.SKUPaidShortageOrganization);
+            combines.First().SKUPaidShortageOrganizationAndWarehouse = combines.Sum(el => el.SKUPaidShortageOrganizationAndWarehouse);
+
+            // сombine outgoing & transfered & remaining
+            combines.First().SKUOutgoingProducts = combines.Sum(el => el.SKUOutgoingProducts);
+            combines.First().SKUTransfered = combines.Sum(el => el.SKUTransfered);
+            combines.First().SKURemaining = combines.Sum(el => el.SKURemaining);
+
+            // combine write offs
+            combines.First().SKUWriteOffFromPoints = combines.Sum(el => el.SKUWriteOffFromPoints);
+            combines.First().SKUWriteOffFromPointsViaWarehouseShortage = combines.Sum(el => el.SKUWriteOffFromPointsViaWarehouseShortage);
+            combines.First().SKUWrittenOffFromPointsViaWarehouseAdjustment = combines.Sum(el => el.SKUWrittenOffFromPointsViaWarehouseAdjustment);
+
+            // add combine comment
+            if (sources.Count > 0)
+            {
+                combines.First().SKUAliasesComment = "Тот же товар под другими арт:";
+                foreach (var source in sources)
+                {
+                    combines.First().SKUAliasesComment = source.ToString();
+                }
+            }
+
+
+
+            // delete aliases
+            foreach (var sourceSKUNumber in aliasDataUnit.SKUAliasNumbers)
+            {
+                int index = skus.FindIndex(s => s.SKUNumber == sourceSKUNumber);
+                if (index >= 0)
+                {
+                    skus.RemoveAt(index);
+                }
+            }
+        }
+
         private bool IsSkuRansomsBalanceUnitsHasKey(long skuNumber) =>
             SkuRansomsBalanceUnits.GetValue(skuNumber, out List<ParsingRowEntity>? item) && item != null;
+
 
         #endregion
     }

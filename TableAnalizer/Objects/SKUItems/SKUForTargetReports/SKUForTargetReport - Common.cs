@@ -24,10 +24,10 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         #endregion
         #region Properties - Ransoms
         public int SKURansomsTotal => SKURansomsCanceled + SKURansomsOnWay + SKURansomsDelivered + SKURansomsWithDrawn;
-        public int SKURansomsCanceled { get; set; }
-        public int SKURansomsOnWay { get; set; }
-        public int SKURansomsDelivered { get; set; }
-        public int SKURansomsWithDrawn { get; set; }
+        public int SKURansomsCanceled { get; set; } // Суммируется при объединении алиасов
+        public int SKURansomsOnWay { get; set; } // Суммируется при объединении алиасов
+        public int SKURansomsDelivered { get; set; } // Суммируется при объединении алиасов
+        public int SKURansomsWithDrawn { get; set; } // Суммируется при объединении алиасов
 
         #endregion
         #region Properties - Waiting && Receipt
@@ -44,7 +44,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// из них, Склад: Приход товарами
         /// </summary>
-        public int SKUReceiptGoods { get; set; } = 0;
+        public int SKUReceiptGoods { get; set; } = 0; // Суммируется при объединении алиасов
 
         #endregion
         #region Properties - Comments
@@ -57,6 +57,17 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         {
             get => skuReceipComment;
             set => skuReceipComment = string.IsNullOrEmpty(skuReceipComment) ? skuReceipComment = value : skuReceipComment += $"\n{value}";
+        }
+
+        private string skuAliasesComment = string.Empty;
+
+        /// <summary>
+        /// Комментарий к приходам
+        /// </summary>
+        public string SKUAliasesComment
+        {
+            get => skuAliasesComment;
+            set => skuAliasesComment = string.IsNullOrEmpty(skuAliasesComment) ? skuAliasesComment = value : skuAliasesComment += $"\n{value}";
         }
 
         #endregion
@@ -87,7 +98,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Склад: Остаток товаров
         /// </summary>
-        public int SKURemaining { get; set; }
+        public int SKURemaining { get; set; } // Суммируется при объединении алиасов
         #endregion
         #region Properties - Overruns 
         private int skuOverrunsCount = 0;
