@@ -50,10 +50,8 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<long, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseAdjustmentUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<long, List<ParsingRowEntity>> SkuPaidShortagesBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<long, List<ParsingRowEntity>> SkuResortBalanceUnits { get; } = new ParsingRowEntityRepo();
-
         public IRepository<long, List<ParsingRowEntity>> SkuAliasesBalanceUnits { get; } = new ParsingRowEntityRepo();
 
-        // public IRepository<long, List<ParsingRowEntity>> SkuParallelUnits { get; } = new ParsingRowEntityRepo();
 
         // /// <summary>
         // /// Словарь прересортов в обратном направлении:
@@ -799,9 +797,10 @@ namespace TableAnalizer.Objects.Managers
             combines.First().SKUPaidShortageOrganization = combines.Sum(el => el.SKUPaidShortageOrganization);
             combines.First().SKUPaidShortageOrganizationAndWarehouse = combines.Sum(el => el.SKUPaidShortageOrganizationAndWarehouse);
 
-            // сombine outgoing & transfered & remaining
+            // сombine outgoing & transfered & resort & remaining
             combines.First().SKUOutgoingProducts = combines.Sum(el => el.SKUOutgoingProducts);
             combines.First().SKUTransfered = combines.Sum(el => el.SKUTransfered);
+            combines.First().SKUResort = combines.Sum(el => el.SKUResort);
             combines.First().SKURemaining = combines.Sum(el => el.SKURemaining);
 
             // combine write offs
@@ -818,8 +817,6 @@ namespace TableAnalizer.Objects.Managers
                     combines.First().SKUAliasesComment = source.ToString();
                 }
             }
-
-
 
             // delete aliases
             foreach (var sourceSKUNumber in aliasDataUnit.SKUAliasNumbers)

@@ -86,12 +86,12 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// расход товарами
         /// </summary>
-        public int SKUOutgoingProducts { get; set; }
+        public int SKUOutgoingProducts { get; set; } // Суммируется при объединении алиасов
 
         /// <summary>
         /// Склад: Передано товаром (фулфилмент)
         /// </summary>
-        public int SKUTransfered { get; set; }
+        public int SKUTransfered { get; set; } // Суммируется при объединении алиасов
 
         #endregion
         #region Properties - Remaining
