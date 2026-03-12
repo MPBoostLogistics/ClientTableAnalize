@@ -33,14 +33,25 @@ namespace TableAnalizer.Objects.Managers
 
                 case ParsingTypeCode.LongTypeCode:
 
-                    if (!isRequred && string.IsNullOrEmpty(valueString))
+                    ParseLongValue(valueString, out long v) ;
+                    value = (long)v;
+
+                    break;
+
+                case ParsingTypeCode.LongTypeArrayCode:
+
+                    List<long> resultLongs = [];
+
+                    SplitStrigToList(valueString, ',', out List<string> words);
+
+                    foreach (var word in words)
                     {
-                        value = (long)0;
+                        ParseLongValue(word, out long l) ;
+                        if(l != 0)
+                            resultLongs.Add(l);
                     }
-                    else
-                    {
-                        value = long.TryParse(valueString, out long longValue) ? longValue : null;
-                    }
+
+                    value = (List<long>)resultLongs;
 
                     break;
 
@@ -162,5 +173,16 @@ namespace TableAnalizer.Objects.Managers
 
             return value is not null;
         }
+    
+        private static void ParseLongValue (string? valueString, out long value)
+        {
+            value = string.IsNullOrEmpty(valueString) ? 0 : long.TryParse(valueString, out long lv) ?  lv : 0;
+        }
+
+        private static void SplitStrigToList(string s, char c, out List<string> l)
+        {
+            l = [.. s.Split(c, StringSplitOptions.TrimEntries)];
+        }
+    
     }
 }

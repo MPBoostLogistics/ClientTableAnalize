@@ -6,13 +6,11 @@ namespace TableAnalizer.Objects
     public enum PrimaryDataType
     {
         /// <summary>
-        /// Постоянные данные (например, сведения об оплатах 
-        /// или списаниях, актуальные для всех Клиентов)
+        /// Постоянные данные (например, сведения об оплатах или списаниях, актуальные для всех Клиентов)
         /// </summary>
         Permanent,
         /// <summary>
-        /// Переменные данные (например, заказы, приходы и 
-        /// расходы по конкретному Клиенту)
+        /// Переменные данные (например, заказы, приходы и расходы по конкретному Клиенту)
         /// </summary>
         Variable
     }
@@ -21,6 +19,7 @@ namespace TableAnalizer.Objects
     {
         Directory
     }
+
     public enum Marketplace { WB, OZ }
 
     public enum PathKey { Documents, MPBoostClients }
@@ -161,6 +160,7 @@ namespace TableAnalizer.Objects
     {
         IntTypeCode,
         LongTypeCode,
+        LongTypeArrayCode,
         DoubleTypeCode,
         DataOnlyTypeCode,
         DateTimeTypeCode,
@@ -219,7 +219,7 @@ namespace TableAnalizer.Objects
     public enum ResortConsumptionTarget
     {
         /// <summary>
-        /// Пересортица расходов на расход товаров& 
+        /// Пересортица расходов на расход товаров
         /// </summary>
         ResortingConsumptionByOutgoing,
 

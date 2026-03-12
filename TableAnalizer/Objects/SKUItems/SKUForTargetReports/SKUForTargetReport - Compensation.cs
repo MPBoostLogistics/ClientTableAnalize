@@ -16,7 +16,8 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <remarks>
         /// <para>Учитывается <b>отчет прямого списания</b> товаров с точек.</para> 
         /// </remarks>
-        public int SKUWriteOffFromPoints { get; set; } = 0;
+        public int SKUWriteOffFromPoints { get; set; } = 0; // Суммируется при объединении алиасов
+        
         /// <summary>
         /// Списаны недостачи точек через склад, товаров
         /// </summary>
@@ -24,6 +25,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <para>Учитывается <b>предыдущий алгоритм списания</b> товаров с точек через склад.</para> 
         /// </remarks>
         public int SKUWriteOffFromPointsViaWarehouseShortage { get; set; } = 0;
+        
         /// <summary>
         /// Списаны корректировки точек через склад, товаров
         /// </summary>
@@ -41,18 +43,17 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Денежная компенсация от склада в адрес клиента
         /// </summary>                       
-        public int SKUPaidShortageWarehouse { get; set; } = 0;
+        public int SKUPaidShortageWarehouse { get; set; } = 0; // Суммируется при объединении алиасов
 
         /// <summary>
         /// Денежная компенсация от организации (точек) в адрес клиента
         /// </summary>                       
-        public int SKUPaidShortageOrganization { get; set; } = 0;
+        public int SKUPaidShortageOrganization { get; set; } = 0; // Суммируется при объединении алиасов
 
         /// <summary>
         /// Денежная компенсация от организации (точек) и склада в адрес клиента
         /// </summary> 
-        public int SKUPaidShortageOrganizationAndWarehouse { get; set; } = 0;
-
+        public int SKUPaidShortageOrganizationAndWarehouse { get; set; } = 0; // Суммируется при объединении алиасов
         #endregion
 
         #region Functionality

@@ -4,20 +4,14 @@
 // Unicode:  https://www.compart.com/en/unicode/
 
 using System.Diagnostics;
-using System.Drawing.Printing;
-using System.Globalization;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
-using OfficeOpenXml;
-using Org.BouncyCastle.Asn1.Cms;
-using TableAnalizer.Interfaces;
 using TableAnalizer.Objects;
 using TableAnalizer.Objects.Managers;
 using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.ReportItems;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUAliasBalance;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 /*
@@ -28,13 +22,14 @@ using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
         3.1. Если нет или данные устарели - сообщить об этом и выйти
 */
 
-    internal class Program
+internal class Program
 {
     #region Variables and constants   
     private static string appVersion = string.Empty;
     private static string goodByMessage = string.Empty;
     private static bool isTracing;
     private static bool isAutoResorting;
+    private static bool isCombineAliases;
 
     private static readonly DateOnly orderPeriodStartDateDefault = DateOnly.Parse("2022-12-26");
 
@@ -105,6 +100,7 @@ using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
             IConfigurationSection? flagsSection = appConfig.GetSection("Flags");
             isTracing = flagsSection.GetValue<bool>("isTracing");
             isAutoResorting = flagsSection.GetValue<bool>("isAutoResorting");
+            isCombineAliases = flagsSection.GetValue<bool>("isCombineAliases");
 
             IConfigurationSection? messagesSection = appConfig.GetSection("Messages");
             goodByMessage = messagesSection.GetValue<string>("GoodbyMessage");
@@ -331,19 +327,22 @@ using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
             await Task.Run(() => deletOldReportsTask);
             deletOldReportsTask.Wait();
 
-            // Make skus for target report
-            Task<List<SKUForTargetReport>>? skusForTargetReportTask = skuManager!.MakeSkusForTargetReport();
+            // Make and combine skus for target report
+            Task<List<SKUForTargetReport>>? skusForTargetReportTask;
+            List<SKUForTargetReport>? skuForTargetReports = [];
+
+            skusForTargetReportTask = !isCombineAliases || skuManager!.SkuAliasesBalanceUnits.Count() == 0 ?
+                skuManager!.MakeSkusForTargetReport() :
+                skuManager!.MakeAndCombineSkusForTargetReport();
+
             await Task.Run(() => skusForTargetReportTask);
-            skusForTargetReportTask.Wait();
+            skusForTargetReportTask!.Wait();
+            skuForTargetReports = skusForTargetReportTask.Result;
 
             if (isTracing)
-            {
                 await TracingProgramExecution(new($"Articles for final report: {skusForTargetReportTask.Result.Count}.", false, false));
-            }
 
-            List<SKUForTargetReport> skuForTargetReports = skusForTargetReportTask.Result;
-
-            //Article analysis and automatic re-sorting
+            // Article analysis and automatic re-sorting
             if (isAutoResorting)
             {
                 Task[] fixAndAutoResortTasks =

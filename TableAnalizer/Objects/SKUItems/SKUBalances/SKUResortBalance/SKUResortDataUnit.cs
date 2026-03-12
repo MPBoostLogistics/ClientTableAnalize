@@ -1,6 +1,6 @@
 using TableAnalizer.Objects.Parsing;
 
-namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance 
+namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 {
     /// <summary>
     /// Resort data unit for forming SKUResortBalance.
@@ -8,10 +8,16 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
     public class SKUResortDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
-        public long SKUFromResortNumber { get; set;}
-        public long SKUToResortNumber { get; set;}
-        public int SKUToResortNumberCount { get; set; }
-        public string? ResortComment { get; set;}
+        public long SKUNumber { get; set; }
+        public int SKUResortCount { get; set; }
+        public string? ResortComment { get; set; }
         #endregion Properties
+
+        #region Functionality
+        public override string ToString()
+        {
+            return $"Resort: SKU {SKUNumber}, count: {SKUResortCount}, comment: {ResortComment}";
+        }
+        #endregion
     }
 }

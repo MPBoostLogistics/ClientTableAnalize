@@ -6,6 +6,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
     public partial class SKUForTargetReport
     {
         #region Properties
+
         #region Properties - Common
         public string SKULogins { get; set; }
         public Marketplace? SKUmp { get; set; }
@@ -23,10 +24,10 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         #endregion
         #region Properties - Ransoms
         public int SKURansomsTotal => SKURansomsCanceled + SKURansomsOnWay + SKURansomsDelivered + SKURansomsWithDrawn;
-        public int SKURansomsCanceled { get; set; }
-        public int SKURansomsOnWay { get; set; }
-        public int SKURansomsDelivered { get; set; }
-        public int SKURansomsWithDrawn { get; set; }
+        public int SKURansomsCanceled { get; set; } // Суммируется при объединении алиасов
+        public int SKURansomsOnWay { get; set; } // Суммируется при объединении алиасов
+        public int SKURansomsDelivered { get; set; } // Суммируется при объединении алиасов
+        public int SKURansomsWithDrawn { get; set; } // Суммируется при объединении алиасов
 
         #endregion
         #region Properties - Waiting && Receipt
@@ -43,7 +44,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// из них, Склад: Приход товарами
         /// </summary>
-        public int SKUReceiptGoods { get; set; } = 0;
+        public int SKUReceiptGoods { get; set; } = 0; // Суммируется при объединении алиасов
 
         #endregion
         #region Properties - Comments
@@ -56,7 +57,18 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         {
             get => skuReceipComment;
             set => skuReceipComment = string.IsNullOrEmpty(skuReceipComment) ? skuReceipComment = value : skuReceipComment += $"\n{value}";
-        } 
+        }
+
+        private string skuAliasesComment = string.Empty;
+
+        /// <summary>
+        /// Комментарий к приходам
+        /// </summary>
+        public string SKUAliasesComment
+        {
+            get => skuAliasesComment;
+            set => skuAliasesComment = string.IsNullOrEmpty(skuAliasesComment) ? skuAliasesComment = value : skuAliasesComment += $"\n{value}";
+        }
 
         #endregion
         #region Properties - Mutual settlement
@@ -74,19 +86,19 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// расход товарами
         /// </summary>
-        public int SKUOutgoingProducts { get; set; }
+        public int SKUOutgoingProducts { get; set; } // Суммируется при объединении алиасов
 
         /// <summary>
         /// Склад: Передано товаром (фулфилмент)
         /// </summary>
-        public int SKUTransfered { get; set; }
+        public int SKUTransfered { get; set; } // Суммируется при объединении алиасов
 
         #endregion
         #region Properties - Remaining
         /// <summary>
         /// Склад: Остаток товаров
         /// </summary>
-        public int SKURemaining { get; set; }
+        public int SKURemaining { get; set; } // Суммируется при объединении алиасов
         #endregion
         #region Properties - Overruns 
         private int skuOverrunsCount = 0;
@@ -107,10 +119,10 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
              0.00;
 
         #endregion
-        #endregion
 
+        #endregion
         #region Constructors
-        public SKUForTargetReport(SKU sku)
+        public SKUForTargetReport(SKU sku, int extraReceiptFromResortingIn1C)
         {
             SKULogins = string.Join(", ", sku.ClientLogins);
             SKUmp = sku.Marketplace;
@@ -135,7 +147,13 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             // Fill SKURemainingBalance
             if (sku.SKURemainingBalance is not null)
             {
-                SKUReceiptGoods = sku.SKURemainingBalance.SKUReceipt;
+                // Remove extra resorts 1C from SKUReceiptGoods
+                SKUReceiptGoods = sku.SKURemainingBalance.SKUReceipt - extraReceiptFromResortingIn1C;
+                if (extraReceiptFromResortingIn1C > 0)
+                {
+                    SKUReceipComment = $"Удалено из экстра-приходов по пересортам 1С: {extraReceiptFromResortingIn1C}";
+                }
+
                 SKUOutgoingProducts = sku.SKURemainingBalance.SKUOutgoingProducts;
                 SKUTransfered = sku.SKURemainingBalance.SKUTransfered;
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
@@ -146,13 +164,12 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 
             // Fill SKUCompensationBalance 
             SetSKUCompensateds(sku.SKUPaidShortageBalance);
-        
+
             // Set is parallel clients SKU
             IsParallelClientsSKU = sku.IsParallelClientsSKU;
         }
 
         #endregion
-
         #region Functionality
         public int FinalAnalize(int paidWriteOffRemainder)
         {
@@ -161,18 +178,18 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 
             // Calculate compensation from organization
             int paidWriteOffReminderResult;
-            if(paidWriteOffRemainder > 0 && SKUDeliveryDelayOrganization == 0) 
+            if (paidWriteOffRemainder > 0 && SKUDeliveryDelayOrganization == 0)
             {
-                 CalculateDelay(out paidWriteOffReminderResult, in paidWriteOffRemainder);
-            } 
-            else 
+                CalculateDelay(out paidWriteOffReminderResult, in paidWriteOffRemainder);
+            }
+            else
             {
                 paidWriteOffReminderResult = paidWriteOffRemainder;
             }
-               
+
             // Calculation of shortages from points 
             CalculateDelay(SKUSellmentStatus.DelayDeliveryFromPoints);
-      
+
             // Calculation of shortages from the warehouse
             CalculateDelay(SKUSellmentStatus.DelayFromWarehouse);
 
@@ -194,16 +211,16 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             }
             else
             {
-                switch (IsSkuNormalize) 
+                switch (IsSkuNormalize)
                 {
                     case true:
-                        switch(SKURemaining > 0) 
+                        switch (SKURemaining > 0)
                         {
                             case true:
                                 SetSellmentStatus(SKUSellmentStatus.DelayFromWarehouse);
                                 break;
                             case false:
-                                 SetSellmentStatus(SKUSellmentStatus.FullSet);
+                                SetSellmentStatus(SKUSellmentStatus.FullSet);
                                 break;
                         }
                         break;
@@ -234,7 +251,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                         }
                         break;
                 }
-                
+
             }
         }
 

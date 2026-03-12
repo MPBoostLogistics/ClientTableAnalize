@@ -8,6 +8,7 @@ using OfficeOpenXml.Style;
 using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUAliasBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage;
 using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
@@ -30,8 +31,6 @@ namespace TableAnalizer.Objects.Managers
         public const string OUTPUT_REPORT_OVERRUNSREPORT_NAME = "Отчет по перерасходам";
         public const string OUTPUT_REPORT_ANALYTICS_RERORT_NAME = "Аналитика";
         public const string PAID_SHORTAGES_REPORT_WORKSHEET_NAME = "Претензии";
-        public const string RESORTS_REPORT_WORKSHEET_NAME = "Пересорты";
-        public const string PARALLEL_SKUS_WORKSHEET_NAME = "Параллельные";
         public const string RANSOMS_WORKSHEET_NAME = "Выкупы";
         public const string REMAINING_OR_SHIPPED_WORKSHEET_NAME = "TDSheet";
         private const int DEFAULT_TABLE_ROW_HEIGHT = 18;
@@ -82,6 +81,9 @@ namespace TableAnalizer.Objects.Managers
             { ClaimResolutionStatus.ProductFound, "Товар найден" },
             { ClaimResolutionStatus.ReturnedToBalance, "Возвращено на баланс" },
         };
+
+        private static readonly string SKUNumberColName = "Артикул";
+
 
         #endregion
 
@@ -160,10 +162,16 @@ namespace TableAnalizer.Objects.Managers
 
         public static List<SourceColumn> ResortSourceCells { get; } =
         [
-            new(1, nameof(SKUResortDataUnit.SKUFromResortNumber), ParsingTypeCode.LongTypeCode, true),
-            new(2, nameof(SKUResortDataUnit.SKUToResortNumber), ParsingTypeCode.LongTypeCode, true),
-            new(3, nameof(SKUResortDataUnit.SKUToResortNumberCount), ParsingTypeCode.IntTypeCode, true),
-            new(4, nameof(SKUResortDataUnit.ResortComment), ParsingTypeCode.StringTypeCode, false)
+            new(1, nameof(SKUResortDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
+            new(2, nameof(SKUResortDataUnit.SKUResortCount), ParsingTypeCode.IntTypeCode, true),
+            new(3, nameof(SKUResortDataUnit.ResortComment), ParsingTypeCode.StringTypeCode, false)
+        ];
+
+        public static List<SourceColumn> AliasesSourceCells { get; } =
+        [
+            new(1, nameof(SKUAliasDataUnit.SKUSourceNumber), ParsingTypeCode.LongTypeCode, true),
+            new(2, nameof(SKUAliasDataUnit.SKUAliasNumbers), ParsingTypeCode.LongTypeArrayCode, true),
+            new(3, nameof(SKUAliasDataUnit.AliasComment), ParsingTypeCode.StringTypeCode, false)
         ];
 
         public static List<SourceColumn> ParallelSourceCells { get; } =
@@ -202,7 +210,7 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 2, colName: "МП", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUmp),
                 parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 3, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 3, colName: SKUNumberColName, colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUNumber),
                 parsingTypeCode: ParsingTypeCode.LongTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 4, colName: "Бренд товара", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
@@ -302,7 +310,7 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 1, colName: "МП", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0,textCommentInHeader: string.Empty,  propertyName: "SKUmp",
                 parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 2, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 2, colName: SKUNumberColName, colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUNumber",
                 parsingTypeCode: ParsingTypeCode.LongTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
@@ -338,7 +346,7 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 1, colName: "МП", colWidth: 8, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUmp",
                 parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 2, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 2, colName: SKUNumberColName, colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
                 wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: "SKUNumber",
                 parsingTypeCode: ParsingTypeCode.LongTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 3, colName: "Бренд товара", colWidth: 15, format: STRING_OR_INT_CELL_FORMAT,
@@ -362,7 +370,7 @@ namespace TableAnalizer.Objects.Managers
             new (colNumber: 2, colName: "МП", colWidth: 4, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUmp),
             parsingTypeCode: ParsingTypeCode.Marketplace, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
-            new (colNumber: 3, colName: "Артикул", colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 3, colName: SKUNumberColName, colWidth: 12, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: false, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKUNumber),
             parsingTypeCode: ParsingTypeCode.LongTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (colNumber: 4, colName: "Номенклатура", colWidth: 50, format: STRING_OR_INT_CELL_FORMAT,
@@ -426,11 +434,11 @@ namespace TableAnalizer.Objects.Managers
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.SKURemaining),
             parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: x => x < 0, typeFormula: TypesFormulas.Sum, targetCellSettings: accentTargetCellSettings),
 
-            new (colNumber: 22, colName: "Артикул параллельных клиентов", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 22, colName: $"{SKUNumberColName} параллельных клиентов", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.IsParallelClientsSKU),
             parsingTypeCode: ParsingTypeCode.BoolTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
 
-            new (colNumber: 23, colName: "Артикул нормализован", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
+            new (colNumber: 23, colName: $"{SKUNumberColName} нормализован", colWidth: 10, format: STRING_OR_INT_CELL_FORMAT,
             wrapTextInHeader: true, textRotationInHeader: 0, textCommentInHeader: string.Empty, propertyName: nameof(SKUForTargetReport.IsSkuNormalize),
             parsingTypeCode: ParsingTypeCode.BoolTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
 
@@ -627,7 +635,7 @@ namespace TableAnalizer.Objects.Managers
                     or SourceReportItemKey.WriteOffPoints
                     or SourceReportItemKey.WriteOffPointsViaWarehouseShortage
                     or SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
-                SourceReportItemKey.Additional => [RESORTS_REPORT_WORKSHEET_NAME, PARALLEL_SKUS_WORKSHEET_NAME],
+                SourceReportItemKey.Additional => [ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME, ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME],
                 SourceReportItemKey.ShortagesPaid => [PAID_SHORTAGES_REPORT_WORKSHEET_NAME],
                 _ => null,
             };
@@ -774,7 +782,6 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var targetCell in targetCells)
                 {
-
                     object? value = null;
 
                     switch (targetCell.ParsingTypeCode)
@@ -845,7 +852,7 @@ namespace TableAnalizer.Objects.Managers
 
                         if (tableCell is not null)
                         {
-                            ApplySettingsToTableCell(ref tableCell!, value, targetCell, isMainReport, targetReportData.FillColor);
+                            ApplySettingsToTableCell(ref tableCell!, value, targetCell, isMainReport, targetReportData.FillColor, targetReportData.SKUAliasesComment);
                         }
                         else
                         {
@@ -869,7 +876,7 @@ namespace TableAnalizer.Objects.Managers
             return result;
         }
 
-        private void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell, bool isMainReport, Color? statusColor)
+        private void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in TargetCell targetCell, bool isMainReport, Color? statusColor, string? aliasesComment = null)
         {
             // Add value to cell 
             tableCell.Value = value;
@@ -904,29 +911,31 @@ namespace TableAnalizer.Objects.Managers
                 tableCell.Style.Font.Size = targetCell.CellSettings.FontSize;
                 tableCell.Style.Font.Bold = true;
                 tableCell.Style.Font.Color.SetColor(dangerColor);
-
-                // if(!string.IsNullOrEmpty(attentionCell.Comment)) 
-                // {
-                //     var comment = tableCell.AddComment("Анализ отчета:\r\n");
-                //     comment.Font.Color = Color.Black;
-                //     comment.Font.Bold = true;
-
-                //     var message = comment.RichText.Add(attentionCell.Comment);
-                //     message.Color = Color.Black;
-                //     message.Bold = false;
-                //     message.Size = attentionCell.FontSize - 1;
-
-                //     comment.VerticalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignVerticalVml.Top;
-                //     comment.HorizontalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignHorizontalVml.Left;
-
-                //     comment.AutoFit = true;
-                // }
             }
             else
             {
                 tableCell.Style.Font.Size = targetCell.CellSettings.FontSize;
                 tableCell.Style.Font.Bold = targetCell.CellSettings.IsTextBold;
                 tableCell.Style.Font.Color.SetColor(targetCell.CellSettings.TextСolor);
+            }
+
+            // Add comment
+            bool isAliasComment = targetCell.ColName.Trim().Equals(SKUNumberColName.Trim(), StringComparison.CurrentCultureIgnoreCase) && aliasesComment != null && !string.IsNullOrEmpty(aliasesComment);
+            if (isAliasComment)
+            {
+                ExcelComment comm = tableCell.AddComment("");
+                comm.Font.Color = Color.Black;
+                comm.Font.Bold = true;
+
+                var message = comm.RichText.Add(aliasesComment);
+                message.Color = Color.Black;
+                message.Bold = false;
+                message.Size = tableCell.Style.Font.Size - 1;
+
+                comm.VerticalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignVerticalVml.Top;
+                comm.HorizontalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignHorizontalVml.Left;
+
+                comm.AutoFit = true;
             }
         }
 
@@ -954,7 +963,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="worksheet">Excel worksheet that is created.</param>
         /// <param name="tabColor">Worksheet label (tab) color.</param>
         /// <remarks><i>New version, tested</i></remarks>
-        public static void CreateExcelWorkSheet(string workSheetName, in ExcelPackage excelPackage, out ExcelWorksheet worksheet, System.Drawing.Color tabColor, bool isTracing)
+        public static void CreateExcelWorkSheet(string workSheetName, in ExcelPackage excelPackage, out ExcelWorksheet worksheet, Color tabColor, bool isTracing)
         {
             // Remove existing worksheet
             var existingWorksheet = excelPackage.Workbook.Worksheets
@@ -1272,8 +1281,8 @@ namespace TableAnalizer.Objects.Managers
                 SourceReportItemKey.Transfered => [new(TransferSourceCells)],
                 SourceReportItemKey.Additional => workSheetName switch
                 {
-                    RESORTS_REPORT_WORKSHEET_NAME => [new(ResortSourceCells)],
-                    PARALLEL_SKUS_WORKSHEET_NAME => [new(ParallelSourceCells)],
+                    ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME => [new(ResortSourceCells)],
+                    ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME => [new(AliasesSourceCells)],
                     _ => [],
                 },
                 SourceReportItemKey.ShortagesPaid => [new(PaidShortagesSourceCells)],
