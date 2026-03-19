@@ -26,6 +26,12 @@ namespace TableAnalizer.Objects.Managers
         public const string ADDREPORT_ALIASES_WORKSHEET_NAME = "Алиасы";
 
         /// <summary>
+        /// Название листа в доп первичном отчете - "Корректировки"
+        /// </summary>
+        public const string ADDREPORT_ADJUSTMENTS_WORKSHEET_NAME = "Корректировки";
+
+
+        /// <summary>
         /// Dictionary of primary report files.
         /// </summary>
         public static Dictionary<SourceReportItemKey, PrimaryReportFileItem> PrimaryReportFiles { get; private set; } = new()

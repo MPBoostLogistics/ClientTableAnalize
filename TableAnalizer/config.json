@@ -1,7 +1,7 @@
 {
   "Flags": {
     "isTracing": true,
-    "isAutoResorting": false,
+    "isAutoResorting": true,
     "isCombineAliases": false
   },
   "Messages": {
