@@ -28,7 +28,7 @@ namespace TableAnalizer.Objects.Managers
         public static Dictionary<SKUSellmentStatus, Color> StatusColors { get; } = new()
         {
             {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#e6f6eb")},                             // #e6f6eb
-            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fff6f0")},                              // #fff6f0
+            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fbd8b7")},                              // #fff6f0
             {SKUSellmentStatus.DelayFromPointsAndWarehouse, ColorTranslator.FromHtml("#ffd9d9")},         // #ffd9d9
             {SKUSellmentStatus.DelayFromWarehouse, ColorTranslator.FromHtml("#ffe0e0")},                  // #ffe0e0
             {SKUSellmentStatus.DelayFromOrganization, ColorTranslator.FromHtml("#f3d9d9")},               // #f3d9d9
