@@ -43,7 +43,7 @@ internal class Program
     /// <summary>
     /// Флаг учета (проверки) данных дополнительного отчета
     /// </summary>
-    private static bool isCheckAdditionalData; 
+    private static bool isCheckAdditionalData;
 
     private static bool isAutoResorting;
     private static bool isCombineAliases;
@@ -120,7 +120,7 @@ internal class Program
             isCheckRansoms = flagsSection.GetValue<bool>(nameof(isCheckRansoms));
             isCheckBalance = flagsSection.GetValue<bool>(nameof(isCheckBalance));
             isCheckOutgoingProducts = flagsSection.GetValue<bool>(nameof(isCheckOutgoingProducts));
-            isCheckAdditionalData = flagsSection.GetValue<bool>(nameof(isCheckAdditionalData)); 
+            isCheckAdditionalData = flagsSection.GetValue<bool>(nameof(isCheckAdditionalData));
             isAutoResorting = flagsSection.GetValue<bool>("isAutoResorting");
             isCombineAliases = flagsSection.GetValue<bool>("isCombineAliases");
 
@@ -375,7 +375,7 @@ internal class Program
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByTransfer, true),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, true),
                     AnalyticalManager.FixExtraReceipts(ref skuForTargetReports, true),
-                    AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
+
                 ];
 
                 for (int i = 0; i < fixAndAutoResortTasks.Length; i++)
@@ -386,7 +386,12 @@ internal class Program
                 Task.WaitAll(fixAndAutoResortTasks);
             }
 
-            // Save work 
+            // Final analize
+            Task skusForTargetFinaAnalizelTask = AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports);
+            await Task.Run(() => skusForTargetFinaAnalizelTask);
+            skusForTargetFinaAnalizelTask!.Wait();
+
+            // Save work
             var makeReportTask = excelManager!.MakeReports(skuForTargetReports, isTracing, isInternalReport);
             await Task.Run(() => makeReportTask);
             makeReportTask.Wait();

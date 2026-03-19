@@ -2,10 +2,10 @@
   "Flags": {
     "isTracing": true,
     "isCheckRansoms": true,
-    "isCheckBalance": false,
-    "isCheckOutgoingProducts": false,
-    "isCheckAdditionalData": false,
-    "isAutoResorting": true,
+    "isCheckBalance": true,
+    "isCheckOutgoingProducts": true,
+    "isCheckAdditionalData": true,
+    "isAutoResorting": false,
     "isCombineAliases": false
   },
   "Messages": {
