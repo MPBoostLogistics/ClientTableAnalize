@@ -174,6 +174,13 @@ namespace TableAnalizer.Objects.Managers
             new(3, nameof(SKUAliasDataUnit.AliasComment), ParsingTypeCode.StringTypeCode, false)
         ];
 
+        public static List<SourceColumn> AdjustmentSourceCells { get; } =
+        [
+            new(1, nameof(SKUAdjustmentDataUnit.SKUSourceNumber), ParsingTypeCode.LongTypeCode, true),
+            new(2, nameof(SKUAdjustmentDataUnit.SKUAdjustmentSum), ParsingTypeCode.IntTypeCode, true),
+            new(3, nameof(SKUAdjustmentDataUnit.SKUAdjustmentComment), ParsingTypeCode.StringTypeCode, false)
+        ];
+
         public static List<SourceColumn> ParallelSourceCells { get; } =
         [
             new(1, nameof(SKUParallelUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true)
@@ -635,7 +642,7 @@ namespace TableAnalizer.Objects.Managers
                     or SourceReportItemKey.WriteOffPoints
                     or SourceReportItemKey.WriteOffPointsViaWarehouseShortage
                     or SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
-                SourceReportItemKey.Additional => [ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME, ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME],
+                SourceReportItemKey.Additional => [ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME, ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME, ReportFileManager.ADDREPORT_ADJUSTMENTS_WORKSHEET_NAME],
                 SourceReportItemKey.ShortagesPaid => [PAID_SHORTAGES_REPORT_WORKSHEET_NAME],
                 _ => null,
             };
@@ -1283,6 +1290,7 @@ namespace TableAnalizer.Objects.Managers
                 {
                     ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME => [new(ResortSourceCells)],
                     ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME => [new(AliasesSourceCells)],
+                    ReportFileManager.ADDREPORT_ADJUSTMENTS_WORKSHEET_NAME => [new(AdjustmentSourceCells)],
                     _ => [],
                 },
                 SourceReportItemKey.ShortagesPaid => [new(PaidShortagesSourceCells)],

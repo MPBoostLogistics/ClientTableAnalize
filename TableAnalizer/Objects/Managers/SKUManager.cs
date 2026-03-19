@@ -51,6 +51,7 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<long, List<ParsingRowEntity>> SkuPaidShortagesBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<long, List<ParsingRowEntity>> SkuResortBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<long, List<ParsingRowEntity>> SkuAliasesBalanceUnits { get; } = new ParsingRowEntityRepo();
+        public IRepository<long, List<ParsingRowEntity>> SkuAdjustmentBalanceUnits { get; } = new ParsingRowEntityRepo();
 
 
         // /// <summary>
@@ -261,6 +262,7 @@ namespace TableAnalizer.Objects.Managers
             bool isResort = reportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME;
             // bool isParallel = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
             bool isAliases = reportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME;
+            bool isAdjustment = reportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_ADJUSTMENTS_WORKSHEET_NAME;
             bool isPaidShortages = reportFileKey == SourceReportItemKey.ShortagesPaid;
 
             await Task.Delay(10); // dummy
@@ -382,6 +384,24 @@ namespace TableAnalizer.Objects.Managers
                         SkuWriteOffFromPointsViaWarehouseShortageUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
                     }
 
+                }
+            }
+            else if (isAdjustment)
+            {
+                var skuAdjustmentDataUnits = from rowWithRawData in rowsWithRawData
+                                             let unit = new SKUAdjustmentDataUnit(rowWithRawData)
+                                             group unit by unit.SKUSourceNumber
+                                        into unitGroup
+                                             select unitGroup;
+
+                foreach (var skuAdjustmentGroup in skuAdjustmentDataUnits)
+                {
+                    long skuNumber = skuAdjustmentGroup.Key;
+
+                    List<ParsingRowEntity>? list = (((List<SKUAdjustmentDataUnit>?)[.. skuAdjustmentGroup])?.Cast<ParsingRowEntity>().ToList()) ??
+                        throw new InvalidCastException($"Cannot cast List of {nameof(SKUAdjustmentDataUnit)} to List of {nameof(ParsingRowEntity)}.");
+
+                    SkuAdjustmentBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
                 }
             }
             else if (isResort)
@@ -512,6 +532,7 @@ namespace TableAnalizer.Objects.Managers
             // bool isResorts = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME;
             // bool isParellel = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
             // bool isAliases = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME;
+            bool isAdjustment = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_ADJUSTMENTS_WORKSHEET_NAME;
             bool isPaidShortages = skuReportFileKey == SourceReportItemKey.ShortagesPaid;
 
             // Dummy
@@ -671,6 +692,10 @@ namespace TableAnalizer.Objects.Managers
 
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuPaidShortageBalance));
                     }
+                    else if (isAdjustment)
+                    {
+
+                    }
                 }
             }
         }
@@ -694,8 +719,19 @@ namespace TableAnalizer.Objects.Managers
                     extraReceiptSum = resortDataUnit.SKUResortCount;
                 }
 
+                // Search adjustment 
+                int adjustmentSum = 0;
+                SkuAdjustmentBalanceUnits.GetValue(targetSku.SKUNumber, out List<ParsingRowEntity>? a_units);
+                if (a_units != null && a_units.Count > 0)
+                {
+                    // Add resort element to SKU
+                    var a_unit = a_units.First();
+                    var adjustDataUnit = (SKUAdjustmentDataUnit)a_unit;
+                    adjustmentSum = adjustDataUnit.SKUAdjustmentSum;
+                }
+
                 // Add SKUForTargetReport with extra receipt
-                skuForTargetReports.Add(new(targetSku, extraReceiptSum));
+                skuForTargetReports.Add(new(targetSku, extraReceiptSum, adjustmentSum));
             }
 
             await Task.Delay(10); // dummy 

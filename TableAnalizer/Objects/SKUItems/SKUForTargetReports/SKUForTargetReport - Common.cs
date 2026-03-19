@@ -122,7 +122,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 
         #endregion
         #region Constructors
-        public SKUForTargetReport(SKU sku, int extraReceiptFromResortingIn1C)
+        public SKUForTargetReport(SKU sku, int extraReceiptFromResortingIn1C, int adjustmentSum)
         {
             SKULogins = string.Join(", ", sku.ClientLogins);
             SKUmp = sku.Marketplace;
@@ -155,6 +155,11 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                 }
 
                 SKUOutgoingProducts = sku.SKURemainingBalance.SKUOutgoingProducts;
+
+                // Correnction for outgoing wih adjustments
+                if (adjustmentSum != 0)
+                    SKUOutgoingProducts += adjustmentSum;
+
                 SKUTransfered = sku.SKURemainingBalance.SKUTransfered;
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
             }
