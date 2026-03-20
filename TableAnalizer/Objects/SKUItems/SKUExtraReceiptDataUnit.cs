@@ -1,11 +1,11 @@
 using TableAnalizer.Objects.Parsing;
 
-namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
+namespace TableAnalizer.Objects.SKUItems
 {
     /// <summary>
-    /// Resort data unit for forming SKUResortBalance.
+    /// Сущность для хранения единиц экстра-приходов (перемещения, пересорты)
     /// </summary>
-    public class SKUResortDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
+    public class SKUExtraReceiptDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
         public long SKUNumber { get; set; }
