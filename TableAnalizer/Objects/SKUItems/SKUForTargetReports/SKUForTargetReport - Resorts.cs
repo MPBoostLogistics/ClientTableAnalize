@@ -1,10 +1,10 @@
-namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports 
+namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 {
     /// <summary>
     /// Resorts part of "SKUForTargetReport" type.
     /// </summary>
-    public partial class SKUForTargetReport 
-    { 
+    public partial class SKUForTargetReport
+    {
         #region Fields
         private const string RESORT_CONSUMPTION_FIRST_LINE = "Пересортица расходов:";
         private const string RESORT_RECEIPT_FIRST_LINE = "Пересортица приходов:";
@@ -29,20 +29,20 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Экстра-приход товаров от пересортов в 1С.
         /// </summary>
-        public int ExtraReceiptFromResortingIn1C {get; private set; } = 0;
+        public int ExtraReceiptFromResortingIn1C { get; private set; } = 0;
         #endregion
 
         #region Functionality
-        public void MakeResort(ResortConsumptionTarget target, SKUResortDirection dir, long skuNumber, int sum) 
+        public void MakeResort(ResortConsumptionTarget target, SKUResortDirection dir, long skuNumber, int sum)
         {
             switch (target)
             {
                 case ResortConsumptionTarget.ResortingConsumptionByTransfer:
-                    if(!SKUResortsComment.Contains(RESORT_CONSUMPTION_FIRST_LINE)) 
+                    if (!SKUResortsComment.Contains(RESORT_CONSUMPTION_FIRST_LINE))
                     {
                         SKUResortsComment = RESORT_CONSUMPTION_FIRST_LINE;
                     }
-                    
+
                     switch (dir)
                     {
                         case SKUResortDirection.Incoming:
@@ -57,11 +57,11 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                     break;
 
                 case ResortConsumptionTarget.ResortingConsumptionByOutgoing:
-                    if(!SKUResortsComment.Contains(RESORT_CONSUMPTION_FIRST_LINE)) 
+                    if (!SKUResortsComment.Contains(RESORT_CONSUMPTION_FIRST_LINE))
                     {
                         SKUResortsComment = RESORT_CONSUMPTION_FIRST_LINE;
                     }
-                    
+
                     switch (dir)
                     {
                         case SKUResortDirection.Incoming:
@@ -69,55 +69,55 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                             SKUResortsComment = $"- от арт. {skuNumber}: {sum} (р)";
                             break;
                         case SKUResortDirection.Outgoing:
-                            SKUOutgoingProducts -= sum;
+                            SKUShipmentGoods -= sum;
                             SKUResortsComment = $"- на арт. {skuNumber}: {sum} (р)";
                             break;
                     }
                     break;
-                
+
                 case ResortConsumptionTarget.ResortingReceipt:
 
-                if(!SKUResortsComment.Contains(RESORT_RECEIPT_FIRST_LINE)) 
-                {
-                    SKUResortsComment = RESORT_RECEIPT_FIRST_LINE;
-                }
-                
-                switch (dir) 
-                {
-                    case SKUResortDirection.Incoming:
-                        SKUReceiptGoods += sum;
-                        SKUResortsComment = $"- от арт. {skuNumber}: {sum} (п+)";
-                        break;
-                    case SKUResortDirection.Outgoing:
-                        SKUReceiptGoods -= sum;
-                        SKUResortsComment = $"- на арт. {skuNumber}: {sum} (п-)";
-                        break;
-                    case SKUResortDirection.InternalParallel:
-                        if(SKUReceiptGoods >= sum) 
-                        {
-                            SKUReceiptGoods -= sum;
-                            SKUResortsComment = $"- приход списано: {sum} (апк-)";
-                        } 
-                        break;
-                    case SKUResortDirection.Internal:
-                    
-                        if(SKUReceiptGoods >= sum) 
-                        {
-                            SKUReceiptGoods -= sum;
-                            SKUResortsComment = $"- приход списано: {sum} (эп)";
-                        } 
+                    if (string.IsNullOrEmpty(SKUReceipComment) || !SKUReceipComment.Contains(RESORT_RECEIPT_FIRST_LINE))
+                    {
+                        SKUReceipComment = RESORT_RECEIPT_FIRST_LINE;
+                    }
 
-                        // Final balance receipt
-                        if(SKUReceiptTotal > SKURansomsWaiting) 
-                        {
-                            SKUReceiptGoods -= SKUReceiptTotal - SKURansomsWaiting;
-                        }
+                    switch (dir)
+                    {
+                        case SKUResortDirection.Incoming:
+                            SKUReceiptGoods += sum;
+                            SKUReceipComment = $"плюс {sum} от арт. {skuNumber}";
+                            break;
+                        case SKUResortDirection.Outgoing:
+                            SKUReceiptGoods -= sum;
+                            SKUReceipComment = $"минус {sum} на арт. {skuNumber}";
+                            break;
+                        case SKUResortDirection.InternalParallel:
+                            if (SKUReceiptGoods >= sum)
+                            {
+                                SKUReceiptGoods -= sum;
+                                SKUReceipComment = $"- приход списано: {sum} (апк-) ???";
+                            }
+                            break;
+                        case SKUResortDirection.Internal:
 
-                        break;
-                    default:
-                        break;
-                }
-                break;
+                            if (SKUReceiptGoods >= sum)
+                            {
+                                SKUReceiptGoods -= sum;
+                                SKUResortsComment = $"- приход списано: {sum} (эп)";
+                            }
+
+                            // Final balance receipt
+                            if (SKUReceiptTotal > SKURansomsWaiting)
+                            {
+                                SKUReceiptGoods -= SKUReceiptTotal - SKURansomsWaiting;
+                            }
+
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
             }
         }
         #endregion

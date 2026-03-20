@@ -1,6 +1,10 @@
 {
   "Flags": {
     "isTracing": true,
+    "isCheckRansoms": true,
+    "isCheckBalance": true,
+    "isCheckOutgoingProducts": true,
+    "isCheckAdditionalData": true,
     "isAutoResorting": false,
     "isCombineAliases": false
   },

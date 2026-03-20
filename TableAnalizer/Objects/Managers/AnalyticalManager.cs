@@ -16,13 +16,13 @@ namespace TableAnalizer.Objects.Managers
         private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByOutgoingProducts => sku =>
             !sku.IsSkuNormalize
             && sku.OverMutualSettlement > 0 &&
-            int.IsPositive(sku.SKUOutgoingProducts - sku.OverMutualSettlement);
+            int.IsPositive(sku.SKUShipmentGoods - sku.OverMutualSettlement);
 
         private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByOutgoingProductsWithoutProgress => sku =>
             sku.isDeadline &&
             !sku.IsSkuNormalize
             && sku.OverMutualSettlement > 0 &&
-            int.IsPositive(sku.SKUOutgoingProducts - sku.OverMutualSettlement);
+            int.IsPositive(sku.SKUShipmentGoods - sku.OverMutualSettlement);
 
         private static Func<SKUForTargetReport, bool> OverPredicateConsumptionByTransfer => sku =>
             !sku.IsSkuNormalize &&

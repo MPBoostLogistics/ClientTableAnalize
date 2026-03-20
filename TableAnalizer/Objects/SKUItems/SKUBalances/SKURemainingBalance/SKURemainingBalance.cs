@@ -10,19 +10,19 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         /// <summary>
         /// Number of goods received at the warehouse.
         /// </summary>
-        public int SKUReceipt { get; private set; }  
+        public int SKUReceipt { get; private set; }
         /// <summary>
         /// Number of goods delivered to the customer.
         /// </summary>
-        public int SKUOutgoingProducts { get; private set; } = 0;  
+        public int SKUShipmentGoods { get; private set; } = 0;
         /// <summary>
         /// Number of goods transferred to production.
         /// </summary>
-        public int SKUTransfered { get; private set; } = 0;   
+        public int SKUTransfered { get; private set; } = 0;
         /// <summary>
         /// Number of goods remaining in the warehouse.
         /// </summary>
-        public int SKURemaining { get; private set; } = 0; 
+        public int SKURemaining { get; private set; } = 0;
         #endregion
 
         #region Constructors
@@ -41,7 +41,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         public SKURemainingBalance(long skuNumber, List<SKUShippedDataUnit> skuShippedDataUnits)
         {
             SKUNumber = skuNumber;
-            SKUOutgoingProducts = skuShippedDataUnits
+            SKUShipmentGoods = skuShippedDataUnits
                 .Aggregate(0, (acc, unit) => acc + unit.SKUShippedCount);
         }
 
@@ -54,15 +54,15 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         }
 
         // For create new balance from repo.
-         public SKURemainingBalance(long number, int receipt, int shipped, int transfered, int remaining) 
-         {
+        public SKURemainingBalance(long number, int receipt, int shipped, int transfered, int remaining)
+        {
             SKUNumber = number;
 
             SKUReceipt = receipt;
-            SKUOutgoingProducts = shipped;
+            SKUShipmentGoods = shipped;
             SKUTransfered = transfered;
             SKURemaining = remaining;
-         }
+        }
 
         #endregion Constructors
 

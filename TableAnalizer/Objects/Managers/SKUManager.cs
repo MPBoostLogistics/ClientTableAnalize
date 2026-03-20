@@ -28,7 +28,7 @@ namespace TableAnalizer.Objects.Managers
         public static Dictionary<SKUSellmentStatus, Color> StatusColors { get; } = new()
         {
             {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#e6f6eb")},                             // #e6f6eb
-            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fff6f0")},                              // #fff6f0
+            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fbd8b7")},                              // #fff6f0
             {SKUSellmentStatus.DelayFromPointsAndWarehouse, ColorTranslator.FromHtml("#ffd9d9")},         // #ffd9d9
             {SKUSellmentStatus.DelayFromWarehouse, ColorTranslator.FromHtml("#ffe0e0")},                  // #ffe0e0
             {SKUSellmentStatus.DelayFromOrganization, ColorTranslator.FromHtml("#f3d9d9")},               // #f3d9d9
@@ -49,8 +49,15 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<long, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseShortageUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<long, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseAdjustmentUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<long, List<ParsingRowEntity>> SkuPaidShortagesBalanceUnits { get; } = new ParsingRowEntityRepo();
-        public IRepository<long, List<ParsingRowEntity>> SkuResortBalanceUnits { get; } = new ParsingRowEntityRepo();
+        /// <summary>
+        /// Коллекция единиц экстра-прихода (пересорты, перемещения между помещениями)
+        /// </summary>
+        public IRepository<long, List<ParsingRowEntity>> SkuExtraReceiptBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<long, List<ParsingRowEntity>> SkuAliasesBalanceUnits { get; } = new ParsingRowEntityRepo();
+        /// <summary>
+        /// Коллекция единиц для корректировке расхода товаров
+        /// </summary>
+        public IRepository<long, List<ParsingRowEntity>> SkuShipmentAdjustmentUnits { get; } = new ParsingRowEntityRepo();
 
 
         // /// <summary>
@@ -171,7 +178,7 @@ namespace TableAnalizer.Objects.Managers
                 // 3. Report
                 static bool FindSkusWithRansoms(SKU sku) => sku.SKURansomsBalance != null;
                 static bool FindSkusWithRemaining(SKU sku) => sku.SKURemainingBalance != null;
-                static bool FindSkusWithOutgoingProducts(SKU sku) => sku.SKURemainingBalance?.SKUOutgoingProducts != null;
+                static bool FindSkusWithOutgoingProducts(SKU sku) => sku.SKURemainingBalance?.SKUShipmentGoods != null;
                 static bool FindSkusWithTransfered(SKU sku) => sku.SKURemainingBalance?.SKUTransfered != null;
                 static bool FindSkusWithWriteOffPoints(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPoints > 0;
                 static bool FindSkusWithWriteOffPointsViaWarehouseShortage(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseShortage > 0;
@@ -195,9 +202,9 @@ namespace TableAnalizer.Objects.Managers
                     case SourceReportItemKey.Additional:
                         switch (workSheetName)
                         {
-                            case ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME:
+                            case ReportFileManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME:
                                 predicateHandler = FindSkusWithResort;
-                                message = "Артикулов из пересортов: ";
+                                message = "Артикулов из экстра-приходов: ";
                                 break;
                                 // case ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME:
                                 //     predicateHandler = SkuAliasesBalanceUnits.Count() > 0;
@@ -258,9 +265,11 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOffPoints = reportFileKey == SourceReportItemKey.WriteOffPoints;
             bool isWriteOffPointsViaWarehouseShortage = reportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseShortage;
             bool isWriteOffPointsViaWarehouseAdjustment = reportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment;
-            bool isResort = reportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME;
+            // bool isResort = reportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME;
             // bool isParallel = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
             bool isAliases = reportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME;
+            bool isShipmentAdjustment = reportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME;
+            bool isExtraReceipt = reportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME;
             bool isPaidShortages = reportFileKey == SourceReportItemKey.ShortagesPaid;
 
             await Task.Delay(10); // dummy
@@ -384,22 +393,40 @@ namespace TableAnalizer.Objects.Managers
 
                 }
             }
-            else if (isResort)
+            else if (isShipmentAdjustment)
             {
-                var skuResortDataUnits = from rowWithRawData in rowsWithRawData
-                                         let unit = new SKUResortDataUnit(rowWithRawData)
-                                         group unit by unit.SKUNumber
-                                         into unitGroup
-                                         select unitGroup;
+                var skuAdjustmentDataUnits = from rowWithRawData in rowsWithRawData
+                                             let unit = new SKUAdjustmentShipmentUnit(rowWithRawData)
+                                             group unit by unit.SKUSourceNumber
+                                             into unitGroup
+                                             select unitGroup;
 
-                foreach (var skuResortGroup in skuResortDataUnits)
+                foreach (var skuAdjustmentGroup in skuAdjustmentDataUnits)
                 {
-                    long skuNumber = skuResortGroup.Key;
+                    long skuNumber = skuAdjustmentGroup.Key;
 
-                    List<ParsingRowEntity>? list = (((List<SKUResortDataUnit>?)[.. skuResortGroup])?.Cast<ParsingRowEntity>().ToList()) ??
-                        throw new InvalidCastException($"Cannot cast List of {nameof(SKUResortDataUnit)} to List of {nameof(ParsingRowEntity)}.");
+                    List<ParsingRowEntity>? list = (((List<SKUAdjustmentShipmentUnit>?)[.. skuAdjustmentGroup])?.Cast<ParsingRowEntity>().ToList()) ??
+                        throw new InvalidCastException($"Cannot cast List of {nameof(SKUAdjustmentShipmentUnit)} to List of {nameof(ParsingRowEntity)}.");
 
-                    SkuResortBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
+                    SkuShipmentAdjustmentUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
+                }
+            }
+            else if (isExtraReceipt)
+            {
+                var skuExtraReceiptDataUnits = from rowWithRawData in rowsWithRawData
+                                               let unit = new SKUExtraReceiptDataUnit(rowWithRawData)
+                                               group unit by unit.SKUNumber
+                                         into unitGroup
+                                               select unitGroup;
+
+                foreach (var skuGroup in skuExtraReceiptDataUnits)
+                {
+                    long skuNumber = skuGroup.Key;
+
+                    List<ParsingRowEntity>? list = (((List<SKUExtraReceiptDataUnit>?)[.. skuGroup])?.Cast<ParsingRowEntity>().ToList()) ??
+                        throw new InvalidCastException($"Cannot cast List of {nameof(SKUExtraReceiptDataUnit)} to List of {nameof(ParsingRowEntity)}.");
+
+                    SkuExtraReceiptBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
                 }
             }
             // else if (isParallel)
@@ -512,6 +539,7 @@ namespace TableAnalizer.Objects.Managers
             // bool isResorts = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME;
             // bool isParellel = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
             // bool isAliases = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME;
+            bool isAdjustment = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME;
             bool isPaidShortages = skuReportFileKey == SourceReportItemKey.ShortagesPaid;
 
             // Dummy
@@ -537,8 +565,8 @@ namespace TableAnalizer.Objects.Managers
                     parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseAdjustmentUnits,
                 SourceReportItemKey.Additional => workSheetName switch
                 {
-                    ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME =>
-                        parsingEntityCollection = SkuResortBalanceUnits,
+                    ReportFileManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME =>
+                        parsingEntityCollection = SkuExtraReceiptBalanceUnits,
                     ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME =>
                         parsingEntityCollection = SkuAliasesBalanceUnits,
                     // ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME =>
@@ -671,6 +699,10 @@ namespace TableAnalizer.Objects.Managers
 
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuPaidShortageBalance));
                     }
+                    else if (isAdjustment)
+                    {
+
+                    }
                 }
             }
         }
@@ -683,19 +715,30 @@ namespace TableAnalizer.Objects.Managers
             {
                 if (targetSku is null) continue;
 
-                // Search extra receipt from resorting in 1C
+                // Поиск экстра-приходов от перемещений и пересортов
                 int extraReceiptSum = 0;
-                SkuResortBalanceUnits.GetValue(targetSku.SKUNumber, out List<ParsingRowEntity>? units);
+                SkuExtraReceiptBalanceUnits.GetValue(targetSku.SKUNumber, out List<ParsingRowEntity>? units);
                 if (units != null && units.Count > 0)
                 {
                     // Add resort element to SKU
                     var unit = units.First();
-                    var resortDataUnit = (SKUResortDataUnit)unit;
-                    extraReceiptSum = resortDataUnit.SKUResortCount;
+                    var extraReceiptUnit = (SKUExtraReceiptDataUnit)unit;
+                    extraReceiptSum = extraReceiptUnit.SKUResortCount;
+                }
+
+                // Поиск корректировок расхода от клиента
+                int adjustmentWriteOffSum = 0;
+                SkuShipmentAdjustmentUnits.GetValue(targetSku.SKUNumber, out List<ParsingRowEntity>? a_units);
+                if (a_units != null && a_units.Count > 0)
+                {
+                    // Add resort element to SKU
+                    var a_unit = a_units.First();
+                    var adjustmentWriteOffDataUnit = (SKUAdjustmentShipmentUnit)a_unit;
+                    adjustmentWriteOffSum = adjustmentWriteOffDataUnit.SKUAdjustmentSum;
                 }
 
                 // Add SKUForTargetReport with extra receipt
-                skuForTargetReports.Add(new(targetSku, extraReceiptSum));
+                skuForTargetReports.Add(new(targetSku, extraReceiptSum, adjustmentWriteOffSum));
             }
 
             await Task.Delay(10); // dummy 
@@ -798,7 +841,7 @@ namespace TableAnalizer.Objects.Managers
             combines.First().SKUPaidShortageOrganizationAndWarehouse = combines.Sum(el => el.SKUPaidShortageOrganizationAndWarehouse);
 
             // сombine outgoing & transfered & resort & remaining
-            combines.First().SKUOutgoingProducts = combines.Sum(el => el.SKUOutgoingProducts);
+            combines.First().SKUShipmentGoods = combines.Sum(el => el.SKUShipmentGoods);
             combines.First().SKUTransfered = combines.Sum(el => el.SKUTransfered);
             combines.First().SKUResort = combines.Sum(el => el.SKUResort);
             combines.First().SKURemaining = combines.Sum(el => el.SKURemaining);

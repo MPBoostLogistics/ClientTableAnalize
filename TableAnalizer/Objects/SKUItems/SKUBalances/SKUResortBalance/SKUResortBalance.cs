@@ -51,7 +51,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
         //public delegate bool FindSkusInBalanceDelegate((SKUResortBalanceTarget target, int count) item); 
 
         #region Constructors
-        public SKUResortBalance(long skuFromResortNumber, List<SKUResortDataUnit> skuToResortUnits)
+        public SKUResortBalance(long skuFromResortNumber, List<SKUExtraReceiptDataUnit> skuToResortUnits)
         {
             SKUFromResortNumber = skuFromResortNumber;
             Update(skuToResortUnits);
@@ -59,7 +59,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
         #endregion
 
         #region Functionality
-        public void Update(List<SKUResortDataUnit> skuResortDataUnits)
+        public void Update(List<SKUExtraReceiptDataUnit> skuResortDataUnits)
         {
             // static void SkippedProcedureMessage() 
             // {
@@ -122,7 +122,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
             // }
         }
 
-        private void CheckEqualsSkus(SKUResortDataUnit skuResortDataUnit)
+        private void CheckEqualsSkus(SKUExtraReceiptDataUnit skuResortDataUnit)
         {
             // // If balance and resortFrom articles are not equal, entry is skipped.
             // if (!int.Equals(SKUFromResortNumber, skuResortDataUnit.SKUFromResortNumber))

@@ -59,6 +59,17 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             set => skuReceipComment = string.IsNullOrEmpty(skuReceipComment) ? skuReceipComment = value : skuReceipComment += $"\n{value}";
         }
 
+        private string skuShipmentComment = string.Empty;
+
+        /// <summary>
+        /// Комментарий к расходам
+        /// </summary>
+        public string SKUShipmentComment
+        {
+            get => skuShipmentComment;
+            set => skuShipmentComment = string.IsNullOrEmpty(skuShipmentComment) ? skuShipmentComment = value : skuShipmentComment += $"\n{value}";
+        }
+
         private string skuAliasesComment = string.Empty;
 
         /// <summary>
@@ -81,12 +92,12 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Взаиморачет товарами (отгрузки, перемещения, пересорты)
         /// </summary>
-        public int SKUSettlementByGoods => SKUOutgoingProducts + SKUTransfered + SKUResort;
+        public int SKUSettlementByGoods => SKUShipmentGoods + SKUTransfered + SKUResort;
 
         /// <summary>
         /// расход товарами
         /// </summary>
-        public int SKUOutgoingProducts { get; set; } // Суммируется при объединении алиасов
+        public int SKUShipmentGoods { get; set; } // Суммируется при объединении алиасов
 
         /// <summary>
         /// Склад: Передано товаром (фулфилмент)
@@ -122,7 +133,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 
         #endregion
         #region Constructors
-        public SKUForTargetReport(SKU sku, int extraReceiptFromResortingIn1C)
+        public SKUForTargetReport(SKU sku, int extraReceiptFromResortingIn1C, int adjustmentShipmentSum)
         {
             SKULogins = string.Join(", ", sku.ClientLogins);
             SKUmp = sku.Marketplace;
@@ -147,14 +158,27 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             // Fill SKURemainingBalance
             if (sku.SKURemainingBalance is not null)
             {
-                // Remove extra resorts 1C from SKUReceiptGoods
-                SKUReceiptGoods = sku.SKURemainingBalance.SKUReceipt - extraReceiptFromResortingIn1C;
+                // Приход товаров
+                SKUReceiptGoods = sku.SKURemainingBalance.SKUReceipt;
+
+                // Корректировка экстра-приходов на 1 помещение
+                SKUReceiptGoods = sku.SKURemainingBalance.SKUReceipt;
                 if (extraReceiptFromResortingIn1C > 0)
                 {
-                    SKUReceipComment = $"Удалено из экстра-приходов по пересортам 1С: {extraReceiptFromResortingIn1C}";
+                    SKUReceiptGoods -= extraReceiptFromResortingIn1C;
+                    SKUReceipComment = $"Удалено из экстра-приходов (перемещения, пересорты): {extraReceiptFromResortingIn1C}";
                 }
 
-                SKUOutgoingProducts = sku.SKURemainingBalance.SKUOutgoingProducts;
+                // Расход товаров
+                SKUShipmentGoods = sku.SKURemainingBalance.SKUShipmentGoods;
+
+                // Корректировка расходов по данным от Клиента
+                if (adjustmentShipmentSum != 0)
+                {
+                    SKUShipmentGoods += adjustmentShipmentSum;
+                    SKUShipmentComment += $"\nКорректировка по расходам: {adjustmentShipmentSum}";
+                }
+
                 SKUTransfered = sku.SKURemainingBalance.SKUTransfered;
                 SKURemaining = sku.SKURemainingBalance.SKURemaining;
             }

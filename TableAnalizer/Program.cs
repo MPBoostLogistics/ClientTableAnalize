@@ -28,6 +28,23 @@ internal class Program
     private static string appVersion = string.Empty;
     private static string goodByMessage = string.Empty;
     private static bool isTracing;
+    /// <summary>
+    /// Флаг учета (проверки) выкупов
+    /// </summary>
+    private static bool isCheckRansoms;
+    /// <summary>
+    /// Флаг учета (проверки) баланса (прихода и остатков) товаров на складе
+    /// </summary>
+    private static bool isCheckBalance;
+    /// <summary>
+    /// Флаг учета (проверки) баланса расхода товаров со склада
+    /// </summary>
+    private static bool isCheckOutgoingProducts;
+    /// <summary>
+    /// Флаг учета (проверки) данных дополнительного отчета
+    /// </summary>
+    private static bool isCheckAdditionalData;
+
     private static bool isAutoResorting;
     private static bool isCombineAliases;
 
@@ -97,8 +114,13 @@ internal class Program
             IConfigurationSection? stringsSection = appConfig.GetSection("Strings");
             appVersion = stringsSection.GetValue<string>("AppVersion");
 
+            // Получение булевых значений
             IConfigurationSection? flagsSection = appConfig.GetSection("Flags");
             isTracing = flagsSection.GetValue<bool>("isTracing");
+            isCheckRansoms = flagsSection.GetValue<bool>(nameof(isCheckRansoms));
+            isCheckBalance = flagsSection.GetValue<bool>(nameof(isCheckBalance));
+            isCheckOutgoingProducts = flagsSection.GetValue<bool>(nameof(isCheckOutgoingProducts));
+            isCheckAdditionalData = flagsSection.GetValue<bool>(nameof(isCheckAdditionalData));
             isAutoResorting = flagsSection.GetValue<bool>("isAutoResorting");
             isCombineAliases = flagsSection.GetValue<bool>("isCombineAliases");
 
@@ -251,7 +273,7 @@ internal class Program
         if (existingKeys is not null && existingKeys.Count > 0)
         {
             // Ransoms task
-            if (existingKeys.Contains(SourceReportItemKey.Ransoms))
+            if (isCheckRansoms && existingKeys.Contains(SourceReportItemKey.Ransoms))
             {
                 Task ransomsTask = ReceivingAndProcessingData(SourceReportItemKey.Ransoms, isInternalReport);
                 await Task.Run(async () => await ransomsTask);
@@ -259,7 +281,7 @@ internal class Program
             }
 
             // Balance task
-            if (existingKeys.Contains(SourceReportItemKey.Balance))
+            if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.Balance))
             {
                 var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Balance, isInternalReport);
                 await Task.Run(async () => await currentTask);
@@ -267,7 +289,7 @@ internal class Program
             }
 
             // WriteOff points via warehouse task (shortage)
-            if (existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseShortage))
+            if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseShortage))
             {
                 var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseShortage, isInternalReport);
                 await Task.Run(async () => await currentTask);
@@ -275,7 +297,7 @@ internal class Program
             }
 
             // WriteOff points via warehouse task (adjustment)
-            if (existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment))
+            if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment))
             {
                 var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, isInternalReport);
                 await Task.Run(async () => await currentTask);
@@ -283,15 +305,15 @@ internal class Program
             }
 
             // WriteOff points task 
-            if (existingKeys.Contains(SourceReportItemKey.WriteOffPoints))
+            if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.WriteOffPoints))
             {
                 var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPoints, isInternalReport);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
 
-            // Outgoing products tasks
-            if (existingKeys.Contains(SourceReportItemKey.OutgoingProducts))
+            // Outgoing products task
+            if (isCheckOutgoingProducts && existingKeys.Contains(SourceReportItemKey.OutgoingProducts))
             {
                 var currentTask = ReceivingAndProcessingData(SourceReportItemKey.OutgoingProducts, isInternalReport);
                 await Task.Run(async () => await currentTask);
@@ -299,7 +321,7 @@ internal class Program
             }
 
             // Transfer task
-            if (existingKeys.Contains(SourceReportItemKey.Transfered))
+            if (isCheckOutgoingProducts && existingKeys.Contains(SourceReportItemKey.Transfered))
             {
                 var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Transfered, isInternalReport);
                 await Task.Run(async () => await currentTask);
@@ -307,7 +329,7 @@ internal class Program
             }
 
             // Additional task
-            if (existingKeys.Contains(SourceReportItemKey.Additional))
+            if (isCheckAdditionalData && existingKeys.Contains(SourceReportItemKey.Additional))
             {
                 var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Additional, isInternalReport);
                 await Task.Run(async () => await currentTask);
@@ -315,7 +337,7 @@ internal class Program
             }
 
             // Paid shortages task
-            if (existingKeys.Contains(SourceReportItemKey.ShortagesPaid))
+            if (isCheckBalance && isCheckOutgoingProducts && existingKeys.Contains(SourceReportItemKey.ShortagesPaid))
             {
                 var currentTask = ReceivingAndProcessingData(SourceReportItemKey.ShortagesPaid, isInternalReport);
                 await Task.Run(async () => await currentTask);
@@ -353,7 +375,7 @@ internal class Program
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByTransfer, true),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, true),
                     AnalyticalManager.FixExtraReceipts(ref skuForTargetReports, true),
-                    AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports)
+
                 ];
 
                 for (int i = 0; i < fixAndAutoResortTasks.Length; i++)
@@ -364,7 +386,12 @@ internal class Program
                 Task.WaitAll(fixAndAutoResortTasks);
             }
 
-            // Save work 
+            // Final analize
+            Task skusForTargetFinaAnalizelTask = AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports);
+            await Task.Run(() => skusForTargetFinaAnalizelTask);
+            skusForTargetFinaAnalizelTask!.Wait();
+
+            // Save work
             var makeReportTask = excelManager!.MakeReports(skuForTargetReports, isTracing, isInternalReport);
             await Task.Run(() => makeReportTask);
             makeReportTask.Wait();

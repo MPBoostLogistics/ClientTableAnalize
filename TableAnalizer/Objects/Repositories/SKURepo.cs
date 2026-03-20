@@ -21,30 +21,32 @@ namespace TableAnalizer.Objects.Repositories
             }
         }
 
-        private static SKU CreateNewSKU(SKU retriveValue, SKU newValue, bool isSummary) 
+        private static SKU CreateNewSKU(SKU retriveValue, SKU newValue, bool isSummary)
         {
             // Logins
-            List<string> clientLoginsList =  [.. retriveValue.ClientLogins
+            List<string> clientLoginsList = [.. retriveValue.ClientLogins
                         .Union(newValue.ClientLogins)
                         .OrderByDescending(el => el)];
-             
+
             // Marketplace 
             Marketplace? marketplace = null;
-            switch(retriveValue.Marketplace.HasValue, newValue.Marketplace.HasValue) 
+            switch (retriveValue.Marketplace.HasValue, newValue.Marketplace.HasValue)
             {
                 case (false, true):
                     marketplace = newValue.Marketplace;
                     break;
-                case (true, false): case (true, true):
+                case (true, false):
+                case (true, true):
                     marketplace = retriveValue.Marketplace;
                     break;
-            };
+            }
+            ;
 
             // SKUNumber  
             long skuNumber = retriveValue.SKUNumber;
-            
+
             // SKUBrand
-            bool isRetriveValueIncludesSKUBrand = !string.IsNullOrEmpty(retriveValue.SKUBrand) && retriveValue.SKUBrand != SKU.DEFAULT_BRAND ;
+            bool isRetriveValueIncludesSKUBrand = !string.IsNullOrEmpty(retriveValue.SKUBrand) && retriveValue.SKUBrand != SKU.DEFAULT_BRAND;
             bool isNewValueIncludesSKUBrand = !string.IsNullOrEmpty(newValue.SKUBrand) && newValue.SKUBrand != SKU.DEFAULT_BRAND;
             string skuBrand = (isRetriveValueIncludesSKUBrand, isNewValueIncludesSKUBrand) switch
             {
@@ -60,30 +62,30 @@ namespace TableAnalizer.Objects.Repositories
             {
                 (false, true) => newValue.SKUName,
                 (true, false) or (true, true) => retriveValue.SKUName,
-                 _ => SKU.DEFAULT_NAME
+                _ => SKU.DEFAULT_NAME
             };
-            
+
             // SKURansomsBalance
             SKURansomsBalance? skuRansomsBalance = null;
-            switch(retriveValue.SKURansomsBalance is not null, newValue.SKURansomsBalance is not null) 
+            switch (retriveValue.SKURansomsBalance is not null, newValue.SKURansomsBalance is not null)
             {
-                case (true,false):
+                case (true, false):
                     skuRansomsBalance = retriveValue.SKURansomsBalance;
                     break;
 
-                case (false,true):
+                case (false, true):
                     skuRansomsBalance = newValue.SKURansomsBalance;
                     break;
-                
-                case (true,true): 
+
+                case (true, true):
                     int? inTransitNumberPurchases = CombineIntValues(retriveValue.SKURansomsBalance!.SKUInTransitNumberPurchases, newValue.SKURansomsBalance!.SKUInTransitNumberPurchases, isSummary);
                     int? cancelledNumberPurchases = CombineIntValues(retriveValue.SKURansomsBalance!.SKUCancelledNumberPurchases, newValue.SKURansomsBalance!.SKUCancelledNumberPurchases, isSummary);
                     int? deliveredToPointsNumberPurchases = CombineIntValues(retriveValue.SKURansomsBalance!.SKUDeliveredToPointsNumberPurchases, newValue.SKURansomsBalance!.SKUDeliveredToPointsNumberPurchases, isSummary);
                     int? pickedupFromPointsNumberPurchases = CombineIntValues(retriveValue.SKURansomsBalance!.SKUPickedupFromPointsNumberPurchases, newValue.SKURansomsBalance!.SKUPickedupFromPointsNumberPurchases, isSummary);
                     int? unknownNumberPurchases = CombineIntValues(retriveValue.SKURansomsBalance!.SKUPickedupFromPointsNumberPurchases, newValue.SKURansomsBalance!.SKUUnknownNumberPurchases, isSummary);
-                    
-                    skuRansomsBalance = new (inTransitNumberPurchases, cancelledNumberPurchases, deliveredToPointsNumberPurchases, pickedupFromPointsNumberPurchases, unknownNumberPurchases);
-                    
+
+                    skuRansomsBalance = new(inTransitNumberPurchases, cancelledNumberPurchases, deliveredToPointsNumberPurchases, pickedupFromPointsNumberPurchases, unknownNumberPurchases);
+
                     break;
             }
 
@@ -92,39 +94,39 @@ namespace TableAnalizer.Objects.Repositories
 
             var skuReceiptRv = retriveValue.SKURemainingBalance?.SKUReceipt is not null && retriveValue.SKURemainingBalance?.SKUReceipt > 0;
             var skuReceiptNv = newValue.SKURemainingBalance?.SKUReceipt is not null && newValue.SKURemainingBalance?.SKUReceipt > 0;
-            int? skuReceipt = (skuReceiptRv, skuReceiptNv) switch 
+            int? skuReceipt = (skuReceiptRv, skuReceiptNv) switch
             {
-                (true,false) or (true,true) => retriveValue.SKURemainingBalance?.SKUReceipt,
-                (false,true) => newValue.SKURemainingBalance?.SKUReceipt,
+                (true, false) or (true, true) => retriveValue.SKURemainingBalance?.SKUReceipt,
+                (false, true) => newValue.SKURemainingBalance?.SKUReceipt,
                 _ => 0
             };
 
-            var skuOutgoingRv = retriveValue.SKURemainingBalance?.SKUOutgoingProducts is not null && retriveValue.SKURemainingBalance?.SKUOutgoingProducts > 0;
-            var skuOutgoingNv = newValue.SKURemainingBalance?.SKUOutgoingProducts is not null && newValue.SKURemainingBalance?.SKUOutgoingProducts > 0;
-            int? skuOutgoing = (skuOutgoingRv, skuOutgoingNv) switch 
+            var skuOutgoingRv = retriveValue.SKURemainingBalance?.SKUShipmentGoods is not null && retriveValue.SKURemainingBalance?.SKUShipmentGoods > 0;
+            var skuOutgoingNv = newValue.SKURemainingBalance?.SKUShipmentGoods is not null && newValue.SKURemainingBalance?.SKUShipmentGoods > 0;
+            int? skuOutgoing = (skuOutgoingRv, skuOutgoingNv) switch
             {
-                (true,false) => retriveValue.SKURemainingBalance?.SKUOutgoingProducts,
-                (true,true) => retriveValue.SKURemainingBalance?.SKUOutgoingProducts + newValue.SKURemainingBalance?.SKUOutgoingProducts,
-                (false,true) => newValue.SKURemainingBalance?.SKUOutgoingProducts,
+                (true, false) => retriveValue.SKURemainingBalance?.SKUShipmentGoods,
+                (true, true) => retriveValue.SKURemainingBalance?.SKUShipmentGoods + newValue.SKURemainingBalance?.SKUShipmentGoods,
+                (false, true) => newValue.SKURemainingBalance?.SKUShipmentGoods,
                 _ => 0
             };
 
             var skuTransferedRv = retriveValue.SKURemainingBalance?.SKUTransfered is not null && retriveValue.SKURemainingBalance?.SKUTransfered > 0;
             var skuTransferedNv = newValue.SKURemainingBalance?.SKUTransfered is not null && newValue.SKURemainingBalance?.SKUTransfered > 0;
-            int? skuTransfered = (skuTransferedRv, skuTransferedNv) switch 
+            int? skuTransfered = (skuTransferedRv, skuTransferedNv) switch
             {
-                (true,false) => retriveValue.SKURemainingBalance?.SKUTransfered,
-                (true,true) => retriveValue.SKURemainingBalance?.SKUTransfered + newValue.SKURemainingBalance?.SKUTransfered,
-                (false,true) => newValue.SKURemainingBalance?.SKUTransfered,
+                (true, false) => retriveValue.SKURemainingBalance?.SKUTransfered,
+                (true, true) => retriveValue.SKURemainingBalance?.SKUTransfered + newValue.SKURemainingBalance?.SKUTransfered,
+                (false, true) => newValue.SKURemainingBalance?.SKUTransfered,
                 _ => 0
             };
 
             var skuRemainingRv = retriveValue.SKURemainingBalance?.SKURemaining is not null && retriveValue.SKURemainingBalance?.SKURemaining > 0;
             var skuRemainingNv = newValue.SKURemainingBalance?.SKURemaining is not null && newValue.SKURemainingBalance?.SKURemaining > 0;
-            int? skuRemaining = (skuRemainingRv, skuRemainingNv) switch 
+            int? skuRemaining = (skuRemainingRv, skuRemainingNv) switch
             {
-                (true,false) or (true,true) => retriveValue.SKURemainingBalance?.SKURemaining,
-                (false,true) => newValue.SKURemainingBalance?.SKURemaining,
+                (true, false) or (true, true) => retriveValue.SKURemainingBalance?.SKURemaining,
+                (false, true) => newValue.SKURemainingBalance?.SKURemaining,
                 _ => 0
             };
 
@@ -132,17 +134,18 @@ namespace TableAnalizer.Objects.Repositories
 
             // SKUWriteOffBalance
             SKUWriteOffBalance? skuWriteOffBalance = null;
-            switch(retriveValue.SKUWriteOffBalance is not null, newValue.SKUWriteOffBalance is not null) 
+            switch (retriveValue.SKUWriteOffBalance is not null, newValue.SKUWriteOffBalance is not null)
             {
-                case (false,true):
+                case (false, true):
                     skuWriteOffBalance = newValue.SKUWriteOffBalance;
                     break;
 
-                case (true,true): case (true,false):
+                case (true, true):
+                case (true, false):
 
                     skuWriteOffBalance = retriveValue.SKUWriteOffBalance;
 
-                    if(newValue.SKUWriteOffBalance is not null) 
+                    if (newValue.SKUWriteOffBalance is not null)
                     {
                         int skuWriteOffPoints = retriveValue.SKUWriteOffBalance!.SKUWriteOffPoints + newValue.SKUWriteOffBalance.SKUWriteOffPoints;
                         int shortage = retriveValue.SKUWriteOffBalance!.SKUWriteOffPointsViaWarehouseShortage + newValue.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseShortage;
@@ -155,35 +158,36 @@ namespace TableAnalizer.Objects.Repositories
 
             // SKUPaidShortageBalance
             SKUPaidShortageBalance? skuPaidShortageBalance = null;
-            switch(retriveValue.SKUPaidShortageBalance is not null, newValue.SKUPaidShortageBalance is not null) 
+            switch (retriveValue.SKUPaidShortageBalance is not null, newValue.SKUPaidShortageBalance is not null)
             {
-                 case (true,false):
+                case (true, false):
                     skuPaidShortageBalance = retriveValue.SKUPaidShortageBalance;
                     break;
 
-                case (false,true):
+                case (false, true):
                     skuPaidShortageBalance = newValue.SKUPaidShortageBalance;
                     break;
 
-                case (true,true):
+                case (true, true):
                     skuPaidShortageBalance!.Update(newValue.SKUPaidShortageBalance!.PaidShortageItems);
                     break;
             }
 
             // SKUResortBalance
             SKUResortBalance? skuResortBalance = null;
-            switch(retriveValue.SKUResortBalance is not null, newValue.SKUResortBalance is not null) 
+            switch (retriveValue.SKUResortBalance is not null, newValue.SKUResortBalance is not null)
             {
-                case (false,true):
+                case (false, true):
                     skuResortBalance = newValue.SKUResortBalance!;
                     break;
-                case (true,true): case (true,false):
+                case (true, true):
+                case (true, false):
                     skuResortBalance = retriveValue.SKUResortBalance!;
 
-                    if(newValue.SKUResortBalance is not null) 
+                    if (newValue.SKUResortBalance is not null)
                     {
                         var resortSKUsInNewValue = newValue.SKUResortBalance.SKUsToResort;
-                        if(resortSKUsInNewValue is not null && resortSKUsInNewValue.Count > 0) 
+                        if (resortSKUsInNewValue is not null && resortSKUsInNewValue.Count > 0)
                         {
                             skuResortBalance!.Update(resortSKUsInNewValue);
                         }
@@ -209,7 +213,7 @@ namespace TableAnalizer.Objects.Repositories
             {
                 (false, true) => newValue.MaxRansomsDate,
                 (true, false) => retriveValue.MaxRansomsDate,
-                (true, true) => new List<DateOnly>(){retriveValue.MaxRansomsDate, newValue.MaxRansomsDate}.Max(),
+                (true, true) => new List<DateOnly>() { retriveValue.MaxRansomsDate, newValue.MaxRansomsDate }.Max(),
                 (false, false) => null
             };
 
@@ -220,14 +224,14 @@ namespace TableAnalizer.Objects.Repositories
             {
                 (false, true) => newValue.DeadLineDays,
                 (true, false) => retriveValue.DeadLineDays,
-                (true, true) => new List<int>(){retriveValue.DeadLineDays, newValue.DeadLineDays}.Max(),
+                (true, true) => new List<int>() { retriveValue.DeadLineDays, newValue.DeadLineDays }.Max(),
                 (false, false) => null
             };
 
             // isParallel
             bool isParallel = retriveValue.IsParallelClientsSKU || newValue.IsParallelClientsSKU;
 
-            return new SKU(clientLoginsList, marketplace, skuNumber, skuBrand, skuName, skuRansomsBalance, 
+            return new SKU(clientLoginsList, marketplace, skuNumber, skuBrand, skuName, skuRansomsBalance,
                 skuRemainingBalance, skuWriteOffBalance, skuPaidShortageBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays, isParallel);
         }
 
