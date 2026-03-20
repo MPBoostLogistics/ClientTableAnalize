@@ -89,25 +89,17 @@ namespace TableAnalizer.Objects.Managers
 
         #region Properties
         private static Dictionary<SourceReportItemKey, ExcelPackage> ExcelPackages { get; } = [];
-        private static Type TypeString { get; } = typeof(string);
-        private static Type TypeInt { get; } = typeof(int);
-        private static Type TypeLong { get; } = typeof(long);
-        private static Type TypeDouble { get; } = typeof(double);
-        private static Type TypeDateOnly { get; } = typeof(DateOnly);
-        private static Type TypeSKURansomsStatus { get; } = typeof(SKURansomsStatus);
-        private static Type TypeMarketplace { get; } = typeof(Marketplace);
-        private static Type TypeSellmentStatus { get; } = typeof(SellmentStatus);
-
+    
         public static Dictionary<ParsingTypeCode, Type> TypeMappingTable { get; } = new()
         {
-            { ParsingTypeCode.StringTypeCode, TypeString },
-            { ParsingTypeCode.IntTypeCode, TypeInt },
-            { ParsingTypeCode.LongTypeCode, TypeLong },
-            { ParsingTypeCode.DoubleTypeCode, TypeDouble },
-            { ParsingTypeCode.DataOnlyTypeCode, TypeDateOnly },
-            { ParsingTypeCode.SKURansomsStatus, TypeSKURansomsStatus },
-            { ParsingTypeCode.Marketplace, TypeMarketplace },
-            { ParsingTypeCode.SellmentStatus, TypeSellmentStatus }
+            { ParsingTypeCode.StringTypeCode, typeof(string) },
+            { ParsingTypeCode.IntTypeCode, typeof(int) },
+            { ParsingTypeCode.LongTypeCode, typeof(long) },
+            { ParsingTypeCode.DoubleTypeCode, typeof(double) },
+            { ParsingTypeCode.DataOnlyTypeCode, typeof(DateOnly) },
+            { ParsingTypeCode.SKURansomsStatus, typeof(SKURansomsStatus) },
+            { ParsingTypeCode.Marketplace, typeof(Marketplace) },
+            { ParsingTypeCode.SellmentStatus, typeof(SellmentStatus) }
         };
 
         /// <summary>
@@ -1123,6 +1115,9 @@ namespace TableAnalizer.Objects.Managers
             rowInex = worksheet.Cells.FirstOrDefault(c => c.Value != null && c.Value.ToString()?.Trim().ToLower() == key.Trim().ToLower())?.Start.Row;
             return rowInex.HasValue;
         }
+
+
+        // TODO: Вложенные диапазоны для артикулов в балансе
 
         /// <summary>
         /// Gets data from row ranges in specified Excel worksheet.
