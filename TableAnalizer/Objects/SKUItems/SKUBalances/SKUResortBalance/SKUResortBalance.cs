@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 
-namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
+namespace TableAnalizer.Objects.SKUItems.SKUBalances
 {
     public class ResortBalanceUnit(ResortConsumptionTarget balanceTarget)
     {

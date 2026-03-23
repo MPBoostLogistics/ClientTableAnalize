@@ -3,13 +3,12 @@ using System.Drawing;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using TableAnalizer.Interfaces;
+using TableAnalizer.Objects.Managers.ExcelSheetParsing;
 using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.Repositories;
 using TableAnalizer.Objects.SKUItems;
+using TableAnalizer.Objects.SKUItems.SKUBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUAliasBalance;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 namespace TableAnalizer.Objects.Managers
@@ -139,112 +138,94 @@ namespace TableAnalizer.Objects.Managers
             // Start
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-            // Get source excel worksheet by name
-            var currentWorksheet = excelPackage.Workbook.Worksheets.SingleOrDefault(ws => ws.Name == workSheetName);
-            if (currentWorksheet is null)
-            {
-                OnManagerReached(new($"There is no worksheet named '{workSheetName}' in workbook file at key {reportFileKey}.", true, true));
+            // Get data from excel sheet
+            Task<(double time, IEnumerable<Dictionary<string, ItemForParsing>>? data)> getDataTask =
+                ExcelSheetParsingManager.GetDataFromExcelSheet(reportFileKey, excelPackage, workSheetName);
+            await Task.Run(() => getDataTask);
+            getDataTask.Wait();
+            var (time, data) = getDataTask.Result;
+            if (data is null)
                 return StopFuctionExecuting(ref stopwatch);
-            }
 
-            // Get ranges from source excel worksheet
-            if (ExcelManager.MakeRangeSourceReportRowsByKey(reportFileKey, workSheetName, out List<RangeSourceReportRows> rangeSourceReportRows))
+            // Processing:
+            // 1. Save balances for sku's
+            await SaveSKUBalanceUnits(reportFileKey, workSheetName, [.. data]);
+
+            // 2. Create or update sku's from balance units 
+            var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName, isInternalReport);
+            await Task.Run(async () => await makeSKUsTask);
+            makeSKUsTask.Wait();
+
+            // 3. Report
+            static bool FindSkusWithRansoms(SKU sku) => sku.SKURansomsBalance != null;
+            static bool FindSkusWithRemaining(SKU sku) => sku.SKURemainingBalance != null;
+            static bool FindSkusWithOutgoingProducts(SKU sku) => sku.SKURemainingBalance?.SKUShipmentGoods != null;
+            static bool FindSkusWithTransfered(SKU sku) => sku.SKURemainingBalance?.SKUTransfered != null;
+            static bool FindSkusWithWriteOffPoints(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPoints > 0;
+            static bool FindSkusWithWriteOffPointsViaWarehouseShortage(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseShortage > 0;
+            static bool FindSkusWithWriteOffPointsViaWarehouseAdjustment(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseAdjustment > 0;
+            static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
+            // ч    static bool FindSkusWithAliases(SKU sku) => SkuAliasesBalanceUnits.Count() > 0 ;
+            //static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
+
+            var message = string.Empty;
+
+            switch (reportFileKey)
             {
-                // Get row ranges in source excel worksheet 
-                var getRangeSourceReportRowsTask = ExcelManager.GetRangeSourceReportRows(in currentWorksheet, ref rangeSourceReportRows);
-                await Task.Run(() => getRangeSourceReportRowsTask);
-                getRangeSourceReportRowsTask.Wait();
-
-                // Get raw data from cells in source excel worksheet 
-                var getRawDataFromExcelRowsTask = ExcelManager.GetRawDataFromExcelRows(in currentWorksheet, ref rangeSourceReportRows);
-                await Task.Run(() => getRawDataFromExcelRowsTask);
-                getRawDataFromExcelRowsTask.Wait();
-
-                // Union collections
-                IEnumerable<Dictionary<string, ItemForParsing>> rawRowsItems =
-                    from sourceReportRowsRange in rangeSourceReportRows
-                    from item in sourceReportRowsRange.DataOnReadRowsCollection
-                    select item;
-
-                // Processing:
-                // 1. Save balances for sku's
-                await SaveSKUBalanceUnits(reportFileKey, workSheetName, [.. rawRowsItems]);
-
-                // 2. Create or update sku's from balance units 
-                var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName, isInternalReport);
-                await Task.Run(async () => await makeSKUsTask);
-                makeSKUsTask.Wait();
-
-                // 3. Report
-                static bool FindSkusWithRansoms(SKU sku) => sku.SKURansomsBalance != null;
-                static bool FindSkusWithRemaining(SKU sku) => sku.SKURemainingBalance != null;
-                static bool FindSkusWithOutgoingProducts(SKU sku) => sku.SKURemainingBalance?.SKUShipmentGoods != null;
-                static bool FindSkusWithTransfered(SKU sku) => sku.SKURemainingBalance?.SKUTransfered != null;
-                static bool FindSkusWithWriteOffPoints(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPoints > 0;
-                static bool FindSkusWithWriteOffPointsViaWarehouseShortage(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseShortage > 0;
-                static bool FindSkusWithWriteOffPointsViaWarehouseAdjustment(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseAdjustment > 0;
-                static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
-                // ч    static bool FindSkusWithAliases(SKU sku) => SkuAliasesBalanceUnits.Count() > 0 ;
-                //static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
-
-                var message = string.Empty;
-
-                switch (reportFileKey)
-                {
-                    case SourceReportItemKey.Ransoms:
-                        predicateHandler = FindSkusWithRansoms;
-                        message = "Добавлено артикулов из выкупов: ";
-                        break;
-                    case SourceReportItemKey.Balance:
-                        predicateHandler = FindSkusWithRemaining;
-                        message = "Добавлено артикулов из прихода и остатков на складе: ";
-                        break;
-                    case SourceReportItemKey.Additional:
-                        switch (workSheetName)
-                        {
-                            case ReportFileManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME:
-                                predicateHandler = FindSkusWithResort;
-                                message = "Артикулов из экстра-приходов: ";
-                                break;
-                                // case ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME:
-                                //     predicateHandler = SkuAliasesBalanceUnits.Count() > 0;
-                                //     message = "Артикулов с алиасами: ";
-                                //     break;
-                        }
-                        ;
-                        break;
-                    case SourceReportItemKey.OutgoingProducts:
-                        predicateHandler = FindSkusWithOutgoingProducts;
-                        message = "Артикулов в расходе со склада: ";
-                        break;
-                    case SourceReportItemKey.Transfered:
-                        predicateHandler = FindSkusWithTransfered;
-                        message = "Артикулов в передаче со склада (на фулфилмент): ";
-                        break;
-                    case SourceReportItemKey.WriteOffPoints:
-                        predicateHandler = FindSkusWithWriteOffPoints;
-                        message = "Артикулов в списании недостач от точек: ";
-                        break;
-                    case SourceReportItemKey.WriteOffPointsViaWarehouseShortage:
-                        predicateHandler = FindSkusWithWriteOffPointsViaWarehouseShortage;
-                        message = "Артикулов в списании недостач от точек через склад: ";
-                        break;
-                    case SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment:
-                        predicateHandler = FindSkusWithWriteOffPointsViaWarehouseAdjustment;
-                        message = "Артикулов в списании корректировок от точек через склад: ";
-                        break;
-                    default:
-                        break;
-                }
-
-                // Report
-                if (predicateHandler is not null)
-                {
-                    int skusWithPredicateCount = SKUs.GetValuesCount(predicateHandler.Invoke);
-                    message = string.Concat(message, skusWithPredicateCount);
-                    OnManagerReached(new(message, false, false));
-                }
+                case SourceReportItemKey.Ransoms:
+                    predicateHandler = FindSkusWithRansoms;
+                    message = "Добавлено артикулов из выкупов: ";
+                    break;
+                case SourceReportItemKey.Balance:
+                    predicateHandler = FindSkusWithRemaining;
+                    message = "Добавлено артикулов из прихода и остатков на складе: ";
+                    break;
+                case SourceReportItemKey.Additional:
+                    switch (workSheetName)
+                    {
+                        case ExcelSheetParsingManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME:
+                            predicateHandler = FindSkusWithResort;
+                            message = "Артикулов из экстра-приходов: ";
+                            break;
+                            // case ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME:
+                            //     predicateHandler = SkuAliasesBalanceUnits.Count() > 0;
+                            //     message = "Артикулов с алиасами: ";
+                            //     break;
+                    }
+                    ;
+                    break;
+                case SourceReportItemKey.OutgoingProducts:
+                    predicateHandler = FindSkusWithOutgoingProducts;
+                    message = "Артикулов в расходе со склада: ";
+                    break;
+                case SourceReportItemKey.Transfered:
+                    predicateHandler = FindSkusWithTransfered;
+                    message = "Артикулов в передаче со склада (на фулфилмент): ";
+                    break;
+                case SourceReportItemKey.WriteOffPoints:
+                    predicateHandler = FindSkusWithWriteOffPoints;
+                    message = "Артикулов в списании недостач от точек: ";
+                    break;
+                case SourceReportItemKey.WriteOffPointsViaWarehouseShortage:
+                    predicateHandler = FindSkusWithWriteOffPointsViaWarehouseShortage;
+                    message = "Артикулов в списании недостач от точек через склад: ";
+                    break;
+                case SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment:
+                    predicateHandler = FindSkusWithWriteOffPointsViaWarehouseAdjustment;
+                    message = "Артикулов в списании корректировок от точек через склад: ";
+                    break;
+                default:
+                    break;
             }
+
+            // Report
+            if (predicateHandler is not null)
+            {
+                int skusWithPredicateCount = SKUs.GetValuesCount(predicateHandler.Invoke);
+                message = string.Concat(message, skusWithPredicateCount);
+                OnManagerReached(new(message, false, false));
+            }
+
 
             return StopFuctionExecuting(ref stopwatch);
         }
@@ -267,9 +248,9 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOffPointsViaWarehouseAdjustment = reportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment;
             // bool isResort = reportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME;
             // bool isParallel = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
-            bool isAliases = reportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME;
-            bool isShipmentAdjustment = reportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME;
-            bool isExtraReceipt = reportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME;
+            bool isAliases = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelSheetParsingManager.ADDREPORT_ALIASES_WORKSHEET_NAME;
+            bool isShipmentAdjustment = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelSheetParsingManager.ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME;
+            bool isExtraReceipt = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelSheetParsingManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME;
             bool isPaidShortages = reportFileKey == SourceReportItemKey.ShortagesPaid;
 
             await Task.Delay(10); // dummy
@@ -539,7 +520,7 @@ namespace TableAnalizer.Objects.Managers
             // bool isResorts = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME;
             // bool isParellel = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
             // bool isAliases = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME;
-            bool isAdjustment = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME;
+            bool isAdjustment = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelSheetParsingManager.ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME;
             bool isPaidShortages = skuReportFileKey == SourceReportItemKey.ShortagesPaid;
 
             // Dummy
@@ -565,9 +546,9 @@ namespace TableAnalizer.Objects.Managers
                     parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseAdjustmentUnits,
                 SourceReportItemKey.Additional => workSheetName switch
                 {
-                    ReportFileManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME =>
+                    ExcelSheetParsingManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME =>
                         parsingEntityCollection = SkuExtraReceiptBalanceUnits,
-                    ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME =>
+                    ExcelSheetParsingManager.ADDREPORT_ALIASES_WORKSHEET_NAME =>
                         parsingEntityCollection = SkuAliasesBalanceUnits,
                     // ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME =>
                     //     parsingEntityCollection = SkuParallelUnits,
@@ -723,7 +704,7 @@ namespace TableAnalizer.Objects.Managers
                     // Add resort element to SKU
                     var unit = units.First();
                     var extraReceiptUnit = (SKUExtraReceiptDataUnit)unit;
-                    extraReceiptSum = extraReceiptUnit.SKUResortCount;
+                    extraReceiptSum = extraReceiptUnit.SKUExtraReceiptCount;
                 }
 
                 // Поиск корректировок расхода от клиента

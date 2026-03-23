@@ -1,4 +1,4 @@
-namespace TableAnalizer.Objects.Parsing
+namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 {
     public class ItemForParsing(string? value, ParsingTypeCode parsingTypeCode, bool isMaybeNullable = false)
     {

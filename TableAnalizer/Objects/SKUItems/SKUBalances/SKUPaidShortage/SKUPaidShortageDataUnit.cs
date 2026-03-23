@@ -1,6 +1,7 @@
+using TableAnalizer.Objects.Managers.ExcelSheetParsing;
 using TableAnalizer.Objects.Parsing;
 
-namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage
+namespace TableAnalizer.Objects.SKUItems.SKUBalances
 {
     /// <summary>
     /// Paid shortage data unit for forming SKUPaidShortageBalance.

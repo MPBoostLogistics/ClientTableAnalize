@@ -1,16 +1,12 @@
 //https://www.color-hex.com/color-palette/1054961
 
 using System.Drawing;
-using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
+using TableAnalizer.Objects.Managers.ExcelSheetParsing;
 using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.SKUItems;
-using TableAnalizer.Objects.SKUItems.SKUBalances;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUAliasBalance;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 namespace TableAnalizer.Objects.Managers
@@ -18,14 +14,9 @@ namespace TableAnalizer.Objects.Managers
     public class ExcelManager : BaseManager
     {
         #region Fields
-        public const string FIRST_ROOM_NAME = "1 - Помещение приемки и сортировки";
-        public const string SECOND_ROOM_NAME = "2 - Помещение длительного хранения";
-        public const string THIRD_ROOM_NAME = "3 - Помещение упаковки и отгрузки";
-        public const string FOUTH_ROOM_NAME = "4 - Участок приемки и ожидания (производство)";
-        public const string FIFTH_ROOM_NAME = "5 - Участок длительного хранения (производство)";
 
-        public const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
-        public const int LAST_MARKER_KEY_OFFSET = 2;
+
+
         public const string OUTPUT_REPORT_MAINREPORT_NAME = "Отчет по логистике";
         public const string OUTPUT_REPORT_DELAYREPORT_NAME = "Отчет по задержкам";
         public const string OUTPUT_REPORT_OVERRUNSREPORT_NAME = "Отчет по перерасходам";
@@ -67,20 +58,7 @@ namespace TableAnalizer.Objects.Managers
         // Colors
         private static readonly Color dangerColor = ColorTranslator.FromHtml("#d8675b"); // #d8675b
 
-        private static readonly Dictionary<SubjectClaim, string> SubjectClaimStrings = new()
-        {
-            { SubjectClaim.RefundAccrual, "Возврат начисления" },
-            { SubjectClaim.ShortDeliveryGoods, "Недовоз товаров" },
-        };
 
-        private static readonly Dictionary<ClaimResolutionStatus, string> ClaimResolutionStatusStrings = new()
-        {
-            { ClaimResolutionStatus.IndependentPurchase, "Докупаем сами" },
-            { ClaimResolutionStatus.NotPaid, "Не оплачено" },
-            { ClaimResolutionStatus.Paid, "Оплачено" },
-            { ClaimResolutionStatus.ProductFound, "Товар найден" },
-            { ClaimResolutionStatus.ReturnedToBalance, "Возвращено на баланс" },
-        };
 
         private static readonly string SKUNumberColName = "Артикул";
 
@@ -89,7 +67,7 @@ namespace TableAnalizer.Objects.Managers
 
         #region Properties
         private static Dictionary<SourceReportItemKey, ExcelPackage> ExcelPackages { get; } = [];
-    
+
         public static Dictionary<ParsingTypeCode, Type> TypeMappingTable { get; } = new()
         {
             { ParsingTypeCode.StringTypeCode, typeof(string) },
@@ -102,107 +80,6 @@ namespace TableAnalizer.Objects.Managers
             { ParsingTypeCode.SellmentStatus, typeof(SellmentStatus) }
         };
 
-        /// <summary>
-        /// Collection of descriptions of source table cells (client ransoms).
-        /// </summary>
-        public static List<SourceColumn> RansomsSourceCells { get; } =
-        [
-            new(1, nameof(SKURansomsBalanceDataUnit.SKUClientLogin), ParsingTypeCode.StringTypeCode, true),
-
-            new(2, nameof(SKURansomsBalanceDataUnit.SKUMarketPlace), ParsingTypeCode.Marketplace, true),
-            new(3, nameof(SKURansomsBalanceDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
-            new(4, nameof(SKURansomsBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
-            new(5, nameof(SKURansomsBalanceDataUnit.SKUAveragePrice), ParsingTypeCode.DoubleTypeCode, true),
-            new(6, nameof(SKURansomsBalanceDataUnit.SKULastPurchaseDate), ParsingTypeCode.DataOnlyTypeCode, true),
-
-            new(7, nameof(SKURansomsBalanceDataUnit.SKUTotalNumberPurchases), ParsingTypeCode.IntTypeCode, true),
-            new(8, nameof(SKURansomsBalanceDataUnit.SKUInTransitNumberPurchases), ParsingTypeCode.IntTypeCode, true),
-            new(9, nameof(SKURansomsBalanceDataUnit.SKUCancelledNumberPurchases), ParsingTypeCode.IntTypeCode, true),
-            new(10, nameof(SKURansomsBalanceDataUnit.SKUDeliveredToPointsNumberPurchases), ParsingTypeCode.IntTypeCode, true),
-            new(11, nameof(SKURansomsBalanceDataUnit.SKUPickedupFromPointsNumberPurchases), ParsingTypeCode.IntTypeCode, true),
-            new(12, nameof(SKURansomsBalanceDataUnit.SKUUnknownNumberPurchases), ParsingTypeCode.IntTypeCode, true),
-        ];
-        public static List<SourceColumn> RemainingFirstRoomSourceCells { get; } =
-        [
-            new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
-            new(6, nameof(SKURemainingBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
-            new(15, nameof(SKURemainingBalanceDataUnit.SKUReceipt), ParsingTypeCode.IntTypeCode, false),
-            new(17, nameof(SKURemainingBalanceDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, false)
-        ];
-        public static List<SourceColumn> RemainingSecondRoomSourceCells { get; } =
-        [
-            new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
-            new(6, nameof(SKURemainingBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
-            new(17, nameof(SKURemainingBalanceDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, false)
-        ];
-        public static List<SourceColumn> RemainingThirdRoomSourceCells { get; } =
-        [
-            new(1, nameof(SKURemainingBalanceDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
-            new(6, nameof(SKURemainingBalanceDataUnit.SKUBrandAndName), ParsingTypeCode.StringTypeCode, true),
-            new(17, nameof(SKURemainingBalanceDataUnit.SKURemaining), ParsingTypeCode.IntTypeCode, false)
-        ];
-        public static List<SourceColumn> ShippedSourceCells { get; } =
-        [
-            new(4, nameof(SKUShippedDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
-            new(28, nameof(SKUShippedDataUnit.SKUShippedCount), ParsingTypeCode.IntTypeCode, true)
-        ];
-        public static List<SourceColumn> TransferSourceCells { get; } =
-        [
-            new(4, nameof(SKUTransferDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
-            new(34, nameof(SKUTransferDataUnit.SKUTransferedCount), ParsingTypeCode.IntTypeCode, true)
-        ];
-
-        public static List<SourceColumn> ExtraReceiptSourceCells { get; } =
-        [
-            new(1, nameof(SKUExtraReceiptDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
-            new(2, nameof(SKUExtraReceiptDataUnit.SKUResortCount), ParsingTypeCode.IntTypeCode, true),
-            new(3, nameof(SKUExtraReceiptDataUnit.ResortComment), ParsingTypeCode.StringTypeCode, false)
-        ];
-
-        public static List<SourceColumn> AliasesSourceCells { get; } =
-        [
-            new(1, nameof(SKUAliasDataUnit.SKUSourceNumber), ParsingTypeCode.LongTypeCode, true),
-            new(2, nameof(SKUAliasDataUnit.SKUAliasNumbers), ParsingTypeCode.LongTypeArrayCode, true),
-            new(3, nameof(SKUAliasDataUnit.AliasComment), ParsingTypeCode.StringTypeCode, false)
-        ];
-
-        /// <summary>
-        /// Данные по корректировкам расхода от Клиента (несоответствие документов расхода)
-        /// </summary>
-        public static List<SourceColumn> AdjustmentShipmentSourceCells { get; } =
-        [
-            new(1, nameof(SKUAdjustmentShipmentUnit.SKUSourceNumber), ParsingTypeCode.LongTypeCode, true),
-            new(2, nameof(SKUAdjustmentShipmentUnit.SKUAdjustmentSum), ParsingTypeCode.IntTypeCode, true),
-            new(3, nameof(SKUAdjustmentShipmentUnit.SKUAdjustmentComment), ParsingTypeCode.StringTypeCode, false)
-        ];
-
-        public static List<SourceColumn> ParallelSourceCells { get; } =
-        [
-            new(1, nameof(SKUParallelUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true)
-        ];
-
-        public static List<SourceColumn> WriteOffPointsSourceCells { get; } =
-        [
-            new(4, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
-            new(27, nameof(SKUWriteOffDataUnit.SKUWriteOffCount), ParsingTypeCode.IntTypeCode, true)
-        ];
-
-        public static List<SourceColumn> WriteOffPointsViaWarehouseSourceCells { get; } =
-        [
-            new(5, nameof(SKUWriteOffDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, true),
-            new(39, nameof(SKUWriteOffDataUnit.SKUWriteOffCount), ParsingTypeCode.IntTypeCode, true)
-        ];
-
-        public static List<SourceColumn> PaidShortagesSourceCells { get; } =
-        [
-            new(3, nameof(SKUPaidShortageDataUnit.ClientLogin), ParsingTypeCode.StringTypeCode, true),
-            new(4, nameof(SKUPaidShortageDataUnit.SubjectClaim), ParsingTypeCode.SubjectClaim, true, [SubjectClaimStrings[SubjectClaim.ShortDeliveryGoods]]),
-            new(5, nameof(SKUPaidShortageDataUnit.SKUNumber), ParsingTypeCode.LongTypeCode, false),
-            new(10, nameof(SKUPaidShortageDataUnit.SKUSum), ParsingTypeCode.IntTypeCode, true),
-            new(12, nameof(SKUPaidShortageDataUnit.SKUAmount), ParsingTypeCode.DoubleTypeCode, true),
-            new(13, nameof(SKUPaidShortageDataUnit.ClaimExecutor), ParsingTypeCode.ClaimExecutor, true),
-            new(18, nameof(SKUPaidShortageDataUnit.ClaimResolutionStatus), ParsingTypeCode.ClaimResolutionStatus, true, [ClaimResolutionStatusStrings[ClaimResolutionStatus.Paid], ClaimResolutionStatusStrings[ClaimResolutionStatus.ReturnedToBalance]]),
-        ];
 
         public TargetCell[] cellsReportingMain =
         [
@@ -1103,355 +980,23 @@ namespace TableAnalizer.Objects.Managers
             return excelPackage.Workbook.Worksheets.SingleOrDefault(ws => ws.Name == name);
         }
 
-        /// <summary>
-        /// Returns index of row from an Excel workbook by string value (key).
-        /// </summary>
-        /// <param name="key">String key to search for a row.</param>
-        /// <param name="worksheet">Excel worksheet for searching.</param>
-        /// <returns>Integer index of row or null.</returns>
-        /// <remarks><i>New version, tested</i></remarks>
-        public static bool GetRowIndexBy(string key, in ExcelWorksheet worksheet, out int? rowInex)
-        {
-            rowInex = worksheet.Cells.FirstOrDefault(c => c.Value != null && c.Value.ToString()?.Trim().ToLower() == key.Trim().ToLower())?.Start.Row;
-            return rowInex.HasValue;
-        }
 
 
         // TODO: Вложенные диапазоны для артикулов в балансе
 
-        /// <summary>
-        /// Gets data from row ranges in specified Excel worksheet.
-        /// </summary>
-        /// <param name="workSheet">Specified Excel worksheet</param>
-        /// <param name="reportRowsRanges">List of ranges.</param>
-        /// <exception cref="ArgumentException">Exceptions when there is a null range and a null range of rows in it.</exception>
-        /// <remarks><i>New version, tested</i></remarks>
-        public static Task GetRawDataFromExcelRows(in ExcelWorksheet workSheet, ref List<RangeSourceReportRows> reportRowsRanges)
-        {
-            // Iterating Ranges
-            for (int i = 0; i < reportRowsRanges.Count; i++)
-            {
-                RangeSourceReportRows? reportRowsRange = reportRowsRanges[i];
 
-                if (reportRowsRange is null || reportRowsRange.RangeRowIndexesСollection is null) continue;
+        
 
-                // Iterating Rows 
-                var rowsIndexRange = reportRowsRange.RangeRowIndexesСollection.ToList();
-                var currentSourceCells = reportRowsRange.SourceCells;
+      
 
-                for (int j = 0; j < rowsIndexRange.Count; j++)
-                {
-                    var rowIndex = rowsIndexRange[j];
 
-                    var getValuesFromRowTask = GetValuesFromRow(in workSheet, rowIndex, in currentSourceCells, out Dictionary<string, ItemForParsing>? values);
-                    Task.Run(() => getValuesFromRowTask);
-                    getValuesFromRowTask.Wait();
+  
 
-                    var getValuesFromRowTaskSuccess = getValuesFromRowTask.Result;
 
-                    if (getValuesFromRowTaskSuccess && values is not null)
-                    {
-                        reportRowsRange.SetValues(values);
-                        reportRowsRanges![i] = reportRowsRange;
-                    }
-                }
-            }
 
-            return Task.CompletedTask;
-        }
 
-        /// <summary>
-        /// Gets data from a range row in specified Excel worksheet.
-        /// </summary>
-        /// <param name="workSheet">Specified Excel worksheet.</param>
-        /// <param name="rowIndex">Row index.</param>
-        /// <param name="sourceCells">A list with a description of source cells in a row.</param>
-        /// <param name="values">Dictionary of retrieved values by row.</param>
-        /// <returns>Boolean flag for success of completed operation.</returns>
-        /// <remarks><i>New version, tested</i></remarks>
-        public static Task<bool> GetValuesFromRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceColumn> sourceCells, out Dictionary<string, ItemForParsing>? values)
-        {
-            values = null;
 
-            if (!CheckingPresenceAddressesInRow(in workSheet, rowIndex, in sourceCells) ||
-                !СheckingValuesInRequiredCells(in workSheet, rowIndex, in sourceCells) ||
-                !FilterMatchingCheck(in workSheet, rowIndex, in sourceCells, out int filterCellsCount) ||
-                !FindSorceCellsByType(in sourceCells, SourceCellsType.NonFiltration, out List<SourceColumn>? dataСellsNonFilters) ||
-                dataСellsNonFilters is null ||
-                dataСellsNonFilters!.Count == 0)
-            {
-                return Task.Run(() => false);
-            }
-
-            // Getting values
-            values = [];
-            foreach (var dataCell in dataСellsNonFilters)
-            {
-                var value = workSheet.Cells[rowIndex, dataCell.ColIndex].Value;
-
-                if (value is null)
-                {
-                    if (dataCell.IsValueRequired)
-                        throw new ArgumentException($"A table cell does not contain a <b>required value</b> for name: '{dataCell.Name}'");
-                    else
-                        value = string.Empty;
-                }
-
-                var valueToString = value.ToString();
-
-                if (valueToString is not null)
-                    values.Add(dataCell.Name, new(valueToString, dataCell.ParsingTypeCode, !dataCell.IsValueRequired));
-            }
-
-            var success = values?.Count == sourceCells.Count - filterCellsCount;
-            return Task.Run(() => success);
-        }
-
-        private static bool CheckingPresenceAddressesInRow(in ExcelWorksheet workSheet, int rowIndex, in List<SourceColumn> sourceCells)
-        {
-            foreach (var sourceCell in sourceCells)
-            {
-                ExcelRange? address = workSheet.Cells[rowIndex, sourceCell.ColIndex] ??
-                    throw new Exception($"ExcelRange (address) at row {rowIndex} and column {sourceCell.ColIndex} is null");
-
-                var addressValue = address.Value;
-                if (addressValue is not null && !string.IsNullOrEmpty(addressValue.ToString()))
-                {
-                    return ParsingManager.Parse(addressValue.ToString()!, sourceCell.ParsingTypeCode, !sourceCell.IsValueRequired, out object? value) &&
-                        value is not null;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private static bool FilterMatchingCheck(in ExcelWorksheet workSheet, int rowIndex, in List<SourceColumn> sourceCells, out int filterSourceCellsCount)
-        {
-            filterSourceCellsCount = 0;
-
-            if (!FindSorceCellsByType(in sourceCells, SourceCellsType.Filtration, out List<SourceColumn>? filterSourceCells))
-            {
-                return true;
-            }
-            else
-            {
-                filterSourceCellsCount = filterSourceCells!.Count;
-                foreach (var filterSourceCell in filterSourceCells)
-                {
-                    if (!IsFilterMatch(filterSourceCell.FilterStrings!, workSheet.Cells[rowIndex, filterSourceCell.ColIndex].Value))
-                        return false;
-                }
-                return true;
-            }
-        }
-
-        private static bool СheckingValuesInRequiredCells(in ExcelWorksheet workSheet, int rowIndex, in List<SourceColumn> sourceCells)
-        {
-            if (!FindSorceCellsByType(in sourceCells, SourceCellsType.Required, out List<SourceColumn>? requiredCells) &&
-                requiredCells is null ||
-                requiredCells?.Count == 0)
-            {
-                return true;
-            }
-            else
-            {
-                var requiredCellValues = new List<object>();
-                foreach (var sourceCell in requiredCells!)
-                {
-                    var cell = workSheet.Cells[rowIndex, sourceCell.ColIndex];
-                    var value = cell.Value;
-                    if (cell is null || value is null)
-                    {
-                        return false;
-                    }
-                    else
-                    {
-                        requiredCellValues.Add(value);
-                    }
-                }
-
-                return requiredCellValues.All(v => v is not null);
-            }
-        }
-
-        private static bool FindSorceCellsByType(in List<SourceColumn> sourceCells, SourceCellsType sourceCellsType, out List<SourceColumn>? cells)
-        {
-            cells = sourceCellsType switch
-            {
-                SourceCellsType.Required => [.. sourceCells.Where(sc => sc.IsValueRequired)],
-                SourceCellsType.Filtration => [.. sourceCells.Where(sc => sc.FilterStrings != null && sc.FilterStrings.Any())],
-                SourceCellsType.NonFiltration => [.. sourceCells.Where(sc => sc.FilterStrings == null || !sc.FilterStrings.Any())],
-                _ => null,
-            };
-
-            return cells is not null && cells.Any();
-        }
-
-        /// <summary>
-        /// Creates a collection of RangeSourceReportRows objects using SourceSKUReportFileKey key.
-        /// </summary>
-        /// <param name="reportFileKey">Source report file key.</param>
-        /// <param name="rangeSourceReportRows">Сollection of RangeSourceReportRows objects.</param>
-        /// <returns>Boolean flag for performing the operation.</returns>
-        public static bool MakeRangeSourceReportRowsByKey(SourceReportItemKey reportFileKey, string workSheetName, out List<RangeSourceReportRows> rangeSourceReportRows)
-        {
-            rangeSourceReportRows = reportFileKey switch
-            {
-                SourceReportItemKey.Ransoms => [new(RansomsSourceCells)],
-                SourceReportItemKey.Balance => [ new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
-                    new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME),
-                    new(RemainingSecondRoomSourceCells, THIRD_ROOM_NAME),
-                    new(RemainingSecondRoomSourceCells, FOUTH_ROOM_NAME),
-                    new(RemainingThirdRoomSourceCells, FIFTH_ROOM_NAME, (LAST_MARKER_KEY,LAST_MARKER_KEY_OFFSET))],
-                SourceReportItemKey.WriteOffPoints => [new(WriteOffPointsSourceCells)],
-                SourceReportItemKey.WriteOffPointsViaWarehouseShortage => [new(WriteOffPointsViaWarehouseSourceCells)],
-                SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment => [new(WriteOffPointsViaWarehouseSourceCells)],
-                SourceReportItemKey.OutgoingProducts => [new(ShippedSourceCells)],
-                SourceReportItemKey.Transfered => [new(TransferSourceCells)],
-                SourceReportItemKey.Additional => workSheetName switch
-                {
-                    ReportFileManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME => [new(ExtraReceiptSourceCells)],
-                    ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME => [new(AliasesSourceCells)],
-                    ReportFileManager.ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME => [new(AdjustmentShipmentSourceCells)],
-                    _ => [],
-                },
-                SourceReportItemKey.ShortagesPaid => [new(PaidShortagesSourceCells)],
-                _ => [],
-            };
-
-            return rangeSourceReportRows.Count != 0;
-        }
-
-        /// <summary>
-        /// Gets row ranges in an Excel worksheet.
-        /// </summary>
-        /// <param name="worksheet">Excel worksheet.</param>
-        /// <param name="rangeSourceReportRows">Range prototypes.</param>
-        /// <param name="startRangeRowIndex">Start index.</param>
-        /// <remarks><i>New version, tested</i></remarks>
-        public static Task GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSourceReportRows, int startRangeRowIndex = 1)
-        {
-            const int DEFAULT_STEP = 1;
-
-            IEnumerable<RangeSourceReportRows>? rangesWithKeys = rangeSourceReportRows
-                .Where(rs => !string.IsNullOrEmpty(rs.Key));
-
-            RangeSourceReportRows? rangeWithTermination = rangeSourceReportRows
-                .SingleOrDefault(rs => rs.TerminatingStringValue.HasValue);
-
-            bool isOneRangeWithoutKeysAndTerminations = rangeSourceReportRows.Count == 1 &&
-                (rangesWithKeys is null || !rangesWithKeys.Any()) &&
-                rangeWithTermination is null;
-
-            // Range is one, no key and no termination value (e.g. Ransoms, Shipped, Compenaton, Resorts etc)
-            if (isOneRangeWithoutKeysAndTerminations)
-            {
-                var start = startRangeRowIndex + DEFAULT_STEP;
-                var count = worksheet.Dimension.End.Row - DEFAULT_STEP;
-                rangeSourceReportRows.First().SetRange(start, count);
-            }
-            // There is more than one range (e.g. Remainig)
-            else if (rangeSourceReportRows.Count > 1)
-            {
-                CreateRowRange(in worksheet, ref rangeSourceReportRows, DEFAULT_STEP, rangeWithTermination?.TerminatingStringValue);
-            }
-
-            return Task.CompletedTask;
-        }
-
-        private static void CreateRowRange(in ExcelWorksheet worksheet, ref List<RangeSourceReportRows> rangeSourceReportRows, int DEFAULT_STEP, (string rowStringKey, int offset)? termination)
-        {
-            List<RangeSourceReportRows> outputRanges = [];
-
-            // Get existing keys from templates 
-            List<string>? keysInTemplateList = [.. rangeSourceReportRows
-                .Where(el => !string.IsNullOrEmpty(el.Key))
-                .Select(el => el.Key!)];
-
-            // Get existing elements in table by key
-            List<(string key, int index)> existingElements = [];
-            for (int i = 0; i < keysInTemplateList.Count; i++)
-            {
-                var key = keysInTemplateList[i];
-                if (!string.IsNullOrEmpty(key) &&
-                    GetRowIndexBy(key, in worksheet, out int? rowIndex) &&
-                    rowIndex.HasValue)
-                {
-                    existingElements.Add((key, rowIndex.Value));
-                }
-            }
-
-            // Make LinkedList from existing elements in table  
-            LinkedList<(string key, int index)> existingElementsLinkedList = new(existingElements);
-
-            int? count = null, start = null;
-
-            // Iterate linked list
-            var currentNode = existingElementsLinkedList.First;
-
-            while (currentNode != null)
-            {
-                (string key, int index) = currentNode.Value;
-
-                start = index + DEFAULT_STEP;
-
-                if (currentNode.Next != null)
-                {
-                    (string nextKey, int nextIndex) = currentNode.Next!.Value;
-                    count = nextIndex - start.Value;
-                }
-                else
-                {
-                    if (termination is not null)
-                    {
-                        var terminationKey = termination.Value.rowStringKey;
-                        var terminationOffset = termination.Value.offset;
-
-                        if (!string.IsNullOrEmpty(terminationKey) &&
-                           GetRowIndexBy(terminationKey, in worksheet, out int? terminationIndex) &&
-                           terminationIndex.HasValue)
-                        {
-                            count = terminationIndex - start.Value - terminationOffset;
-                        }
-                        else
-                        {
-                            throw new ArgumentException("Cannot get index of termination row.");
-                        }
-                    }
-                    else
-                    {
-                        throw new ArgumentException("Multiple ranges must contain a termination row.");
-                    }
-                }
-
-                // Set range
-                var targetTemplate = rangeSourceReportRows
-                    .SingleOrDefault(el => string.Equals(el.Key, key));
-
-                if (targetTemplate is not null &&
-                   start.HasValue &&
-                   count.HasValue)
-                {
-                    targetTemplate.SetRange(start.Value, count.Value);
-                    outputRanges.Add(targetTemplate);
-                }
-
-                // Next step
-                currentNode = currentNode!.Next;
-            }
-
-            // Return
-            rangeSourceReportRows = outputRanges;
-        }
-
-        private static bool IsFilterMatch(string[] filters, object value) =>
-            value is not null &&
-            !string.IsNullOrEmpty(value!.ToString()) &&
-            filters.Contains(value!.ToString());
+      
 
         private static List<SKUForTargetReport> GetDelay(List<SKUForTargetReport> list)
         {

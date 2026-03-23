@@ -208,8 +208,17 @@ namespace TableAnalizer.Objects
 
     public enum SourceCellsType
     {
+        /// <summary>
+        /// Обязательные ячейки
+        /// </summary>
         Required,
+        /// <summary>
+        /// Ячейки для фильтрации
+        /// </summary>
         Filtration,
+        /// <summary>
+        /// Ячейки без фильрации
+        /// </summary>
         NonFiltration
     }
 

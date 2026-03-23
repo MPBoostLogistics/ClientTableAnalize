@@ -15,23 +15,7 @@ namespace TableAnalizer.Objects.Managers
 
         private string? logisticsReportFirstName;
 
-        /// <summary>
-        /// Название листа в доп первичном отчете - "Экстра-приходы"
-        /// (экстра-приходы на помещение 1 из-за пересортов)
-        /// </summary>
-        public const string ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME = "Экстра-приходы";
-
-
-        /// <summary>
-        /// Название листа в доп первичном отчете - "Алиасы"
-        /// </summary>
-        public const string ADDREPORT_ALIASES_WORKSHEET_NAME = "Алиасы";
-
-        /// <summary>
-        /// Название листа в доп первичном отчете - "Корректировки расхода"
-        /// </summary>
-        public const string ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME = "Корректировки расхода";
-
+      
 
         /// <summary>
         /// Dictionary of primary report files.

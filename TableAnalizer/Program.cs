@@ -11,16 +11,7 @@ using TableAnalizer.Objects;
 using TableAnalizer.Objects.Managers;
 using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.ReportItems;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUAliasBalance;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
-
-/*
-    1. Запросить из консоли путь к диреторию с переменными данными 
-    2. Прверить постоянные данные 
-        2.1. Если нет или данные устарели - сообщить об этом и выйти 
-    3. Проверить переменные данные
-        3.1. Если нет или данные устарели - сообщить об этом и выйти
-*/
 
 internal class Program
 {

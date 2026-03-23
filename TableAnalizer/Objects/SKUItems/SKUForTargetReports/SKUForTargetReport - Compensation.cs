@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
-using TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage;
 
 namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 {

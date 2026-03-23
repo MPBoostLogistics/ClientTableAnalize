@@ -1,3 +1,4 @@
+using TableAnalizer.Objects.Managers.ExcelSheetParsing;
 using TableAnalizer.Objects.Parsing;
 
 namespace TableAnalizer.Objects.SKUItems
@@ -9,14 +10,14 @@ namespace TableAnalizer.Objects.SKUItems
     {
         #region Properties
         public long SKUNumber { get; set; }
-        public int SKUResortCount { get; set; }
+        public int SKUExtraReceiptCount { get; set; }
         public string? ResortComment { get; set; }
         #endregion Properties
 
         #region Functionality
         public override string ToString()
         {
-            return $"Resort: SKU {SKUNumber}, count: {SKUResortCount}, comment: {ResortComment}";
+            return $"Resort: SKU {SKUNumber}, count: {SKUExtraReceiptCount}, comment: {ResortComment}";
         }
         #endregion
     }
