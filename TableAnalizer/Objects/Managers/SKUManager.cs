@@ -138,7 +138,7 @@ namespace TableAnalizer.Objects.Managers
             // Start
             Stopwatch stopwatch = Stopwatch.StartNew();
 
-            // Get data from excel sheet
+            // Get data from excel sheet (in ExcelSheetParsingManager)
             Task<(double time, IEnumerable<Dictionary<string, ItemForParsing>>? data)> getDataTask =
                 ExcelSheetParsingManager.GetDataFromExcelSheet(reportFileKey, excelPackage, workSheetName);
             await Task.Run(() => getDataTask);
