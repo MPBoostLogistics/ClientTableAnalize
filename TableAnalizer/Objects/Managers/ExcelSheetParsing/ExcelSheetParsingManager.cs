@@ -50,281 +50,287 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <summary>
         /// Набор ячеек для парсинга листа Excel (отчет по выкупам).
         /// </summary>
-        public static List<SourceCell> RansomsSourceCells { get; } =
+        public static List<SourceReportCell> RansomsSourceCells { get; } =
         [
             new(columnNumber: 1,
-                cellName: nameof(SKURansomsBalanceDataUnit.SKUClientLogin),
-                parsingTypeCode: ParsingTypeCode.StringTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUClientLogin),
+                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 2,
-                cellName: nameof(SKURansomsBalanceDataUnit.SKUMarketPlace),
-                parsingTypeCode: ParsingTypeCode.Marketplace,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUMarketPlace),
+                typeCodeKeyRow: ParsingTypeCode.Marketplace,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 3,
-                cellName: nameof(SKURansomsBalanceDataUnit.SKUNumber),
-                parsingTypeCode: ParsingTypeCode.LongTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 4,
-                cellName: nameof(SKURansomsBalanceDataUnit.SKUBrandAndName),
-                parsingTypeCode: ParsingTypeCode.StringTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUBrandAndName),
+                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 5,
-                cellName: nameof(SKURansomsBalanceDataUnit.SKUAveragePrice),
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUAveragePrice),
+                typeCodeKeyRow: ParsingTypeCode.DoubleTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 6,
-                cellName: nameof(SKURansomsBalanceDataUnit.SKULastPurchaseDate),
-                parsingTypeCode: ParsingTypeCode.DataOnlyTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKULastPurchaseDate),
+                typeCodeKeyRow: ParsingTypeCode.DataOnlyTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
 
             new(columnNumber: 7,
-                cellName: nameof(SKURansomsBalanceDataUnit.SKUTotalNumberPurchases),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUTotalNumberPurchases),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 8,
-                cellName: nameof(SKURansomsBalanceDataUnit.SKUInTransitNumberPurchases),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUInTransitNumberPurchases),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 9,
-                cellName: nameof(SKURansomsBalanceDataUnit.SKUCancelledNumberPurchases),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUCancelledNumberPurchases),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 10,
-                cellName: nameof(SKURansomsBalanceDataUnit.SKUDeliveredToPointsNumberPurchases),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUDeliveredToPointsNumberPurchases),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 11,
-                cellName:  nameof(SKURansomsBalanceDataUnit.SKUPickedupFromPointsNumberPurchases),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: true),
+                nameOfFutureProperty:  nameof(SKURansomsBalanceDataUnit.SKUPickedupFromPointsNumberPurchases),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 12,
-                cellName: nameof(SKURansomsBalanceDataUnit.SKUUnknownNumberPurchases),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUUnknownNumberPurchases),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
         ];
 
         /// <summary>
         /// Набор ячеек для парсинга листа Excel (отчет по приходам и остаткам на складе - 1 помещение).
         /// </summary>
-        public static List<SourceCell> RemainingFirstRoomSourceCells { get; } =
+        public static List<SourceReportCell> RemainingFirstRoomSourceCells { get; } =
         [
             new(columnNumber: 1,
-                cellName: nameof(SKURemainingBalanceDataUnit.SKUNumber),
-                parsingTypeCode: ParsingTypeCode.LongTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 6,
-                cellName: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
-                parsingTypeCode: ParsingTypeCode.StringTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
+                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 15,
-                cellName: nameof(SKURemainingBalanceDataUnit.SKUReceipt),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: false),
+                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUReceipt),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 17,
-                cellName: nameof(SKURemainingBalanceDataUnit.SKURemaining),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: false)
+                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKURemaining),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null)
         ];
 
         /// <summary>
         /// Набор ячеек для парсинга листа Excel (отчет по остаткам на складе - 2 помещение).
         /// </summary>
-        public static List<SourceCell> RemainingSecondRoomSourceCells { get; } =
+        public static List<SourceReportCell> RemainingSecondRoomSourceCells { get; } =
         [
-            new(columnNumber: 1, nameof(SKURemainingBalanceDataUnit.SKUNumber),
-                parsingTypeCode: ParsingTypeCode.LongTypeCode,
-                isRequired: true),
-            new(columnNumber: 6, nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
-                parsingTypeCode: ParsingTypeCode.StringTypeCode,
-                isRequired: true),
-            new(columnNumber: 17, nameof(SKURemainingBalanceDataUnit.SKURemaining),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: false)
+            new(columnNumber: 1,
+                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+            new(columnNumber: 6,
+                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
+                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+            new(columnNumber: 17,
+                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKURemaining),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null)
         ];
 
         /// <summary>
         /// Набор ячеек для парсинга листа Excel (отчет по остаткам на складе - 3 помещение).
         /// </summary>
-        public static List<SourceCell> RemainingThirdRoomSourceCells { get; } =
+        public static List<SourceReportCell> RemainingThirdRoomSourceCells { get; } =
         [
             new(columnNumber: 1,
-                cellName: nameof(SKURemainingBalanceDataUnit.SKUNumber),
-                parsingTypeCode: ParsingTypeCode.LongTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 6,
-                cellName: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
-                parsingTypeCode: ParsingTypeCode.StringTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
+                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 17,
-                cellName: nameof(SKURemainingBalanceDataUnit.SKURemaining),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: false)
+                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKURemaining),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null)
         ];
 
         /// <summary>
         /// Набор ячеек для парсинга листа Excel (отчет по расходам товаров со склада).
         /// </summary>
-        public static List<SourceCell> ShippedSourceCells { get; } =
+        public static List<SourceReportCell> ShippedSourceCells { get; } =
         [
             new(columnNumber: 4,
-                cellName: nameof(SKUShippedDataUnit.SKUNumber),
-                parsingTypeCode: ParsingTypeCode.LongTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKUShippedDataUnit.SKUNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 28,
-                cellName: nameof(SKUShippedDataUnit.SKUShippedCount),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: true)
+                nameOfFutureProperty: nameof(SKUShippedDataUnit.SKUShippedCount),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null)
         ];
 
         /// <summary>
         /// Набор ячеек для парсинга листа Excel (отчет по перемещению на ФФ - старые склады).
         /// </summary>
-        public static List<SourceCell> TransferSourceCells { get; } =
+        public static List<SourceReportCell> TransferSourceCells { get; } =
         [
             new(columnNumber: 4,
-                cellName: nameof(SKUTransferDataUnit.SKUNumber),
-                parsingTypeCode: ParsingTypeCode.LongTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKUTransferDataUnit.SKUNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 34,
-                cellName: nameof(SKUTransferDataUnit.SKUTransferedCount),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: true)
+                nameOfFutureProperty: nameof(SKUTransferDataUnit.SKUTransferedCount),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null)
         ];
 
         /// <summary>
         /// Набор ячеек для парсинга листа Excel (доп отчет - экстра-приходы по перещениям и пересорту).
         /// </summary>
-        public static List<SourceCell> ExtraReceiptSourceCells { get; } =
+        public static List<SourceReportCell> ExtraReceiptSourceCells { get; } =
         [
             new(columnNumber: 1,
-                cellName: nameof(SKUExtraReceiptDataUnit.SKUNumber),
-                parsingTypeCode: ParsingTypeCode.LongTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKUExtraReceiptDataUnit.SKUNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 2,
-                cellName: nameof(SKUExtraReceiptDataUnit.SKUExtraReceiptCount),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKUExtraReceiptDataUnit.SKUExtraReceiptCount),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 3,
-                cellName: nameof(SKUExtraReceiptDataUnit.ResortComment),
-                parsingTypeCode: ParsingTypeCode.StringTypeCode,
-                isRequired: false)
+                nameOfFutureProperty: nameof(SKUExtraReceiptDataUnit.ResortComment),
+                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
+                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null)
         ];
 
         /// <summary>
         /// Набор ячеек для парсинга листа Excel (доп отчет - алиасы).
         /// </summary>
-        public static List<SourceCell> AliasesSourceCells { get; } =
+        public static List<SourceReportCell> AliasesSourceCells { get; } =
         [
             new(columnNumber: 1,
-                cellName: nameof(SKUAliasDataUnit.SKUSourceNumber),
-                parsingTypeCode: ParsingTypeCode.LongTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKUAliasDataUnit.SKUSourceNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 2,
-                cellName: nameof(SKUAliasDataUnit.SKUAliasNumbers),
-                parsingTypeCode: ParsingTypeCode.LongTypeArrayCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKUAliasDataUnit.SKUAliasNumbers),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeArrayCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 3,
-                cellName: nameof(SKUAliasDataUnit.AliasComment),
-                parsingTypeCode: ParsingTypeCode.StringTypeCode,
-                isRequired: false)
+                nameOfFutureProperty: nameof(SKUAliasDataUnit.AliasComment),
+                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
+                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null)
         ];
 
         /// <summary>
         /// Набор ячеек для парсинга листа Excel (доп отчет - корретировки расходов от Клиента).
         /// </summary>
-        public static List<SourceCell> AdjustmentShipmentSourceCells { get; } =
+        public static List<SourceReportCell> AdjustmentShipmentSourceCells { get; } =
         [
             new(columnNumber: 1,
-                cellName: nameof(SKUAdjustmentShipmentUnit.SKUSourceNumber),
-                parsingTypeCode: ParsingTypeCode.LongTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKUAdjustmentShipmentUnit.SKUSourceNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 2,
-                cellName: nameof(SKUAdjustmentShipmentUnit.SKUAdjustmentSum),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKUAdjustmentShipmentUnit.SKUAdjustmentSum),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 3,
-                cellName: nameof(SKUAdjustmentShipmentUnit.SKUAdjustmentComment),
-                parsingTypeCode: ParsingTypeCode.StringTypeCode,
-                isRequired: false)
+                nameOfFutureProperty: nameof(SKUAdjustmentShipmentUnit.SKUAdjustmentComment),
+                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
+                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null)
         ];
 
         /// <summary>
         /// Набор ячеек для парсинга листа Excel (доп отчет - параллельные клиенты).
         /// </summary>
-        public static List<SourceCell> ParallelSourceCells { get; } =
+        public static List<SourceReportCell> ParallelSourceCells { get; } =
         [
             new(columnNumber: 1,
-                cellName: nameof(SKUParallelUnit.SKUNumber),
-                parsingTypeCode: ParsingTypeCode.LongTypeCode,
-                isRequired: true)
+                nameOfFutureProperty: nameof(SKUParallelUnit.SKUNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null)
         ];
 
         /// <summary>
         /// Набор ячеек для парсинга листа Excel (отчет по списанию с точек и курьеров).
         /// </summary>
-        public static List<SourceCell> WriteOffPointsAndCouriersSourceCells { get; } =
+        public static List<SourceReportCell> WriteOffPointsAndCouriersSourceCells { get; } =
         [
             new(columnNumber: 4,
-                cellName: nameof(SKUWriteOffDataUnit.SKUNumber),
-                parsingTypeCode: ParsingTypeCode.LongTypeCode, true),
+                nameOfFutureProperty: nameof(SKUWriteOffDataUnit.SKUNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 27,
-                cellName: nameof(SKUWriteOffDataUnit.SKUWriteOffCount),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: true)
+                nameOfFutureProperty: nameof(SKUWriteOffDataUnit.SKUWriteOffCount),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null)
         ];
 
         /// <summary>
         /// Набор ячеек для парсинга листа Excel (отчет по списанию с точек и через склад - старые данные).
         /// </summary>
-        public static List<SourceCell> WriteOffPointsViaWarehouseSourceCells { get; } =
+        public static List<SourceReportCell> WriteOffPointsViaWarehouseSourceCells { get; } =
         [
             new(columnNumber: 5,
-                cellName: nameof(SKUWriteOffDataUnit.SKUNumber),
-                parsingTypeCode: ParsingTypeCode.LongTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKUWriteOffDataUnit.SKUNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 39,
-                cellName: nameof(SKUWriteOffDataUnit.SKUWriteOffCount),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: true)
+                nameOfFutureProperty: nameof(SKUWriteOffDataUnit.SKUWriteOffCount),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null)
         ];
 
         /// <summary>
         /// Набор ячеек для парсинга листа Excel (отчет по оплаченным недовозам).
         /// </summary>
-        public static List<SourceCell> PaidShortagesSourceCells { get; } =
+        public static List<SourceReportCell> PaidShortagesSourceCells { get; } =
         [
             new(columnNumber: 3,
-                cellName: nameof(SKUPaidShortageDataUnit.ClientLogin),
-                parsingTypeCode: ParsingTypeCode.StringTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.ClientLogin),
+                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 4,
-                cellName: nameof(SKUPaidShortageDataUnit.SubjectClaim),
-                parsingTypeCode: ParsingTypeCode.SubjectClaim,
+                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.SubjectClaim),
+                typeCodeKeyRow: ParsingTypeCode.SubjectClaim,
                 isRequired: true,
-                filterStrings: [SubjectClaimStrings[SubjectClaim.ShortDeliveryGoods]]),
+                filterStrings: [SubjectClaimStrings[SubjectClaim.ShortDeliveryGoods]],
+                typesAndRegeхsChildRows: null),
             new(columnNumber: 5,
-                cellName: nameof(SKUPaidShortageDataUnit.SKUNumber),
-                parsingTypeCode: ParsingTypeCode.LongTypeCode,
-                isRequired: false),
+                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.SKUNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 10,
-                cellName: nameof(SKUPaidShortageDataUnit.SKUSum),
-                parsingTypeCode: ParsingTypeCode.IntTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.SKUSum),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 12,
-                cellName: nameof(SKUPaidShortageDataUnit.SKUAmount),
-                parsingTypeCode: ParsingTypeCode.DoubleTypeCode,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.SKUAmount),
+                typeCodeKeyRow: ParsingTypeCode.DoubleTypeCode,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 13,
-                cellName: nameof(SKUPaidShortageDataUnit.ClaimExecutor),
-                parsingTypeCode: ParsingTypeCode.ClaimExecutor,
-                isRequired: true),
+                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.ClaimExecutor),
+                typeCodeKeyRow: ParsingTypeCode.ClaimExecutor,
+                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
             new(columnNumber: 18,
-                cellName: nameof(SKUPaidShortageDataUnit.ClaimResolutionStatus),
-                parsingTypeCode: ParsingTypeCode.ClaimResolutionStatus,
+                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.ClaimResolutionStatus),
+                typeCodeKeyRow: ParsingTypeCode.ClaimResolutionStatus,
                 isRequired: true,
-                filterStrings: [ClaimResolutionStatusStrings[ClaimResolutionStatus.Paid], ClaimResolutionStatusStrings[ClaimResolutionStatus.ReturnedToBalance]]),
+                filterStrings: [ClaimResolutionStatusStrings[ClaimResolutionStatus.Paid],
+                    ClaimResolutionStatusStrings[ClaimResolutionStatus.ReturnedToBalance]],
+                typesAndRegeхsChildRows: null),
         ];
-
 
         #endregion
 
@@ -619,7 +625,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 
                 // 2. Итерация по строкам диапазона.
                 var rowsIndexRange = rowsRange.RangeRowIndexesСollection.ToList();
-                var currentSourceCells = rowsRange.SourceColumns;
+                var currentSourceCells = rowsRange.SourceCells;
 
                 for (int j = 0; j < rowsIndexRange.Count; j++)
                 {
@@ -651,14 +657,14 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="values">Словарь, где ключ - имя значения, а значение - полученные данные. </param>
         /// <returns></returns>
         /// <exception cref="ArgumentException">Возникает когда не обнаружено обязательное значение в ячейке.</exception>
-        public static Task<bool> GetValuesFromRow(in ExcelWorksheet sheet, int rowIndex, in List<SourceCell> sourceCells, out Dictionary<string, ItemForParsing>? values)
+        public static Task<bool> GetValuesFromRow(in ExcelWorksheet sheet, int rowIndex, in List<SourceReportCell> sourceCells, out Dictionary<string, ItemForParsing>? values)
         {
             values = null;
 
             if (!CheckPresenceAddressesInRow(in sheet, rowIndex, in sourceCells) ||
                 !СheckingValuesInRequiredCells(in sheet, rowIndex, in sourceCells) ||
                 !FilterMatchingCheck(in sheet, rowIndex, in sourceCells, out int filterCellsCount) ||
-                !FindSorceCellsByType(in sourceCells, SourceCellsType.NonFiltration, out List<SourceCell>? dataСellsNonFilters) ||
+                !FindSorceCellsByType(in sourceCells, SourceCellsType.NonFiltration, out List<SourceReportCell>? dataСellsNonFilters) ||
                 dataСellsNonFilters is null ||
                 dataСellsNonFilters!.Count == 0)
             {
@@ -676,8 +682,8 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 if (value is null)
                 {
                     if (dataCell.IsRequired)
-                        throw new ArgumentException($"A table cell does not contain a <b>required value</b> for name: '{dataCell.CellName}'");
-                    
+                        throw new ArgumentException($"A table cell does not contain a <b>required value</b> for name: '{dataCell.NameOfFutureProperty}'");
+
                     // Если значение необязательное, то устанавливаем пустуюб строку.
                     value = string.Empty;
                 }
@@ -685,7 +691,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 var valueToString = value.ToString();
 
                 if (valueToString is not null)
-                    values.Add(dataCell.CellName, new(valueToString, dataCell.ParsingTypeCode, !dataCell.IsRequired));
+                    values.Add(dataCell.NameOfFutureProperty, new(valueToString, dataCell.TypeCodeKeyRow, !dataCell.IsRequired));
             }
 
             var success = values?.Count == sourceCells.Count - filterCellsCount;
@@ -701,7 +707,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <returns>Флаг успеха проверки ячейки на наличии значения.</returns>
         /// <remarks><b>Точка парсинга данных</b></remarks>
         /// <exception cref="Exception">Ошибка если ячейка по указанному адресу не найдена.</exception>
-        private static bool CheckPresenceAddressesInRow(in ExcelWorksheet sheet, int rowIndex, in List<SourceCell> sourceCells)
+        private static bool CheckPresenceAddressesInRow(in ExcelWorksheet sheet, int rowIndex, in List<SourceReportCell> sourceCells)
         {
             // 1. Итерация по ячейкам-заготовкам диапазона.
             foreach (var sourceCell in sourceCells)
@@ -716,7 +722,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                     return false; // TODO: Сообщение в лог? Ошибка?
 
                 // 4. Парсинг значения ячейки по заданному типу.
-                return ParsingManager.Parse(addressValue.ToString()!, sourceCell.ParsingTypeCode, !sourceCell.IsRequired, out object? value) &&
+                return ParsingManager.Parse(addressValue.ToString()!, sourceCell.TypeCodeKeyRow, !sourceCell.IsRequired, out object? value) &&
                     value is not null;
             }
 
@@ -727,16 +733,16 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// Проверяет соответствие значений на фильтрацию в ячейках диапазонов.
         /// </summary>
         /// <param name="sheet">Рабочий лист книги Excel.</param>
-         /// <param name="rowIndex">Индекс строки.</param>
+        /// <param name="rowIndex">Индекс строки.</param>
         /// <param name="sourceCells">Коллекция ячеек-заготовок диапазона таблицы.</param>
         /// <param name="filterSourceCellsCount">Количество ячеек-заготовок фильтрации.</param>
         /// <returns></returns>
-        private static bool FilterMatchingCheck(in ExcelWorksheet sheet, int rowIndex, in List<SourceCell> sourceCells, out int filterSourceCellsCount)
+        private static bool FilterMatchingCheck(in ExcelWorksheet sheet, int rowIndex, in List<SourceReportCell> sourceCells, out int filterSourceCellsCount)
         {
             filterSourceCellsCount = 0;
 
             // Если нет фильтрации, то сразу возвращаем true.
-            if (!FindSorceCellsByType(in sourceCells, SourceCellsType.Filtration, out List<SourceCell>? filterSourceCells))
+            if (!FindSorceCellsByType(in sourceCells, SourceCellsType.Filtration, out List<SourceReportCell>? filterSourceCells))
             {
                 return true;
             }
@@ -760,9 +766,9 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="rowIndex">Индекс строки.</param>
         /// <param name="sourceCells">Коллекция ячеек-заготовок диапазона таблицы.</param>
         /// <returns>Флаг проверки ячеек.</returns>
-        private static bool СheckingValuesInRequiredCells(in ExcelWorksheet sheet, int rowIndex, in List<SourceCell> sourceCells)
+        private static bool СheckingValuesInRequiredCells(in ExcelWorksheet sheet, int rowIndex, in List<SourceReportCell> sourceCells)
         {
-            if (!FindSorceCellsByType(in sourceCells, SourceCellsType.Required, out List<SourceCell>? requiredCells) &&
+            if (!FindSorceCellsByType(in sourceCells, SourceCellsType.Required, out List<SourceReportCell>? requiredCells) &&
                 requiredCells is null ||
                 requiredCells?.Count == 0)
             {
@@ -796,7 +802,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="sourceCellsType">Типа ячеек-заготовок.</param>
         /// <param name="filteredСellsByType">Ячейки-заготовки, отфилтрованные по типу.</param>
         /// <returns></returns>
-        private static bool FindSorceCellsByType(in List<SourceCell> sourceCells, SourceCellsType sourceCellsType, out List<SourceCell>? filteredСellsByType)
+        private static bool FindSorceCellsByType(in List<SourceReportCell> sourceCells, SourceCellsType sourceCellsType, out List<SourceReportCell>? filteredСellsByType)
         {
             filteredСellsByType = sourceCellsType switch
             {

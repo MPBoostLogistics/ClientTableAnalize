@@ -5,7 +5,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
     /// <summary>
     /// Диапазон строк с данными исходного отчета.
     /// </summary>
-    public class RangeRowsWithDataInSourceReport(List<SourceCell> sourceCells, string? key = null, (string key, int offset)? terminatingStringValue = null)
+    public class RangeRowsWithDataInSourceReport(List<SourceReportCell> sourceCells, string? key = null, (string key, int offset)? terminatingStringValue = null)
     {
         #region Properties
         /// <summary>
@@ -22,7 +22,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <summary>
         /// Коллекция объектов SourceCell (описывает ячейки диапазона таблицы для парсинга).
         /// </summary>
-        public List<SourceCell> SourceColumns { get; } = sourceCells;
+        public List<SourceReportCell> SourceCells { get; } = sourceCells;
 
         /// <summary>
         /// Перечисление индексов строк диапазона.
@@ -52,7 +52,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             StringBuilder sb = new();
             sb.Append(string.IsNullOrEmpty(StringRowKey) ? "" : $"key: {StringRowKey}, ");
             sb.Append(string.IsNullOrEmpty(TerminatingStringValue?.key) ? "" : $"terminating: {TerminatingStringValue?.key}, ");
-            sb.Append($"Source columns count: {SourceColumns.Count}, ");
+            sb.Append($"Source columns count: {SourceCells.Count}, ");
             sb.Append(RangeRowIndexesСollection != null ?
                  $"range row indexes count: {RangeRowIndexesСollection.Count()}, " : "");
 
