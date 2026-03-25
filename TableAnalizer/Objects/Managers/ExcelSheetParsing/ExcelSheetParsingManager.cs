@@ -30,7 +30,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <summary>
         /// Паттерны регулярных выражений для проверки строк на наличие цифр (для артикулов).
         /// </summary>
-        private static readonly List<string> digitsRegeхPatterns = [@"\d+"];
+        private static readonly List<string> digitsRegeхPatterns = [@"^\d+$"];
         /// <summary>
         /// Регулярные выражения для проверки строк на наличие цифр (для артикулов).
         /// </summary>
@@ -44,8 +44,11 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// </summary>
         private readonly Regex[] receivingRegeхes = receivingRegeхPatterns.CreateRegexArray();
 
-        private static readonly AdditionalRangeRules NestedRangesReceiving = new(keyStringColumn: 1, keyStringsRegex: digitsRegexes);
-
+        /// <summary>
+        /// Дополительные правила (баланс, "1 - Помещение приемки и сортировки")
+        /// </summary>
+        private static readonly AdditionalRangeRules AdditionalRangeRulesReceiving =
+            new(keyStringColumn: 1, keyStringsRegex: digitsRegexes, isGetDataByKeyString: true);
 
 
         /// <summary>
@@ -391,12 +394,12 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             var rowsRangesWithRules = rowsRanges.Where(rr => rr.AdditionalRangeRules.HasValue).ToList();
             if (rowsRangesWithRules != null)
             {
-                foreach (var rowsRangesWithRule in rowsRangesWithRules)
+                for (int i = 0; i < rowsRangesWithRules.Count; i++)
                 {
-                    var indexRange = rowsRanges.IndexOf(rowsRangesWithRule);
-                    Hello
-
-
+                    var current = rowsRangesWithRules[i];
+                    var index = rowsRanges.IndexOf(current);
+                    ApplyAdditionalRulesToRange(in sheet!, ref current);
+                    rowsRanges[index] = current;
                 }
             }
 
@@ -441,7 +444,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 SourceReportItemKey.Ransoms => [new(RansomsSourceCells)],
                 SourceReportItemKey.Balance =>
                 [
-                    new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME, additionalRangeRules: NestedRangesReceiving),
+                    new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME, additionalRangeRules: AdditionalRangeRulesReceiving),
                     new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME),
                     new(RemainingSecondRoomSourceCells, THIRD_ROOM_NAME),
                     new(RemainingSecondRoomSourceCells, FOUTH_ROOM_NAME),
@@ -657,14 +660,19 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             // 1. Итерация по коолекции диапазонов.
             for (int i = 0; i < rowsRanges.Count; i++)
             {
-                SourceReportRange? currentRowsRange = rowsRanges[i];
+                SourceReportRange? rowsRange = rowsRanges[i];
 
-                if (currentRowsRange is null ||
-                    currentRowsRange.RowsIndexes is null) continue;
+                if (rowsRange is null || rowsRange.RowsIndexes is null) continue;
 
                 // 2. Итерация по строкам диапазона.
-                var rowsIndexRange = currentRowsRange.RowsIndexes.ToList();
-                var currentSourceCells = currentRowsRange.SourceReportCells;
+                // 2а. Определяем диапазон - если есть доп правила и получаем индексы ключевых строк,
+                // то берем их, иначе берем список всех полученных индексов.
+                List<int> rowsIndexRange = rowsRange.AdditionalRangeRules.HasValue &&
+                    rowsRange.AdditionalRangeRules.Value.ValidKeyRowIndices.Count > 0 ?
+                    rowsRange.AdditionalRangeRules.Value.ValidKeyRowIndices :
+                    [.. rowsRange.RowsIndexes];
+
+                var currentSourceCells = rowsRange.SourceReportCells;
 
                 for (int j = 0; j < rowsIndexRange.Count; j++)
                 {
@@ -678,8 +686,8 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 
                     if (getValuesFromRowTaskSuccess && values is not null)
                     {
-                        currentRowsRange.SetRowsData(values);
-                        rowsRanges![i] = currentRowsRange;
+                        rowsRange.SetRowsData(values);
+                        rowsRanges![i] = rowsRange;
                     }
                 }
             }
@@ -715,7 +723,8 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             foreach (var dataCell in dataСellsNonFilters)
             {
                 // Получение значения ячейки.
-                var value = sheet.Cells[rowIndex, dataCell.ColumnNumber].Value;
+                var colNumber = dataCell.ColumnNumber;
+                var value = sheet.Cells[rowIndex, colNumber].Value;
 
                 // Если значение ячейки пустое, то проверяем на обязательность заполнения.
                 if (value is null)
@@ -865,10 +874,46 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
           !string.IsNullOrEmpty(value!.ToString()) &&
           filters.Contains(value!.ToString());
 
-        private static void ApplyAdditionalRulesToRange(ref SourceReportRange range)
+        private static void ApplyAdditionalRulesToRange(in ExcelWorksheet sheet, ref SourceReportRange range)
         {
+            if (range.RowsIndexes == null || !range.AdditionalRangeRules.HasValue) return;
+
             // Если получаем данные только по ключевой строке:
-            
+            if (range.AdditionalRangeRules!.Value.IsGetDataByKeyString)
+            {
+                SearchValidRowIndexesWhenGetDataOnlyByKeyRow(in sheet, ref range);
+            }
+        }
+
+        /// <summary>
+        /// Ищет валидные индексы строк при получении данных только из ключевых строк.
+        /// </summary>
+        /// <param name="sheet">Рабочий лист Excel.</param>
+        /// <param name="range">Дипазон таблицы рабочего листа.</param>
+        private static void SearchValidRowIndexesWhenGetDataOnlyByKeyRow(in ExcelWorksheet sheet, ref SourceReportRange range)
+        {
+            // Исходный список индексов строк.
+            var indexes = range.RowsIndexes!.ToList();
+
+            for (int i = 0; i < indexes.Count; i++)
+            {
+                var rowIndex = indexes[i];
+                var columnIndex = range.AdditionalRangeRules!.Value.KeyStringColumn;
+                var value = sheet.Cells[rowIndex, columnIndex].Value;
+                var regexRules = range.AdditionalRangeRules!.Value.KeyStringRegex;
+
+                // Итераций по правилам регулярных выражений для поиска только ключевых строк.
+                for (int j = 0; j < regexRules.Length; j++)
+                {
+                    var regexRule = regexRules[j];
+                    if (!string.IsNullOrEmpty(value.ToString())
+                        && regexRule.IsMatch(value.ToString()!))
+                    {
+                        // Запоминаем индекс валидной строки.
+                        range.AdditionalRangeRules.Value.SetValidKeyRowIndices(indexes[i]);
+                    }
+                }
+            }
         }
         #endregion
     }

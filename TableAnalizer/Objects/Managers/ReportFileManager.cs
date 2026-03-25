@@ -254,19 +254,6 @@ namespace TableAnalizer.Objects.Managers
             await DefineDirInfoForClientTargetReports(BaseFinalReportsDirectoryPath);
         }
 
-        // private void MakeSourceReportFileItem(FileInfo fileInfo, SourceReportItemKey? key, string? loginsFileName, bool isControlAgeOfData)
-        // {
-        //     var sorceReportFile = new SourceReportFileItem(key.Value, fileInfo, isControlAgeOfData, DataAgeLimitInDays);
-
-        //     if (key.Value == SourceReportItemKey.Ransoms && !string.IsNullOrEmpty(loginsFileName))
-        //     {
-        //         ClientLogins = GetLoginsFromFilename(loginsFileName);
-        //     }
-
-        //     // Store SourceReportFiles
-        //     SourceReportFileItems[key.Value] = sorceReportFile;
-        // }
-
         /// <summary>
         /// Get source report file for one client.
         /// </summary>
