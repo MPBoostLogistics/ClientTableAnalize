@@ -3,8 +3,8 @@
     "isTracing": true,
     "isCheckRansoms": true,
     "isCheckBalance": true,
-    "isCheckOutgoingProducts": true,
-    "isCheckAdditionalData": true,
+    "isCheckOutgoingProducts": false,
+    "isCheckAdditionalData": false,
     "isAutoResorting": false,
     "isCombineAliases": false
   },

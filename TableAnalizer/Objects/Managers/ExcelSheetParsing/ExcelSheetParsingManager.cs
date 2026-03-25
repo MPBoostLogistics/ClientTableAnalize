@@ -1,9 +1,11 @@
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Utils;
 
 namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 {
@@ -24,6 +26,26 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         public const string ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME = "Экстра-приходы";
         public const string ADDREPORT_ALIASES_WORKSHEET_NAME = "Алиасы";
         public const string ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME = "Корректировки расхода";
+
+        /// <summary>
+        /// Паттерны регулярных выражений для проверки строк на наличие цифр (для артикулов).
+        /// </summary>
+        private static readonly List<string> digitsRegeхPatterns = [@"\d+"];
+        /// <summary>
+        /// Регулярные выражения для проверки строк на наличие цифр (для артикулов).
+        /// </summary>
+        private static readonly Regex[] digitsRegexes = digitsRegeхPatterns.CreateRegexArray();
+        /// <summary>
+        /// Паттерны регулярных выражений для проверки строк прихода (по приходным ордерам).
+        /// </summary>
+        private static readonly List<string> receivingRegeхPatterns = [@"Приходный\sордер\sна\sтовары\s\S+\sот\s\S+"];
+        /// <summary>
+        /// Регулярные выражения для проверки строк на наличие цифр (для артикулов).
+        /// </summary>
+        private readonly Regex[] receivingRegeхes = receivingRegeхPatterns.CreateRegexArray();
+
+        private static readonly AdditionalRangeRules NestedRangesReceiving = new(keyStringColumn: 1, keyStringsRegex: digitsRegexes);
+
 
 
         /// <summary>
@@ -55,52 +77,52 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             new(columnNumber: 1,
                 nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUClientLogin),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 2,
                 nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUMarketPlace),
                 typeCodeKeyRow: ParsingTypeCode.Marketplace,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 3,
                 nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 4,
                 nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUBrandAndName),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 5,
                 nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUAveragePrice),
                 typeCodeKeyRow: ParsingTypeCode.DoubleTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 6,
                 nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKULastPurchaseDate),
                 typeCodeKeyRow: ParsingTypeCode.DataOnlyTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
 
             new(columnNumber: 7,
                 nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUTotalNumberPurchases),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 8,
                 nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUInTransitNumberPurchases),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 9,
                 nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUCancelledNumberPurchases),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 10,
                 nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUDeliveredToPointsNumberPurchases),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 11,
                 nameOfFutureProperty:  nameof(SKURansomsBalanceDataUnit.SKUPickedupFromPointsNumberPurchases),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 12,
                 nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUUnknownNumberPurchases),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
         ];
 
         /// <summary>
@@ -111,19 +133,19 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             new(columnNumber: 1,
                 nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 6,
                 nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 15,
                 nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUReceipt),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: false, filterStrings: null),
             new(columnNumber: 17,
                 nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKURemaining),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null)
+                isRequired: false, filterStrings: null)
         ];
 
         /// <summary>
@@ -134,15 +156,15 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             new(columnNumber: 1,
                 nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 6,
                 nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 17,
                 nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKURemaining),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null)
+                isRequired: false, filterStrings: null)
         ];
 
         /// <summary>
@@ -153,15 +175,15 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             new(columnNumber: 1,
                 nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 6,
                 nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 17,
                 nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKURemaining),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null)
+                isRequired: false, filterStrings: null)
         ];
 
         /// <summary>
@@ -172,11 +194,11 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             new(columnNumber: 4,
                 nameOfFutureProperty: nameof(SKUShippedDataUnit.SKUNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 28,
                 nameOfFutureProperty: nameof(SKUShippedDataUnit.SKUShippedCount),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null)
+                isRequired: true, filterStrings: null)
         ];
 
         /// <summary>
@@ -187,11 +209,11 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             new(columnNumber: 4,
                 nameOfFutureProperty: nameof(SKUTransferDataUnit.SKUNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 34,
                 nameOfFutureProperty: nameof(SKUTransferDataUnit.SKUTransferedCount),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null)
+                isRequired: true, filterStrings: null)
         ];
 
         /// <summary>
@@ -202,15 +224,15 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             new(columnNumber: 1,
                 nameOfFutureProperty: nameof(SKUExtraReceiptDataUnit.SKUNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 2,
                 nameOfFutureProperty: nameof(SKUExtraReceiptDataUnit.SKUExtraReceiptCount),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 3,
                 nameOfFutureProperty: nameof(SKUExtraReceiptDataUnit.ResortComment),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null)
+                isRequired: false, filterStrings: null)
         ];
 
         /// <summary>
@@ -221,15 +243,15 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             new(columnNumber: 1,
                 nameOfFutureProperty: nameof(SKUAliasDataUnit.SKUSourceNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 2,
                 nameOfFutureProperty: nameof(SKUAliasDataUnit.SKUAliasNumbers),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeArrayCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 3,
                 nameOfFutureProperty: nameof(SKUAliasDataUnit.AliasComment),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null)
+                isRequired: false, filterStrings: null)
         ];
 
         /// <summary>
@@ -240,15 +262,15 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             new(columnNumber: 1,
                 nameOfFutureProperty: nameof(SKUAdjustmentShipmentUnit.SKUSourceNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 2,
                 nameOfFutureProperty: nameof(SKUAdjustmentShipmentUnit.SKUAdjustmentSum),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 3,
                 nameOfFutureProperty: nameof(SKUAdjustmentShipmentUnit.SKUAdjustmentComment),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null)
+                isRequired: false, filterStrings: null)
         ];
 
         /// <summary>
@@ -259,7 +281,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             new(columnNumber: 1,
                 nameOfFutureProperty: nameof(SKUParallelUnit.SKUNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null)
+                isRequired: true, filterStrings: null)
         ];
 
         /// <summary>
@@ -270,11 +292,11 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             new(columnNumber: 4,
                 nameOfFutureProperty: nameof(SKUWriteOffDataUnit.SKUNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 27,
                 nameOfFutureProperty: nameof(SKUWriteOffDataUnit.SKUWriteOffCount),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null)
+                isRequired: true, filterStrings: null)
         ];
 
         /// <summary>
@@ -285,11 +307,11 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             new(columnNumber: 5,
                 nameOfFutureProperty: nameof(SKUWriteOffDataUnit.SKUNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 39,
                 nameOfFutureProperty: nameof(SKUWriteOffDataUnit.SKUWriteOffCount),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null)
+                isRequired: true, filterStrings: null)
         ];
 
         /// <summary>
@@ -300,36 +322,36 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             new(columnNumber: 3,
                 nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.ClientLogin),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 4,
                 nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.SubjectClaim),
                 typeCodeKeyRow: ParsingTypeCode.SubjectClaim,
                 isRequired: true,
-                filterStrings: [SubjectClaimStrings[SubjectClaim.ShortDeliveryGoods]],
-                typesAndRegeхsChildRows: null),
+                filterStrings: [SubjectClaimStrings[SubjectClaim.ShortDeliveryGoods]]
+        ),
             new(columnNumber: 5,
                 nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.SKUNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: false, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: false, filterStrings: null),
             new(columnNumber: 10,
                 nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.SKUSum),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 12,
                 nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.SKUAmount),
                 typeCodeKeyRow: ParsingTypeCode.DoubleTypeCode,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 13,
                 nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.ClaimExecutor),
                 typeCodeKeyRow: ParsingTypeCode.ClaimExecutor,
-                isRequired: true, filterStrings: null, typesAndRegeхsChildRows: null),
+                isRequired: true, filterStrings: null),
             new(columnNumber: 18,
                 nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.ClaimResolutionStatus),
                 typeCodeKeyRow: ParsingTypeCode.ClaimResolutionStatus,
                 isRequired: true,
                 filterStrings: [ClaimResolutionStatusStrings[ClaimResolutionStatus.Paid],
-                    ClaimResolutionStatusStrings[ClaimResolutionStatus.ReturnedToBalance]],
-                typesAndRegeхsChildRows: null),
+                    ClaimResolutionStatusStrings[ClaimResolutionStatus.ReturnedToBalance]]
+        ),
         ];
 
         #endregion
@@ -342,17 +364,17 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         #endregion
 
         #region Functionality
-        public async static Task<(double, IEnumerable<Dictionary<string, ItemForParsing>>?)> GetDataFromExcelSheet(SourceReportItemKey reportFileKey, ExcelPackage package, string workSheetName)
+        public async static Task<(double, IEnumerable<Dictionary<string, ItemForParsing>>?)> GetDataFromExcelSheet(SourceReportItemKey reportFileKey, ExcelPackage package, string sheetName)
         {
             // 0. Start
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             // 1. Получение целевого листа из книги Excel.
-            if (!GetSheetFromExcelWorkbookByName(in package, workSheetName, out ExcelWorksheet? sheet))
+            if (!GetSheetFromExcelWorkbookByName(in package, sheetName, out ExcelWorksheet? sheet))
                 return (StopFuctionExecuting(ref stopwatch), null); // Сообщение в лог, что-то еще вернуть!
 
             // 2. Получение коллекции диапазонов из целевого листа по ключу отчета.
-            Task<List<SourceReportRange>> setTargetTableColumnsTask = SetTargetTableColumns(reportFileKey, workSheetName);
+            Task<List<SourceReportRange>> setTargetTableColumnsTask = SetSourceReportRangeByKey(reportFileKey, sheetName);
             await Task.Run(() => setTargetTableColumnsTask);
             setTargetTableColumnsTask.Wait();
             List<SourceReportRange> rowsRanges = setTargetTableColumnsTask.Result;
@@ -360,10 +382,23 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             if (rowsRanges.Count == 0)
                 return (StopFuctionExecuting(ref stopwatch), null); // Сообщение в лог, что-то еще вернуть!
 
-            // 3. Определение стартовых индексов и колчества строк с данными для диапазово 
-            Task getRangeSourceReportRowsTask = GetRangeSourceReportRows(worksheet: in sheet!, rangeRows: ref rowsRanges);
+            // 3. Определение стартовых индексов и колчества строк с данными для диапазонов.
+            Task getRangeSourceReportRowsTask = GetSourceReportRange(worksheet: in sheet!, rangeRows: ref rowsRanges);
             await Task.Run(() => getRangeSourceReportRowsTask);
             getRangeSourceReportRowsTask.Wait();
+
+            // 3а. Если есть вложенные правила получения значений для диапазонов 
+            var rowsRangesWithRules = rowsRanges.Where(rr => rr.AdditionalRangeRules.HasValue).ToList();
+            if (rowsRangesWithRules != null)
+            {
+                foreach (var rowsRangesWithRule in rowsRangesWithRules)
+                {
+                    var indexRange = rowsRanges.IndexOf(rowsRangesWithRule);
+                    Hello
+
+
+                }
+            }
 
             // 4. Получение "сырых данных" из строк.
             Task getRawDataTask = GetRawDataFromRangeRows(in sheet!, ref rowsRanges);
@@ -393,20 +428,20 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         }
 
         /// <summary>
-        /// Опеределения набора ячеек диапазона по ключу исходного отчета в заданном лисеа книги Excel.
+        /// Определение диапазонов в таблицах исходных отчетов по их ключу в заданном листе книги Excel.
         /// </summary>
         /// <param name="key">Ключу исходного отчета.</param>
         /// <param name="sheetName">Имя листа книги.</param>
         /// <param name="rangeSourceReportRows">Коллекции наборов ячеек диапазона.</param>
         /// <returns>Флаг определения (коллекция набора ячеек диапазона не пуста.)</returns>
-        private static Task<List<SourceReportRange>> SetTargetTableColumns(SourceReportItemKey key, string sheetName)
+        private static Task<List<SourceReportRange>> SetSourceReportRangeByKey(SourceReportItemKey key, string sheetName)
         {
             List<SourceReportRange> result = key switch
             {
                 SourceReportItemKey.Ransoms => [new(RansomsSourceCells)],
                 SourceReportItemKey.Balance =>
                 [
-                    new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME),
+                    new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME, additionalRangeRules: NestedRangesReceiving),
                     new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME),
                     new(RemainingSecondRoomSourceCells, THIRD_ROOM_NAME),
                     new(RemainingSecondRoomSourceCells, FOUTH_ROOM_NAME),
@@ -437,26 +472,29 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="worksheet">Целевой лист Excel.</param>
         /// <param name="rangeRows">Коллекция диапазонов строк таблицы.</param>
         /// <param name="startRangeRowIndex">Начальный индекс строки таблицы.</param>
-        public static Task GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<SourceReportRange> rangeRows, int startRangeRowIndex = 1)
+        public static Task GetSourceReportRange(in ExcelWorksheet worksheet, ref List<SourceReportRange> rangeRows, int startRangeRowIndex = 1)
         {
+            // Поиск дипазонов с названиями
             IEnumerable<SourceReportRange>? rangesWithKeys = rangeRows
                 .Where(rs => !string.IsNullOrEmpty(rs.StringRowKey));
 
+            // Поиск дипазонов с разделителями
             SourceReportRange? rangeWithTermination = rangeRows
                 .SingleOrDefault(rs => rs.TerminatingStringValue.HasValue);
 
+            // Если один диапазон без ключей и без разделителя
             bool isOneRangeWithoutKeysAndTerminations = rangeRows.Count == 1 &&
                 (rangesWithKeys is null || !rangesWithKeys.Any()) &&
                 rangeWithTermination is null;
 
-            // Range is one, no key and no termination value (e.g. Ransoms, Shipped, Compenaton, Resorts etc)
+            // Если есть один диапазон без ключей и без разделителей (например, выкупы, отгрузки и так далее)
             if (isOneRangeWithoutKeysAndTerminations)
             {
                 var start = startRangeRowIndex + DEFAULT_INERATE_STEP;
                 var count = worksheet.Dimension.End.Row - DEFAULT_INERATE_STEP;
                 rangeRows.First().SetStartRowIndexAndNumberRowsOfData(start, count);
             }
-            // There is more than one range (e.g. Remainig)
+            // Если есть несколько диапазонов
             else if (rangeRows.Count > 1)
             {
                 SetRowRange(in worksheet, ref rangeRows, rangeWithTermination?.TerminatingStringValue);
@@ -619,13 +657,14 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             // 1. Итерация по коолекции диапазонов.
             for (int i = 0; i < rowsRanges.Count; i++)
             {
-                SourceReportRange? rowsRange = rowsRanges[i];
+                SourceReportRange? currentRowsRange = rowsRanges[i];
 
-                if (rowsRange is null || rowsRange.RowsIndexes is null) continue;
+                if (currentRowsRange is null ||
+                    currentRowsRange.RowsIndexes is null) continue;
 
                 // 2. Итерация по строкам диапазона.
-                var rowsIndexRange = rowsRange.RowsIndexes.ToList();
-                var currentSourceCells = rowsRange.SourceReportCells;
+                var rowsIndexRange = currentRowsRange.RowsIndexes.ToList();
+                var currentSourceCells = currentRowsRange.SourceReportCells;
 
                 for (int j = 0; j < rowsIndexRange.Count; j++)
                 {
@@ -639,8 +678,8 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 
                     if (getValuesFromRowTaskSuccess && values is not null)
                     {
-                        rowsRange.SetRowsData(values);
-                        rowsRanges![i] = rowsRange;
+                        currentRowsRange.SetRowsData(values);
+                        rowsRanges![i] = currentRowsRange;
                     }
                 }
             }
@@ -826,6 +865,11 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
           !string.IsNullOrEmpty(value!.ToString()) &&
           filters.Contains(value!.ToString());
 
+        private static void ApplyAdditionalRulesToRange(ref SourceReportRange range)
+        {
+            // Если получаем данные только по ключевой строке:
+            
+        }
         #endregion
     }
 }

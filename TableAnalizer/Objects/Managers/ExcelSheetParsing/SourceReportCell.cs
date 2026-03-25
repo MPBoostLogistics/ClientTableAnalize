@@ -13,7 +13,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
     /// <param name="filterStrings">Коллекция строк для фильтрации.</param>
     /// <param name="typesAndRegeхsChildRows">Словарь типов и регулярных выражений для проверки дочерних строк (опционально.)</param>
     public readonly struct SourceReportCell(int columnNumber, string nameOfFutureProperty, ParsingTypeCode typeCodeKeyRow,
-        bool isRequired, string[]? filterStrings, Dictionary<ParsingTypeCode, Regex>? typesAndRegeхsChildRows)
+        bool isRequired, string[]? filterStrings)
     {
         #region Properties
         public int ColumnNumber { get; } = columnNumber;
@@ -21,7 +21,6 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         public ParsingTypeCode TypeCodeKeyRow { get; } = typeCodeKeyRow;
         public bool IsRequired { get; } = isRequired;
         public string[]? FilterStrings { get; } = filterStrings;
-        public Dictionary<ParsingTypeCode, Regex>? TypesAndRegeхsChildRows { get; } = typesAndRegeхsChildRows;
         #endregion
     }
 }

@@ -1,16 +1,20 @@
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 {
     /// <summary>
     /// Описывает диапазон строк с данными из исходного отчета.
     /// </summary>
-    public class SourceReportRange(List<SourceReportCell> sourceCells, string? key = null, (string key, int offset)? terminatingStringValue = null)
+    public class SourceReportRange(List<SourceReportCell> sourceCells,
+        string? key = null, (string key, int offset)? terminatingStringValue = null,
+        AdditionalRangeRules? additionalRangeRules = null)
     {
         #region Properties
         /// <summary>
-        /// Ключ в виде строки содержит название диапазона (например, помещения),
-        /// может быть пустым (если существует только один диапазон)
+        /// Ключ в виде строки
+        /// - содержит название диапазона (например, помещения)
+        /// - может быть пустым (если существует только один диапазон)
         /// </summary>
         public string? StringRowKey { get; } = key;
 
@@ -33,6 +37,15 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// Полученный набор данных по прочитанным строкам (каждая строка представляет собой словарь значений).
         /// </summary>
         public List<Dictionary<string, ItemForParsing>> RowsData { get; private set; } = [];
+
+        public AdditionalRangeRules? AdditionalRangeRules { get; set; } = additionalRangeRules;
+
+        /*
+            - паттерн для поиска ключевых строк
+            - поиск индексов ключевых строк (по номеру столбца и паттерну), наименование значения куда записываем? 
+            - паттерн для поиска дочерних строк (столбцы) - если его нет, берем данные из ключевой строки
+            - поиск индексов дочерних строк (по номеру столбца и паттерну), суммируем значение и отдаем сумму
+        */
 
         #endregion Properties
 
@@ -60,5 +73,18 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         }
 
         #endregion Functionality
+    }
+
+    public readonly struct AdditionalRangeRules(int keyStringColumn, Regex[] keyStringsRegex)
+    {
+        /// <summary>
+        /// Номер столбца таблицы для поиска ключевых строк.
+        /// </summary>
+        public int KeyStringColumn { get; } = keyStringColumn;
+
+        /// <summary>
+        /// Паттерн для поиска ключевых строк.
+        /// </summary>
+        public Regex[] KeyStringRegex { get; } = keyStringsRegex;
     }
 }
