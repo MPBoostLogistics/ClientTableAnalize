@@ -3,9 +3,9 @@ using System.Text;
 namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 {
     /// <summary>
-    /// Диапазон строк с данными исходного отчета.
+    /// Описывает диапазон строк с данными из исходного отчета.
     /// </summary>
-    public class RangeRowsWithDataInSourceReport(List<SourceReportCell> sourceCells, string? key = null, (string key, int offset)? terminatingStringValue = null)
+    public class SourceReportRange(List<SourceReportCell> sourceCells, string? key = null, (string key, int offset)? terminatingStringValue = null)
     {
         #region Properties
         /// <summary>
@@ -20,19 +20,19 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         public (string key, int offset)? TerminatingStringValue { get; } = terminatingStringValue;
 
         /// <summary>
-        /// Коллекция объектов SourceCell (описывает ячейки диапазона таблицы для парсинга).
+        /// Коллекция объектов SourceReportCells (описывает ячейки диапазона таблицы для парсинга).
         /// </summary>
-        public List<SourceReportCell> SourceCells { get; } = sourceCells;
+        public List<SourceReportCell> SourceReportCells { get; } = sourceCells;
 
         /// <summary>
         /// Перечисление индексов строк диапазона.
         /// </summary>
-        public IEnumerable<int>? RangeRowIndexesСollection { get; set; }
+        public IEnumerable<int>? RowsIndexes { get; set; }
 
         /// <summary>
         /// Полученный набор данных по прочитанным строкам (каждая строка представляет собой словарь значений).
         /// </summary>
-        public List<Dictionary<string, ItemForParsing>> DataOnReadRowsCollection { get; private set; } = [];
+        public List<Dictionary<string, ItemForParsing>> RowsData { get; private set; } = [];
 
         #endregion Properties
 
@@ -43,18 +43,18 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="startIndexDataRow">Начальный индекс строки с данными в диапазоне.</param>
         /// <param name="numberRowsWithData">Количество строк с данными в диапазоне.</param>
         public void SetStartRowIndexAndNumberRowsOfData(int startIndexDataRow, int numberRowsWithData) =>
-            RangeRowIndexesСollection = Enumerable.Range(start: startIndexDataRow, count: numberRowsWithData);
+            RowsIndexes = Enumerable.Range(start: startIndexDataRow, count: numberRowsWithData);
 
-        public void SetDataOnReadRowsCollection(Dictionary<string, ItemForParsing> values) => DataOnReadRowsCollection.Add(values);
+        public void SetRowsData(Dictionary<string, ItemForParsing> values) => RowsData.Add(values);
 
         public override string ToString()
         {
             StringBuilder sb = new();
             sb.Append(string.IsNullOrEmpty(StringRowKey) ? "" : $"key: {StringRowKey}, ");
             sb.Append(string.IsNullOrEmpty(TerminatingStringValue?.key) ? "" : $"terminating: {TerminatingStringValue?.key}, ");
-            sb.Append($"Source columns count: {SourceCells.Count}, ");
-            sb.Append(RangeRowIndexesСollection != null ?
-                 $"range row indexes count: {RangeRowIndexesСollection.Count()}, " : "");
+            sb.Append($"Source columns count: {SourceReportCells.Count}, ");
+            sb.Append(RowsIndexes != null ?
+                 $"range row indexes count: {RowsIndexes.Count()}, " : "");
 
             return sb.ToString();
         }

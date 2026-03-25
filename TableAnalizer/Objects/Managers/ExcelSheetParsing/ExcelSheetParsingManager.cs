@@ -352,10 +352,10 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 return (StopFuctionExecuting(ref stopwatch), null); // Сообщение в лог, что-то еще вернуть!
 
             // 2. Получение коллекции диапазонов из целевого листа по ключу отчета.
-            Task<List<RangeRowsWithDataInSourceReport>> setTargetTableColumnsTask = SetTargetTableColumns(reportFileKey, workSheetName);
+            Task<List<SourceReportRange>> setTargetTableColumnsTask = SetTargetTableColumns(reportFileKey, workSheetName);
             await Task.Run(() => setTargetTableColumnsTask);
             setTargetTableColumnsTask.Wait();
-            List<RangeRowsWithDataInSourceReport> rowsRanges = setTargetTableColumnsTask.Result;
+            List<SourceReportRange> rowsRanges = setTargetTableColumnsTask.Result;
 
             if (rowsRanges.Count == 0)
                 return (StopFuctionExecuting(ref stopwatch), null); // Сообщение в лог, что-то еще вернуть!
@@ -372,7 +372,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 
             // Union collections
             var items = from sourceReportRowsRange in rowsRanges
-                        from item in sourceReportRowsRange.DataOnReadRowsCollection
+                        from item in sourceReportRowsRange.RowsData
                         select item;
 
             // Stop and return
@@ -399,9 +399,9 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="sheetName">Имя листа книги.</param>
         /// <param name="rangeSourceReportRows">Коллекции наборов ячеек диапазона.</param>
         /// <returns>Флаг определения (коллекция набора ячеек диапазона не пуста.)</returns>
-        private static Task<List<RangeRowsWithDataInSourceReport>> SetTargetTableColumns(SourceReportItemKey key, string sheetName)
+        private static Task<List<SourceReportRange>> SetTargetTableColumns(SourceReportItemKey key, string sheetName)
         {
-            List<RangeRowsWithDataInSourceReport> result = key switch
+            List<SourceReportRange> result = key switch
             {
                 SourceReportItemKey.Ransoms => [new(RansomsSourceCells)],
                 SourceReportItemKey.Balance =>
@@ -437,12 +437,12 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="worksheet">Целевой лист Excel.</param>
         /// <param name="rangeRows">Коллекция диапазонов строк таблицы.</param>
         /// <param name="startRangeRowIndex">Начальный индекс строки таблицы.</param>
-        public static Task GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<RangeRowsWithDataInSourceReport> rangeRows, int startRangeRowIndex = 1)
+        public static Task GetRangeSourceReportRows(in ExcelWorksheet worksheet, ref List<SourceReportRange> rangeRows, int startRangeRowIndex = 1)
         {
-            IEnumerable<RangeRowsWithDataInSourceReport>? rangesWithKeys = rangeRows
+            IEnumerable<SourceReportRange>? rangesWithKeys = rangeRows
                 .Where(rs => !string.IsNullOrEmpty(rs.StringRowKey));
 
-            RangeRowsWithDataInSourceReport? rangeWithTermination = rangeRows
+            SourceReportRange? rangeWithTermination = rangeRows
                 .SingleOrDefault(rs => rs.TerminatingStringValue.HasValue);
 
             bool isOneRangeWithoutKeysAndTerminations = rangeRows.Count == 1 &&
@@ -473,7 +473,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="DEFAULT_STEP"></param>
         /// <param name="termination"></param>
         /// <exception cref="ArgumentException"></exception>
-        private static bool SetRowRange(in ExcelWorksheet sheet, ref List<RangeRowsWithDataInSourceReport> rangesRows, (string rowStringKey, int offset)? termination)
+        private static bool SetRowRange(in ExcelWorksheet sheet, ref List<SourceReportRange> rangesRows, (string rowStringKey, int offset)? termination)
         {
             // Получение коллекции кортежей по ключевым строкам (строковые ключи и индексы) для поиска диапазонов.
             Task getKeystringsTask = GetKeyStringsOfRanges(sheet: sheet, rangeSourceReportRows: rangesRows, out List<(string key, int index)>? keyStringsRange);
@@ -486,7 +486,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             Task.Run(() => setRowsTask);
             setRowsTask.Wait();
 
-            return rangesRows.All(rr => rr.RangeRowIndexesСollection != null);
+            return rangesRows.All(rr => rr.RowsIndexes != null);
         }
 
         /// <summary>
@@ -496,10 +496,10 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="rowRanges">Коллекция заготовок-дипазонов.</param>
         /// <param name="termination">Разделители.</param>
         /// <param name="inputRange">Коллекция кортежей - стрововых ключей и их индексов в таблице.</param>
-        private static Task SetStartRowsIndexesAndNumbersRowsOfDataInRanges(in ExcelWorksheet sheet, ref List<RangeRowsWithDataInSourceReport> rowRanges,
+        private static Task SetStartRowsIndexesAndNumbersRowsOfDataInRanges(in ExcelWorksheet sheet, ref List<SourceReportRange> rowRanges,
             in (string rowStringKey, int offset)? termination, in List<(string key, int index)> inputRange)
         {
-            List<RangeRowsWithDataInSourceReport> resultRanges = [];
+            List<SourceReportRange> resultRanges = [];
 
             // 1. Создание связанного списка из существующих элементов таблицы.
             LinkedList<(string key, int index)> existingElementsLinkedList = new(inputRange);
@@ -572,7 +572,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="rangeSourceReportRows">Коллекция шаблонов диапазонов строк.</param>
         /// <param name="keyStringsRange">Коллекция названий и индексов ключевых строк диапазонов.</param>
         private static Task GetKeyStringsOfRanges(in ExcelWorksheet sheet,
-            in List<RangeRowsWithDataInSourceReport> rangeSourceReportRows, out List<(string key, int index)>? keyStringsRange)
+            in List<SourceReportRange> rangeSourceReportRows, out List<(string key, int index)>? keyStringsRange)
         {
             // Получение существующих ключей из шаблонов.
             List<string>? keysInTemplateList = [.. rangeSourceReportRows
@@ -614,18 +614,18 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="sheet">Рабочий лист книги Excel.</param>
         /// <param name="rowRanges">Коллекция заготовок-дипазонов.</param>
         /// <returns>Флаг выполнения операции.</returns>
-        public static Task GetRawDataFromRangeRows(in ExcelWorksheet sheet, ref List<RangeRowsWithDataInSourceReport> rowsRanges)
+        public static Task GetRawDataFromRangeRows(in ExcelWorksheet sheet, ref List<SourceReportRange> rowsRanges)
         {
             // 1. Итерация по коолекции диапазонов.
             for (int i = 0; i < rowsRanges.Count; i++)
             {
-                RangeRowsWithDataInSourceReport? rowsRange = rowsRanges[i];
+                SourceReportRange? rowsRange = rowsRanges[i];
 
-                if (rowsRange is null || rowsRange.RangeRowIndexesСollection is null) continue;
+                if (rowsRange is null || rowsRange.RowsIndexes is null) continue;
 
                 // 2. Итерация по строкам диапазона.
-                var rowsIndexRange = rowsRange.RangeRowIndexesСollection.ToList();
-                var currentSourceCells = rowsRange.SourceCells;
+                var rowsIndexRange = rowsRange.RowsIndexes.ToList();
+                var currentSourceCells = rowsRange.SourceReportCells;
 
                 for (int j = 0; j < rowsIndexRange.Count; j++)
                 {
@@ -639,7 +639,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 
                     if (getValuesFromRowTaskSuccess && values is not null)
                     {
-                        rowsRange.SetDataOnReadRowsCollection(values);
+                        rowsRange.SetRowsData(values);
                         rowsRanges![i] = rowsRange;
                     }
                 }
