@@ -38,17 +38,17 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <summary>
         /// Паттерны регулярных выражений для проверки строк прихода (по приходным ордерам).
         /// </summary>
-        private static readonly List<string> receivingRegeхPatterns = [@"Приходный\sордер\sна\sтовары\s\S+\sот\s\S+"];
+        private static readonly List<string> receivingRegeхPatterns = [@"^Приходный\sордер\sна\sтовары\s\S+\sот\s\S+\s\S+$"];
         /// <summary>
         /// Регулярные выражения для проверки строк на наличие цифр (для артикулов).
         /// </summary>
-        private readonly Regex[] receivingRegeхes = receivingRegeхPatterns.CreateRegexArray();
+        private static readonly Regex[] receivingRegeхes = receivingRegeхPatterns.CreateRegexArray();
 
         /// <summary>
         /// Дополительные правила (баланс, "1 - Помещение приемки и сортировки")
         /// </summary>
         private static readonly AdditionalRangeRules AdditionalRangeRulesReceiving =
-            new(keyStringColumn: 1, keyStringsRegex: digitsRegexes, isGetDataByKeyString: false);
+            new(keyStringColumn: 1, keyStringsRegex: digitsRegexes, isGetDataByKeyString: false, childStringColumn: 1, childStringRegexes: receivingRegeхes);
 
 
         /// <summary>
@@ -881,13 +881,24 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             // Получаем индексы валидных ключевых строк.
             SearchValidRowIndexesOfKeyRows(in sheet, ref range);
 
-            // Если получаем данные по дочерним строкам к ключевой
+            // Если получаем данные по ключевым строкам, но ничего большще не требуется.
+            // Если получаем данные по дочерним строкам к ключевой:
             if (!range.AdditionalRangeRules!.Value.IsGetDataByKeyString)
             {
+                // Заполняем словарь индексов (ключевая строка, дочерние строки)
                 GetIntermediateRowIndices(ref range);
-                foreach (var item in range.AdditionalRangeRules!.Value.ValidChildRowIndices)
+
+                // Оставляем в индексах дочерних строк только соответствующие регуляным выражениям.
+                RemoveIndexesInvalidChildRows(in sheet, ref range);
+
+                foreach (KeyValuePair<int, List<int>> entry in range.AdditionalRangeRules!.Value.ValidChildRowIndices)
                 {
-                    Console.WriteLine($"key: {item.Key}, first: {item.Value.First()}, last: {item.Value.Last()}");
+                    Console.WriteLine($"a: {entry.Key}, ");
+                    for (int i = 0; i < entry.Value.Count; i++)
+                    {
+                        Console.Write($"{entry.Value[i]}, ");
+                    }
+                    Console.WriteLine();
                 }
             }
         }
@@ -942,8 +953,6 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 
             var lastRowIndex = range.RowsIndexes.Last();
 
-            Console.WriteLine($"lastRowIndex: {lastRowIndex}");
-
             var validChildRowIndices = range.AdditionalRangeRules.Value.ValidChildRowIndices;
 
             for (int i = 0; i < keyRowIndices.Count; i++)
@@ -968,13 +977,66 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="address">Адрес ячейки в таблице рабочего листа (номер строки, номер столбца).</param>
         /// <param name="stringValue">строковое значение из ячейки таблицы (опционально).</param>
         /// <returns>Флаг - строковое значение не null и не пустая строка.</returns>
-        public static bool GetValueFromTableCell(in ExcelWorksheet sheet, (int rowNumber, int colNumber) address, out string? stringValue)
+        private static bool GetValueFromTableCell(in ExcelWorksheet sheet, (int rowNumber, int colNumber) address, out string? stringValue)
         {
             var val = sheet.Cells[address.rowNumber, address.colNumber].Value;
             stringValue = val is not null && !string.IsNullOrEmpty(val.ToString()) ? val.ToString() : null;
             return stringValue is not null;
         }
 
+        /// <summary>
+        /// Удаляет индексы инвалидных дочерних строк (не соответсвуют резулярным выражениям).
+        /// </summary>
+        /// <param name="sheet">Лист рабочей книги Excel.</param>
+        /// <param name="range">Диапазон таблицы рабочей книги.</param>
+        private static void RemoveIndexesInvalidChildRows(in ExcelWorksheet sheet, ref SourceReportRange range)
+        {
+            if (range.RowsIndexes == null ||
+                !range.AdditionalRangeRules.HasValue ||
+                range.AdditionalRangeRules.Value.ValidChildRowIndices.Count == 0 ||
+                range.AdditionalRangeRules.Value.ChildStringColumn is null ||
+                range.AdditionalRangeRules.Value.ChildStringRegexes is null)
+                return;
+
+            // Перебираем все пары (ключ, список дочерних индексов)
+            foreach (var entry in range.AdditionalRangeRules.Value.ValidChildRowIndices)
+            {
+                var childRowIndices = entry.Value;
+                int j = childRowIndices.Count - 1;
+
+                // Итерация с конца, чтобы избежать проблем с индексами при удалении
+                while (j >= 0)
+                {
+                    int rowIndex = childRowIndices[j];
+                    if (!GetValueFromTableCell(in sheet, (rowIndex, (int)range.AdditionalRangeRules.Value.ChildStringColumn), out string? val) ||
+                        string.IsNullOrEmpty(val))
+                    {
+                        j--;
+                        continue;
+                    }
+
+                    bool isValid = false;
+                    // Проверяем, соответствует ли значение хотя бы одному из регулярных выражений
+                    for (int k = 0; k < range.AdditionalRangeRules.Value.ChildStringRegexes.Length; k++)
+                    {
+                        if (range.AdditionalRangeRules.Value.ChildStringRegexes[k].IsMatch(val))
+                        {
+                            isValid = true;
+                            break;
+                        }
+                    }
+
+                    // Если ни одно выражение не подошло — удаляем индекс
+                    if (!isValid)
+                    {
+                        childRowIndices.RemoveAt(j);
+                    }
+
+                    j--;
+                }
+
+            }
+        }
         #endregion
     }
 }

@@ -40,13 +40,6 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 
         public AdditionalRangeRules? AdditionalRangeRules { get; set; } = additionalRangeRules;
 
-        /*
-            - паттерн для поиска ключевых строк
-            - поиск индексов ключевых строк (по номеру столбца и паттерну), наименование значения куда записываем? 
-            - паттерн для поиска дочерних строк (столбцы) - если его нет, берем данные из ключевой строки
-            - поиск индексов дочерних строк (по номеру столбца и паттерну), суммируем значение и отдаем сумму
-        */
-
         #endregion Properties
 
         #region Functionality
@@ -79,7 +72,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
     /// Дополнительные правила для обработки диапазона (поиска необходимых строк).
     /// </summary>
     public readonly struct AdditionalRangeRules(int keyStringColumn, Regex[] keyStringsRegex,
-        bool isGetDataByKeyString)
+        bool isGetDataByKeyString, int? childStringColumn = null, Regex[]? childStringRegexes = null)
     {
         /// <summary>
         /// Номер столбца таблицы для поиска ключевых строк.
@@ -99,7 +92,18 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <summary>
         /// Список индексов строк, содержащих ключевые значения.
         /// </summary>
-        public List<int> ValidKeyRowIndices { get;} = [];
+        public List<int> ValidKeyRowIndices { get; } = [];
+
+        /// <summary>
+        /// Паттерн для поиска ключевых строк.
+        /// </summary>
+        public Regex[]? ChildStringRegexes { get; } = childStringRegexes;
+
+        /// <summary>
+        /// Номер столбца таблицы для поиска дочерних строк.
+        /// </summary>
+        public int? ChildStringColumn { get; } = childStringColumn;
+
         /// <summary>
         /// Словарь дочерних строк (ключ - индекс ключевой строки, значение - список индексов дочерних строк).
         /// </summary>
