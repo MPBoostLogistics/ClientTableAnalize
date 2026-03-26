@@ -96,10 +96,17 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// </summary>
         public bool IsGetDataByKeyString { get; } = isGetDataByKeyString;
 
+        /// <summary>
+        /// Список индексов строк, содержащих ключевые значения.
+        /// </summary>
         public List<int> ValidKeyRowIndices { get;} = [];
+        /// <summary>
+        /// Словарь дочерних строк (ключ - индекс ключевой строки, значение - список индексов дочерних строк).
+        /// </summary>
+        public Dictionary<int, List<int>> ValidChildRowIndices { get; } = [];
 
         #region Functionality
-        public void SetValidKeyRowIndices(int index) => ValidKeyRowIndices.Add(index);
+        public readonly void SetValidKeyRowIndices(int index) => ValidKeyRowIndices.Add(index);
 
         #endregion
     }

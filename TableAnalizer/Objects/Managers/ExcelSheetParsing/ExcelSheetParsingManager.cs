@@ -48,7 +48,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// Дополительные правила (баланс, "1 - Помещение приемки и сортировки")
         /// </summary>
         private static readonly AdditionalRangeRules AdditionalRangeRulesReceiving =
-            new(keyStringColumn: 1, keyStringsRegex: digitsRegexes, isGetDataByKeyString: true);
+            new(keyStringColumn: 1, keyStringsRegex: digitsRegexes, isGetDataByKeyString: false);
 
 
         /// <summary>
@@ -732,7 +732,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                     if (dataCell.IsRequired)
                         throw new ArgumentException($"A table cell does not contain a <b>required value</b> for name: '{dataCell.NameOfFutureProperty}'");
 
-                    // Если значение необязательное, то устанавливаем пустуюб строку.
+                    // Если значение необязательное, то устанавливаем пустую строку.
                     value = string.Empty;
                 }
 
@@ -878,19 +878,26 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         {
             if (range.RowsIndexes == null || !range.AdditionalRangeRules.HasValue) return;
 
-            // Если получаем данные только по ключевой строке:
-            if (range.AdditionalRangeRules!.Value.IsGetDataByKeyString)
+            // Получаем индексы валидных ключевых строк.
+            SearchValidRowIndexesOfKeyRows(in sheet, ref range);
+
+            // Если получаем данные по дочерним строкам к ключевой
+            if (!range.AdditionalRangeRules!.Value.IsGetDataByKeyString)
             {
-                SearchValidRowIndexesWhenGetDataOnlyByKeyRow(in sheet, ref range);
+                GetIntermediateRowIndices(ref range);
+                foreach (var item in range.AdditionalRangeRules!.Value.ValidChildRowIndices)
+                {
+                    Console.WriteLine($"key: {item.Key}, first: {item.Value.First()}, last: {item.Value.Last()}");
+                }
             }
         }
 
         /// <summary>
-        /// Ищет валидные индексы строк при получении данных только из ключевых строк.
+        /// Ищет валидные индексы для ключевых строк.
         /// </summary>
         /// <param name="sheet">Рабочий лист Excel.</param>
         /// <param name="range">Дипазон таблицы рабочего листа.</param>
-        private static void SearchValidRowIndexesWhenGetDataOnlyByKeyRow(in ExcelWorksheet sheet, ref SourceReportRange range)
+        private static void SearchValidRowIndexesOfKeyRows(in ExcelWorksheet sheet, ref SourceReportRange range)
         {
             // Исходный список индексов строк.
             var indexes = range.RowsIndexes!.ToList();
@@ -899,22 +906,75 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             {
                 var rowIndex = indexes[i];
                 var columnIndex = range.AdditionalRangeRules!.Value.KeyStringColumn;
-                var value = sheet.Cells[rowIndex, columnIndex].Value;
-                var regexRules = range.AdditionalRangeRules!.Value.KeyStringRegex;
-
-                // Итераций по правилам регулярных выражений для поиска только ключевых строк.
-                for (int j = 0; j < regexRules.Length; j++)
+                if (GetValueFromTableCell(in sheet, (rowIndex, columnIndex), out string? stringValue) && !string.IsNullOrEmpty(stringValue))
                 {
-                    var regexRule = regexRules[j];
-                    if (!string.IsNullOrEmpty(value.ToString())
-                        && regexRule.IsMatch(value.ToString()!))
+                    // Итераций по правилам регулярных выражений для поиска ключевых строк.
+                    var keyStringRegexRules = range.AdditionalRangeRules!.Value.KeyStringRegex;
+
+                    for (int j = 0; j < keyStringRegexRules.Length; j++)
                     {
-                        // Запоминаем индекс валидной строки.
-                        range.AdditionalRangeRules.Value.SetValidKeyRowIndices(indexes[i]);
+                        var regexRule = keyStringRegexRules[j];
+                        if (regexRule.IsMatch(stringValue))
+                        {
+                            // Запоминаем индекс валидной ключевой строки.
+                            range.AdditionalRangeRules.Value.SetValidKeyRowIndices(indexes[i]);
+                        }
                     }
                 }
             }
         }
+
+
+        /// <summary>
+        /// Возвращает все индексы строк, находящиеся между ключевыми строками (включительно или исключительно — по необходимости).
+        /// </summary>
+        /// <param name="validKeyRowIndices">Список индексов ключевых строк.</param>
+        /// <returns>Список промежуточных индексов строк.</returns>
+        public static void GetIntermediateRowIndices(ref SourceReportRange range)
+        {
+            // Входная проверка 
+            if (range.RowsIndexes == null || !range.RowsIndexes.Any() || !range.AdditionalRangeRules.HasValue)
+                return;
+
+            // Проверка на наличие ключевых строк.
+            var keyRowIndices = range.AdditionalRangeRules.Value.ValidKeyRowIndices;
+            if (keyRowIndices.Count == 0) return;
+
+            var lastRowIndex = range.RowsIndexes.Last();
+
+            Console.WriteLine($"lastRowIndex: {lastRowIndex}");
+
+            var validChildRowIndices = range.AdditionalRangeRules.Value.ValidChildRowIndices;
+
+            for (int i = 0; i < keyRowIndices.Count; i++)
+            {
+                int startKeyRow = keyRowIndices[i];
+                int endKeyRow = (i + 1 < keyRowIndices.Count) ? keyRowIndices[i + 1] : lastRowIndex + 1;
+
+                var intermediateIndices = new List<int>();
+                for (int j = startKeyRow + 1; j < endKeyRow; j++)
+                {
+                    intermediateIndices.Add(j);
+                }
+
+                validChildRowIndices[startKeyRow] = intermediateIndices;
+            }
+        }
+
+        /// <summary>
+        /// Получает строковое значение из ячейки таблицы.
+        /// </summary>
+        /// <param name="sheet">Рабочий лист Excel.</param>
+        /// <param name="address">Адрес ячейки в таблице рабочего листа (номер строки, номер столбца).</param>
+        /// <param name="stringValue">строковое значение из ячейки таблицы (опционально).</param>
+        /// <returns>Флаг - строковое значение не null и не пустая строка.</returns>
+        public static bool GetValueFromTableCell(in ExcelWorksheet sheet, (int rowNumber, int colNumber) address, out string? stringValue)
+        {
+            var val = sheet.Cells[address.rowNumber, address.colNumber].Value;
+            stringValue = val is not null && !string.IsNullOrEmpty(val.ToString()) ? val.ToString() : null;
+            return stringValue is not null;
+        }
+
         #endregion
     }
 }
