@@ -9,6 +9,7 @@ using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
 using TableAnalizer.Objects;
 using TableAnalizer.Objects.Managers;
+using TableAnalizer.Objects.Managers.ExcelSheetParsing;
 using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.ReportItems;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
@@ -55,6 +56,7 @@ internal class Program
 
     private static ReportFileManager? reportFileManager;
     private static ExcelManager? excelManager;
+    private static ExcelSheetParsingManager? excelSheetsManager;
     private static SKUManager? skuManager;
     private static AnalyticalManager? anManager;
     #endregion
@@ -68,7 +70,8 @@ internal class Program
         {
             reportFileManager = new(appConfig);
             excelManager = new(appConfig);
-            skuManager = new(appConfig, DeadlineDays, excelManager);
+            excelSheetsManager = new(appConfig);
+            skuManager = new(appConfig, DeadlineDays, excelManager, excelSheetsManager);
             anManager = new(appConfig);
         }
         else
@@ -591,14 +594,14 @@ internal class Program
 
     private static void SubscribeManagersToEvents()
     {
-        List<BaseManager?> managers = [reportFileManager, excelManager, skuManager, anManager];
+        List<BaseManager?> managers = [reportFileManager, excelManager, excelSheetsManager, skuManager, anManager];
         foreach (var item in managers)
             if (item != null) item.ManagerReached += Report;
     }
 
     private static void UnsubscribeManagersFromEvents()
     {
-        List<BaseManager?> managers = [reportFileManager, excelManager, skuManager, anManager];
+        List<BaseManager?> managers = [reportFileManager, excelManager, excelSheetsManager, skuManager, anManager];
         foreach (var item in managers)
             if (item != null) item.ManagerReached -= Report;
     }

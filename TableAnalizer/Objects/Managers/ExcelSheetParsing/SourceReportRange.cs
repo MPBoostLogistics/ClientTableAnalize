@@ -34,7 +34,9 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         public IEnumerable<int>? RowsIndexes { get; set; }
 
         /// <summary>
-        /// Полученный набор данных по прочитанным строкам (каждая строка представляет собой словарь значений).
+        /// Полученный набор данных по прочитанным строкам 
+        /// Каждая строка представляет собой словарь значений, где ключ - имя будущего свойства,
+        /// а значение - объект ItemForParsing
         /// </summary>
         public List<Dictionary<string, ItemForParsing>> RowsData { get; private set; } = [];
 
@@ -54,6 +56,10 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         public void SetStartRowIndexAndNumberRowsOfData(int startIndexDataRow, int numberRowsWithData) =>
             RowsIndexes = Enumerable.Range(start: startIndexDataRow, count: numberRowsWithData);
 
+        /// <summary>
+        /// Записывает данные по прочитанным строкам.
+        /// </summary>
+        /// <param name="values">Словарь, где ключ - имя свойства, а значение - объект ItemForParsing</param>
         public void SetRowsData(Dictionary<string, ItemForParsing> values) => RowsData.Add(values);
 
         public override string ToString()

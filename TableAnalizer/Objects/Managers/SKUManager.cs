@@ -13,11 +13,12 @@ using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public class SKUManager(IConfiguration config, int deadLineDays, ExcelManager excelManager) : BaseManager(config)
+    public class SKUManager(IConfiguration config, int deadLineDays, ExcelManager excelManager, ExcelSheetParsingManager excelSheetsManager) : BaseManager(config)
     {
         #region Variables and constants 
         private const bool IS_REMOVE_BRAND_FROM_NAME = false;
-        private readonly ExcelManager? excelManager = excelManager;
+        private readonly ExcelManager excelManager = excelManager;
+        private readonly ExcelSheetParsingManager excelSheetsManager = excelSheetsManager;
         public static Dictionary<SKUSellmentStatus, string> StatusStrings = [];
 
         /// <summary>
@@ -140,7 +141,7 @@ namespace TableAnalizer.Objects.Managers
 
             // Get data from excel sheet (in ExcelSheetParsingManager)
             Task<(double time, IEnumerable<Dictionary<string, ItemForParsing>>? data)> getDataTask =
-                ExcelSheetParsingManager.GetDataFromExcelSheet(reportFileKey, excelPackage, workSheetName);
+                excelSheetsManager.GetDataFromExcelSheet(reportFileKey, excelPackage, workSheetName);
             await Task.Run(() => getDataTask);
             getDataTask.Wait();
             var (time, data) = getDataTask.Result;

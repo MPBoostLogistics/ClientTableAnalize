@@ -2,9 +2,6 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
-using TableAnalizer.Objects.SKUItems;
-using TableAnalizer.Objects.SKUItems.SKUBalance;
-using TableAnalizer.Objects.SKUItems.SKUBalances;
 using TableAnalizer.Utils;
 
 namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
@@ -12,7 +9,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
     /// <summary>
     /// Менеджер для парсинга данных с таблиц листов Excel.
     /// </summary>
-    public class ExcelSheetParsingManager : BaseManager
+    public partial class ExcelSheetParsingManager : BaseManager
     {
         #region Fields
         public const int DEFAULT_INERATE_STEP = 1;
@@ -47,316 +44,14 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <summary>
         /// Дополительные правила (баланс, "1 - Помещение приемки и сортировки")
         /// </summary>
-        private static readonly AdditionalRangeRules AdditionalRangeRulesReceiving =
+        private static readonly AdditionalRangeRules additionalRangeRulesReceiving01 =
             new(keyStringColumn: 1, keyStringsRegex: digitsRegexes, isGetDataByKeyString: false, childStringColumn: 1, childStringRegexes: receivingRegeхes);
 
-
         /// <summary>
-        /// Набор соответствия предмета претензии ее строковому представлению в отчете. 
+        /// Дополительные правила (баланс, помещения 2-5)
         /// </summary>
-        private static readonly Dictionary<SubjectClaim, string> SubjectClaimStrings = new()
-        {
-            { SubjectClaim.RefundAccrual, "Возврат начисления" },
-            { SubjectClaim.ShortDeliveryGoods, "Недовоз товаров" },
-        };
-
-        /// <summary>
-        /// Набор соответствия статуса решения претензии ее строковому представлению в отчете. 
-        /// </summary>
-        private static readonly Dictionary<ClaimResolutionStatus, string> ClaimResolutionStatusStrings = new()
-        {
-            { ClaimResolutionStatus.IndependentPurchase, "Докупаем сами" },
-            { ClaimResolutionStatus.NotPaid, "Не оплачено" },
-            { ClaimResolutionStatus.Paid, "Оплачено" },
-            { ClaimResolutionStatus.ProductFound, "Товар найден" },
-            { ClaimResolutionStatus.ReturnedToBalance, "Возвращено на баланс" },
-        };
-
-        /// <summary>
-        /// Набор ячеек для парсинга листа Excel (отчет по выкупам).
-        /// </summary>
-        public static List<SourceReportCell> RansomsSourceCells { get; } =
-        [
-            new(columnNumber: 1,
-                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUClientLogin),
-                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 2,
-                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUMarketPlace),
-                typeCodeKeyRow: ParsingTypeCode.Marketplace,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 3,
-                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUNumber),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 4,
-                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUBrandAndName),
-                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 5,
-                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUAveragePrice),
-                typeCodeKeyRow: ParsingTypeCode.DoubleTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 6,
-                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKULastPurchaseDate),
-                typeCodeKeyRow: ParsingTypeCode.DataOnlyTypeCode,
-                isRequired: true, filterStrings: null),
-
-            new(columnNumber: 7,
-                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUTotalNumberPurchases),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 8,
-                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUInTransitNumberPurchases),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 9,
-                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUCancelledNumberPurchases),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 10,
-                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUDeliveredToPointsNumberPurchases),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 11,
-                nameOfFutureProperty:  nameof(SKURansomsBalanceDataUnit.SKUPickedupFromPointsNumberPurchases),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 12,
-                nameOfFutureProperty: nameof(SKURansomsBalanceDataUnit.SKUUnknownNumberPurchases),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null),
-        ];
-
-        /// <summary>
-        /// Набор ячеек для парсинга листа Excel (отчет по приходам и остаткам на складе - 1 помещение).
-        /// </summary>
-        public static List<SourceReportCell> RemainingFirstRoomSourceCells { get; } =
-        [
-            new(columnNumber: 1,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUNumber),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 6,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
-                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: true, filterStrings: null),
-            // Приход товаров - получается как композитные данные дочерних строк
-            new(columnNumber: 15,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUReceipt),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: false, filterStrings: null, isGetCompositeDataForCell: true),
-            new(columnNumber: 17,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKURemaining),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: false, filterStrings: null)
-        ];
-
-        /// <summary>
-        /// Набор ячеек для парсинга листа Excel (отчет по остаткам на складе - 2 помещение).
-        /// </summary>
-        public static List<SourceReportCell> RemainingSecondRoomSourceCells { get; } =
-        [
-            new(columnNumber: 1,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUNumber),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 6,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
-                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 17,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKURemaining),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: false, filterStrings: null)
-        ];
-
-        /// <summary>
-        /// Набор ячеек для парсинга листа Excel (отчет по остаткам на складе - 3 помещение).
-        /// </summary>
-        public static List<SourceReportCell> RemainingThirdRoomSourceCells { get; } =
-        [
-            new(columnNumber: 1,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUNumber),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 6,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
-                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 17,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKURemaining),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: false, filterStrings: null)
-        ];
-
-        /// <summary>
-        /// Набор ячеек для парсинга листа Excel (отчет по расходам товаров со склада).
-        /// </summary>
-        public static List<SourceReportCell> ShippedSourceCells { get; } =
-        [
-            new(columnNumber: 4,
-                nameOfFutureProperty: nameof(SKUShippedDataUnit.SKUNumber),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 28,
-                nameOfFutureProperty: nameof(SKUShippedDataUnit.SKUShippedCount),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null)
-        ];
-
-        /// <summary>
-        /// Набор ячеек для парсинга листа Excel (отчет по перемещению на ФФ - старые склады).
-        /// </summary>
-        public static List<SourceReportCell> TransferSourceCells { get; } =
-        [
-            new(columnNumber: 4,
-                nameOfFutureProperty: nameof(SKUTransferDataUnit.SKUNumber),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 34,
-                nameOfFutureProperty: nameof(SKUTransferDataUnit.SKUTransferedCount),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null)
-        ];
-
-        /// <summary>
-        /// Набор ячеек для парсинга листа Excel (доп отчет - экстра-приходы по перещениям и пересорту).
-        /// </summary>
-        public static List<SourceReportCell> ExtraReceiptSourceCells { get; } =
-        [
-            new(columnNumber: 1,
-                nameOfFutureProperty: nameof(SKUExtraReceiptDataUnit.SKUNumber),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 2,
-                nameOfFutureProperty: nameof(SKUExtraReceiptDataUnit.SKUExtraReceiptCount),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 3,
-                nameOfFutureProperty: nameof(SKUExtraReceiptDataUnit.ResortComment),
-                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: false, filterStrings: null)
-        ];
-
-        /// <summary>
-        /// Набор ячеек для парсинга листа Excel (доп отчет - алиасы).
-        /// </summary>
-        public static List<SourceReportCell> AliasesSourceCells { get; } =
-        [
-            new(columnNumber: 1,
-                nameOfFutureProperty: nameof(SKUAliasDataUnit.SKUSourceNumber),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 2,
-                nameOfFutureProperty: nameof(SKUAliasDataUnit.SKUAliasNumbers),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeArrayCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 3,
-                nameOfFutureProperty: nameof(SKUAliasDataUnit.AliasComment),
-                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: false, filterStrings: null)
-        ];
-
-        /// <summary>
-        /// Набор ячеек для парсинга листа Excel (доп отчет - корретировки расходов от Клиента).
-        /// </summary>
-        public static List<SourceReportCell> AdjustmentShipmentSourceCells { get; } =
-        [
-            new(columnNumber: 1,
-                nameOfFutureProperty: nameof(SKUAdjustmentShipmentUnit.SKUSourceNumber),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 2,
-                nameOfFutureProperty: nameof(SKUAdjustmentShipmentUnit.SKUAdjustmentSum),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 3,
-                nameOfFutureProperty: nameof(SKUAdjustmentShipmentUnit.SKUAdjustmentComment),
-                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: false, filterStrings: null)
-        ];
-
-        /// <summary>
-        /// Набор ячеек для парсинга листа Excel (доп отчет - параллельные клиенты).
-        /// </summary>
-        public static List<SourceReportCell> ParallelSourceCells { get; } =
-        [
-            new(columnNumber: 1,
-                nameOfFutureProperty: nameof(SKUParallelUnit.SKUNumber),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null)
-        ];
-
-        /// <summary>
-        /// Набор ячеек для парсинга листа Excel (отчет по списанию с точек и курьеров).
-        /// </summary>
-        public static List<SourceReportCell> WriteOffPointsAndCouriersSourceCells { get; } =
-        [
-            new(columnNumber: 4,
-                nameOfFutureProperty: nameof(SKUWriteOffDataUnit.SKUNumber),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 27,
-                nameOfFutureProperty: nameof(SKUWriteOffDataUnit.SKUWriteOffCount),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null)
-        ];
-
-        /// <summary>
-        /// Набор ячеек для парсинга листа Excel (отчет по списанию с точек и через склад - старые данные).
-        /// </summary>
-        public static List<SourceReportCell> WriteOffPointsViaWarehouseSourceCells { get; } =
-        [
-            new(columnNumber: 5,
-                nameOfFutureProperty: nameof(SKUWriteOffDataUnit.SKUNumber),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 39,
-                nameOfFutureProperty: nameof(SKUWriteOffDataUnit.SKUWriteOffCount),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null)
-        ];
-
-        /// <summary>
-        /// Набор ячеек для парсинга листа Excel (отчет по оплаченным недовозам).
-        /// </summary>
-        public static List<SourceReportCell> PaidShortagesSourceCells { get; } =
-        [
-            new(columnNumber: 3,
-                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.ClientLogin),
-                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 4,
-                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.SubjectClaim),
-                typeCodeKeyRow: ParsingTypeCode.SubjectClaim,
-                isRequired: true,
-                filterStrings: [SubjectClaimStrings[SubjectClaim.ShortDeliveryGoods]]
-        ),
-            new(columnNumber: 5,
-                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.SKUNumber),
-                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
-                isRequired: false, filterStrings: null),
-            new(columnNumber: 10,
-                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.SKUSum),
-                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 12,
-                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.SKUAmount),
-                typeCodeKeyRow: ParsingTypeCode.DoubleTypeCode,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 13,
-                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.ClaimExecutor),
-                typeCodeKeyRow: ParsingTypeCode.ClaimExecutor,
-                isRequired: true, filterStrings: null),
-            new(columnNumber: 18,
-                nameOfFutureProperty: nameof(SKUPaidShortageDataUnit.ClaimResolutionStatus),
-                typeCodeKeyRow: ParsingTypeCode.ClaimResolutionStatus,
-                isRequired: true,
-                filterStrings: [ClaimResolutionStatusStrings[ClaimResolutionStatus.Paid],
-                    ClaimResolutionStatusStrings[ClaimResolutionStatus.ReturnedToBalance]]
-        ),
-        ];
+        private static readonly AdditionalRangeRules additionalRangeRulesReceiving0205 =
+            new(keyStringColumn: 1, keyStringsRegex: digitsRegexes, isGetDataByKeyString: true);
 
         #endregion
 
@@ -368,7 +63,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         #endregion
 
         #region Functionality
-        public async static Task<(double, IEnumerable<Dictionary<string, ItemForParsing>>?)> GetDataFromExcelSheet(SourceReportItemKey reportFileKey, ExcelPackage package, string sheetName)
+        public async Task<(double, IEnumerable<Dictionary<string, ItemForParsing>>?)> GetDataFromExcelSheet(SourceReportItemKey reportFileKey, ExcelPackage package, string sheetName)
         {
             // 0. Start
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -405,7 +100,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             }
 
             // 4. Получение "сырых данных" из строк.
-            Task getRawDataTask = GetRawDataFromRangeRows(in sheet!, ref rowsRanges);
+            Task getRawDataTask = GetRawDataFromRangeRows(in reportFileKey, in sheet!, ref rowsRanges);
             await Task.Run(() => getRawDataTask);
             getRawDataTask.Wait();
 
@@ -445,11 +140,11 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 SourceReportItemKey.Ransoms => [new(RansomsSourceCells)],
                 SourceReportItemKey.Balance =>
                 [
-                    new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME, additionalRangeRules: AdditionalRangeRulesReceiving),
-                    new(RemainingSecondRoomSourceCells, SECOND_ROOM_NAME),
-                    new(RemainingSecondRoomSourceCells, THIRD_ROOM_NAME),
-                    new(RemainingSecondRoomSourceCells, FOUTH_ROOM_NAME),
-                    new(RemainingThirdRoomSourceCells, FIFTH_ROOM_NAME, (LAST_MARKER_KEY, LAST_MARKER_KEY_OFFSET))
+                    new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME, additionalRangeRules: additionalRangeRulesReceiving01),
+                    new(RemainingFromSecondToFifthRoomSourceCells, SECOND_ROOM_NAME, additionalRangeRules: additionalRangeRulesReceiving0205),
+                    new(RemainingFromSecondToFifthRoomSourceCells, THIRD_ROOM_NAME, additionalRangeRules: additionalRangeRulesReceiving0205),
+                    new(RemainingFromSecondToFifthRoomSourceCells, FOUTH_ROOM_NAME, additionalRangeRules: additionalRangeRulesReceiving0205),
+                    new(RemainingFromSecondToFifthRoomSourceCells, FIFTH_ROOM_NAME, terminatingStringValue: (LAST_MARKER_KEY, LAST_MARKER_KEY_OFFSET), additionalRangeRules: additionalRangeRulesReceiving0205)
                 ],
                 SourceReportItemKey.WriteOffPoints => [new(WriteOffPointsAndCouriersSourceCells)],
                 SourceReportItemKey.WriteOffPointsViaWarehouseShortage => [new(WriteOffPointsViaWarehouseSourceCells)],
@@ -651,60 +346,132 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         }
 
         /// <summary>
-        /// Получает "сырые" данные из строк диапазона таблицы Excel.
+        /// Определяет коллекцию индексов строк таблицы для парсинга данных.
         /// </summary>
-        /// <param name="sheet">Рабочий лист книги Excel.</param>
-        /// <param name="rowRanges">Коллекция заготовок-дипазонов.</param>
-        /// <returns>Флаг выполнения операции.</returns>
-        public static Task GetRawDataFromRangeRows(in ExcelWorksheet sheet, ref List<SourceReportRange> rowsRanges)
+        /// <param name="rowsRange">Диапазон строк таблицы.</param>
+        /// <param name="keyRowsIndexRange">Коллекция индексов ключевых строк.</param>
+        /// <param name="childRowsIndexDict">Словарь (ключи - индексов ключевых строк, значения - список дочерних строк к ключеваым).</param>
+        private static Task GetRowIndicesForParsing(in SourceReportRange rowsRange, out List<int>? keyRowsIndexRange, out Dictionary<int, List<int>>? childRowsIndexDict)
         {
-            // 1. Итерация по коолекции диапазонов.
-            for (int i = 0; i < rowsRanges.Count; i++)
+            keyRowsIndexRange = null;
+            childRowsIndexDict = null;
+
+            // Если у rowsRange есть доп. правила 
+            if (rowsRange.AdditionalRangeRules.HasValue)
             {
-                SourceReportRange? rowsRange = rowsRanges[i];
-
-                if (rowsRange is null || rowsRange.RowsIndexes is null) continue;
-
-                // 2. Итерация по строкам диапазона.
-                // 2а. Определяем диапазон - если есть доп правила и получаем индексы ключевых строк,
-                // то берем их, иначе берем список всех полученных индексов.
-                List<int> rowsIndexRange = rowsRange.AdditionalRangeRules.HasValue &&
-                    rowsRange.AdditionalRangeRules.Value.ValidKeyRowIndices.Count > 0 ?
-                    rowsRange.AdditionalRangeRules.Value.ValidKeyRowIndices :
-                    [.. rowsRange.RowsIndexes];
-
-                var currentSourceCells = rowsRange.SourceReportCells;
-
-                for (int j = 0; j < rowsIndexRange.Count; j++)
+                // Если получаем данные только по ключевым строкам и их коллекция не пустая
+                if (rowsRange.AdditionalRangeRules.Value.IsGetDataByKeyString &&
+                    rowsRange.AdditionalRangeRules.Value.ValidKeyRowIndices.Count > 0)
                 {
-                    var rowIndex = rowsIndexRange[j];
+                    keyRowsIndexRange = rowsRange.AdditionalRangeRules.Value.ValidKeyRowIndices;
+                }
 
-                    var getValuesFromRowTask = GetValuesFromRow(in sheet, rowIndex, in currentSourceCells, out Dictionary<string, ItemForParsing>? values);
-                    Task.Run(() => getValuesFromRowTask);
-                    getValuesFromRowTask.Wait();
-
-                    var getValuesFromRowTaskSuccess = getValuesFromRowTask.Result;
-
-                    if (getValuesFromRowTaskSuccess && values is not null)
-                    {
-                        rowsRange.SetRowsData(values);
-                        rowsRanges![i] = rowsRange;
-                    }
+                // Если получаем данные по дочерним строкам, словарь (ключевых и дочерних строк) не пустой
+                if (!rowsRange.AdditionalRangeRules.Value.IsGetDataByKeyString &&
+                    rowsRange.AdditionalRangeRules.Value.ValidChildRowIndices.Count > 0)
+                {
+                    childRowsIndexDict = rowsRange.AdditionalRangeRules.Value.ValidChildRowIndices;
                 }
             }
 
             return Task.CompletedTask;
         }
 
+        private static Task GetDataFromRange(in ExcelWorksheet sheet, ref SourceReportRange rowsRange, Dictionary<int, List<int>>? keyAndChildRowsIndexDict)
+        {
+            Console.WriteLine("Привет!!!");
+            return Task.CompletedTask;
+        }
+
+        private static Task GetDataFromRange(in ExcelWorksheet sheet, ref SourceReportRange rowsRange, List<int>? rowsIndexRange = null)
+        {
+            // Получение заготовок ячеек
+            var currentSourceCells = rowsRange.SourceReportCells;
+
+            // Определение коллекции индексов строк для парсинга данных
+            // - если не заданы инлдексы, берем rowsRange.RowsIndexes как список
+            List<int>? rowsIndexes = rowsIndexRange ??
+                (rowsRange.RowsIndexes != null ? [.. rowsRange.RowsIndexes] : []);
+
+            // Итерация по коллекции индексов строк
+            for (int i = 0; i < rowsIndexes.Count; i++)
+            {
+                // Получение индекса строки
+                int rowIndex = rowsIndexes[i];
+
+                // Получение данных из строки по индексу
+                var getValuesFromRowTask = GetValuesFromRow(in sheet, rowIndex, in currentSourceCells, out Dictionary<string, ItemForParsing>? values);
+                Task.Run(() => getValuesFromRowTask);
+                getValuesFromRowTask.Wait();
+
+                // Если операция прошла успешно и данные получены - записываем их
+                if (getValuesFromRowTask.Result && values is not null)
+                    rowsRange.SetRowsData(values);
+            }
+
+            return Task.CompletedTask;
+        }
+
         /// <summary>
-        /// Получает значения из строки таблицы.
+        /// Получает "сырые" данные из строк диапазона таблицы Excel.
         /// </summary>
         /// <param name="sheet">Рабочий лист книги Excel.</param>
-        /// <param name="rowIndex">Индекс строки.</param>
-        /// <param name="sourceCells">Коллекция ячеек-заготовок диапазона таблицы.</param>
-        /// <param name="values">Словарь, где ключ - имя значения, а значение - полученные данные. </param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentException">Возникает когда не обнаружено обязательное значение в ячейке.</exception>
+        /// <param name="rowRanges">Коллекция заготовок-дипазонов.</param>
+        /// <returns>Флаг выполнения операции.</returns>
+        public Task GetRawDataFromRangeRows(in SourceReportItemKey reportFileKey, in ExcelWorksheet sheet, ref List<SourceReportRange> rowsRanges)
+        {
+            // 1. Итерация по коллекции диапазонов.
+            for (int i = 0; i < rowsRanges.Count; i++)
+            {
+                SourceReportRange? rowsRange = rowsRanges[i];
+
+                if (rowsRange is null || rowsRange.RowsIndexes is null) continue;
+
+                // 2. Определение коллекций строк для парсинга.
+                Task getRowIndicesForParsingTask = GetRowIndicesForParsing(in rowsRange,
+                    out List<int>? keyRowsIndexRange,
+                    out Dictionary<int, List<int>>? childRowsIndexDict);
+                Task.Run(() => getRowIndicesForParsingTask);
+                getRowIndicesForParsingTask.Wait();
+
+                // 3. Получение данных
+                Task? getDataTask = null;
+                switch (keyRowsIndexRange != null, childRowsIndexDict != null)
+                {
+                    // Если коллекции пустые, получаем данные по RowsIndexes в SourceReportRange
+                    case (false, false):
+                        OnManagerReached(new($"Ключ {reportFileKey}, {rowsRange.StringRowKey}: значения без правил и по всем строкам...", false, false));
+                        getDataTask = GetDataFromRange(in sheet, ref rowsRange);
+                        break;
+                    // Если есть только коллекция ключевых строк, получаем данные по keyRowsIndexRange правил в SourceReportRange
+                    case (true, false):
+                        OnManagerReached(new($"Ключ {reportFileKey}, {rowsRange.StringRowKey}: значения по правилам и только по ключевым строкам...", false, false));
+                        getDataTask = GetDataFromRange(in sheet, ref rowsRange, keyRowsIndexRange);
+                        break;
+                    // Если есть только коллекция дочерних строк, получаем данные по childRowsIndexDict правил в SourceReportRange
+                    case (false, true):
+                        OnManagerReached(new($"Ключ {reportFileKey}, {rowsRange.StringRowKey}: значения по правилам, словарь ключевая строка - дочерние строки...", false, false));
+                        getDataTask = GetDataFromRange(in sheet, ref rowsRange, childRowsIndexDict);
+                        break;
+                    // Если есть обе коллекции, это ошибка
+                    case (true, true):
+                        OnManagerReached(new($"Ключ {reportFileKey}, {rowsRange.StringRowKey}: получение значений невозможно, есть обе коллекции", true, true));
+                        break;
+                }
+
+                if (getDataTask != null)
+                {
+                    Task.Run(() => getDataTask);
+                    getDataTask.Wait();
+
+                    // Перезапись диапазона
+                    rowsRanges[i] = rowsRange;
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
         public static Task<bool> GetValuesFromRow(in ExcelWorksheet sheet, int rowIndex, in List<SourceReportCell> sourceCells, out Dictionary<string, ItemForParsing>? values)
         {
             values = null;
@@ -882,7 +649,8 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             // Получаем индексы валидных ключевых строк.
             SearchValidRowIndexesOfKeyRows(in sheet, ref range);
 
-            // Если получаем данные по ключевым строкам, но ничего большще не требуется.
+            // Если получаем данные по ключевым строкам, но ничего больше не требуется.
+
             // Если получаем данные по дочерним строкам к ключевой:
             if (!range.AdditionalRangeRules!.Value.IsGetDataByKeyString)
             {
@@ -891,11 +659,6 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 
                 // Оставляем в индексах дочерних строк только соответствующие регуляным выражениям.
                 RemoveIndexesInvalidChildRows(in sheet, ref range);
-
-                foreach (var cell in range.SourceReportCells)
-                {
-                    Console.Write($"{cell.ColumnNumber} ");
-                }
             }
         }
 
