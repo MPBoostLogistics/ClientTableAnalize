@@ -377,9 +377,24 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             return Task.CompletedTask;
         }
 
-        private static Task GetDataFromRange(in ExcelWorksheet sheet, ref SourceReportRange rowsRange, Dictionary<int, List<int>>? keyAndChildRowsIndexDict)
+        private static Task GetDataFromRange(in ExcelWorksheet sheet, ref SourceReportRange rowsRange, Dictionary<int, List<int>> keyAndChildRowsIndexDict)
         {
-            Console.WriteLine("Привет!!!");
+            // Получение заготовок ячеек
+            var currentSourceCells = rowsRange.SourceReportCells;
+
+            // Итерация по словарю (ключ - индекс ключевой строки, значения - список индексов дочерних строк)
+            foreach (KeyValuePair<int, List<int>> entry in keyAndChildRowsIndexDict)
+            {
+                // Получение данных из строки по индексу
+                var getValuesFromRowTask = GetValuesFromRow(in sheet, entry, in currentSourceCells, out Dictionary<string, ItemForParsing>? values);
+                Task.Run(() => getValuesFromRowTask);
+                getValuesFromRowTask.Wait();
+
+                // Если операция прошла успешно и данные получены - записываем их
+                if (values is not null)
+                    rowsRange.SetRowsData(values);
+            }
+
             return Task.CompletedTask;
         }
 
@@ -389,7 +404,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             var currentSourceCells = rowsRange.SourceReportCells;
 
             // Определение коллекции индексов строк для парсинга данных
-            // - если не заданы инлдексы, берем rowsRange.RowsIndexes как список
+            // - если не заданы индексы, берем rowsRange.RowsIndexes как список
             List<int>? rowsIndexes = rowsIndexRange ??
                 (rowsRange.RowsIndexes != null ? [.. rowsRange.RowsIndexes] : []);
 
@@ -472,13 +487,76 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             return Task.CompletedTask;
         }
 
-        public static Task<bool> GetValuesFromRow(in ExcelWorksheet sheet, int rowIndex, in List<SourceReportCell> sourceCells, out Dictionary<string, ItemForParsing>? values)
+
+        private static Task GetValuesFromRow(in ExcelWorksheet sheet, in KeyValuePair<int, List<int>> entry, in List<SourceReportCell> sourceCells, out Dictionary<string, ItemForParsing>? values)
+        {
+            values = [];
+
+            // Проход по ячейкам - заготовкам исходного отчета
+            foreach (var sourceCell in sourceCells)
+            {
+                if (!sourceCell.IsGetCompositeDataForCell)
+                    GetNonCompositeValue(in sheet, entry.Key, ref values, sourceCell);
+                else
+                    GetCompositeValue(in sheet, entry, ref values, sourceCell);
+            }
+
+            return Task.CompletedTask;
+        }
+
+
+        private static void GetCompositeValue(in ExcelWorksheet sheet, in KeyValuePair<int, List<int>> entry, ref Dictionary<string, ItemForParsing> values, in SourceReportCell sourceCell)
+        {
+            var colNumber = sourceCell.ColumnNumber;
+
+            int compositeCount = default;
+            foreach (var childRowNumber in entry.Value)
+            {
+                if (GetValueFromTableCell(in sheet, (childRowNumber, colNumber), out string? stringValue))
+                {
+                    if (string.IsNullOrEmpty(stringValue))
+                    {
+                        if (sourceCell.IsRequired)
+                            throw new ArgumentException($"A table cell does not contain a <b>required value</b> for name: '{sourceCell.NameOfFutureProperty}'");
+                        
+                        stringValue = string.Empty;
+                    }
+
+                    if(sourceCell.TypeCodeKeyRow == ParsingTypeCode.IntTypeCode && int.TryParse(stringValue, out int v))
+                    
+                        compositeCount += v;
+                }
+            }
+
+            if (compositeCount != 0) 
+                values.Add(sourceCell.NameOfFutureProperty, new(compositeCount.ToString(), sourceCell.TypeCodeKeyRow, !sourceCell.IsRequired));
+        }
+
+        private static void GetNonCompositeValue(in ExcelWorksheet sheet, int rowNumber, ref Dictionary<string, ItemForParsing> values, in SourceReportCell sourceCell)
+        {
+            var colNumber = sourceCell.ColumnNumber;
+
+            if (GetValueFromTableCell(in sheet, (rowNumber, colNumber), out string? stringValue))
+            {
+                if (string.IsNullOrEmpty(stringValue))
+                {
+                    if (sourceCell.IsRequired)
+                        throw new ArgumentException($"A table cell does not contain a <b>required value</b> for name: '{sourceCell.NameOfFutureProperty}'");
+
+                    stringValue = string.Empty;
+                }
+
+                values.Add(sourceCell.NameOfFutureProperty, new(stringValue, sourceCell.TypeCodeKeyRow, !sourceCell.IsRequired));
+            }
+        }
+
+        public static Task<bool> GetValuesFromRow(in ExcelWorksheet sheet, int rowNumber, in List<SourceReportCell> sourceCells, out Dictionary<string, ItemForParsing>? values)
         {
             values = null;
 
-            if (!CheckPresenceAddressesInRow(in sheet, rowIndex, in sourceCells) ||
-                !СheckingValuesInRequiredCells(in sheet, rowIndex, in sourceCells) ||
-                !FilterMatchingCheck(in sheet, rowIndex, in sourceCells, out int filterCellsCount) ||
+            if (!CheckPresenceAddressesInRow(in sheet, rowNumber, in sourceCells) ||
+                !СheckingValuesInRequiredCells(in sheet, rowNumber, in sourceCells) ||
+                !FilterMatchingCheck(in sheet, rowNumber, in sourceCells, out int filterCellsCount) ||
                 !FindSorceCellsByType(in sourceCells, SourceCellsType.NonFiltration, out List<SourceReportCell>? dataСellsNonFilters) ||
                 dataСellsNonFilters is null ||
                 dataСellsNonFilters!.Count == 0)
@@ -490,24 +568,9 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             values = [];
             foreach (var dataCell in dataСellsNonFilters)
             {
-                // Получение значения ячейки.
                 var colNumber = dataCell.ColumnNumber;
-                var value = sheet.Cells[rowIndex, colNumber].Value;
 
-                // Если значение ячейки пустое, то проверяем на обязательность заполнения.
-                if (value is null)
-                {
-                    if (dataCell.IsRequired)
-                        throw new ArgumentException($"A table cell does not contain a <b>required value</b> for name: '{dataCell.NameOfFutureProperty}'");
-
-                    // Если значение необязательное, то устанавливаем пустую строку.
-                    value = string.Empty;
-                }
-
-                var valueToString = value.ToString();
-
-                if (valueToString is not null)
-                    values.Add(dataCell.NameOfFutureProperty, new(valueToString, dataCell.TypeCodeKeyRow, !dataCell.IsRequired));
+                GetNonCompositeValue(in sheet, rowNumber, ref values, in dataCell);
             }
 
             var success = values?.Count == sourceCells.Count - filterCellsCount;
