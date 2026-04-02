@@ -38,6 +38,9 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// </summary>
         public List<Dictionary<string, ItemForParsing>> RowsData { get; private set; } = [];
 
+        /// <summary>
+        /// Дополнитетельные правила для парсинга диапазона.
+        /// </summary>
         public AdditionalRangeRules? AdditionalRangeRules { get; set; } = additionalRangeRules;
 
         #endregion Properties
@@ -95,7 +98,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         public List<int> ValidKeyRowIndices { get; } = [];
 
         /// <summary>
-        /// Паттерн для поиска ключевых строк.
+        /// Регулярные выражения для поиска дочерних строк.
         /// </summary>
         public Regex[]? ChildStringRegexes { get; } = childStringRegexes;
 

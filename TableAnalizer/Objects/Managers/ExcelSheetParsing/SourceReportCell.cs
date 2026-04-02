@@ -13,7 +13,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
     /// <param name="filterStrings">Коллекция строк для фильтрации.</param>
     /// <param name="typesAndRegeхsChildRows">Словарь типов и регулярных выражений для проверки дочерних строк (опционально.)</param>
     public readonly struct SourceReportCell(int columnNumber, string nameOfFutureProperty, ParsingTypeCode typeCodeKeyRow,
-        bool isRequired, string[]? filterStrings)
+        bool isRequired, string[]? filterStrings, bool isGetCompositeDataForCell = false)
     {
         #region Properties
         public int ColumnNumber { get; } = columnNumber;
@@ -21,6 +21,11 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         public ParsingTypeCode TypeCodeKeyRow { get; } = typeCodeKeyRow;
         public bool IsRequired { get; } = isRequired;
         public string[]? FilterStrings { get; } = filterStrings;
+        /// <summary>
+        /// Получать составные данные для ячейки.
+        /// Используется для получения данных из дочерних строк как сумма значений.
+        /// </summary>
+        public bool IsGetCompositeDataForCell { get; } = isGetCompositeDataForCell;
         #endregion
     }
 }

@@ -141,10 +141,11 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
                 isRequired: true, filterStrings: null),
+            // Приход товаров - получается как композитные данные дочерних строк
             new(columnNumber: 15,
                 nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUReceipt),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
-                isRequired: false, filterStrings: null),
+                isRequired: false, filterStrings: null, isGetCompositeDataForCell: true),
             new(columnNumber: 17,
                 nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKURemaining),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
@@ -891,14 +892,9 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 // Оставляем в индексах дочерних строк только соответствующие регуляным выражениям.
                 RemoveIndexesInvalidChildRows(in sheet, ref range);
 
-                foreach (KeyValuePair<int, List<int>> entry in range.AdditionalRangeRules!.Value.ValidChildRowIndices)
+                foreach (var cell in range.SourceReportCells)
                 {
-                    Console.WriteLine($"a: {entry.Key}, ");
-                    for (int i = 0; i < entry.Value.Count; i++)
-                    {
-                        Console.Write($"{entry.Value[i]}, ");
-                    }
-                    Console.WriteLine();
+                    Console.Write($"{cell.ColumnNumber} ");
                 }
             }
         }
