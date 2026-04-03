@@ -182,18 +182,17 @@ namespace TableAnalizer.Objects.Managers
                     message = "Добавлено артикулов из прихода и остатков на складе: ";
                     break;
                 case SourceReportItemKey.Additional:
-                    switch (workSheetName)
-                    {
-                        case ExcelSheetParsingManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME:
-                            predicateHandler = FindSkusWithResort;
-                            message = "Артикулов из экстра-приходов: ";
-                            break;
-                            // case ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME:
-                            //     predicateHandler = SkuAliasesBalanceUnits.Count() > 0;
-                            //     message = "Артикулов с алиасами: ";
-                            //     break;
-                    }
-                    ;
+                    // switch (workSheetName)
+                    // {
+                    //     // case ExcelSheetParsingManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME:
+                    //     //     predicateHandler = FindSkusWithResort;
+                    //     //     message = "Артикулов из экстра-приходов: ";
+                    //     //     break;
+                    //         // case ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME:
+                    //         //     predicateHandler = SkuAliasesBalanceUnits.Count() > 0;
+                    //         //     message = "Артикулов с алиасами: ";
+                    //         //     break;
+                    // }
                     break;
                 case SourceReportItemKey.OutgoingProducts:
                     predicateHandler = FindSkusWithOutgoingProducts;
@@ -251,7 +250,6 @@ namespace TableAnalizer.Objects.Managers
             // bool isParallel = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
             bool isAliases = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelSheetParsingManager.ADDREPORT_ALIASES_WORKSHEET_NAME;
             bool isShipmentAdjustment = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelSheetParsingManager.ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME;
-            bool isExtraReceipt = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelSheetParsingManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME;
             bool isPaidShortages = reportFileKey == SourceReportItemKey.ShortagesPaid;
 
             await Task.Delay(10); // dummy
@@ -393,24 +391,6 @@ namespace TableAnalizer.Objects.Managers
                     SkuShipmentAdjustmentUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
                 }
             }
-            else if (isExtraReceipt)
-            {
-                var skuExtraReceiptDataUnits = from rowWithRawData in rowsWithRawData
-                                               let unit = new SKUExtraReceiptDataUnit(rowWithRawData)
-                                               group unit by unit.SKUNumber
-                                         into unitGroup
-                                               select unitGroup;
-
-                foreach (var skuGroup in skuExtraReceiptDataUnits)
-                {
-                    long skuNumber = skuGroup.Key;
-
-                    List<ParsingRowEntity>? list = (((List<SKUExtraReceiptDataUnit>?)[.. skuGroup])?.Cast<ParsingRowEntity>().ToList()) ??
-                        throw new InvalidCastException($"Cannot cast List of {nameof(SKUExtraReceiptDataUnit)} to List of {nameof(ParsingRowEntity)}.");
-
-                    SkuExtraReceiptBalanceUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
-                }
-            }
             // else if (isParallel)
             // {
             //     var skuParallelDataUnits = from rowWithRawData in rowsWithRawData
@@ -547,8 +527,6 @@ namespace TableAnalizer.Objects.Managers
                     parsingEntityCollection = SkuWriteOffFromPointsViaWarehouseAdjustmentUnits,
                 SourceReportItemKey.Additional => workSheetName switch
                 {
-                    ExcelSheetParsingManager.ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME =>
-                        parsingEntityCollection = SkuExtraReceiptBalanceUnits,
                     ExcelSheetParsingManager.ADDREPORT_ALIASES_WORKSHEET_NAME =>
                         parsingEntityCollection = SkuAliasesBalanceUnits,
                     // ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME =>

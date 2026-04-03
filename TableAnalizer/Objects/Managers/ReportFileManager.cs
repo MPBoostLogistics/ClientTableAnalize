@@ -1,6 +1,4 @@
 ﻿using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
 using TableAnalizer.Objects.ReportItems;
@@ -16,7 +14,6 @@ namespace TableAnalizer.Objects.Managers
         private string? logisticsReportFirstName;
 
       
-
         /// <summary>
         /// Dictionary of primary report files.
         /// </summary>

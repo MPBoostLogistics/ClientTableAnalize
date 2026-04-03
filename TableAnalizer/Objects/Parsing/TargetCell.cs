@@ -3,7 +3,7 @@ using OfficeOpenXml.Style;
 
 namespace TableAnalizer.Objects.Parsing
 {
-    public class TargetCellSettings 
+    public class TargetCellSettings
     {
         public Color TextСolor { get; }
         public Color? CellFillColor { get; private set; }
@@ -11,7 +11,7 @@ namespace TableAnalizer.Objects.Parsing
         public int FontSize { get; }
         public ExcelFillStyle ExcelFillStyle { get; private set; }
 
-        public TargetCellSettings(Color textСolor, int textSize, Color? cellFillColor,  bool isTextBold = false)
+        public TargetCellSettings(Color textСolor, int textSize, Color? cellFillColor, bool isTextBold = false)
         {
             TextСolor = textСolor;
             FontSize = textSize;
@@ -20,9 +20,9 @@ namespace TableAnalizer.Objects.Parsing
             SetCellFillColor(cellFillColor);
         }
 
-        public void SetCellFillColor(Color? color) 
+        public void SetCellFillColor(Color? color)
         {
-            switch(color is null) 
+            switch (color is null)
             {
                 case true:
                     ExcelFillStyle = ExcelFillStyle.None;
@@ -32,7 +32,7 @@ namespace TableAnalizer.Objects.Parsing
                     CellFillColor = color;
                     break;
             }
-        } 
+        }
     }
 
     /// <summary>
@@ -52,8 +52,8 @@ namespace TableAnalizer.Objects.Parsing
         public string TextCommentInHeader { get; } = textCommentInHeader;
         public string PropertyName { get; } = propertyName;
         public ParsingTypeCode ParsingTypeCode { get; } = parsingTypeCode;
-        public readonly Predicate<int>? ValueСheckingPredicate = valueСheckingPredicate; 
-        public TypesFormulas? TypeFormula {get;} = typeFormula;
+        public readonly Predicate<int>? ValueСheckingPredicate = valueСheckingPredicate;
+        public TypesFormulas? TypeFormula { get; } = typeFormula;
         public readonly TargetCellSettings CellSettings { get; } = targetCellSettings;
         public int GroupCellsFromCurrentCount { get; } = groupCellsFromCurrent;
         #endregion

@@ -3,9 +3,9 @@
     "isTracing": true,
     "isCheckRansoms": true,
     "isCheckBalance": true,
-    "isCheckOutgoingProducts": false,
-    "isCheckAdditionalData": false,
-    "isAutoResorting": false,
+    "isCheckOutgoingProducts": true,
+    "isCheckAdditionalData": true,
+    "isAutoResorting": true,
     "isCombineAliases": false
   },
   "Messages": {

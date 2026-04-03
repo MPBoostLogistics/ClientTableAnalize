@@ -19,7 +19,6 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         public const string FIFTH_ROOM_NAME = "5 - Участок длительного хранения (производство)";
         public const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
         public const int LAST_MARKER_KEY_OFFSET = 2;
-        public const string ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME = "Экстра-приходы";
         public const string ADDREPORT_ALIASES_WORKSHEET_NAME = "Алиасы";
         public const string ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME = "Корректировки расхода";
 
@@ -34,11 +33,18 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <summary>
         /// Паттерны регулярных выражений для проверки строк прихода (по приходным ордерам).
         /// </summary>
-        private static readonly List<string> receivingRegeхPatterns = [@"^Приходный\sордер\sна\sтовары\s\S+\sот\s\S+\s\S+$"];
+        private static readonly List<string> receivingRegeхPatterns = [
+            @"^Приходный\sордер\sна\sтовары\s\S+\sот\s\S+\s\S+$",
+            //@"^Ордер\sна\sотражение\sпересортицы\sтоваров\s\S+\sот\s\S+\s\S+$"
+        ];
         /// <summary>
         /// Регулярные выражения для проверки строк на наличие цифр (для артикулов).
         /// </summary>
         private static readonly Regex[] receivingRegeхes = receivingRegeхPatterns.CreateRegexArray();
+
+        ////gm
+
+
 
         /// <summary>
         /// Дополительные правила (баланс, "1 - Помещение приемки и сортировки")
@@ -102,7 +108,6 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 SourceReportItemKey.Transfered => [new(TransferSourceCells)],
                 SourceReportItemKey.Additional => sheetName switch
                 {
-                    ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME => [new(ExtraReceiptSourceCells)],
                     ADDREPORT_ALIASES_WORKSHEET_NAME => [new(AliasesSourceCells)],
                     ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME => [new(AdjustmentShipmentSourceCells)],
                     _ => [],
