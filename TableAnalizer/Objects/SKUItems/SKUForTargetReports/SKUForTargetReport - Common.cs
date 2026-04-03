@@ -39,7 +39,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Приход от точек, всего
         /// </summary>
-        public int SKUReceiptTotal => SKUReceiptGoods + SKUWriteOffFromPoints;
+        public int SKUReceiptTotal => SKUReceiptGoods + SKUWriteOffFromPointsAndCouriers;
 
         /// <summary>
         /// из них, Склад: Приход товарами
@@ -176,7 +176,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                 if (adjustmentShipmentSum != 0)
                 {
                     SKUShipmentGoods += adjustmentShipmentSum;
-                    SKUShipmentComment += $"\nКорректировка по расходам: {adjustmentShipmentSum}";
+                    SKUShipmentComment += $"\nКорректировка по расходам от Клиента:\n{adjustmentShipmentSum}";
                 }
 
                 SKUTransfered = sku.SKURemainingBalance.SKUTransfered;

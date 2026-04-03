@@ -13,10 +13,10 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// Списано с точек, товаров 
         /// </summary>
         /// <remarks>
-        /// <para>Учитывается <b>отчет прямого списания</b> товаров с точек.</para> 
+        /// <para>Учитывается <b>отчет прямого списания</b> товаров с точек и курьеров.</para> 
         /// </remarks>
-        public int SKUWriteOffFromPoints { get; set; } = 0; // Суммируется при объединении алиасов
-        
+        public int SKUWriteOffFromPointsAndCouriers { get; set; } = 0; // Суммируется при объединении алиасов
+
         /// <summary>
         /// Списаны недостачи точек через склад, товаров
         /// </summary>
@@ -24,7 +24,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <para>Учитывается <b>предыдущий алгоритм списания</b> товаров с точек через склад.</para> 
         /// </remarks>
         public int SKUWriteOffFromPointsViaWarehouseShortage { get; set; } = 0;
-        
+
         /// <summary>
         /// Списаны корректировки точек через склад, товаров
         /// </summary>
@@ -60,7 +60,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         {
             if (writeOffBalance is null) return;
 
-            SKUWriteOffFromPoints = writeOffBalance.SKUWriteOffPoints;
+            SKUWriteOffFromPointsAndCouriers = writeOffBalance.SKUWriteOffPoints;
             SKUWriteOffFromPointsViaWarehouseShortage = writeOffBalance.SKUWriteOffPointsViaWarehouseShortage;
             SKUWrittenOffFromPointsViaWarehouseAdjustment = writeOffBalance.SKUWriteOffPointsViaWarehouseAdjustment;
         }

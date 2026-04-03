@@ -795,7 +795,7 @@ namespace TableAnalizer.Objects.Managers
                     combines.First().SKUReceipComment = comment.Aggregate("", (current, next) => current + "\n" + next);
                 }
             }
-            combines.First().SKUWriteOffFromPoints = combines.Sum(el => el.SKUWriteOffFromPoints);
+            combines.First().SKUWriteOffFromPointsAndCouriers = combines.Sum(el => el.SKUWriteOffFromPointsAndCouriers);
 
             // сombine paid shortage
             combines.First().SKUPaidShortageWarehouse = combines.Sum(el => el.SKUPaidShortageWarehouse);
@@ -809,7 +809,7 @@ namespace TableAnalizer.Objects.Managers
             combines.First().SKURemaining = combines.Sum(el => el.SKURemaining);
 
             // combine write offs
-            combines.First().SKUWriteOffFromPoints = combines.Sum(el => el.SKUWriteOffFromPoints);
+            combines.First().SKUWriteOffFromPointsAndCouriers = combines.Sum(el => el.SKUWriteOffFromPointsAndCouriers);
             combines.First().SKUWriteOffFromPointsViaWarehouseShortage = combines.Sum(el => el.SKUWriteOffFromPointsViaWarehouseShortage);
             combines.First().SKUWrittenOffFromPointsViaWarehouseAdjustment = combines.Sum(el => el.SKUWrittenOffFromPointsViaWarehouseAdjustment);
 
