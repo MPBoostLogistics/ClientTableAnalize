@@ -141,28 +141,18 @@ internal class Program
         await Task.Run(async () => getDataFromConsoleTask);
         getDataFromConsoleTask.Wait();
 
-        if (!ReportFileManager.ReportRecipientType.HasValue)
-        {
-            await TracingProgramExecution(new("Выбран выход из программы", false, true));
-            UnsubscribeManagersFromEvents();
-        }
-        else
-        {
-            await TracingProgramExecution(new($"Выбран тип отчета: {ReportFileManager.ReportRecipientType.ToString()}", false, false));
+        // Checking for the presence of data (permanent and new).
+        var checkingForPresenceDataTask = CheckingForPresenceData();
+        await Task.Run(async () => checkingForPresenceDataTask);
+        checkingForPresenceDataTask.Wait();
 
-            // Checking for the presence of data (permanent and new).
-            var checkingForPresenceDataTask = CheckingForPresenceData();
-            await Task.Run(async () => checkingForPresenceDataTask);
-            checkingForPresenceDataTask.Wait();
+        // Start analize
+        await TracingProgramExecution(new("Анализ первичных данных начат...", false, false));
+        var analyzeСlientReportTask = AnalyzePresenceData();
+        await Task.Run(() => analyzeСlientReportTask);
+        analyzeСlientReportTask?.Wait();
 
-            // Start analize
-            await TracingProgramExecution(new("Анализ первичных данных начат...", false, false));
-            var analyzeСlientReportTask = AnalyzePresenceData();
-            await Task.Run(() => analyzeСlientReportTask);
-            analyzeСlientReportTask?.Wait();
-
-            UnsubscribeManagersFromEvents();
-        }
+        UnsubscribeManagersFromEvents();
     }
 
     /// <summary>
@@ -202,29 +192,29 @@ internal class Program
         OrderPeriodStartDate = new DateOnly(2022, 12, 26);
         await TracingProgramExecution(new($"Дата начала заказов: {OrderPeriodStartDate}", false, false));
 
-        // Select report direction
-        DataFromConsole reportDirectionData = new(
-            questionMessage: "Выберите целевой тип отчета:\n1. Внутренний (для работы отдела логистики)\n2. Внешний (для предоставления клиенту)\nESC: Выход из программы.",
-            errorMessage: "Клавиша нажата неверно.\nПроверьте правильность ввода и повторите попытку.",
-            typeCode: ParsingTypeCode.StringTypeCode, // Dummy
-            isRequred: true);
+        // // Select report direction
+        // DataFromConsole reportDirectionData = new(
+        //     questionMessage: "Выберите целевой тип отчета:\n1. Внутренний (для работы отдела логистики)\n2. Внешний (для предоставления клиенту)\nESC: Выход из программы.",
+        //     errorMessage: "Клавиша нажата неверно.\nПроверьте правильность ввода и повторите попытку.",
+        //     typeCode: ParsingTypeCode.StringTypeCode, // Dummy
+        //     isRequred: true);
 
-        var reportDirectionTask = GetKeyFromConsole(reportDirectionData, [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape]);
-        await Task.Run(() => reportDirectionTask);
-        reportDirectionTask.Wait();
+        // var reportDirectionTask = GetKeyFromConsole(reportDirectionData, [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape]);
+        // await Task.Run(() => reportDirectionTask);
+        // reportDirectionTask.Wait();
 
-        switch (reportDirectionTask.Result)
-        {
-            case ConsoleKey.D1:
-                ReportFileManager.ReportRecipientType = TargetReportRecipientType.Internal;
-                break;
-            case ConsoleKey.D2:
-                ReportFileManager.ReportRecipientType = TargetReportRecipientType.External;
-                break;
-            case ConsoleKey.Escape:
-                ReportFileManager.ReportRecipientType = null;
-                break;
-        }
+        // switch (reportDirectionTask.Result)
+        // {
+        //     case ConsoleKey.D1:
+        //         ReportFileManager.ReportRecipientType = TargetReportRecipientType.Internal;
+        //         break;
+        //     case ConsoleKey.D2:
+        //         ReportFileManager.ReportRecipientType = TargetReportRecipientType.External;
+        //         break;
+        //     case ConsoleKey.Escape:
+        //         ReportFileManager.ReportRecipientType = null;
+        //         break;
+        // }
     }
 
     /// <summary>
@@ -261,15 +251,13 @@ internal class Program
     {
         List<SourceReportItemKey> existingKeys = ReportFileManager.PrimaryReportFiles.Select(el => el.Key).ToList();
 
-        bool isInternalReport = ReportFileManager.ReportRecipientType.HasValue && ReportFileManager.ReportRecipientType.Value == TargetReportRecipientType.Internal;
-
         // Report analysis tasks
         if (existingKeys is not null && existingKeys.Count > 0)
         {
             // Ransoms task
             if (isCheckRansoms && existingKeys.Contains(SourceReportItemKey.Ransoms))
             {
-                Task ransomsTask = ReceivingAndProcessingData(SourceReportItemKey.Ransoms, isInternalReport);
+                Task ransomsTask = ReceivingAndProcessingData(SourceReportItemKey.Ransoms);
                 await Task.Run(async () => await ransomsTask);
                 ransomsTask.Wait();
             }
@@ -277,7 +265,7 @@ internal class Program
             // Balance task
             if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.Balance))
             {
-                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Balance, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Balance);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -285,7 +273,7 @@ internal class Program
             // WriteOff points via warehouse task (shortage)
             if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseShortage))
             {
-                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseShortage, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -293,7 +281,7 @@ internal class Program
             // WriteOff points via warehouse task (adjustment)
             if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment))
             {
-                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -301,7 +289,7 @@ internal class Program
             // WriteOff points task 
             if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.WriteOffPoints))
             {
-                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPoints, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPoints);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -309,7 +297,7 @@ internal class Program
             // Outgoing products task
             if (isCheckOutgoingProducts && existingKeys.Contains(SourceReportItemKey.OutgoingProducts))
             {
-                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.OutgoingProducts, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.OutgoingProducts);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -317,7 +305,7 @@ internal class Program
             // Transfer task
             if (isCheckOutgoingProducts && existingKeys.Contains(SourceReportItemKey.Transfered))
             {
-                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Transfered, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Transfered);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -325,7 +313,7 @@ internal class Program
             // Additional task
             if (isCheckAdditionalData && existingKeys.Contains(SourceReportItemKey.Additional))
             {
-                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Additional, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Additional);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -333,7 +321,7 @@ internal class Program
             // Paid shortages task
             if (isCheckBalance && isCheckOutgoingProducts && existingKeys.Contains(SourceReportItemKey.ShortagesPaid))
             {
-                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.ShortagesPaid, isInternalReport);
+                var currentTask = ReceivingAndProcessingData(SourceReportItemKey.ShortagesPaid);
                 await Task.Run(async () => await currentTask);
                 currentTask.Wait();
             }
@@ -385,10 +373,10 @@ internal class Program
             await Task.Run(() => skusForTargetFinaAnalizelTask);
             skusForTargetFinaAnalizelTask!.Wait();
 
-            // Save work
-            var makeReportTask = excelManager!.MakeReports(skuForTargetReports, isTracing, isInternalReport);
-            await Task.Run(() => makeReportTask);
-            makeReportTask.Wait();
+            // Создение и сохранение итоговых отчетов 
+            var createAndSaveFinalReportsTask = excelManager!.CreateAndSaveFinalReports(skuForTargetReports, isTracing);
+            await Task.Run(() => createAndSaveFinalReportsTask);
+            createAndSaveFinalReportsTask.Wait();
         }
         else
         {
@@ -401,7 +389,7 @@ internal class Program
     /// Receiving and processing data from seller reports.
     /// </summary>
     /// <param name="reportFileKey">Key of source file with report.</param>
-    private static async Task<double> ReceivingAndProcessingData(SourceReportItemKey reportFileKey, bool isInternalReport)
+    private static async Task<double> ReceivingAndProcessingData(SourceReportItemKey reportFileKey)
     {
         var getReportFileTask = ReportFileManager.GetSourceReport(reportFileKey);
         await Task.Run(async () => await getReportFileTask);
@@ -415,7 +403,7 @@ internal class Program
             using var package = excelManager!.CreateExcelPackage(reportFileKey, reportFile.Info);
 
             // Receiving and processing data
-            Task<double>? receivingAndProcessingDataTask = skuManager!.ReceivingAndProcessingData(reportFileKey, isInternalReport, package!);
+            Task<double>? receivingAndProcessingDataTask = skuManager!.ReceivingAndProcessingData(reportFileKey, package!);
             if (receivingAndProcessingDataTask is not null)
             {
                 await Task.Run(async () => await receivingAndProcessingDataTask);

@@ -1,6 +1,7 @@
 //https://www.color-hex.com/color-palette/1054961
 
 using System.Drawing;
+using iText.Layout.Element;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
@@ -57,6 +58,26 @@ namespace TableAnalizer.Objects.Managers
         private static readonly Color dangerColor = ColorTranslator.FromHtml("#d8675b"); // #d8675b
 
         private static readonly string SKUNumberColName = "Артикул";
+
+        /// <summary>
+        /// Цвет вкладок листов итового отчета.
+        /// </summary>
+        private static readonly Color finalReportTabColor = SKUManager.StatusColors[SKUSellmentStatus.FullSet];
+
+        /// <summary>
+        /// Имя листа клинтского отчета в итоговом файле.
+        /// </summary>
+        private const string CLIENT_SHEET_NAME = "Клиенский";
+
+        /// <summary>
+        /// Имя листа рабочего отчета в итоговом файле.
+        /// </summary>
+        private const string WORK_SHEET_NAME = "Рабочий";
+
+        /// <summary>
+        /// Имена листоы отчетов в итоговом файле.
+        /// </summary>
+        private static readonly string[] finalWorksheetNames = [CLIENT_SHEET_NAME, WORK_SHEET_NAME];
 
 
         #endregion
@@ -415,13 +436,16 @@ namespace TableAnalizer.Objects.Managers
 
         #region Functionality
 
+        /// <summary>
+        /// Определяет номер колонки таблицы Excel с итоговым отчетом из коллекции FinalReportCell по названию свойства.
+        /// </summary>
+        /// <param name="propertyName">Название свойства для определения номера колонки в таблице.</param>
+        /// <returns>Номер колонки.</returns>
         private int GetColumnNumber(string propertyName)
         {
             FinalReportCell cell = finalReportsCells.SingleOrDefault(el => el.PropertyName == propertyName);
             return Array.IndexOf(finalReportsCells, cell) + 1;
         }
-
-
 
         protected override void AddConfigVariables()
         {
@@ -454,10 +478,7 @@ namespace TableAnalizer.Objects.Managers
                 }
 
                 if (excelPackage is not null)
-                {
                     ExcelPackages[key] = excelPackage;
-                }
-
             }
 
             GetExcelPackageByKey(key, out ExcelPackage? existingPackage);
@@ -476,42 +497,41 @@ namespace TableAnalizer.Objects.Managers
             {
                 return ExcelPackages.TryGetValue(key, out package) && package is not null;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 package = null;
                 OnManagerReached(new($"{ex.Message}", true, true));
                 return false;
             }
-
         }
 
-        private Task<bool> MakeReportTask(in ExcelPackage outputPackage, string sheetName, FinalReportCell[] targetCells, List<List<int>>? rangeForGrouping, List<SKUForTargetReport> actualData, bool isTracing)
+        private Task<bool> CreateFinalReportTask(in ExcelPackage outputPackage, FinalReportCell[] finalDataCells,
+            List<List<int>>? rangeForGrouping, List<SKUForTargetReport> actualData, bool isTracing)
         {
-            var sheetColor = sheetName switch
+            foreach (var finalWorksheetName in finalWorksheetNames)
             {
-                OUTPUT_REPORT_MAINREPORT_NAME => SKUManager.StatusColors[SKUSellmentStatus.FullSet],
-                OUTPUT_REPORT_DELAYREPORT_NAME => SKUManager.StatusColors[SKUSellmentStatus.DelayDeliveryFromPoints],
-                OUTPUT_REPORT_OVERRUNSREPORT_NAME => SKUManager.StatusColors[SKUSellmentStatus.Unknown],
-                OUTPUT_REPORT_ANALYTICS_RERORT_NAME => SKUManager.StatusColors[SKUSellmentStatus.DelayFromWarehouse],
-                _ => Color.Gray,
-            };
+                CreateExcelWorkSheet(in outputPackage, finalWorksheetName, out ExcelWorksheet? outputReportSheet);
 
-            // Create excel worksheet
-            CreateExcelWorkSheet(sheetName, in outputPackage, out ExcelWorksheet? outputReportSheet, sheetColor, isTracing);
+                FinalReportCell[] fDataCells = finalWorksheetName switch
+                {
+                    CLIENT_SHEET_NAME => [.. finalDataCells.Where(fdt => fdt.IsCellUsedInClientReport == true)],
+                    _ => finalDataCells,
+                };
 
-            try
-            {
-                FillingСellsWithData(sheetName == OUTPUT_REPORT_MAINREPORT_NAME, outputReportSheet, actualData, targetCells, isTracing);
+                try
+                {
+                    FillingСellsWithData(ref outputReportSheet, actualData, fDataCells, isTracing);
+                }
+                catch (Exception ex)
+                {
+                    OnManagerReached(new($"{ex.Message}", true, true));
+                    return Task.Run(() => false);
+                }
+
+                SetupTableHeader(in fDataCells, ref outputReportSheet);
+                AddFilterAndAccentInWorkSheet(ref outputReportSheet, in rangeForGrouping);
+                CalculateFormulas(in fDataCells, ref outputReportSheet);
             }
-            catch (System.Exception ex)
-            {
-                OnManagerReached(new($"{ex.Message}", true, true));
-                return Task.Run(() => false);
-            }
-
-            SetupTableHeader(in targetCells, ref outputReportSheet);
-            AddFilterAndAccentInWorkSheet(ref outputReportSheet, in rangeForGrouping);
-            CalculateFormulas(in targetCells, ref outputReportSheet);
 
             return Task.Run(() => true);
         }
@@ -580,48 +600,53 @@ namespace TableAnalizer.Objects.Managers
             return workSheetNames is not null && workSheetNames.Count != 0;
         }
 
-        public async Task<bool> MakeReports(List<SKUForTargetReport> skuForTargetReports, bool isTracing, bool isInternalReport)
+        /// <summary>
+        /// Создает и сохраняет итоговые отчеты.
+        /// </summary>
+        /// <param name="skuForTargetReports">Коллекция SKUForTargetReport для формирования итоговых отчетов.</param>
+        /// <param name="isTracing">Флаг трассировки.</param>
+        /// <returns>Флаг выполнения операции.</returns>
+        public async Task<bool> CreateAndSaveFinalReports(List<SKUForTargetReport> skuForTargetReports, bool isTracing)
         {
+            // Проверка указнания пути для сохранения файлов.
             if (string.IsNullOrEmpty(ReportFileManager.FinalReportFileName))
-            {
-                ManagerReachedEventArgs args = new("Output client report file path cannot be empty.", true, true);
-                throw new Exception(args.Message);
-            }
+                OnManagerReached(new("Путь для сохранения файлов итогового отчета не может быть пустым", true, true));
 
-            var fileInfo = new FileInfo(ReportFileManager.FinalReportFileName) ?? throw new Exception("Fileinfo cannot be empty");
-            var outputPackage = new ExcelPackage(new FileInfo(ReportFileManager.FinalReportFileName));
-            if (outputPackage is null)
-            {
-                ManagerReachedEventArgs args = new("ExcelPackage for output reports cannot be created.", true, true);
-                throw new Exception(args.Message);
-            }
+            // Создание книги Excel (ExcelPackage) для сохранения файлав.
+            ExcelPackage? finalReportsBook = CreateFinalExcelPackage(ReportFileManager.FinalReportFileName);
+            if (finalReportsBook == null)
+                return false;
 
             List<SKUForTargetReport> actualData = [.. skuForTargetReports];
-            List<List<int>>? rangeForGrouping = GetRangeForGrouping(in cellsReportingMain)?.ToList();
 
-            var targetReportTasksList = new List<Task<bool>>(4);
-            Task<bool>[] targetReportTasksArray;
+            // Получение диапазонов для группировки столбцов.
+            List<List<int>>? rangeForGrouping = GetRangeForGrouping(in finalReportsCells)?.ToList();
 
-            // Make main report
-            targetReportTasksList.Add(MakeReportTask(in outputPackage, OUTPUT_REPORT_MAINREPORT_NAME, finalReportsCells, rangeForGrouping, actualData, isTracing));
+            // Создание отчета.
+            var finalReportTask = CreateFinalReportTask(in finalReportsBook, finalReportsCells, rangeForGrouping, actualData, isTracing);
+            await Task.Run(() => finalReportTask);
 
-            if (targetReportTasksList.Count != 0)
-            {
-                targetReportTasksArray = [.. targetReportTasksList];
-                foreach (var targetReportTask in targetReportTasksArray)
-                {
-                    await Task.Run(() => targetReportTask);
-                }
+            // Сохранение.
+            return SaveWorkProcedure(isTracing, ref finalReportsBook);
+        }
 
-                Task.WaitAll();
 
-                return SaveWorkProcedure(isTracing, ref outputPackage);
-            }
-            else
-            {
-                return SaveWorkProcedure(isTracing, ref outputPackage);
-            }
+        /// <summary>
+        /// Создание объекта книги Excel для итогового отчета.
+        /// </summary>
+        /// <param name="path">Путь для сохранения файлов итогового отчета.</param>
+        /// <returns>Объект ExcelPackage или null.</returns>
+        private ExcelPackage? CreateFinalExcelPackage(string path)
+        {
+            FileInfo? fileInfo = new(path);
+            if (fileInfo == null)
+                OnManagerReached(new($"По пути {path}\n не может быть создан объект FileInfo!", true, true));
 
+            var outputPackage = new ExcelPackage(new FileInfo(ReportFileManager.FinalReportFileName));
+            if (outputPackage is null)
+                OnManagerReached(new($"По пути {fileInfo?.FullName}\n не может быть создан объект ExcelPackage!", true, true));
+
+            return outputPackage;
         }
 
         private bool SaveWorkProcedure(bool isTracing, ref ExcelPackage outputPackage)
@@ -674,168 +699,175 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        private static IEnumerable<List<int>>? GetRangeForGrouping(in FinalReportCell[] targetCells)
+        /// <summary>
+        /// Создает диапазоны для группировки столбцов в таблице итовового отчета.
+        /// </summary>
+        /// <param name="cells">Коллекция объектов FinalReportCell.</param>
+        /// <returns>Перечисление диапазонов (списков целочисленных значений).</returns>
+        private IEnumerable<List<int>>? GetRangeForGrouping(in FinalReportCell[] cells)
         {
-            return from targetCell in targetCells
-                   where targetCell.GroupCellsFromCurrentCount != 0
-                   let range = Enumerable.Range(targetCell.ColNumber, targetCell.GroupCellsFromCurrentCount)
+            return from cell in cells
+                   where cell.GroupCellsFromCurrentCount != 0
+                   let range = Enumerable.Range(GetColumnNumber(cell.PropertyName), cell.GroupCellsFromCurrentCount)
                    select range.ToList();
         }
 
-        public ExcelWorksheet FillingСellsWithData(bool isMainReport, ExcelWorksheet worksheet, List<SKUForTargetReport> targetReportDatas, FinalReportCell[] targetCells, bool isTracing, int recordIndex = 1)
+        /// <summary>
+        /// Заполняет ячейки таблицы рабочего листа Excel данными из коллекции SKUForTargetReport.
+        /// </summary>
+        /// <param name="sheet">Рабочий лист Excel.</param>
+        /// <param name="skusForTargetReport">Коллекция данных.</param>
+        /// <param name="finalReportCells">Целевые ячейки итового отчета.</param>
+        /// <param name="isTracing">Флаг трассировки.</param>
+        /// <param name="firstRowIndex">Индекс первой строки заполнения.</param>
+        /// <exception cref="Exception"></exception>
+        public void FillingСellsWithData(ref ExcelWorksheet sheet, List<SKUForTargetReport> skusForTargetReport, FinalReportCell[] finalReportCells, bool isTracing, int firstRowIndex = 1)
         {
-            var result = worksheet;
             if (isTracing)
-            {
-                ManagerReachedEventArgs args = new($"Fill in Excel sheet with the name '{result.Name}'...", false, false);
-                OnManagerReached(args);
-            }
+                OnManagerReached(new($"Заполняю данными лист '{sheet.Name}'...", false, false));
 
-            int rowIndex = recordIndex + 1;
-
-            foreach (var targetReportData in targetReportDatas)
+            int rowNumber = firstRowIndex + 1;
+            foreach (var skuForTargetReport in skusForTargetReport)
             {
-                foreach (var targetCell in targetCells)
+                foreach (var finalReportCell in finalReportCells)
                 {
-                    object? value = null;
+                    GetValueForFinalReport(skuForTargetReport, finalReportCell, out object? value);
 
-                    switch (targetCell.ParsingTypeCode)
+                    if (value == null)
                     {
-                        case ParsingTypeCode.IntTypeCode:
-                            if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out int intValue))
-                            {
-                                value = intValue;
-                            }
-                            break;
-
-                        case ParsingTypeCode.LongTypeCode:
-                            if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out long longValue))
-                            {
-                                value = longValue;
-                            }
-                            break;
-                        case ParsingTypeCode.DoubleTypeCode:
-                            if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out double doubleValue))
-                            {
-                                value = doubleValue;
-                            }
-                            break;
-                        case ParsingTypeCode.DataOnlyTypeCode:
-                            if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out DateOnly dateOnlyValue))
-                            {
-                                value = dateOnlyValue.ToDateTime(new TimeOnly());
-                            }
-                            break;
-                        case ParsingTypeCode.StringTypeCode:
-                            if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out string? stringValue))
-                            {
-                                value = stringValue ?? null;
-                            }
-                            break;
-                        case ParsingTypeCode.SKURansomsStatus:
-                            if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out SKURansomsStatus ransomsStatusValue))
-                            {
-                                value = ransomsStatusValue;
-                            }
-                            break;
-                        case ParsingTypeCode.Marketplace:
-                            if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out Marketplace? marketplaceValue))
-                            {
-                                value = marketplaceValue;
-                            }
-                            break;
-                        case ParsingTypeCode.SellmentStatus:
-                            if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out SellmentStatus? sellmentStatus))
-                            {
-                                value = sellmentStatus;
-                            }
-                            break;
-                        case ParsingTypeCode.BoolTypeCode:
-                            if (TryGetPropertyValue(targetReportData, targetCell.PropertyName, out bool? boolean))
-                            {
-                                value = boolean;
-                            }
-                            break;
-                        default:
-                            throw new Exception("ParsingTypeCode при заполнении ячеек не определен!");
+                        OnManagerReached(new($"При заполнении данные на листе значение для колонки '{finalReportCell.ColumnName}' оказалось пустым!", true, true));
+                        continue;
                     }
 
-                    if (value is not null)
-                    {
-                        // Set value for cell 
-                        ExcelRange? tableCell = result.Cells[rowIndex, targetCell.ColNumber];
+                    var columnNumber = GetColumnNumber(finalReportCell.PropertyName);
+                    ExcelRange? tableCell = sheet.Cells[rowNumber, columnNumber];
 
-                        if (tableCell is not null)
-                        {
-                            ApplySettingsToTableCell(ref tableCell!, value, targetCell, isMainReport, targetReportData.FillColor, targetReportData.SKUAliasesComment);
-                        }
-                        else
-                        {
-                            OnManagerReached(new($"Table cell for rowIndex {rowIndex} && column number {targetCell.ColNumber} is null.", true, true));
-                        }
-                    }
-                    else
-                    {
-                        OnManagerReached(new($"When filling in the cells on sheet, the value for '{targetCell.ColumnName}' turned out to be null.", true, true));
-                    }
+                    if (tableCell == null)
+                        OnManagerReached(new($"В ячейке таблицы (строка {rowNumber} && column number {columnNumber} равно null.", true, true));
+
+
+                    ValueAndSettingsToTableCell(ref tableCell!, value, finalReportCell, skuForTargetReport.FillColor, skuForTargetReport.SKUAliasesComment);
                 }
-                rowIndex++;
+                rowNumber++;
             }
 
             if (isTracing)
             {
-                ManagerReachedEventArgs args = new($"Excel sheet named '{result.Name}'is filled with data.", false, false);
+                ManagerReachedEventArgs args = new($"Excel sheet named '{sheet.Name}'is filled with data.", false, false);
                 OnManagerReached(args);
             }
-
-            return result;
         }
 
-        private void ApplySettingsToTableCell(ref ExcelRange tableCell, object? value, in FinalReportCell targetCell, bool isMainReport, Color? statusColor, string? aliasesComment = null)
+        /// <summary>
+        /// Получает значение для заполнение ячейки итогового отчета. 
+        /// </summary>
+        /// <param name="skuForTargetReport">Объект SKUForTargetReport для получение свойства.</param>
+        /// <param name="finalReportCell">Прототип ячейки заполнения.</param>
+        /// <param name="value">Полученное значение (опционально).</param>
+        private void GetValueForFinalReport(in SKUForTargetReport skuForTargetReport, FinalReportCell finalReportCell, out object? value)
         {
-            // Add value to cell 
+            value = null;
+
+            switch (finalReportCell.ParsingTypeCode)
+            {
+                case ParsingTypeCode.IntTypeCode:
+                    if (TryGetPropertyValue(skuForTargetReport, finalReportCell.PropertyName, out int intValue))
+                        value = intValue;
+                    break;
+
+                case ParsingTypeCode.LongTypeCode:
+                    if (TryGetPropertyValue(skuForTargetReport, finalReportCell.PropertyName, out long longValue))
+                        value = longValue;
+                    break;
+                case ParsingTypeCode.DoubleTypeCode:
+                    if (TryGetPropertyValue(skuForTargetReport, finalReportCell.PropertyName, out double doubleValue))
+                        value = doubleValue;
+                    break;
+                case ParsingTypeCode.DataOnlyTypeCode:
+                    if (TryGetPropertyValue(skuForTargetReport, finalReportCell.PropertyName, out DateOnly dateOnlyValue))
+                        value = dateOnlyValue.ToDateTime(new TimeOnly());
+                    break;
+                case ParsingTypeCode.StringTypeCode:
+                    if (TryGetPropertyValue(skuForTargetReport, finalReportCell.PropertyName, out string? stringValue))
+                        value = stringValue ?? null;
+                    break;
+                case ParsingTypeCode.SKURansomsStatus:
+                    if (TryGetPropertyValue(skuForTargetReport, finalReportCell.PropertyName, out SKURansomsStatus ransomsStatusValue))
+                        value = ransomsStatusValue;
+                    break;
+                case ParsingTypeCode.Marketplace:
+                    if (TryGetPropertyValue(skuForTargetReport, finalReportCell.PropertyName, out Marketplace? marketplaceValue))
+                        value = marketplaceValue;
+                    break;
+                case ParsingTypeCode.SellmentStatus:
+                    if (TryGetPropertyValue(skuForTargetReport, finalReportCell.PropertyName, out SellmentStatus? sellmentStatus))
+                        value = sellmentStatus;
+                    break;
+                case ParsingTypeCode.BoolTypeCode:
+                    if (TryGetPropertyValue(skuForTargetReport, finalReportCell.PropertyName, out bool? boolean))
+                        value = boolean;
+                    break;
+                default:
+                    OnManagerReached(new("ParsingTypeCode для заполнения ячейки не определен!", true, true));
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Установка значения и настроек для ячейки.
+        /// </summary>
+        /// <param name="tableCell">Целевая ячейка таблицы Excel.</param>
+        /// <param name="value">Значение для ячейки.</param>
+        /// <param name="finalReportCell">Объект FinalReportCell для настройки ячейки.</param>
+        /// <param name="statusColor">Цвет статуса.</param>
+        /// <param name="aliasesComment">Комментарий?</param>
+        private void ValueAndSettingsToTableCell(ref ExcelRange tableCell, object? value, in FinalReportCell finalReportCell, Color? statusColor, string? aliasesComment = null)
+        {
+            // Установка значения
             tableCell.Value = value;
 
-            // Get color for status column
-            if (isMainReport && tableCell.Start.Column == sellmentStatusColomnNum && statusColor != null)
-            {
+            // Установка цвета для колонки статуса
+            if (tableCell.Start.Column == sellmentStatusColomnNum && statusColor != null)
                 tableCell.Style.Fill.SetBackground((Color)statusColor);
-            }
 
-            // Add number format to cell 
-            tableCell.Style.Numberformat.Format = targetCell.ColumnFormat;
+            // Установка формата значения для ячейки.
+            tableCell.Style.Numberformat.Format = finalReportCell.ColumnFormat;
 
-            // Set alignment
+            // Установка выравнивания текста в ячейке.
             tableCell.Style.VerticalAlignment = ExcelVerticalAlignment.Top;
 
-            // Filling cells with color   
-            if (targetCell.CellSettings.ExcelFillStyle == ExcelFillStyle.Solid)
+            // Назначение стиля и заливка ячейки цветом.  
+            Color? color = finalReportCell.CellSettings.CellFillColor;
+            if (finalReportCell.CellSettings.ExcelFillStyle == ExcelFillStyle.Solid)
             {
-                if (targetCell.CellSettings.CellFillColor is null)
-                    throw new Exception($"Cell fill don`t have a \"{nameof(targetCell.CellSettings.CellFillColor)}\" parameter assigned.");
+                if (finalReportCell.CellSettings.CellFillColor is null)
+                    OnManagerReached(new($"Для заливки ячеек не назначен параметр {nameof(finalReportCell.CellSettings.CellFillColor)}.", true, true));
 
-                tableCell.Style.Fill.PatternType = targetCell.CellSettings.ExcelFillStyle;
+                tableCell.Style.Fill.PatternType = finalReportCell.CellSettings.ExcelFillStyle;
 
-                tableCell.Style.Fill.PatternType = ExcelFillStyle.Solid;
-                tableCell.Style.Fill.BackgroundColor.SetColor((Color)targetCell.CellSettings.CellFillColor);
+                if (color != null)
+                {
+                    tableCell.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    tableCell.Style.Fill.BackgroundColor.SetColor((Color)color);
+                }
             }
 
-            // Apply font settings 
-            if (int.TryParse(tableCell.Value?.ToString(), out int v) && targetCell.ValueСheckingPredicate is not null && targetCell.ValueСheckingPredicate(v))
+            // Применение настроек шрифта. 
+            if (int.TryParse(tableCell.Value?.ToString(), out int v) && finalReportCell.ValueСheckingPredicate is not null && finalReportCell.ValueСheckingPredicate(v))
             {
-                tableCell.Style.Font.Size = targetCell.CellSettings.FontSize;
+                tableCell.Style.Font.Size = finalReportCell.CellSettings.FontSize;
                 tableCell.Style.Font.Bold = true;
                 tableCell.Style.Font.Color.SetColor(dangerColor);
             }
             else
             {
-                tableCell.Style.Font.Size = targetCell.CellSettings.FontSize;
-                tableCell.Style.Font.Bold = targetCell.CellSettings.IsTextBold;
-                tableCell.Style.Font.Color.SetColor(targetCell.CellSettings.TextСolor);
+                tableCell.Style.Font.Size = finalReportCell.CellSettings.FontSize;
+                tableCell.Style.Font.Bold = finalReportCell.CellSettings.IsTextBold;
+                tableCell.Style.Font.Color.SetColor(finalReportCell.CellSettings.TextСolor);
             }
 
-            // Add comment
-            bool isAliasComment = targetCell.ColumnName.Trim().Equals(SKUNumberColName.Trim(), StringComparison.CurrentCultureIgnoreCase) && aliasesComment != null && !string.IsNullOrEmpty(aliasesComment);
+            // Добавление комментария к ячейке.
+            bool isAliasComment = finalReportCell.ColumnName.Trim().Equals(SKUNumberColName.Trim(), StringComparison.CurrentCultureIgnoreCase) && aliasesComment != null && !string.IsNullOrEmpty(aliasesComment);
             if (isAliasComment)
             {
                 ExcelComment comm = tableCell.AddComment("");
@@ -871,30 +903,27 @@ namespace TableAnalizer.Objects.Managers
         // TODO: Вынеси в FileService!
 
         /// <summary>
-        /// Creates an Excel worksheet in specified Excel workbook.
+        /// Создание нового листа Excel.
         /// </summary>
-        /// <param name="workSheetName">Excel worksheet name.</param>
-        /// <param name="excelPackage">Excel workbook name.</param>
-        /// <param name="worksheet">Excel worksheet that is created.</param>
-        /// <param name="tabColor">Worksheet label (tab) color.</param>
-        /// <remarks><i>New version, tested</i></remarks>
-        public static void CreateExcelWorkSheet(string workSheetName, in ExcelPackage excelPackage, out ExcelWorksheet worksheet, Color tabColor, bool isTracing)
+        /// <param name="package">Книга Excel.</param>
+        /// <param name="workSheetName">Имя нового листа.</param>
+        /// <param name="worksheet">Созданный лист Excel.</param>
+        public static void CreateExcelWorkSheet(in ExcelPackage package, string workSheetName, out ExcelWorksheet worksheet)
         {
-            // Remove existing worksheet
-            var existingWorksheet = excelPackage.Workbook.Worksheets
-                                        .SingleOrDefault(x => x.Name == workSheetName);
-            if (existingWorksheet is not null) excelPackage.Workbook.Worksheets.Delete(existingWorksheet);
+            // Удаление существующего листа.
+            var existingWorksheet = package.Workbook.Worksheets.SingleOrDefault(x => x.Name == workSheetName);
+            if (existingWorksheet is not null) package.Workbook.Worksheets.Delete(existingWorksheet);
 
-            // Create net worksheet
-            worksheet = excelPackage.Workbook.Worksheets.Add(workSheetName);
+            // Создание нового листа.
+            worksheet = package.Workbook.Worksheets.Add(workSheetName);
 
-            // Stilized workSheet
-            worksheet.TabColor = tabColor;
+            // Стилизация нового листа.
+            worksheet.TabColor = finalReportTabColor;
             worksheet.DefaultRowHeight = DEFAULT_TABLE_ROW_HEIGHT;
             worksheet.DefaultColWidth = DEFAULT_TABLE_COL_WIDTH;
         }
 
-        private static void SetupTableHeader(in FinalReportCell[] resultCells, ref ExcelWorksheet worksheet, double headerRowHeight = HEADER_TABLE_ROW_HEIGHT)
+        private void SetupTableHeader(in FinalReportCell[] resultCells, ref ExcelWorksheet worksheet, double headerRowHeight = HEADER_TABLE_ROW_HEIGHT)
         {
             var firstRow = worksheet.Row(RECORD_INDEX);
             if (firstRow is not null)
@@ -909,7 +938,7 @@ namespace TableAnalizer.Objects.Managers
             for (int i = 0; i < resultCells.Length; i++)
             {
                 var currentResultCell = resultCells[i];
-                var columnNumber = currentResultCell.ColNumber;
+                var columnNumber = GetColumnNumber(currentResultCell.PropertyName);
 
                 ExcelColumn columnInWorkSheet = worksheet.Column(columnNumber) ??
                     throw new Exception($"Column number {columnNumber} not found on worksheet");

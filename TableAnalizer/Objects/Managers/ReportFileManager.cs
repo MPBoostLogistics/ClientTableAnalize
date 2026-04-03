@@ -45,7 +45,7 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         public static string BaseFinalReportsDirectoryPath { get; private set; } = string.Empty;
 
-        public static TargetReportRecipientType? ReportRecipientType { get; set; }
+        // public static TargetReportRecipientType? ReportRecipientType { get; set; }
 
         /// <summary>
         /// Collection of source report files

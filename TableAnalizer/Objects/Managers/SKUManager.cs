@@ -1,3 +1,5 @@
+//https://www.color-hex.com/color-palette/27606
+
 using System.Diagnostics;
 using System.Drawing;
 using Microsoft.Extensions.Configuration;
@@ -27,14 +29,14 @@ namespace TableAnalizer.Objects.Managers
         /// <remarks>https://www.color-hex.com/color-palette/2922</remarks>
         public static Dictionary<SKUSellmentStatus, Color> StatusColors { get; } = new()
         {
-            {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#e6f6eb")},                             // #e6f6eb
-            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fbd8b7")},                              // #fff6f0
-            {SKUSellmentStatus.DelayFromPointsAndWarehouse, ColorTranslator.FromHtml("#ffd9d9")},         // #ffd9d9
-            {SKUSellmentStatus.DelayFromWarehouse, ColorTranslator.FromHtml("#ffe0e0")},                  // #ffe0e0
-            {SKUSellmentStatus.DelayFromOrganization, ColorTranslator.FromHtml("#f3d9d9")},               // #f3d9d9
-            {SKUSellmentStatus.DelayFromOrganizationAndWarehouse, ColorTranslator.FromHtml("#eddede")},   // #eddede
-            {SKUSellmentStatus.DelayDeliveryFromPoints, ColorTranslator.FromHtml("#ffefef")},             // #ffefef
-            {SKUSellmentStatus.Unknown, ColorTranslator.FromHtml("#eef5f9")}                              // #eef5f9
+            {SKUSellmentStatus.FullSet, ColorTranslator.FromHtml("#e9f9d6")},                             // #e6f6eb
+            {SKUSellmentStatus.InWork, ColorTranslator.FromHtml("#fffac4")},                              // #fff6f0
+            {SKUSellmentStatus.DelayFromPointsAndWarehouse, ColorTranslator.FromHtml("#ffdede")},         // #ffd9d9
+            {SKUSellmentStatus.DelayFromWarehouse, ColorTranslator.FromHtml("#ffdede")},                  // #ffe0e0
+            {SKUSellmentStatus.DelayFromOrganization, ColorTranslator.FromHtml("#ffdede")},               // #f3d9d9
+            {SKUSellmentStatus.DelayFromOrganizationAndWarehouse, ColorTranslator.FromHtml("#ffdede")},   // #eddede
+            {SKUSellmentStatus.DelayDeliveryFromPoints, ColorTranslator.FromHtml("#ffdede")},             // #ffefef
+            {SKUSellmentStatus.Unknown, ColorTranslator.FromHtml("#daf3ff")}                              // #eef5f9
         };
         #endregion
 
@@ -100,7 +102,7 @@ namespace TableAnalizer.Objects.Managers
             StatusStrings.Add(SKUSellmentStatus.DelayFromOrganizationAndWarehouse, stringsSection.GetValue<string>("DelayFromOrganizationAndWarehouseStatusString") ?? string.Empty);
         }
 
-        public async Task<double> ReceivingAndProcessingData(SourceReportItemKey reportFileKey, bool isInternalReport, ExcelPackage excelPackage)
+        public async Task<double> ReceivingAndProcessingData(SourceReportItemKey reportFileKey, ExcelPackage excelPackage)
         {
             double time = 0.00;
 
@@ -111,7 +113,7 @@ namespace TableAnalizer.Objects.Managers
                 List<Task<double>> processingTasksList = [];
                 for (int i = 0; i < workSheetNames.Count; i++)
                 {
-                    var processingData = ProcessingData(reportFileKey, workSheetNames[i], isInternalReport, excelPackage);
+                    var processingData = ProcessingData(reportFileKey, workSheetNames[i], excelPackage);
                     processingTasksList.Add(processingData);
                 }
 
@@ -134,7 +136,7 @@ namespace TableAnalizer.Objects.Managers
             return time;
         }
 
-        private async Task<double> ProcessingData(SourceReportItemKey reportFileKey, string workSheetName, bool isInternalReport, ExcelPackage excelPackage)
+        private async Task<double> ProcessingData(SourceReportItemKey reportFileKey, string workSheetName, ExcelPackage excelPackage)
         {
             // Start
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -153,7 +155,7 @@ namespace TableAnalizer.Objects.Managers
             await SaveSKUBalanceUnits(reportFileKey, workSheetName, [.. data]);
 
             // 2. Create or update sku's from balance units 
-            var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName, isInternalReport);
+            var makeSKUsTask = UpdateSKUsFromBalanceUnits(reportFileKey, workSheetName);
             await Task.Run(async () => await makeSKUsTask);
             makeSKUsTask.Wait();
 
@@ -165,7 +167,7 @@ namespace TableAnalizer.Objects.Managers
             static bool FindSkusWithWriteOffPoints(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPoints > 0;
             static bool FindSkusWithWriteOffPointsViaWarehouseShortage(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseShortage > 0;
             static bool FindSkusWithWriteOffPointsViaWarehouseAdjustment(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseAdjustment > 0;
-            static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
+            //static bool FindSkusWithResort(SKU sku) => sku.SKUResortBalance != null;
             // ч    static bool FindSkusWithAliases(SKU sku) => SkuAliasesBalanceUnits.Count() > 0 ;
             //static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
 
@@ -489,7 +491,7 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         /// <exception cref="ArgumentException">Manager does not contain an array of "raw data".</exception>
         /// <remarks><i>New version, tested</i></remarks>
-        public async Task UpdateSKUsFromBalanceUnits(SourceReportItemKey skuReportFileKey, string workSheetName, bool isRawReport)
+        public async Task UpdateSKUsFromBalanceUnits(SourceReportItemKey skuReportFileKey, string workSheetName)
         {
             bool isRansoms = skuReportFileKey == SourceReportItemKey.Ransoms;
             bool isRemaining = skuReportFileKey == SourceReportItemKey.Balance;
