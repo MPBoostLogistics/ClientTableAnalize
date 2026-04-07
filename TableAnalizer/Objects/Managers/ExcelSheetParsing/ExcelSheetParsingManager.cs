@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
@@ -42,10 +43,6 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// </summary>
         private static readonly Regex[] receivingRegeхes = receivingRegeхPatterns.CreateRegexArray();
 
-        ////gm
-
-
-
         /// <summary>
         /// Дополительные правила (баланс, "1 - Помещение приемки и сортировки")
         /// </summary>
@@ -82,25 +79,50 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         }
 
         /// <summary>
-        /// Определение диапазонов в таблицах исходных отчетов по их ключу в заданном листе книги Excel.
+        /// Определение заготовок диапазонов (для данных баланса) в таблицах исходных отчетов по их ключу в заданном листе книги Excel.
+        /// </summary>
+        /// <param name="sheet">Лист рабочей книги Excel.</param>
+        /// <returns>Коллекция заготовок диапазонов для баланса.</returns>
+        private static List<SourceReportRange> SetBalanceSourceReportRangeByKey(in ExcelWorksheet sheet)
+        {
+            List<SourceReportRange> result = [];
+
+            var terminating = (LAST_MARKER_KEY, LAST_MARKER_KEY_OFFSET);
+
+            GetIndexRowByStringKey(in sheet, FOUTH_ROOM_NAME, out int? fouthRoomIndex);
+            GetIndexRowByStringKey(in sheet, FIFTH_ROOM_NAME, out int? fifthRoomIndex);
+
+            result.Add(new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME, additionalRangeRules: additionalRangeRulesReceiving01));
+            result.Add(new(RemainingFromSecondToFifthRoomSourceCells, SECOND_ROOM_NAME, additionalRangeRules: additionalRangeRulesReceiving0205));
+            result.Add(new(RemainingFromSecondToFifthRoomSourceCells, THIRD_ROOM_NAME,
+                terminatingStringValue: !fouthRoomIndex.HasValue || fifthRoomIndex.HasValue ? terminating : null,
+                additionalRangeRules: additionalRangeRulesReceiving0205));
+
+            if (fouthRoomIndex.HasValue)
+                result.Add(new(RemainingFromSecondToFifthRoomSourceCells, FOUTH_ROOM_NAME,
+                terminatingStringValue: !fifthRoomIndex.HasValue ? terminating : null,
+                additionalRangeRules: additionalRangeRulesReceiving0205));
+
+            if (fifthRoomIndex.HasValue)
+                result.Add(new(RemainingFromSecondToFifthRoomSourceCells, FIFTH_ROOM_NAME,
+                terminatingStringValue: terminating,
+                additionalRangeRules: additionalRangeRulesReceiving0205));
+
+            return result;
+        }
+
+        /// <summary>
+        /// Определение заготовок диапазонов в таблицах исходных отчетов по их ключу в заданном листе книги Excel.
         /// </summary>
         /// <param name="key">Ключу исходного отчета.</param>
         /// <param name="sheetName">Имя листа книги.</param>
-        /// <param name="rangeSourceReportRows">Коллекции наборов ячеек диапазона.</param>
         /// <returns>Флаг определения (коллекция набора ячеек диапазона не пуста.)</returns>
-        private static Task<List<SourceReportRange>> SetSourceReportRangeByKey(SourceReportItemKey key, string sheetName)
+        private static Task<List<SourceReportRange>> SetSourceReportRangeByKey(in ExcelWorksheet sheet, SourceReportItemKey key, string sheetName)
         {
             List<SourceReportRange> result = key switch
             {
                 SourceReportItemKey.Ransoms => [new(RansomsSourceCells)],
-                SourceReportItemKey.Balance =>
-                [
-                    new(RemainingFirstRoomSourceCells, FIRST_ROOM_NAME, additionalRangeRules: additionalRangeRulesReceiving01),
-                    new(RemainingFromSecondToFifthRoomSourceCells, SECOND_ROOM_NAME, additionalRangeRules: additionalRangeRulesReceiving0205),
-                    new(RemainingFromSecondToFifthRoomSourceCells, THIRD_ROOM_NAME, additionalRangeRules: additionalRangeRulesReceiving0205),
-                    new(RemainingFromSecondToFifthRoomSourceCells, FOUTH_ROOM_NAME, additionalRangeRules: additionalRangeRulesReceiving0205),
-                    new(RemainingFromSecondToFifthRoomSourceCells, FIFTH_ROOM_NAME, terminatingStringValue: (LAST_MARKER_KEY, LAST_MARKER_KEY_OFFSET), additionalRangeRules: additionalRangeRulesReceiving0205)
-                ],
+                SourceReportItemKey.Balance => SetBalanceSourceReportRangeByKey(in sheet),
                 SourceReportItemKey.WriteOffPoints => [new(WriteOffPointsAndCouriersSourceCells)],
                 SourceReportItemKey.WriteOffPointsViaWarehouseShortage => [new(WriteOffPointsViaWarehouseSourceCells)],
                 SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment => [new(WriteOffPointsViaWarehouseSourceCells)],
@@ -127,11 +149,11 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="startRangeRowIndex">Начальный индекс строки таблицы.</param>
         public static Task GetSourceReportRange(in ExcelWorksheet worksheet, ref List<SourceReportRange> rangeRows, int startRangeRowIndex = 1)
         {
-            // Поиск дипазонов с названиями
+            // Поиск дипазонов с названиями (например, помещений)
             IEnumerable<SourceReportRange>? rangesWithKeys = rangeRows
                 .Where(rs => !string.IsNullOrEmpty(rs.StringRowKey));
 
-            // Поиск дипазонов с разделителями
+            // Поиск дипазона с терминатором (разделителями)
             SourceReportRange? rangeWithTermination = rangeRows
                 .SingleOrDefault(rs => rs.TerminatingStringValue.HasValue);
 
@@ -149,9 +171,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             }
             // Если есть несколько диапазонов
             else if (rangeRows.Count > 1)
-            {
                 SetRowRange(in worksheet, ref rangeRows, rangeWithTermination?.TerminatingStringValue);
-            }
 
             return Task.CompletedTask;
         }
@@ -161,19 +181,18 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// </summary>
         /// <param name="sheet">Лист книги Excel.</param>
         /// <param name="rangesRows"></param>
-        /// <param name="DEFAULT_STEP"></param>
         /// <param name="termination"></param>
         /// <exception cref="ArgumentException"></exception>
         private static bool SetRowRange(in ExcelWorksheet sheet, ref List<SourceReportRange> rangesRows, (string rowStringKey, int offset)? termination)
         {
             // Получение коллекции кортежей по ключевым строкам (строковые ключи и индексы) для поиска диапазонов.
-            Task getKeystringsTask = GetKeyStringsOfRanges(sheet: sheet, rangeSourceReportRows: rangesRows, out List<(string key, int index)>? keyStringsRange);
+            Task getKeystringsTask = GetKeyStringsOfRanges(sheet: sheet, rangeSourceReportRows: rangesRows, out List<(string key, int index)>? keyStringsRanges);
             Task.Run(() => getKeystringsTask);
             getKeystringsTask.Wait();
-            if (keyStringsRange is null) return false; // TODO: Сообщение в лог? Ошибка? 
+            if (keyStringsRanges is null) return false; // TODO: Сообщение в лог? Ошибка? 
 
             // Поиск начальных и количества строк с данными диапазонов.
-            Task setRowsTask = SetStartRowsIndexesAndNumbersRowsOfDataInRanges(in sheet, ref rangesRows, in termination, in keyStringsRange);
+            Task setRowsTask = SetStartRowsIndexesAndNumbersRowsOfDataInRanges(in sheet, ref rangesRows, in termination, in keyStringsRanges);
             Task.Run(() => setRowsTask);
             setRowsTask.Wait();
 
@@ -355,21 +374,20 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 int rowIndex = rowsIndexes[i];
 
                 // Получение данных из строки по индексу
-                var getValuesFromRowTask = GetValuesFromRow(in sheet, rowIndex, in currentSourceCells, out Dictionary<string, ItemForParsing>? values);
+                var getValuesFromRowTask = GetValuesFromRow(in sheet, rowIndex, in currentSourceCells, out RowData? rowData);
                 Task.Run(() => getValuesFromRowTask);
                 getValuesFromRowTask.Wait();
 
                 // Если операция прошла успешно и данные получены - записываем их
-                if (getValuesFromRowTask.Result && values is not null)
-                    rowsRange.SetRowsData(values);
+                if (getValuesFromRowTask.Result && rowData.HasValue)
+                    rowsRange.SetRowsData(rowData.Value);
             }
 
             return Task.CompletedTask;
         }
-
-        public static Task<bool> GetValuesFromRow(in ExcelWorksheet sheet, int rowNumber, in List<SourceReportCell> sourceCells, out Dictionary<string, ItemForParsing>? values)
+        public static Task<bool> GetValuesFromRow(in ExcelWorksheet sheet, int rowNumber, in List<SourceReportCell> sourceCells, out RowData? rowData)
         {
-            values = null;
+            rowData = null;
 
             if (!CheckPresenceAddressesInRow(in sheet, rowNumber, in sourceCells) ||
                 !СheckingValuesInRequiredCells(in sheet, rowNumber, in sourceCells) ||
@@ -382,15 +400,16 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             }
 
             // Getting values
-            values = [];
+            Dictionary<string, TableParsingCell> rowValues = [];
             foreach (var dataCell in dataСellsNonFilters)
             {
                 var colNumber = dataCell.ColumnNumber;
-
-                GetNonCompositeValue(in sheet, rowNumber, ref values, in dataCell);
+                GetNonCompositeValue(in sheet, rowNumber, ref rowValues, in dataCell);
             }
 
-            var success = values?.Count == sourceCells.Count - filterCellsCount;
+            rowData = new(rowNumber: rowNumber, rowValues: rowValues);
+
+            var success = rowValues?.Count == sourceCells.Count - filterCellsCount;
             return Task.Run(() => success);
         }
 
@@ -535,7 +554,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             if (!range.AdditionalRangeRules!.Value.IsGetDataByKeyString)
             {
                 // Заполняем словарь индексов (ключевая строка, дочерние строки)
-                GetIntermediateRowIndices(ref range);
+                GetChildRowIndices(ref range);
 
                 // Оставляем в индексах дочерних строк только соответствующие регуляным выражениям.
                 RemoveIndexesInvalidChildRows(in sheet, ref range);
@@ -579,7 +598,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// </summary>
         /// <param name="validKeyRowIndices">Список индексов ключевых строк.</param>
         /// <returns>Список промежуточных индексов строк.</returns>
-        public static void GetIntermediateRowIndices(ref SourceReportRange range)
+        public static void GetChildRowIndices(ref SourceReportRange range)
         {
             // Входная проверка 
             if (range.RowsIndexes == null || !range.RowsIndexes.Any() || !range.AdditionalRangeRules.HasValue)

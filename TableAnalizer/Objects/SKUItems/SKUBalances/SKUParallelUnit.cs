@@ -6,7 +6,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     /// <summary>
     /// Parallel data unit.
     /// </summary>
-    public class SKUParallelUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
+    public class SKUParallelUnit(in Dictionary<string, TableParsingCell> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
         /// <summary>

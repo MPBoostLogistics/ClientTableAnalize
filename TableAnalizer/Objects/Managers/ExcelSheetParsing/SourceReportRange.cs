@@ -1,8 +1,39 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 {
+
+    public class StringObject
+    {
+        public string Name { get; set; }
+
+        public StringObject(string name)
+        {
+            Name = name;
+        }
+    }
+
+    public class RowDataComparer : IEqualityComparer<RowData>
+    {
+        public bool Equals(RowData x, RowData y) =>
+            x.RowNumber == x.RowNumber && x.RowValues == y.RowValues;
+
+        public int GetHashCode([DisallowNull] RowData rd) => rd.RowNumber.GetHashCode();
+    }
+
+
+    public readonly struct RowData(int rowNumber, Dictionary<string, TableParsingCell> rowValues)
+    {
+        #region Properties
+        public int RowNumber { get; } = rowNumber;
+        public Dictionary<string, TableParsingCell> RowValues { get; } = rowValues;
+        #endregion
+    }
+
+
+
     /// <summary>
     /// Описывает диапазон строк с данными из исходного отчета.
     /// </summary>
@@ -34,11 +65,11 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         public IEnumerable<int>? RowsIndexes { get; set; }
 
         /// <summary>
-        /// Полученный набор данных по прочитанным строкам 
+        /// Коллекция прочинанных строк.
         /// Каждая строка представляет собой словарь значений, где ключ - имя будущего свойства,
         /// а значение - объект ItemForParsing
         /// </summary>
-        public List<Dictionary<string, ItemForParsing>> RowsData { get; private set; } = [];
+        public List<RowData> RowsData { get; private set; } = [];
 
         /// <summary>
         /// Дополнитетельные правила для парсинга диапазона.
@@ -59,8 +90,8 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <summary>
         /// Записывает данные по прочитанным строкам.
         /// </summary>
-        /// <param name="values">Словарь, где ключ - имя свойства, а значение - объект ItemForParsing</param>
-        public void SetRowsData(Dictionary<string, ItemForParsing> values) => RowsData.Add(values);
+        /// <param name="values">Словарь, где ключ - имя свойства, а значение - объект TableParsingCell</param>
+        public void SetRowsData(RowData rowData) => RowsData.Add(rowData);
 
         public override string ToString()
         {

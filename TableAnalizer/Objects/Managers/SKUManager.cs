@@ -142,11 +142,12 @@ namespace TableAnalizer.Objects.Managers
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             // Get data from excel sheet (in ExcelSheetParsingManager)
-            Task<(double time, IEnumerable<Dictionary<string, ItemForParsing>>? data)> getDataTask =
+            Task<(double time, IEnumerable<RowData>? data)> getDataTask =
                 excelSheetsManager.GetDataFromExcelSheet(reportFileKey, excelPackage, workSheetName);
             await Task.Run(() => getDataTask);
             getDataTask.Wait();
             var (time, data) = getDataTask.Result;
+
             if (data is null)
                 return StopFuctionExecuting(ref stopwatch);
 
@@ -239,7 +240,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="rowsWithRawData">List of raw data dictionaries.</param>
         /// <returns>Number of keys in final dictionary.</returns>
         /// <exception cref="ArgumentException">Exception when passing an empty dictionary.</exception>
-        public async Task<int> SaveSKUBalanceUnits(SourceReportItemKey reportFileKey, string workSheetName, List<Dictionary<string, ItemForParsing>> rowsWithRawData)
+        public async Task<int> SaveSKUBalanceUnits(SourceReportItemKey reportFileKey, string workSheetName, List<RowData> rowsWithRawData)
         {
             bool isRansoms = reportFileKey == SourceReportItemKey.Ransoms;
             bool isBalance = reportFileKey == SourceReportItemKey.Balance;
@@ -259,7 +260,7 @@ namespace TableAnalizer.Objects.Managers
             if (isRansoms)
             {
                 var skuRansomsBalanceDataUnits = from rowWithRawData in rowsWithRawData
-                                                 let unit = new SKURansomsBalanceDataUnit(rowWithRawData)
+                                                 let unit = new SKURansomsBalanceDataUnit(rowWithRawData.RowValues)
                                                  group unit by unit.SKUNumber
                                                  into unitGroup
                                                  select unitGroup;
@@ -276,8 +277,10 @@ namespace TableAnalizer.Objects.Managers
             }
             else if (isBalance)
             {
+                OnManagerReached(new("[BALANCE]: Сохраняю данные...", false, false));
+
                 var skuRemainingBalanceDataUnits = from rowWithRawData in rowsWithRawData
-                                                   let unit = new SKURemainingBalanceDataUnit(rowWithRawData)
+                                                   let unit = new SKURemainingDataRow(rowWithRawData.RowNumber, rowWithRawData.RowValues)
                                                    group unit by unit.SKUNumber
                                                    into unitGroup
                                                    select unitGroup;
@@ -287,17 +290,21 @@ namespace TableAnalizer.Objects.Managers
                     long skuNumber = group.Key;
                     if (IsSkuRansomsBalanceUnitsHasKey(skuNumber))
                     {
-                        var list = (((List<SKURemainingBalanceDataUnit>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
-                            throw new InvalidCastException("Невозможно привести List<SKURemainingBalanceDataUnit> к List<ParsingRowEntity>");
+                        var list = (((List<SKURemainingDataRow>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
+                            throw new InvalidCastException($"Невозможно привести {nameof(List<SKURemainingDataRow>)} к {nameof(List<ParsingRowEntity>)}");
 
-                        SkuRemainingBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, list);
+                        var noduplicates = list
+                            .Distinct(new ParsingRowEntityComparer())
+                            .ToList();
+
+                        SkuRemainingBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, noduplicates);
                     }
                 }
             }
             else if (isOutgoingProducts)
             {
                 var skuShippedDataUnits = from rowWithRawData in rowsWithRawData
-                                          let unit = new SKUShippedDataUnit(rowWithRawData)
+                                          let unit = new SKUShippedDataUnit(rowWithRawData.RowValues)
                                           group unit by unit.SKUNumber
                                             into unitGroup
                                           select unitGroup;
@@ -317,7 +324,7 @@ namespace TableAnalizer.Objects.Managers
             else if (isTransfered)
             {
                 var skuTransferedDataUnits = from rowWithRawData in rowsWithRawData
-                                             let unit = new SKUTransferDataUnit(rowWithRawData)
+                                             let unit = new SKUTransferDataUnit(rowWithRawData.RowValues)
                                              group unit by unit.SKUNumber
                                              into unitGroup
                                              select unitGroup;
@@ -337,7 +344,7 @@ namespace TableAnalizer.Objects.Managers
             else if (isWriteOffPoints)
             {
                 var skuWriteOffDataUnits = from rowWithRawData in rowsWithRawData
-                                           let unit = new SKUWriteOffDataUnit(rowWithRawData)
+                                           let unit = new SKUWriteOffDataUnit(rowWithRawData.RowValues)
                                            group unit by unit.SKUNumber
                                            into unitGroup
                                            select unitGroup;
@@ -357,7 +364,7 @@ namespace TableAnalizer.Objects.Managers
             else if (isWriteOffPointsViaWarehouseShortage)
             {
                 var skuWriteOffDataUnits = from rowWithRawData in rowsWithRawData
-                                           let unit = new SKUWriteOffDataUnit(rowWithRawData)
+                                           let unit = new SKUWriteOffDataUnit(rowWithRawData.RowValues)
                                            group unit by unit.SKUNumber
                                            into unitGroup
                                            select unitGroup;
@@ -378,7 +385,7 @@ namespace TableAnalizer.Objects.Managers
             else if (isShipmentAdjustment)
             {
                 var skuAdjustmentDataUnits = from rowWithRawData in rowsWithRawData
-                                             let unit = new SKUAdjustmentShipmentUnit(rowWithRawData)
+                                             let unit = new SKUAdjustmentShipmentUnit(rowWithRawData.RowValues)
                                              group unit by unit.SKUSourceNumber
                                              into unitGroup
                                              select unitGroup;
@@ -416,7 +423,7 @@ namespace TableAnalizer.Objects.Managers
             else if (isAliases)
             {
                 var skuAliasDataUnits = from rowWithRawData in rowsWithRawData
-                                        let unit = new SKUAliasDataUnit(rowWithRawData)
+                                        let unit = new SKUAliasDataUnit(rowWithRawData.RowValues)
                                         group unit by unit.SKUSourceNumber
                                         into unitGroup
                                         select unitGroup;
@@ -443,7 +450,7 @@ namespace TableAnalizer.Objects.Managers
             else if (isPaidShortages)
             {
                 var skuPaidShortageDataUnits = from rowWithRawData in rowsWithRawData
-                                               let unit = new SKUPaidShortageDataUnit(rowWithRawData)
+                                               let unit = new SKUPaidShortageDataUnit(rowWithRawData.RowValues)
                                                where !string.IsNullOrEmpty(unit.ClientLogin) && ClientLogins.Contains(unit.ClientLogin)
                                                group unit by unit.SKUNumber
                                                into unitGroup
@@ -494,15 +501,12 @@ namespace TableAnalizer.Objects.Managers
         public async Task UpdateSKUsFromBalanceUnits(SourceReportItemKey skuReportFileKey, string workSheetName)
         {
             bool isRansoms = skuReportFileKey == SourceReportItemKey.Ransoms;
-            bool isRemaining = skuReportFileKey == SourceReportItemKey.Balance;
+            bool isBalance = skuReportFileKey == SourceReportItemKey.Balance;
             bool isShipped = skuReportFileKey == SourceReportItemKey.OutgoingProducts;
             bool isTransfered = skuReportFileKey == SourceReportItemKey.Transfered;
             bool isWriteOffPoints = skuReportFileKey == SourceReportItemKey.WriteOffPoints;
             bool isWriteOffPointsViaWarehouseShortage = skuReportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseShortage;
             bool isWriteOffPointsViaWarehouseAdjustment = skuReportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment;
-            // bool isResorts = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME;
-            // bool isParellel = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
-            // bool isAliases = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_ALIASES_WORKSHEET_NAME;
             bool isAdjustment = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelSheetParsingManager.ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME;
             bool isPaidShortages = skuReportFileKey == SourceReportItemKey.ShortagesPaid;
 
@@ -576,13 +580,13 @@ namespace TableAnalizer.Objects.Managers
                         SKU tempSKU = new(marketplace, loginsString, skuNumber, skuBrandAndName, ransomsBalance, skuAveragePrice, skuLastPurchaseDate, DeadlineDays, IS_REMOVE_BRAND_FROM_NAME);
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, tempSKU);
                     }
-                    else if (isRemaining)
+                    else if (isBalance)
                     {
-                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKURemainingBalanceDataUnit>().ToList()) ??
+                        var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKURemainingDataRow>().ToList()) ??
                             throw new InvalidCastException("Unable to cast collection to IList<SKURemainingBalanceDataUnit>.");
+                        
+                        SKURemainingBalance remainingBalance = new(skuNumber, [.. units.Distinct(new SKURemainingDataRowComparer())]);
 
-
-                        SKURemainingBalance remainingBalance = new(skuNumber, [.. units]);
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, remainingBalance));
                     }
                     else if (isShipped)
@@ -590,7 +594,7 @@ namespace TableAnalizer.Objects.Managers
                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUShippedDataUnit>().ToList()) ??
                             throw new InvalidCastException("Cannot cast collection to IList<SKUShippedDataUnit>.");
 
-                        SKURemainingBalance remainingBalance = new(skuNumber, units.ToList());
+                        SKURemainingBalance remainingBalance = new(skuNumber, [.. units]);
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, remainingBalance));
                     }
                     else if (isTransfered)
@@ -836,7 +840,6 @@ namespace TableAnalizer.Objects.Managers
 
         private bool IsSkuRansomsBalanceUnitsHasKey(long skuNumber) =>
             SkuRansomsBalanceUnits.GetValue(skuNumber, out List<ParsingRowEntity>? item) && item != null;
-
 
         #endregion
     }

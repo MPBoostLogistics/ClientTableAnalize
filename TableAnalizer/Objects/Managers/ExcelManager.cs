@@ -201,7 +201,7 @@ namespace TableAnalizer.Objects.Managers
                 isCellUsedInClientReport: true, propertyName: nameof(SKUForTargetReport.SKUTransfered) ,
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
             new (columnName: "отгружено пересортом от/на др. арт.", columnWidth: 8.5f, columnFormat: STRING_OR_INT_CELL_FORMAT,
-                isWrapTextInHeader: true, degreeRotationTextInHeader: 90, сommentTextInHeader: string.Empty,
+                isWrapTextInHeader: true, degreeRotationTextInHeader: 90, сommentTextInHeader: "Автоматические пересорты,\nсделанные программой\nсчитаются если по учету\n одних товаров отдано больше,\nа других меньше",
                 isCellUsedInClientReport: true, propertyName:  nameof(SKUForTargetReport.SKUResort),
                 parsingTypeCode: ParsingTypeCode.IntTypeCode, valueСheckingPredicate: null, typeFormula: TypesFormulas.Sum, targetCellSettings: defaultTargetCellSettings),
             new (columnName: "Комментарий к пересортам от/на др. арт", columnWidth: 25, columnFormat: STRING_OR_INT_CELL_FORMAT,

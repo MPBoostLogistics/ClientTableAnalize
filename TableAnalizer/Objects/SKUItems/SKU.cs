@@ -72,9 +72,7 @@ namespace TableAnalizer.Objects.SKUItems
                     case 1:
                         SKUName = isRemoveBrandFromName ? skuBrandAndName[0].Trim() : skuBrandAndNameString.Trim();
                         break;
-                    case 2:
-                    case 3:
-                    case 4:
+                    case 2: case 3: case 4:
                         SKUBrand = skuBrandAndName[0].Trim();
                         SKUName = isRemoveBrandFromName ? skuBrandAndName[1].Trim() : skuBrandAndNameString.Trim();
                         break;
@@ -115,19 +113,14 @@ namespace TableAnalizer.Objects.SKUItems
             SKUResortBalance = skuResortBalance;
 
             if(averagePrice.HasValue && !Equals(averagePrice, AVERAGE_PRICE_DEFAULT)) 
-            {
                 AveragePrice = averagePrice.Value;
-            }
-
+            
             if(maxRansomsDate.HasValue && !Equals(maxRansomsDate, DATEONLY_DEFAULT)) 
-            {
                 MaxRansomsDate = maxRansomsDate.Value;
-            }
-
+            
             if( deadLineDays.HasValue && !Equals(deadLineDays, DEADLINE_DAYS_DEFAULT)) 
-            {
                 DeadLineDays = deadLineDays.Value;
-            }
+            
 
             IsParallelClientsSKU = isParallel;
         }

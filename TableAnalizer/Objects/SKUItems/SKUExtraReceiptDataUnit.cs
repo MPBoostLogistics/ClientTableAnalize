@@ -6,7 +6,7 @@ namespace TableAnalizer.Objects.SKUItems
     /// <summary>
     /// Сущность для хранения единиц экстра-приходов (перемещения, пересорты)
     /// </summary>
-    public class SKUExtraReceiptDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
+    public class SKUExtraReceiptDataUnit(in Dictionary<string, TableParsingCell> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
         public long SKUNumber { get; set; }

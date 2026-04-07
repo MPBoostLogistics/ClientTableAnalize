@@ -11,8 +11,8 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="reportFileKey">Ключ файла отчета.</param>
         /// <param name="package">Пакет (книга) Excel.</param>
         /// <param name="sheetName">Имя рабочего листа книги Excel.</param>
-        /// <returns>Время выполнения задачи и перечисление словарей (ключ - имя будущего свойства, значение - объект ItemForParsing).</returns>
-        public async Task<(double, IEnumerable<Dictionary<string, ItemForParsing>>?)> GetDataFromExcelSheet(SourceReportItemKey reportFileKey, ExcelPackage package, string sheetName)
+        /// <returns>Время выполнения задачи и перечисление словарей (ключ - имя будущего свойства, значение - ячейка парсинга таблицы.)).</returns>
+        public async Task<(double, IEnumerable<RowData>?)> GetDataFromExcelSheet(SourceReportItemKey reportFileKey, ExcelPackage package, string sheetName)
         {
             // 0. Start
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -22,7 +22,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 return (StopFuctionExecuting(ref stopwatch), null); // Сообщение в лог, что-то еще вернуть!
 
             // 2. Получение коллекции диапазонов из целевого листа по ключу отчета.
-            Task<List<SourceReportRange>> setTargetTableColumnsTask = SetSourceReportRangeByKey(reportFileKey, sheetName);
+            Task<List<SourceReportRange>> setTargetTableColumnsTask = SetSourceReportRangeByKey(in sheet!, reportFileKey, sheetName);
             await Task.Run(() => setTargetTableColumnsTask);
             setTargetTableColumnsTask.Wait();
             List<SourceReportRange> rowsRanges = setTargetTableColumnsTask.Result;
@@ -36,7 +36,10 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             getRangeSourceReportRowsTask.Wait();
 
             // 3а. Если есть вложенные правила получения значений для диапазонов 
-            var rowsRangesWithRules = rowsRanges.Where(rr => rr.AdditionalRangeRules.HasValue).ToList();
+            var rowsRangesWithRules = rowsRanges
+                .Where(rr => rr.AdditionalRangeRules.HasValue)
+                .ToList();
+
             if (rowsRangesWithRules != null)
             {
                 for (int i = 0; i < rowsRangesWithRules.Count; i++)
@@ -59,7 +62,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                         select item;
 
             // Stop and return
-            return (StopFuctionExecuting(ref stopwatch), items);
+            return (StopFuctionExecuting(ref stopwatch), items.Distinct(new RowDataComparer()));
         }
 
         /// <summary>
@@ -103,7 +106,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                         OnManagerReached(new($"Ключ {reportFileKey}, {rowsRange.StringRowKey}: значения по правилам, словарь ключевая строка - дочерние строки...", false, false));
                         getDataTask = GetValuesFromTableRange(in sheet, ref rowsRange, childRowsIndexDict!);
                         break;
-                    // Если есть обе коллекции, это ошибка
+                    // Если обе коллекции не пусыте, то это ошибка!
                     case (true, true):
                         OnManagerReached(new($"Ключ {reportFileKey}, {rowsRange.StringRowKey}: получение значений невозможно, есть обе коллекции", true, true));
                         break;
@@ -138,13 +141,13 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             foreach (KeyValuePair<int, List<int>> entry in keyAndChildRowsIndexDict)
             {
                 // Получение данных из строки по индексу
-                var getValuesFromRowTask = GetValuesFromTableRow(in sheet, entry, in currentSourceCells, out Dictionary<string, ItemForParsing>? values);
+                var getValuesFromRowTask = GetValuesFromTableRow(in sheet, entry, in currentSourceCells, out RowData? rowData);
                 Task.Run(() => getValuesFromRowTask);
                 getValuesFromRowTask.Wait();
 
                 // Если операция прошла успешно и данные получены - записываем их
-                if (values is not null)
-                    rowsRange.SetRowsData(values);
+                if (rowData.HasValue)
+                    rowsRange.SetRowsData(rowData.Value);
             }
 
             return Task.CompletedTask;
@@ -158,18 +161,23 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="sourceCells">Коллекция ячеек-шаблонов для парсинга.</param>
         /// <param name="values">Выходной словарь значений (ключ - имя будущего ствойства, значение - объект ItemForParsing)</param>
         /// <returns>Окончание задачи.</returns>
-        private static Task GetValuesFromTableRow(in ExcelWorksheet sheet, in KeyValuePair<int, List<int>> entry, in List<SourceReportCell> sourceCells, out Dictionary<string, ItemForParsing>? values)
+        private static Task GetValuesFromTableRow(in ExcelWorksheet sheet, in KeyValuePair<int, List<int>> entry, in List<SourceReportCell> sourceCells, out RowData? rowData)
         {
-            values = [];
+            Dictionary<string, TableParsingCell>? values = [];
 
             // Проход по ячейкам - заготовкам исходного отчета
             foreach (var sourceCell in sourceCells)
             {
                 if (!sourceCell.IsGetCompositeDataForCell)
-                    GetNonCompositeValue(in sheet, entry.Key, ref values, sourceCell);
+                    GetNonCompositeValue(in sheet, rowNumber: entry.Key, ref values, sourceCell);
                 else
-                    GetCompositeValue(in sheet, entry, ref values, sourceCell);
+                    GetCompositeValue(in sheet, rows: entry, ref values, sourceCell);
             }
+
+            if (values.Count > 0)
+                rowData = new(rowNumber: entry.Key, values);
+            else
+                rowData = null;
 
             return Task.CompletedTask;
         }
@@ -182,12 +190,12 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="values">Выходной словарь значений (ключ - имя будущего ствойства, значение - объект ItemForParsing)</param>
         /// <param name="sourceCell">Ячейка-шаблон лоя парсинга.</param>
         /// <exception cref="ArgumentNullException">Обязательгное значение ячейки оказалось нулевым.</exception>
-        private static void GetCompositeValue(in ExcelWorksheet sheet, in KeyValuePair<int, List<int>> entry, ref Dictionary<string, ItemForParsing> values, in SourceReportCell sourceCell)
+        private static void GetCompositeValue(in ExcelWorksheet sheet, in KeyValuePair<int, List<int>> rows, ref Dictionary<string, TableParsingCell> values, in SourceReportCell sourceCell)
         {
             var colNumber = sourceCell.ColumnNumber;
 
             int compositeCount = default;
-            foreach (var childRowNumber in entry.Value)
+            foreach (var childRowNumber in rows.Value)
             {
                 if (GetValueFromTableCell(in sheet, (childRowNumber, colNumber), out string? stringValue))
                 {
@@ -214,7 +222,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <param name="values">Выходной словарь значений (ключ - имя будущего ствойства, значение - объект ItemForParsing)</param>
         /// <param name="sourceCell">Ячейка-шаблог лоя парсинга.</param>
         /// <exception cref="ArgumentNullException">Обязательгное значение ячейки оказалось нулевым.</exception>
-        private static void GetNonCompositeValue(in ExcelWorksheet sheet, int rowNumber, ref Dictionary<string, ItemForParsing> values, in SourceReportCell sourceCell)
+        private static void GetNonCompositeValue(in ExcelWorksheet sheet, int rowNumber, ref Dictionary<string, TableParsingCell> values, in SourceReportCell sourceCell)
         {
             var colNumber = sourceCell.ColumnNumber;
 

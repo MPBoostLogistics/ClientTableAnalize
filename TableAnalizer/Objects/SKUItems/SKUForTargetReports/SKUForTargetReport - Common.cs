@@ -1,5 +1,5 @@
 
-using System.Diagnostics;
+using System.Text;
 
 namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 {
@@ -106,10 +106,18 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 
         #endregion
         #region Properties - Remaining
+
+        private int skuRemaining;
+
         /// <summary>
         /// Склад: Остаток товаров
+        /// Суммируется при объединении алиасов
         /// </summary>
-        public int SKURemaining { get; set; } // Суммируется при объединении алиасов
+        public int SKURemaining
+        {
+            get => skuRemaining;
+            set => skuRemaining = value;
+        }
         #endregion
         #region Properties - Overruns 
         private int skuOverrunsCount = 0;
@@ -133,7 +141,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 
         #endregion
         #region Constructors
-        public SKUForTargetReport(SKU sku, int extraReceiptFromResortingIn1C, int adjustmentShipmentSum)
+        public SKUForTargetReport(SKU sku, int extraReceiptFromResortingIn1C, int? adjustmentShipmentSum)
         {
             SKULogins = string.Join(", ", sku.ClientLogins);
             SKUmp = sku.Marketplace;
@@ -162,7 +170,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                 SKUReceiptGoods = sku.SKURemainingBalance.SKUReceipt;
 
                 // Корректировка экстра-приходов на 1 помещение
-                SKUReceiptGoods = sku.SKURemainingBalance.SKUReceipt;
                 if (extraReceiptFromResortingIn1C > 0)
                 {
                     SKUReceiptGoods -= extraReceiptFromResortingIn1C;
@@ -173,10 +180,28 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                 SKUShipmentGoods = sku.SKURemainingBalance.SKUShipmentGoods;
 
                 // Корректировка расходов по данным от Клиента
-                if (adjustmentShipmentSum != 0)
+                if (adjustmentShipmentSum != null && adjustmentShipmentSum != 0)
                 {
-                    SKUShipmentGoods += adjustmentShipmentSum;
-                    SKUShipmentComment += $"\nКорректировка по расходам от Клиента:\n{adjustmentShipmentSum}";
+                    var difference = (int)adjustmentShipmentSum;
+                    var oldValue = SKUShipmentGoods;
+
+                    StringBuilder sb = new("Корректировка по расходам от Клиента:\n");
+                    string signString;
+
+                    switch (difference > 0)
+                    {
+                        case true:
+                            signString = "+";
+                            SKUShipmentGoods += difference;
+                            break;
+                        case false:
+                            signString = "-";
+                            SKUShipmentGoods -= Math.Abs(difference);
+                            break;
+                    }
+
+                    sb.Append($"{oldValue} {signString} {Math.Abs(difference)} = {SKUShipmentGoods}");
+                    SKUShipmentComment += sb;
                 }
 
                 SKUTransfered = sku.SKURemainingBalance.SKUTransfered;

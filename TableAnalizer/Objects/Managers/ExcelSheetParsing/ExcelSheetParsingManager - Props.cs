@@ -94,20 +94,20 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         public static List<SourceReportCell> RemainingFirstRoomSourceCells { get; } =
         [
             new(columnNumber: 1,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUNumber),
+                nameOfFutureProperty: nameof(SKURemainingDataRow.SKUNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
                 isRequired: true, filterStrings: null),
             new(columnNumber: 6,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
+                nameOfFutureProperty: nameof(SKURemainingDataRow.SKUBrandAndName),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
                 isRequired: true, filterStrings: null),
             // Приход товаров - получается как композитные данные дочерних строк
             new(columnNumber: 15,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUReceipt),
+                nameOfFutureProperty: nameof(SKURemainingDataRow.SKUReceipt),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
                 isRequired: false, filterStrings: null, isGetCompositeDataForCell: true),
             new(columnNumber: 17,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKURemaining),
+                nameOfFutureProperty: nameof(SKURemainingDataRow.SKURemaining),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
                 isRequired: false, filterStrings: null)
         ];
@@ -118,15 +118,15 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         public static List<SourceReportCell> RemainingFromSecondToFifthRoomSourceCells { get; } =
         [
             new(columnNumber: 1,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUNumber),
+                nameOfFutureProperty: nameof(SKURemainingDataRow.SKUNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
                 isRequired: true, filterStrings: null),
             new(columnNumber: 6,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKUBrandAndName),
+                nameOfFutureProperty: nameof(SKURemainingDataRow.SKUBrandAndName),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
                 isRequired: true, filterStrings: null),
             new(columnNumber: 17,
-                nameOfFutureProperty: nameof(SKURemainingBalanceDataUnit.SKURemaining),
+                nameOfFutureProperty: nameof(SKURemainingDataRow.SKURemaining),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
                 isRequired: false, filterStrings: null)
         ];
