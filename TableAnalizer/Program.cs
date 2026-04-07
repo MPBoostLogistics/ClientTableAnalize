@@ -38,6 +38,11 @@ internal class Program
     private static bool isCheckAdditionalData;
 
     private static bool isAutoResorting;
+
+    /// <summary>
+    /// Флаг учета статуса "В работе" при автопересортах.
+    /// </summary>
+    private static bool isConsiderInProgressStatusInAutoResorting;
     private static bool isCombineAliases;
 
     private static readonly DateOnly orderPeriodStartDateDefault = DateOnly.Parse("2022-12-26");
@@ -116,6 +121,7 @@ internal class Program
             isCheckOutgoingProducts = flagsSection.GetValue<bool>(nameof(isCheckOutgoingProducts));
             isCheckAdditionalData = flagsSection.GetValue<bool>(nameof(isCheckAdditionalData));
             isAutoResorting = flagsSection.GetValue<bool>("isAutoResorting");
+            isConsiderInProgressStatusInAutoResorting = flagsSection.GetValue<bool>("isConsiderInProgressStatusInAutoResorting");
             isCombineAliases = flagsSection.GetValue<bool>("isCombineAliases");
 
             IConfigurationSection? messagesSection = appConfig.GetSection("Messages");
@@ -332,8 +338,8 @@ internal class Program
             deletOldReportsTask.Wait();
 
             // Make and combine skus for target report
-            Task<List<SKUForTargetReport>>? skusForTargetReportTask;
-            List<SKUForTargetReport>? skuForTargetReports = [];
+            Task<List<SKUForFinalReport>>? skusForTargetReportTask;
+            List<SKUForFinalReport>? skuForTargetReports = [];
 
             skusForTargetReportTask = !isCombineAliases || skuManager!.SkuAliasesBalanceUnits.Count() == 0 ?
                 skuManager!.MakeSkusForTargetReport() :
@@ -344,18 +350,18 @@ internal class Program
             skuForTargetReports = skusForTargetReportTask.Result;
 
             if (isTracing)
-                await TracingProgramExecution(new($"Articles for final report: {skusForTargetReportTask.Result.Count}.", false, false));
+                await TracingProgramExecution(new($"Артикулов для финального отчета: {skusForTargetReportTask.Result.Count}.", false, false));
 
             // Article analysis and automatic re-sorting
             if (isAutoResorting)
             {
                 Task[] fixAndAutoResortTasks =
                 [
-                    AnalyticalManager.FixReceiptBySKUsOfParallelClients(ref skuForTargetReports),
-                    AnalyticalManager.FixWriteOffByPointsThroughWarehouse(ref skuForTargetReports),
-                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByOutgoing, true),
-                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByTransfer, true),
-                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, true),
+                    AnalyticalManager.FixReceiptBySKUsOfParallelClients(ref skuForTargetReports, isConsiderInProgressStatusInAutoResorting),
+                    AnalyticalManager.FixWriteOffByPointsThroughWarehouse(ref skuForTargetReports, isConsiderInProgressStatusInAutoResorting),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByOutgoing, isConsiderInProgressStatusInAutoResorting),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByTransfer, isConsiderInProgressStatusInAutoResorting),
+                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, isConsiderInProgressStatusInAutoResorting),
                     AnalyticalManager.FixExtraReceipts(ref skuForTargetReports, true),
 
                 ];

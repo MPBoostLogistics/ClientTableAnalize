@@ -1,11 +1,11 @@
-namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports 
+namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 {
     /// <summary>
     /// Delay and overruns part of "SKUForTargetReport" type.
     /// </summary>
-    public partial class SKUForTargetReport 
+    public partial class SKUForFinalReport
     {
-         #region Properties - DeliveryDelay  
+        #region Properties - DeliveryDelay  
         /// <summary>
         /// Задержка довоза, всего
         /// </summary>
@@ -72,33 +72,33 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             switch (sellmentStatus)
             {
                 case SKUSellmentStatus.DelayDeliveryFromPoints:
-                    SKUDeliveryDelayPoints = SKURansomsWaiting > SKUSummarySettlement && 
-                        SKURansomsWaiting < SKUReceiptTotal ? 
+                    SKUDeliveryDelayPoints = SKURansomsWaiting > SKUSummarySettlement &&
+                        SKURansomsWaiting < SKUReceiptTotal ?
                         SKURansomsWaiting - SKUReceiptTotal :
                         0;
                     break;
                 case SKUSellmentStatus.DelayFromWarehouse:
-                    SKUDeliveryDelayWarehouse = SKURansomsWaiting > SKUSummarySettlement && 
-                        (SKURansomsWaiting - SKUSummarySettlement - SKUDeliveryDelayOrganization - SKUDeliveryDelayPoints) > 0 ? 
-                        SKURansomsWaiting - SKUDeliveryDelayPoints - SKUDeliveryDelayOrganization - SKUSummarySettlement : 
+                    SKUDeliveryDelayWarehouse = SKURansomsWaiting > SKUSummarySettlement &&
+                        (SKURansomsWaiting - SKUSummarySettlement - SKUDeliveryDelayOrganization - SKUDeliveryDelayPoints) > 0 ?
+                        SKURansomsWaiting - SKUDeliveryDelayPoints - SKUDeliveryDelayOrganization - SKUSummarySettlement :
                     0;
                     break;
                 default:
                     break;
             }
         }
-       
-        private void CalculateOverruns() 
+
+        private void CalculateOverruns()
         {
             var sellmentAmount = SKUSummarySettlement + SKURemaining;
-            if(SKURansomsWaiting < sellmentAmount) 
+            if (SKURansomsWaiting < sellmentAmount)
             {
                 SKUOverrunsCount = SKURansomsWaiting - sellmentAmount;
             }
         }
-       
-       #endregion
 
-        
+        #endregion
+
+
     }
 }

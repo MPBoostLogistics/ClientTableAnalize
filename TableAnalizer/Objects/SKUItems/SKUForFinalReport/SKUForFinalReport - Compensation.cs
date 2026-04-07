@@ -6,7 +6,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
     /// <summary>
     /// Сompensation / shortages part of "SKUForTargetReport" type.
     /// </summary>
-    public partial class SKUForTargetReport
+    public partial class SKUForFinalReport
     {
         #region Properties
         /// <summary>

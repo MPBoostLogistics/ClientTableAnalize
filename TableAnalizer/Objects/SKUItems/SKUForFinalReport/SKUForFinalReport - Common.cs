@@ -3,7 +3,7 @@ using System.Text;
 
 namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 {
-    public partial class SKUForTargetReport
+    public partial class SKUForFinalReport
     {
         #region Properties
 
@@ -141,7 +141,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 
         #endregion
         #region Constructors
-        public SKUForTargetReport(SKU sku, int extraReceiptFromResortingIn1C, int? adjustmentShipmentSum)
+        public SKUForFinalReport(SKU sku, int extraReceiptFromResortingIn1C, int? adjustmentShipmentSum)
         {
             SKULogins = string.Join(", ", sku.ClientLogins);
             SKUmp = sku.Marketplace;

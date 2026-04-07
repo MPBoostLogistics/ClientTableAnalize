@@ -584,7 +584,7 @@ namespace TableAnalizer.Objects.Managers
                     {
                         var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKURemainingDataRow>().ToList()) ??
                             throw new InvalidCastException("Unable to cast collection to IList<SKURemainingBalanceDataUnit>.");
-                        
+
                         SKURemainingBalance remainingBalance = new(skuNumber, [.. units.Distinct(new SKURemainingDataRowComparer())]);
 
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, remainingBalance));
@@ -673,9 +673,9 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        public async Task<List<SKUForTargetReport>> MakeSkusForTargetReport()
+        public async Task<List<SKUForFinalReport>> MakeSkusForTargetReport()
         {
-            List<SKUForTargetReport> skuForTargetReports = [];
+            List<SKUForFinalReport> skuForTargetReports = [];
 
             foreach (var (_, targetSku) in SKUs.GetValuesList())
             {
@@ -713,13 +713,13 @@ namespace TableAnalizer.Objects.Managers
                 .OrderByDescending(p => p.SKUDate)];
         }
 
-        public async Task<List<SKUForTargetReport>>? MakeAndCombineSkusForTargetReport()
+        public async Task<List<SKUForFinalReport>>? MakeAndCombineSkusForTargetReport()
         {
             // Make skus for target report
-            Task<List<SKUForTargetReport>>? skusForTargetReportTask = MakeSkusForTargetReport();
+            Task<List<SKUForFinalReport>>? skusForTargetReportTask = MakeSkusForTargetReport();
             await Task.Run(() => skusForTargetReportTask);
             skusForTargetReportTask.Wait();
-            List<SKUForTargetReport> result = skusForTargetReportTask.Result;
+            List<SKUForFinalReport> result = skusForTargetReportTask.Result;
 
             // Combine skus for target report
             if (SkuAliasesBalanceUnits.Count() > 0)
@@ -730,7 +730,7 @@ namespace TableAnalizer.Objects.Managers
             return result;
         }
 
-        private void CombineSkusForTargetReport(ref List<SKUForTargetReport> skus)
+        private void CombineSkusForTargetReport(ref List<SKUForFinalReport> skus)
         {
             var aliases = SkuAliasesBalanceUnits.GetValuesList();
 
@@ -744,13 +744,13 @@ namespace TableAnalizer.Objects.Managers
             }
         }
 
-        private static void CombineSkus(SKUAliasDataUnit aliasDataUnit, ref List<SKUForTargetReport> skus)
+        private static void CombineSkus(SKUAliasDataUnit aliasDataUnit, ref List<SKUForFinalReport> skus)
         {
-            List<SKUForTargetReport> combines = [];
+            List<SKUForFinalReport> combines = [];
             List<long> sources = [];
 
             // Find tagret sku
-            SKUForTargetReport? target = skus.SingleOrDefault(s => s.SKUNumber == aliasDataUnit.SKUSourceNumber);
+            SKUForFinalReport? target = skus.SingleOrDefault(s => s.SKUNumber == aliasDataUnit.SKUSourceNumber);
             if (target is not null)
             {
                 combines.Add(target);
@@ -759,7 +759,7 @@ namespace TableAnalizer.Objects.Managers
             // Find source skus
             foreach (var sourceSKUNumber in aliasDataUnit.SKUAliasNumbers)
             {
-                SKUForTargetReport? source = skus.SingleOrDefault(s => s.SKUNumber == sourceSKUNumber);
+                SKUForFinalReport? source = skus.SingleOrDefault(s => s.SKUNumber == sourceSKUNumber);
                 if (source is not null)
                 {
                     combines.Add(source);

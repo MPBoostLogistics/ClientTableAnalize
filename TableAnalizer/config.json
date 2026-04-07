@@ -6,6 +6,7 @@
     "isCheckOutgoingProducts": true,
     "isCheckAdditionalData": true,
     "isAutoResorting": true,
+    "isConsiderInProgressStatusInAutoResorting": false,
     "isCombineAliases": false
   },
   "Messages": {

@@ -3,7 +3,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
     /// <summary>
     /// Analytical part of the "SKUForTargetReport" type.
     /// </summary>
-    public partial class SKUForTargetReport
+    public partial class SKUForFinalReport
     {
         #region Properties
         /// <summary>
