@@ -1,12 +1,5 @@
-using System.Text.RegularExpressions;
-using TableAnalizer.Utils;
-
 namespace TableAnalizer.Objects.ReportItems
 {
-    
-
-
-
     public class SourceReportFileItem
     {
         #region Properties

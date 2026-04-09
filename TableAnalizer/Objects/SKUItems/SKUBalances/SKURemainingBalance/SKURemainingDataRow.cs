@@ -40,9 +40,14 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         public string SKUBrandAndName { get; private set; } = string.Empty;
 
         /// <summary>
-        /// Приход товаров на склад
+        /// Приход товаров на склад (товарами)
         /// </summary>
         public int SKUReceipt { get; private set; }
+
+        /// <summary>
+        /// Списано товаров по ордерам пересорта.
+        /// </summary>
+        public int SKUWriteOffOnResortOrders { get; set; } = 0;
 
         /// <summary>
         /// Остаток товаров на складе.

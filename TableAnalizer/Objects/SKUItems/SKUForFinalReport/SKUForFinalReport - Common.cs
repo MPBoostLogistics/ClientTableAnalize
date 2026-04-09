@@ -46,6 +46,16 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// </summary>
         public int SKUReceiptGoods { get; set; } = 0; // Суммируется при объединении алиасов
 
+        /// <summary>
+        /// Оприходовано по ордерам пересорта.
+        /// </summary>
+        public int SKUReceiptsOnResortOrders { get; set; } = 0;
+
+        /// <summary>
+        /// Списано по ордерам пересорта.
+        /// </summary>
+        public int SKUWriteOffOnResortOrders { get; set; } = 0;
+
         #endregion
         #region Properties - Comments
         private string skuReceipComment = string.Empty;
@@ -141,7 +151,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 
         #endregion
         #region Constructors
-        public SKUForFinalReport(SKU sku, int extraReceiptFromResortingIn1C, int? adjustmentShipmentSum)
+        public SKUForFinalReport(SKU sku, int? adjustmentShipmentSum)
         {
             SKULogins = string.Join(", ", sku.ClientLogins);
             SKUmp = sku.Marketplace;
@@ -166,15 +176,13 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             // Fill SKURemainingBalance
             if (sku.SKURemainingBalance is not null)
             {
-                // Приход товаров
-                SKUReceiptGoods = sku.SKURemainingBalance.SKUReceipt;
+                // Списано из прихода по ордерам пересорта
+                SKUWriteOffOnResortOrders = sku.SKURemainingBalance.SKUWriteOffOnResortOrders;
 
-                // Корректировка экстра-приходов на 1 помещение
-                if (extraReceiptFromResortingIn1C > 0)
-                {
-                    SKUReceiptGoods -= extraReceiptFromResortingIn1C;
-                    SKUReceipComment = $"Удалено из экстра-приходов (перемещения, пересорты): {extraReceiptFromResortingIn1C}";
-                }
+                // Приход товарами и ордерами пересортов (минус расход ордерами пересорьтов)
+                SKUReceiptGoods = SKUWriteOffOnResortOrders > 0 ?
+                    sku.SKURemainingBalance.SKUReceipt - SKUWriteOffOnResortOrders :
+                    sku.SKURemainingBalance.SKUReceipt;
 
                 // Расход товаров
                 SKUShipmentGoods = sku.SKURemainingBalance.SKUShipmentGoods;

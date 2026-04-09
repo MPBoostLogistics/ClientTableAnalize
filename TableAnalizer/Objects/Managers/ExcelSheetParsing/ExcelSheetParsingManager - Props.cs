@@ -89,7 +89,8 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         ];
 
         /// <summary>
-        /// Набор ячеек для парсинга листа Excel (отчет по приходам и остаткам на складе - 1 помещение).
+        /// Набор ячеек для парсинга листа Excel (отчет по приходам, 
+        /// расх и остаткам на складе - 1 помещение).
         /// </summary>
         public static List<SourceReportCell> RemainingFirstRoomSourceCells { get; } =
         [
@@ -104,6 +105,10 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             // Приход товаров - получается как композитные данные дочерних строк
             new(columnNumber: 15,
                 nameOfFutureProperty: nameof(SKURemainingDataRow.SKUReceipt),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: false, filterStrings: null, isGetCompositeDataForCell: true),
+            new(columnNumber: 16,
+                nameOfFutureProperty: nameof(SKURemainingDataRow.SKUWriteOffOnResortOrders),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
                 isRequired: false, filterStrings: null, isGetCompositeDataForCell: true),
             new(columnNumber: 17,

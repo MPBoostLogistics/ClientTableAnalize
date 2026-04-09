@@ -34,26 +34,35 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <summary>
         /// Паттерны регулярных выражений для проверки строк прихода (по приходным ордерам).
         /// </summary>
+
+        private static readonly List<string> RESORT_ORDER_PATTERN = [@"^Ордер\sна\sотражение\sпересортицы\sтоваров\s\S+\sот\s\S+\s\S+$"];
+
+        /// Паттерны регулярных выражения для прихода товарами (приходные ордера, ордера пересортицы)
         private static readonly List<string> receivingRegeхPatterns = [
             @"^Приходный\sордер\sна\sтовары\s\S+\sот\s\S+\s\S+$",
-            //@"^Ордер\sна\sотражение\sпересортицы\sтоваров\s\S+\sот\s\S+\s\S+$"
+            RESORT_ORDER_PATTERN.First()
         ];
+
         /// <summary>
         /// Регулярные выражения для проверки строк на наличие цифр (для артикулов).
         /// </summary>
         private static readonly Regex[] receivingRegeхes = receivingRegeхPatterns.CreateRegexArray();
 
+        private static readonly Regex[] writeOffByRegex = RESORT_ORDER_PATTERN.CreateRegexArray();
+
+
         /// <summary>
-        /// Дополительные правила (баланс, "1 - Помещение приемки и сортировки")
+        /// Дополнительные правила (баланс, "1 - Помещение приемки и сортировки")
         /// </summary>
         private static readonly AdditionalRangeRules additionalRangeRulesReceiving01 =
-            new(keyStringColumn: 1, keyStringsRegex: digitsRegexes, isGetDataByKeyString: false, childStringColumn: 1, childStringRegexes: receivingRegeхes);
+            new(keyStringColumn: 1, keyStringsRegexes: digitsRegexes, isGetDataByKeyString: false, 
+            childStringColumn: 1, childStringRegexes: receivingRegeхes);
 
         /// <summary>
         /// Дополительные правила (баланс, помещения 2-5)
         /// </summary>
         private static readonly AdditionalRangeRules additionalRangeRulesReceiving0205 =
-            new(keyStringColumn: 1, keyStringsRegex: digitsRegexes, isGetDataByKeyString: true);
+            new(keyStringColumn: 1, keyStringsRegexes: digitsRegexes, isGetDataByKeyString: true);
 
         #endregion
 

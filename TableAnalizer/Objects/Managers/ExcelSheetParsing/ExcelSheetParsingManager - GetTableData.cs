@@ -56,7 +56,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
             await Task.Run(() => getRawDataTask);
             getRawDataTask.Wait();
 
-            // 5. Объединение коллекиций.
+            // 5. Объединение коллекций
             var items = from sourceReportRowsRange in rowsRanges
                         from item in sourceReportRowsRange.RowsData
                         select item;
@@ -66,22 +66,22 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         }
 
         /// <summary>
-        /// Получает данные из строк диапазоноы таблицы Excel
+        /// Получает данные из дочерних строк диапазонов таблицы Excel относительно родительских.
         /// </summary>
         /// <param name="sheet">Рабочий лист книги Excel.</param>
         /// <param name="rowsRanges">Коллекция заготовок-дипазонов.</param>
         /// <returns>Флаг выполнения операции.</returns>
         public Task GetDataFromSourceReportRanges(in SourceReportItemKey reportFileKey, in ExcelWorksheet sheet, ref List<SourceReportRange> rowsRanges)
         {
-            // 1. Итерация по коллекции диапазонов
+            // 1. Итерация по коллекции диапазонов таблицы (например, по помещениям склада).
             for (int i = 0; i < rowsRanges.Count; i++)
             {
-                SourceReportRange? rowsRange = rowsRanges[i];
+                SourceReportRange? currentRowsRange = rowsRanges[i];
 
-                if (rowsRange is null || rowsRange.RowsIndexes is null) continue;
+                if (currentRowsRange is null || currentRowsRange.RowsIndexes is null) continue;
 
                 // 2. Определение коллекций строк для парсинга.
-                Task getRowIndicesForParsingTask = GetRowIndicesForParsing(in rowsRange,
+                Task getRowIndicesForParsingTask = GetRowIndicesForParsing(in currentRowsRange,
                     out List<int>? keyRowsIndexRange,
                     out Dictionary<int, List<int>>? childRowsIndexDict);
                 Task.Run(() => getRowIndicesForParsingTask);
@@ -93,22 +93,22 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 {
                     // Если коллекции пустые, получаем данные по RowsIndexes в SourceReportRange
                     case (false, false):
-                        OnManagerReached(new($"Ключ {reportFileKey}, {rowsRange.StringRowKey}: значения без правил и по всем строкам...", false, false));
-                        getDataTask = GetDataFromRange(in sheet, ref rowsRange);
+                        OnManagerReached(new($"Ключ {reportFileKey}, {currentRowsRange.StringRowKey}: значения без правил и по всем строкам...", false, false));
+                        getDataTask = GetDataFromRange(in sheet, ref currentRowsRange);
                         break;
                     // Если есть только коллекция ключевых строк, получаем данные по keyRowsIndexRange правил в SourceReportRange
                     case (true, false):
-                        OnManagerReached(new($"Ключ {reportFileKey}, {rowsRange.StringRowKey}: значения по правилам и только по ключевым строкам...", false, false));
-                        getDataTask = GetDataFromRange(in sheet, ref rowsRange, keyRowsIndexRange);
+                        OnManagerReached(new($"Ключ {reportFileKey}, {currentRowsRange.StringRowKey}: значения по правилам и только по ключевым строкам...", false, false));
+                        getDataTask = GetDataFromRange(in sheet, ref currentRowsRange, keyRowsIndexRange);
                         break;
                     // Если есть только коллекция дочерних строк, получаем данные по childRowsIndexDict правил в SourceReportRange
                     case (false, true):
-                        OnManagerReached(new($"Ключ {reportFileKey}, {rowsRange.StringRowKey}: значения по правилам, словарь ключевая строка - дочерние строки...", false, false));
-                        getDataTask = GetValuesFromTableRange(in sheet, ref rowsRange, childRowsIndexDict!);
+                        OnManagerReached(new($"Ключ {reportFileKey}, {currentRowsRange.StringRowKey}: значения по правилам, словарь ключевая строка - дочерние строки...", false, false));
+                        getDataTask = GetValuesFromTableRange(in sheet, ref currentRowsRange, childRowsIndexDict!);
                         break;
                     // Если обе коллекции не пусыте, то это ошибка!
                     case (true, true):
-                        OnManagerReached(new($"Ключ {reportFileKey}, {rowsRange.StringRowKey}: получение значений невозможно, есть обе коллекции", true, true));
+                        OnManagerReached(new($"Ключ {reportFileKey}, {currentRowsRange.StringRowKey}: получение значений невозможно, есть обе коллекции", true, true));
                         break;
                 }
 
@@ -118,7 +118,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                     getDataTask.Wait();
 
                     // Перезапись диапазона
-                    rowsRanges[i] = rowsRange;
+                    rowsRanges[i] = currentRowsRange;
                 }
             }
 

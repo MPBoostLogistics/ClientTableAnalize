@@ -8,6 +8,10 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         #region Properties
         public long SKUNumber { get; private set; } = default;
         public int SKUReceipt { get; private set; }
+        /// <summary>
+        /// Списано по ордерам пересорта.
+        /// </summary>
+        public int SKUWriteOffOnResortOrders { get; private set; } = 0;
         public int SKUShipmentGoods { get; private set; } = 0;
         public int SKUTransfered { get; private set; } = 0;
         public int SKURemaining { get; private set; } = 0;
@@ -21,11 +25,10 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
 
             SKUReceipt = skuRemainingUnits
                 .Aggregate(0, (acc, unit) => acc + unit.SKUReceipt);
+            SKUWriteOffOnResortOrders = skuRemainingUnits
+                .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffOnResortOrders);
             SKURemaining = skuRemainingUnits
                 .Aggregate(0, (acc, unit) => acc + unit.SKURemaining);
-
-            if (SKUNumber == 539735448)
-                Console.WriteLine(this.ToString());
         }
 
         // For create from SKUShippedDataUnit collection.
@@ -45,11 +48,12 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         }
 
         // For create new balance from repo.
-        public SKURemainingBalance(long number, int receipt, int shipment, int transfered, int remaining)
+        public SKURemainingBalance(long number, int receipt, int writeOffOnResort, int shipment, int transfered, int remaining)
         {
             SKUNumber = number;
 
             SKUReceipt = receipt;
+            SKUWriteOffOnResortOrders = writeOffOnResort;
             SKUShipmentGoods = shipment;
             SKUTransfered = transfered;
             SKURemaining = remaining;
@@ -72,8 +76,8 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
 
         public override int GetHashCode() => SKUNumber.GetHashCode();
 
-        public override string ToString() => $"Баланс товаров по арт ({SKUNumber}):" +
-            $" приход {SKUReceipt}, расход {SKUShipmentGoods}" +
+        public override string ToString() => $"Баланс арт ({SKUNumber}):" +
+            $" приход {SKUReceipt}, списано по пересортам {SKUWriteOffOnResortOrders} расход {SKUShipmentGoods}" +
             $" передано {SKUTransfered}, остаток {SKURemaining}";
 
         #endregion Functionality

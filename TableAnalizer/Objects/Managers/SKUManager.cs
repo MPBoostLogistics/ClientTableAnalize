@@ -51,10 +51,6 @@ namespace TableAnalizer.Objects.Managers
         public IRepository<long, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseShortageUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<long, List<ParsingRowEntity>> SkuWriteOffFromPointsViaWarehouseAdjustmentUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<long, List<ParsingRowEntity>> SkuPaidShortagesBalanceUnits { get; } = new ParsingRowEntityRepo();
-        /// <summary>
-        /// Коллекция единиц экстра-прихода (пересорты, перемещения между помещениями)
-        /// </summary>
-        public IRepository<long, List<ParsingRowEntity>> SkuExtraReceiptBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<long, List<ParsingRowEntity>> SkuAliasesBalanceUnits { get; } = new ParsingRowEntityRepo();
         /// <summary>
         /// Коллекция единиц для корректировке расхода товаров
@@ -681,17 +677,6 @@ namespace TableAnalizer.Objects.Managers
             {
                 if (targetSku is null) continue;
 
-                // Поиск экстра-приходов от перемещений и пересортов
-                int extraReceiptSum = 0;
-                SkuExtraReceiptBalanceUnits.GetValue(targetSku.SKUNumber, out List<ParsingRowEntity>? units);
-                if (units != null && units.Count > 0)
-                {
-                    // Add resort element to SKU
-                    var unit = units.First();
-                    var extraReceiptUnit = (SKUExtraReceiptDataUnit)unit;
-                    extraReceiptSum = extraReceiptUnit.SKUExtraReceiptCount;
-                }
-
                 // Поиск корректировок расхода от клиента
                 int adjustmentWriteOffSum = 0;
                 SkuShipmentAdjustmentUnits.GetValue(targetSku.SKUNumber, out List<ParsingRowEntity>? a_units);
@@ -704,7 +689,7 @@ namespace TableAnalizer.Objects.Managers
                 }
 
                 // Add SKUForTargetReport with extra receipt
-                skuForTargetReports.Add(new(targetSku, extraReceiptSum, adjustmentWriteOffSum));
+                skuForTargetReports.Add(new(targetSku, adjustmentWriteOffSum));
             }
 
             await Task.Delay(10); // dummy 

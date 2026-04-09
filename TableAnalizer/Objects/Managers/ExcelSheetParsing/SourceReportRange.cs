@@ -111,7 +111,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
     /// <summary>
     /// Дополнительные правила для обработки диапазона (поиска необходимых строк).
     /// </summary>
-    public readonly struct AdditionalRangeRules(int keyStringColumn, Regex[] keyStringsRegex,
+    public readonly struct AdditionalRangeRules(int keyStringColumn, Regex[] keyStringsRegexes,
         bool isGetDataByKeyString, int? childStringColumn = null, Regex[]? childStringRegexes = null)
     {
         /// <summary>
@@ -122,7 +122,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// <summary>
         /// Паттерн для поиска ключевых строк.
         /// </summary>
-        public Regex[] KeyStringRegex { get; } = keyStringsRegex;
+        public Regex[] KeyStringRegex { get; } = keyStringsRegexes;
 
         /// <summary>
         /// Флаг получения данных только по ключевой строке.

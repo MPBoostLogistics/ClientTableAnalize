@@ -89,10 +89,11 @@ namespace TableAnalizer.Objects.Repositories
 
             // SKURemainingBalance
             int skuReceipt = CombineIntValues(oldValue.SKURemainingBalance?.SKUReceipt ?? 0, newValue.SKURemainingBalance?.SKUReceipt ?? 0);
+            int skuWriteOffOnResort = CombineIntValues(oldValue.SKURemainingBalance?.SKUWriteOffOnResortOrders ?? 0, newValue.SKURemainingBalance?.SKUWriteOffOnResortOrders ?? 0);
             int skuShipmentGoods = CombineIntValues(oldValue.SKURemainingBalance?.SKUShipmentGoods ?? 0, newValue.SKURemainingBalance?.SKUShipmentGoods ?? 0);
             int skuTransfered = CombineIntValues(oldValue.SKURemainingBalance?.SKUTransfered ?? 0, newValue.SKURemainingBalance?.SKUTransfered ?? 0);
             int skuRemaining = CombineIntValues(oldValue.SKURemainingBalance?.SKURemaining ?? 0, newValue.SKURemainingBalance?.SKURemaining ?? 0);
-            SKURemainingBalance skuRemainingBalance = new(number: skuNumber, receipt: skuReceipt, shipment: skuShipmentGoods, transfered: skuTransfered, remaining: skuRemaining);
+            SKURemainingBalance skuRemainingBalance = new(number: skuNumber, receipt: skuReceipt, writeOffOnResort: skuWriteOffOnResort, shipment: skuShipmentGoods, transfered: skuTransfered, remaining: skuRemaining);
 
             // SKUWriteOffBalance
             SKUWriteOffBalance? skuWriteOffBalance = null;
