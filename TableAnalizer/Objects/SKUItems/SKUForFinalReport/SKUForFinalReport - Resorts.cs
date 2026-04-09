@@ -3,7 +3,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
     /// <summary>
     /// Resorts part of "SKUForTargetReport" type.
     /// </summary>
-    public partial class SKUForTargetReport
+    public partial class SKUForFinalReport
     {
         #region Fields
         private const string RESORT_CONSUMPTION_FIRST_LINE = "Пересортица расходов:";

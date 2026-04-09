@@ -1,6 +1,4 @@
 ﻿using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
 using TableAnalizer.Objects.ReportItems;
@@ -15,24 +13,7 @@ namespace TableAnalizer.Objects.Managers
 
         private string? logisticsReportFirstName;
 
-        /// <summary>
-        /// Название листа в доп первичном отчете - "Экстра-приходы"
-        /// (экстра-приходы на помещение 1 из-за пересортов)
-        /// </summary>
-        public const string ADDREPORT_EXTRA_RECEIPT_WORKSHEET_NAME = "Экстра-приходы";
-
-
-        /// <summary>
-        /// Название листа в доп первичном отчете - "Алиасы"
-        /// </summary>
-        public const string ADDREPORT_ALIASES_WORKSHEET_NAME = "Алиасы";
-
-        /// <summary>
-        /// Название листа в доп первичном отчете - "Корректировки расхода"
-        /// </summary>
-        public const string ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME = "Корректировки расхода";
-
-
+      
         /// <summary>
         /// Dictionary of primary report files.
         /// </summary>
@@ -64,7 +45,7 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         public static string BaseFinalReportsDirectoryPath { get; private set; } = string.Empty;
 
-        public static TargetReportRecipientType? ReportRecipientType { get; set; }
+        // public static TargetReportRecipientType? ReportRecipientType { get; set; }
 
         /// <summary>
         /// Collection of source report files
@@ -269,19 +250,6 @@ namespace TableAnalizer.Objects.Managers
 
             await DefineDirInfoForClientTargetReports(BaseFinalReportsDirectoryPath);
         }
-
-        // private void MakeSourceReportFileItem(FileInfo fileInfo, SourceReportItemKey? key, string? loginsFileName, bool isControlAgeOfData)
-        // {
-        //     var sorceReportFile = new SourceReportFileItem(key.Value, fileInfo, isControlAgeOfData, DataAgeLimitInDays);
-
-        //     if (key.Value == SourceReportItemKey.Ransoms && !string.IsNullOrEmpty(loginsFileName))
-        //     {
-        //         ClientLogins = GetLoginsFromFilename(loginsFileName);
-        //     }
-
-        //     // Store SourceReportFiles
-        //     SourceReportFileItems[key.Value] = sorceReportFile;
-        // }
 
         /// <summary>
         /// Get source report file for one client.

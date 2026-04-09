@@ -1,3 +1,4 @@
+using TableAnalizer.Objects.Managers.ExcelSheetParsing;
 using TableAnalizer.Objects.Parsing;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances
@@ -6,7 +7,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     /// Сущность для корректировок расхода по данным от клиента
     /// </summary>
     /// <param name="parsingElements"></param>
-    public class SKUAdjustmentShipmentUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
+    public class SKUAdjustmentShipmentUnit(in Dictionary<string, TableParsingCell> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
         public long SKUSourceNumber { get; set; }

@@ -1,9 +1,9 @@
 
-using System.Diagnostics;
+using System.Text;
 
 namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 {
-    public partial class SKUForTargetReport
+    public partial class SKUForFinalReport
     {
         #region Properties
 
@@ -39,12 +39,22 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Приход от точек, всего
         /// </summary>
-        public int SKUReceiptTotal => SKUReceiptGoods + SKUWriteOffFromPoints;
+        public int SKUReceiptTotal => SKUReceiptGoods + SKUWriteOffFromPointsAndCouriers;
 
         /// <summary>
         /// из них, Склад: Приход товарами
         /// </summary>
         public int SKUReceiptGoods { get; set; } = 0; // Суммируется при объединении алиасов
+
+        /// <summary>
+        /// Оприходовано по ордерам пересорта.
+        /// </summary>
+        public int SKUReceiptsOnResortOrders { get; set; } = 0;
+
+        /// <summary>
+        /// Списано по ордерам пересорта.
+        /// </summary>
+        public int SKUWriteOffOnResortOrders { get; set; } = 0;
 
         #endregion
         #region Properties - Comments
@@ -106,10 +116,18 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 
         #endregion
         #region Properties - Remaining
+
+        private int skuRemaining;
+
         /// <summary>
         /// Склад: Остаток товаров
+        /// Суммируется при объединении алиасов
         /// </summary>
-        public int SKURemaining { get; set; } // Суммируется при объединении алиасов
+        public int SKURemaining
+        {
+            get => skuRemaining;
+            set => skuRemaining = value;
+        }
         #endregion
         #region Properties - Overruns 
         private int skuOverrunsCount = 0;
@@ -133,7 +151,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 
         #endregion
         #region Constructors
-        public SKUForTargetReport(SKU sku, int extraReceiptFromResortingIn1C, int adjustmentShipmentSum)
+        public SKUForFinalReport(SKU sku, int? adjustmentShipmentSum)
         {
             SKULogins = string.Join(", ", sku.ClientLogins);
             SKUmp = sku.Marketplace;
@@ -158,25 +176,40 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             // Fill SKURemainingBalance
             if (sku.SKURemainingBalance is not null)
             {
-                // Приход товаров
-                SKUReceiptGoods = sku.SKURemainingBalance.SKUReceipt;
+                // Списано из прихода по ордерам пересорта
+                SKUWriteOffOnResortOrders = sku.SKURemainingBalance.SKUWriteOffOnResortOrders;
 
-                // Корректировка экстра-приходов на 1 помещение
-                SKUReceiptGoods = sku.SKURemainingBalance.SKUReceipt;
-                if (extraReceiptFromResortingIn1C > 0)
-                {
-                    SKUReceiptGoods -= extraReceiptFromResortingIn1C;
-                    SKUReceipComment = $"Удалено из экстра-приходов (перемещения, пересорты): {extraReceiptFromResortingIn1C}";
-                }
+                // Приход товарами и ордерами пересортов (минус расход ордерами пересорьтов)
+                SKUReceiptGoods = SKUWriteOffOnResortOrders > 0 ?
+                    sku.SKURemainingBalance.SKUReceipt - SKUWriteOffOnResortOrders :
+                    sku.SKURemainingBalance.SKUReceipt;
 
                 // Расход товаров
                 SKUShipmentGoods = sku.SKURemainingBalance.SKUShipmentGoods;
 
                 // Корректировка расходов по данным от Клиента
-                if (adjustmentShipmentSum != 0)
+                if (adjustmentShipmentSum != null && adjustmentShipmentSum != 0)
                 {
-                    SKUShipmentGoods += adjustmentShipmentSum;
-                    SKUShipmentComment += $"\nКорректировка по расходам: {adjustmentShipmentSum}";
+                    var difference = (int)adjustmentShipmentSum;
+                    var oldValue = SKUShipmentGoods;
+
+                    StringBuilder sb = new("Корректировка по расходам от Клиента:\n");
+                    string signString;
+
+                    switch (difference > 0)
+                    {
+                        case true:
+                            signString = "+";
+                            SKUShipmentGoods += difference;
+                            break;
+                        case false:
+                            signString = "-";
+                            SKUShipmentGoods -= Math.Abs(difference);
+                            break;
+                    }
+
+                    sb.Append($"{oldValue} {signString} {Math.Abs(difference)} = {SKUShipmentGoods}");
+                    SKUShipmentComment += sb;
                 }
 
                 SKUTransfered = sku.SKURemainingBalance.SKUTransfered;

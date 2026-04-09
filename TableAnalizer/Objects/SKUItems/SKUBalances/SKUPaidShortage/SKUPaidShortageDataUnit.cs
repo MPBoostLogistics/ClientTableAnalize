@@ -1,11 +1,12 @@
+using TableAnalizer.Objects.Managers.ExcelSheetParsing;
 using TableAnalizer.Objects.Parsing;
 
-namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage
+namespace TableAnalizer.Objects.SKUItems.SKUBalances
 {
     /// <summary>
     /// Paid shortage data unit for forming SKUPaidShortageBalance.
     /// </summary>
-    public class SKUPaidShortageDataUnit (in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
+    public class SKUPaidShortageDataUnit(in Dictionary<string, TableParsingCell> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
         public string? ClientLogin { get; private set; }

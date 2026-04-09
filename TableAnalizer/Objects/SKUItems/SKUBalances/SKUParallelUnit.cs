@@ -1,3 +1,4 @@
+using TableAnalizer.Objects.Managers.ExcelSheetParsing;
 using TableAnalizer.Objects.Parsing;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances
@@ -5,7 +6,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     /// <summary>
     /// Parallel data unit.
     /// </summary>
-    public class SKUParallelUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
+    public class SKUParallelUnit(in Dictionary<string, TableParsingCell> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
         /// <summary>

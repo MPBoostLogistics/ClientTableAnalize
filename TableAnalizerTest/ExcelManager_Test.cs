@@ -94,7 +94,7 @@ namespace TableAnalizerTest
 
             // assert 
             Assert.That(ransomsRangeSourceReportRows, Has.Count.EqualTo(1));
-            Assert.That(ransomsRangeSourceReportRows[0].SourceCells, Is.EqualTo(ExcelManager.RansomsSourceCells));
+            Assert.That(ransomsRangeSourceReportRows[0].SourceColumns, Is.EqualTo(ExcelManager.RansomsSourceCells));
 
         }
 
@@ -158,7 +158,7 @@ namespace TableAnalizerTest
             await Task.Run(() => getRangeSourceReportRowsTask);
             getRangeSourceReportRowsTask.Wait();
 
-            Assert.That(rangeSourceReportRows[0].SourceCells, Is.EqualTo(ExcelManager.RansomsSourceCells));
+            Assert.That(rangeSourceReportRows[0].SourceColumns, Is.EqualTo(ExcelManager.RansomsSourceCells));
             Assert.That(rangeSourceReportRows[0].RangeRowIndexesСollection, Is.Not.Null);
             Assert.That(rangeSourceReportRows[0].RangeRowIndexesСollection.ToList(), Has.Count.EqualTo(108));
 

@@ -2,9 +2,27 @@ using System.Diagnostics;
 using System.Reflection;
 using TableAnalizer.Interfaces;
 using TableAnalizer.Objects.Managers;
+using TableAnalizer.Objects.Managers.ExcelSheetParsing;
 
 namespace TableAnalizer.Objects.Parsing
 {
+    class ParsingRowEntityComparer : IEqualityComparer<ParsingRowEntity>
+    {
+        public bool Equals(ParsingRowEntity? x, ParsingRowEntity? y)
+        {
+            if (ReferenceEquals(x, y)) return true;
+            if (x is null || y is null) return false;
+            return x.ID == y.ID;
+        }
+
+        public int GetHashCode(ParsingRowEntity entity)
+        {
+            if (entity is null) return 0;
+            int hashEntityCode = entity.ID.GetHashCode();
+            return hashEntityCode;
+        }
+    }
+
     /// <summary>
     /// An entity for parsing properties from a data dictionary.
     /// </summary>
@@ -12,15 +30,15 @@ namespace TableAnalizer.Objects.Parsing
     {
         #region Variables and constants
         protected const string SPACE_SEPARATOR = "\u0020";
-        //protected readonly List<TypeCode> baseTypeCodes = [TypeCode.Double, TypeCode.Int32, TypeCode.DateTime, TypeCode.String];
         #endregion
 
         #region Properties
+        public string ID = Guid.NewGuid().ToString();
         public PropertyInfo[] PropertyInfos { get; private set; }
         #endregion
 
         #region Constructors
-        public ParsingRowEntity(in Dictionary<string, ItemForParsing> parsingElements)
+        public ParsingRowEntity(in Dictionary<string, TableParsingCell> parsingElements)
         {
             PropertyInfos = GetType().GetProperties();
 
@@ -44,7 +62,7 @@ namespace TableAnalizer.Objects.Parsing
         protected static void ThrowExceptionCast(string valueKey, string value, Type type) =>
             throw new InvalidCastException($"Element with key '{valueKey}' and value '{value}' cannot be casting to type {type}.");
 
-        protected void ParseValues(in Dictionary<string, ItemForParsing> parsingElements)
+        protected void ParseValues(in Dictionary<string, TableParsingCell> parsingElements)
         {
             foreach (var parsingElement in parsingElements)
             {
@@ -66,7 +84,7 @@ namespace TableAnalizer.Objects.Parsing
                 }
             }
         }
-        private void ParseValue(in KeyValuePair<string, ItemForParsing> element, ref PropertyInfo property)
+        private void ParseValue(in KeyValuePair<string, TableParsingCell> element, ref PropertyInfo property)
         {
             string? elementValueString = element.Value.Value;
             bool isMaybeNullable = element.Value.IsMaybeNullable;

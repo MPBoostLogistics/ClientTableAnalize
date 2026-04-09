@@ -7,32 +7,26 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
     {
         #region Properties
         public long SKUNumber { get; private set; } = default;
-        /// <summary>
-        /// Number of goods received at the warehouse.
-        /// </summary>
         public int SKUReceipt { get; private set; }
         /// <summary>
-        /// Number of goods delivered to the customer.
+        /// Списано по ордерам пересорта.
         /// </summary>
+        public int SKUWriteOffOnResortOrders { get; private set; } = 0;
         public int SKUShipmentGoods { get; private set; } = 0;
-        /// <summary>
-        /// Number of goods transferred to production.
-        /// </summary>
         public int SKUTransfered { get; private set; } = 0;
-        /// <summary>
-        /// Number of goods remaining in the warehouse.
-        /// </summary>
         public int SKURemaining { get; private set; } = 0;
         #endregion
 
         #region Constructors
         // For create from SKURemainingBalanceDataUnit collection.
-        public SKURemainingBalance(long skuNumber, List<SKURemainingBalanceDataUnit> skuRemainingUnits)
+        public SKURemainingBalance(long skuNumber, List<SKURemainingDataRow> skuRemainingUnits)
         {
             SKUNumber = skuNumber;
 
             SKUReceipt = skuRemainingUnits
                 .Aggregate(0, (acc, unit) => acc + unit.SKUReceipt);
+            SKUWriteOffOnResortOrders = skuRemainingUnits
+                .Aggregate(0, (acc, unit) => acc + unit.SKUWriteOffOnResortOrders);
             SKURemaining = skuRemainingUnits
                 .Aggregate(0, (acc, unit) => acc + unit.SKURemaining);
         }
@@ -54,12 +48,13 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         }
 
         // For create new balance from repo.
-        public SKURemainingBalance(long number, int receipt, int shipped, int transfered, int remaining)
+        public SKURemainingBalance(long number, int receipt, int writeOffOnResort, int shipment, int transfered, int remaining)
         {
             SKUNumber = number;
 
             SKUReceipt = receipt;
-            SKUShipmentGoods = shipped;
+            SKUWriteOffOnResortOrders = writeOffOnResort;
+            SKUShipmentGoods = shipment;
             SKUTransfered = transfered;
             SKURemaining = remaining;
         }
@@ -80,6 +75,10 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         }
 
         public override int GetHashCode() => SKUNumber.GetHashCode();
+
+        public override string ToString() => $"Баланс арт ({SKUNumber}):" +
+            $" приход {SKUReceipt}, списано по пересортам {SKUWriteOffOnResortOrders} расход {SKUShipmentGoods}" +
+            $" передано {SKUTransfered}, остаток {SKURemaining}";
 
         #endregion Functionality
     }

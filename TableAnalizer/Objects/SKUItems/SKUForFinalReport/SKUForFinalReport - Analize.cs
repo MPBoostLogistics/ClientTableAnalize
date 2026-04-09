@@ -1,15 +1,15 @@
-namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports 
+namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
 {
     /// <summary>
     /// Analytical part of the "SKUForTargetReport" type.
     /// </summary>
-    public partial class SKUForTargetReport 
+    public partial class SKUForFinalReport
     {
         #region Properties
         /// <summary>
         /// Parallel Clients SKU.
         /// </summary>
-        public bool IsParallelClientsSKU { get; } = false; 
+        public bool IsParallelClientsSKU { get; } = false;
 
         /// <summary>
         /// Приход товаров нормализован (соответствует ожиданию).
@@ -23,7 +23,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
             SKUReceiptTotal < SKURansomsWaiting ?
             SKURansomsWaiting - SKUReceiptTotal :
             0;
-        
+
         /// <summary>
         /// Склад: Приход от точек больше ожидания (экстра-приход)
         /// </summary>
@@ -40,20 +40,20 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Общий взаиморасчет нормализован относительно ожидания
         /// </summary>
-        public bool IsSettlementNormalizedToWaiting  => SKUSummarySettlement + SKURemaining == SKURansomsWaiting;
+        public bool IsSettlementNormalizedToWaiting => SKUSummarySettlement + SKURemaining == SKURansomsWaiting;
 
         /// <summary>
         /// Общий взаиморасчет меньше ожидания клиента
         /// </summary>
-        public int UnderMutualSettlement => 
-            SKUSummarySettlement < SKURansomsWaiting ? 
-                SKURemaining > 0 ? 
+        public int UnderMutualSettlement =>
+            SKUSummarySettlement < SKURansomsWaiting ?
+                SKURemaining > 0 ?
                 SKURansomsWaiting - SKUSummarySettlement - SKURemaining >= 0 ?
                     SKURansomsWaiting - SKUSummarySettlement - SKURemaining :
-                    0 : 
-                SKURansomsWaiting - SKUSummarySettlement > 0 ? 
+                    0 :
+                SKURansomsWaiting - SKUSummarySettlement > 0 ?
                 SKURansomsWaiting - SKUSummarySettlement :
-                0 : 
+                0 :
             0;
 
         /// <summary>
@@ -71,15 +71,15 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <para>Ожидание == Приход == Взаиморасчет и Остаток на складе == 0</para> 
         /// <para>Ожидание == Приход и Взаиморасчет + Остаток на складе == Ожидание</para> 
         /// </remarks>
-        public bool IsSkuNormalize => IsReceiptNormalizedToWaiting && 
+        public bool IsSkuNormalize => IsReceiptNormalizedToWaiting &&
             (IsSettlementNormalizedToReceipt || IsSettlementNormalizedToWaiting);
 
         /// <summary>
         /// Долг по оплате компенсации организацией перед клиентом.
         /// </summary>
-        public int SKUDebtToClientForCompensationSum => 
-            SKUWriteOffFromPoints - SKUCompensatedTotalToClient > 0 ? 
-            SKUWriteOffFromPoints - SKUCompensatedTotalToClient : 
+        public int SKUDebtToClientForCompensationSum =>
+            SKUWriteOffFromPointsAndCouriers - SKUCompensatedTotalToClient > 0 ?
+            SKUWriteOffFromPointsAndCouriers - SKUCompensatedTotalToClient :
             0;
         #endregion
     }

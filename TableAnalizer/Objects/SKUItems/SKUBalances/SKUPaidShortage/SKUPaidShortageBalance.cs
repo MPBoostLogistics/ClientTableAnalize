@@ -1,4 +1,4 @@
-namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUPaidShortage
+namespace TableAnalizer.Objects.SKUItems.SKUBalances
 {
     public class SKUPaidShortageBalance
     {

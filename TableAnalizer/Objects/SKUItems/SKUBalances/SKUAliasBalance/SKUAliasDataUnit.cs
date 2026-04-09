@@ -1,8 +1,9 @@
+using TableAnalizer.Objects.Managers.ExcelSheetParsing;
 using TableAnalizer.Objects.Parsing;
 
-namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUAliasBalance
+namespace TableAnalizer.Objects.SKUItems.SKUBalance
 {
-    public class SKUAliasDataUnit(in Dictionary<string, ItemForParsing> parsingElements) : ParsingRowEntity(parsingElements)
+    public class SKUAliasDataUnit(in Dictionary<string, TableParsingCell> parsingElements) : ParsingRowEntity(parsingElements)
     {
         #region Properties
         public long SKUSourceNumber { get; set; }
