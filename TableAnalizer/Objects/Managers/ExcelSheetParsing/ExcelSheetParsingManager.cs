@@ -55,7 +55,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         /// Дополнительные правила (баланс, "1 - Помещение приемки и сортировки")
         /// </summary>
         private static readonly AdditionalRangeRules additionalRangeRulesReceiving01 =
-            new(keyStringColumn: 1, keyStringsRegexes: digitsRegexes, isGetDataByKeyString: false, 
+            new(keyStringColumn: 1, keyStringsRegexes: digitsRegexes, isGetDataByKeyString: false,
             childStringColumn: 1, childStringRegexes: receivingRegeхes);
 
         /// <summary>
@@ -394,6 +394,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 
             return Task.CompletedTask;
         }
+
         public static Task<bool> GetValuesFromRow(in ExcelWorksheet sheet, int rowNumber, in List<SourceReportCell> sourceCells, out RowData? rowData)
         {
             rowData = null;
@@ -418,7 +419,10 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 
             rowData = new(rowNumber: rowNumber, rowValues: rowValues);
 
-            var success = rowValues?.Count == sourceCells.Count - filterCellsCount;
+            var success = sheet.Name == ADDREPORT_ALIASES_WORKSHEET_NAME ?
+                rowData.HasValue :
+                rowValues?.Count == sourceCells.Count - filterCellsCount;
+
             return Task.Run(() => success);
         }
 

@@ -101,13 +101,17 @@ internal class Program
     /// </summary>
     private static void SetAppConfig()
     {
-        if (FileService.GetProjectDirectory(out DirectoryInfo? projectDirectory)
-                    && projectDirectory != null)
-        {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(projectDirectory.FullName)
-                .AddJsonFile("config.json", optional: false);
+        var pd = Directory.GetCurrentDirectory(); // GetProjectDirectory(out DirectoryInfo? projectDirectory)
+        Console.WriteLine(pd);
 
+        if (pd is not null && File.Exists(Path.Combine(pd, "config.json")))
+        {
+            
+
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(pd)
+                .AddJsonFile("config.json", optional: false) ?? throw new Exception("Configuration builder is null");
+            
             appConfig = builder.Build();
 
             IConfigurationSection? stringsSection = appConfig.GetSection("Strings");

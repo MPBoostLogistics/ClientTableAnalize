@@ -93,22 +93,19 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 {
                     // Если коллекции пустые, получаем данные по RowsIndexes в SourceReportRange
                     case (false, false):
-                        OnManagerReached(new($"Ключ {reportFileKey}, {currentRowsRange.StringRowKey}: значения без правил и по всем строкам...", false, false));
                         getDataTask = GetDataFromRange(in sheet, ref currentRowsRange);
                         break;
                     // Если есть только коллекция ключевых строк, получаем данные по keyRowsIndexRange правил в SourceReportRange
                     case (true, false):
-                        OnManagerReached(new($"Ключ {reportFileKey}, {currentRowsRange.StringRowKey}: значения по правилам и только по ключевым строкам...", false, false));
                         getDataTask = GetDataFromRange(in sheet, ref currentRowsRange, keyRowsIndexRange);
                         break;
                     // Если есть только коллекция дочерних строк, получаем данные по childRowsIndexDict правил в SourceReportRange
                     case (false, true):
-                        OnManagerReached(new($"Ключ {reportFileKey}, {currentRowsRange.StringRowKey}: значения по правилам, словарь ключевая строка - дочерние строки...", false, false));
                         getDataTask = GetValuesFromTableRange(in sheet, ref currentRowsRange, childRowsIndexDict!);
                         break;
                     // Если обе коллекции не пусыте, то это ошибка!
                     case (true, true):
-                        OnManagerReached(new($"Ключ {reportFileKey}, {currentRowsRange.StringRowKey}: получение значений невозможно, есть обе коллекции", true, true));
+                        OnManagerReached(new($"Ключ {reportFileKey}, {currentRowsRange.StringRowKey}: получение значений невозможно, есть обе коллекции!!1", true, true));
                         break;
                 }
 

@@ -17,7 +17,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalance
             string combinedString = string.Join(",", SKUAliasNumbers.ToArray());
             return $"SKU: {SKUSourceNumber} - {combinedString}, comment: {AliasComment}";
         }
-
         #endregion
     }
 }

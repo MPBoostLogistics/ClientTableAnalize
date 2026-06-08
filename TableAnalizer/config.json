@@ -5,9 +5,9 @@
     "isCheckBalance": true,
     "isCheckOutgoingProducts": true,
     "isCheckAdditionalData": true,
-    "isAutoResorting": true,
-    "isConsiderInProgressStatusInAutoResorting": true,
-    "isCombineAliases": false
+    "isAutoResorting": false,
+    "isConsiderInProgressStatusInAutoResorting": false,
+    "isCombineAliases": true
   },
   "Messages": {
     "GoodbyMessage": "\nThank you for using the program.\nHave a productive day!",
