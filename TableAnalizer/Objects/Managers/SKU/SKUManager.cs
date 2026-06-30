@@ -282,17 +282,15 @@ namespace TableAnalizer.Objects.Managers
                 foreach (var group in skuRemainingBalanceDataUnits)
                 {
                     long skuNumber = group.Key;
-                    if (IsSkuRansomsBalanceUnitsHasKey(skuNumber))
-                    {
-                        var list = (((List<SKURemainingDataRow>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
-                            throw new InvalidCastException($"Невозможно привести {nameof(List<SKURemainingDataRow>)} к {nameof(List<ParsingRowEntity>)}");
+                 
+                    var list = (((List<SKURemainingDataRow>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
+                        throw new InvalidCastException($"Невозможно привести {nameof(List<SKURemainingDataRow>)} к {nameof(List<ParsingRowEntity>)}");
 
-                        var noduplicates = list
-                            .Distinct(new ParsingRowEntityComparer())
-                            .ToList();
+                    var noduplicates = list
+                        .Distinct(new ParsingRowEntityComparer())
+                        .ToList();
 
-                        SkuRemainingBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, noduplicates);
-                    }
+                    SkuRemainingBalanceUnits.RetrieveAndUpdateOrAddValue(group.Key, noduplicates);
                 }
             }
             else if (isOutgoingProducts)
@@ -707,7 +705,7 @@ namespace TableAnalizer.Objects.Managers
             return result;
         }
 
-       
+
 
         private bool IsSkuRansomsBalanceUnitsHasKey(long skuNumber) =>
             SkuRansomsBalanceUnits.GetValue(skuNumber, out List<ParsingRowEntity>? item) && item != null;
