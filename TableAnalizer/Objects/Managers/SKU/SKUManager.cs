@@ -164,9 +164,7 @@ namespace TableAnalizer.Objects.Managers
             static bool FindSkusWithWriteOffPoints(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPoints > 0;
             static bool FindSkusWithWriteOffPointsViaWarehouseShortage(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseShortage > 0;
             static bool FindSkusWithWriteOffPointsViaWarehouseAdjustment(SKU sku) => sku.SKUWriteOffBalance is not null && sku.SKUWriteOffBalance.SKUWriteOffPointsViaWarehouseAdjustment > 0;
-            // static bool FindSkusWithCorrect(SKU sku) => sku.SKUResortBalance != null;
-            // ч    static bool FindSkusWithAliases(SKU sku) => SkuAliasesBalanceUnits.Count() > 0 ;
-            //static bool FindSkusWithParallel(SKU sku) => SKUParallelUnits.Any();
+
 
             var message = string.Empty;
 
@@ -245,10 +243,9 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOffPoints = reportFileKey == SourceReportItemKey.WriteOffPoints;
             bool isWriteOffPointsViaWarehouseShortage = reportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseShortage;
             bool isWriteOffPointsViaWarehouseAdjustment = reportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment;
-            // bool isResort = reportFileKey == SourceReportItemKey.Additional && workSheetName == ReportFileManager.ADDREPORT_RESORTS_WORKSHEET_NAME;
             // bool isParallel = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelManager.PARALLEL_SKUS_WORKSHEET_NAME;
             bool isAliases = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelSheetParsingManager.ADDREPORT_ALIASES_WORKSHEET_NAME;
-            bool isShipmentAdjustment = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelSheetParsingManager.ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME;
+            bool isResort = reportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelSheetParsingManager.ADDREPORT_RESORTS_WORKSHEET_NAME;
             bool isPaidShortages = reportFileKey == SourceReportItemKey.ShortagesPaid;
 
             await Task.Delay(10); // dummy
@@ -282,7 +279,7 @@ namespace TableAnalizer.Objects.Managers
                 foreach (var group in skuRemainingBalanceDataUnits)
                 {
                     long skuNumber = group.Key;
-                 
+
                     var list = (((List<SKURemainingDataRow>?)[.. group])?.Cast<ParsingRowEntity>().ToList()) ??
                         throw new InvalidCastException($"Невозможно привести {nameof(List<SKURemainingDataRow>)} к {nameof(List<ParsingRowEntity>)}");
 
@@ -374,23 +371,38 @@ namespace TableAnalizer.Objects.Managers
 
                 }
             }
-            else if (isShipmentAdjustment)
+            else if (isResort)
             {
                 var skuAdjustmentDataUnits = from rowWithRawData in rowsWithRawData
-                                             let unit = new SKUAdjustmentShipmentUnit(rowWithRawData.RowValues)
-                                             group unit by unit.SKUSourceNumber
+                                             let unit = new SKUItems.SKUBalances.SKUResortBalance.SKUResortUnit(rowWithRawData.RowValues)
+                                             group unit by unit.SKUItemWrittenOffNumber
                                              into unitGroup
                                              select unitGroup;
 
-                foreach (var skuAdjustmentGroup in skuAdjustmentDataUnits)
+                foreach (var group in skuAdjustmentDataUnits)
                 {
-                    long skuNumber = skuAdjustmentGroup.Key;
-
-                    List<ParsingRowEntity>? list = (((List<SKUAdjustmentShipmentUnit>?)[.. skuAdjustmentGroup])?.Cast<ParsingRowEntity>().ToList()) ??
-                        throw new InvalidCastException($"Cannot cast List of {nameof(SKUAdjustmentShipmentUnit)} to List of {nameof(ParsingRowEntity)}.");
-
-                    SkuShipmentAdjustmentUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
+                    foreach (var item in group)
+                    {
+                        Console.WriteLine(item);
+                    }
                 }
+
+
+                // var skuAdjustmentDataUnits = from rowWithRawData in rowsWithRawData
+                //                              let unit = new SKUAdjustmentShipmentUnit(rowWithRawData.RowValues)
+                //                              group unit by unit.SKUSourceNumber
+                //                              into unitGroup
+                //                              select unitGroup;
+
+                // foreach (var skuAdjustmentGroup in skuAdjustmentDataUnits)
+                // {
+                //     long skuNumber = skuAdjustmentGroup.Key;
+
+                //     List<ParsingRowEntity>? list = (((List<SKUAdjustmentShipmentUnit>?)[.. skuAdjustmentGroup])?.Cast<ParsingRowEntity>().ToList()) ??
+                //         throw new InvalidCastException($"Cannot cast List of {nameof(SKUAdjustmentShipmentUnit)} to List of {nameof(ParsingRowEntity)}.");
+
+                //     SkuShipmentAdjustmentUnits.RetrieveAndUpdateOrAddValue(skuNumber, list);
+                // }
             }
             // else if (isParallel)
             // {
@@ -493,7 +505,7 @@ namespace TableAnalizer.Objects.Managers
             bool isWriteOffPoints = skuReportFileKey == SourceReportItemKey.WriteOffPoints;
             bool isWriteOffPointsViaWarehouseShortage = skuReportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseShortage;
             bool isWriteOffPointsViaWarehouseAdjustment = skuReportFileKey == SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment;
-            bool isAdjustment = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelSheetParsingManager.ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME;
+            bool isResort = skuReportFileKey == SourceReportItemKey.Additional && workSheetName == ExcelSheetParsingManager.ADDREPORT_RESORTS_WORKSHEET_NAME;
             bool isPaidShortages = skuReportFileKey == SourceReportItemKey.ShortagesPaid;
 
             // Dummy
@@ -624,10 +636,12 @@ namespace TableAnalizer.Objects.Managers
                             SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, writeOffBalance));
                         }
                     }
-                    // else if (isResorts)
-                    // {
-                    //     // TODO: Work with resorts
-                    // }
+                    else if (isResort)
+                    {
+                        Console.WriteLine("HELLO FROM UPDATE IS RESORT");
+
+                        // TODO: Work with resorts
+                    }
                     // else if (isAliases)
                     // {
                     //     // TODO: Work with aliases
@@ -650,10 +664,6 @@ namespace TableAnalizer.Objects.Managers
                         SKUPaidShortageBalance skuPaidShortageBalance = new(skuNumber, [.. units]);
 
                         SKUs.RetrieveAndUpdateOrAddValue(skuNumber, new(skuNumber, skuPaidShortageBalance));
-                    }
-                    else if (isAdjustment)
-                    {
-
                     }
                 }
             }

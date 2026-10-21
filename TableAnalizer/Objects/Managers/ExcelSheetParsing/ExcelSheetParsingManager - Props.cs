@@ -1,6 +1,7 @@
 using TableAnalizer.Objects.SKUItems;
 using TableAnalizer.Objects.SKUItems.SKUBalance;
 using TableAnalizer.Objects.SKUItems.SKUBalances;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 
 namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 {
@@ -219,6 +220,29 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 isRequired: true, filterStrings: null),
             new(columnNumber: 3,
                 nameOfFutureProperty: nameof(SKUAdjustmentShipmentUnit.SKUAdjustmentComment),
+                typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
+                isRequired: false, filterStrings: null)
+        ];
+
+        /// <summary>
+        /// Ячейки для парсинга ручного пересорта в доп отчете.
+        /// </summary>
+        public static List<SourceReportCell> ResortsSourceCells { get; } =
+        [
+            new(columnNumber: 1,
+                nameOfFutureProperty: nameof(SKUItems.SKUBalances.SKUResortBalance.SKUResortUnit.SKUItemWrittenOffNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null),
+            new(columnNumber: 2,
+                nameOfFutureProperty: nameof(SKUItems.SKUBalances.SKUResortBalance.SKUResortUnit.SKUItemAddedNumber),
+                typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
+                isRequired: true, filterStrings: null),
+            new(columnNumber: 3,
+                nameOfFutureProperty: nameof(SKUItems.SKUBalances.SKUResortBalance.SKUResortUnit.SKUResortSum),
+                typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
+                isRequired: true, filterStrings: null),
+            new(columnNumber: 4,
+                nameOfFutureProperty: nameof(SKUItems.SKUBalances.SKUResortBalance.SKUResortUnit.SKUResortComment),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
                 isRequired: false, filterStrings: null)
         ];

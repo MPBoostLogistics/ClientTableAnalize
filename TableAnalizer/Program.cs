@@ -97,7 +97,7 @@ internal class Program
     }
 
     /// <summary>
-    /// Setting up the app configuration
+    /// Setting up the app config
     /// </summary>
     private static void SetAppConfig()
     {

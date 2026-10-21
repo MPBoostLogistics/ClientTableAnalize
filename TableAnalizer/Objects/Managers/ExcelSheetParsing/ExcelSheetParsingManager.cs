@@ -21,7 +21,8 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         public const string LAST_MARKER_KEY = "Итого товаров в единицах хранения";
         public const int LAST_MARKER_KEY_OFFSET = 2;
         public const string ADDREPORT_ALIASES_WORKSHEET_NAME = "Алиасы";
-        public const string ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME = "Корректировки расхода";
+        public const string ADDREPORT_RESORTS_WORKSHEET_NAME = "Пересорты расхода";
+        // public const string ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME = "Корректировки расхода";
 
         /// <summary>
         /// Паттерны регулярных выражений для проверки строк на наличие цифр (для артикулов).
@@ -140,7 +141,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
                 SourceReportItemKey.Additional => sheetName switch
                 {
                     ADDREPORT_ALIASES_WORKSHEET_NAME => [new(AliasesSourceCells)],
-                    ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME => [new(AdjustmentShipmentSourceCells)],
+                    ADDREPORT_RESORTS_WORKSHEET_NAME => [new(ResortsSourceCells)],
                     _ => [],
                 },
                 SourceReportItemKey.ShortagesPaid => [new(PaidShortagesSourceCells)],

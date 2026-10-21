@@ -483,7 +483,10 @@ namespace TableAnalizer.Objects.Managers
                     or SourceReportItemKey.WriteOffPoints
                     or SourceReportItemKey.WriteOffPointsViaWarehouseShortage
                     or SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment => [REMAINING_OR_SHIPPED_WORKSHEET_NAME],
-                SourceReportItemKey.Additional => [ExcelSheetParsingManager.ADDREPORT_ALIASES_WORKSHEET_NAME, ExcelSheetParsingManager.ADDREPORT_WRITEOFF_ADJUSTMENTS_WORKSHEET_NAME],
+                SourceReportItemKey.Additional => [
+                    ExcelSheetParsingManager.ADDREPORT_RESORTS_WORKSHEET_NAME,
+                    ExcelSheetParsingManager.ADDREPORT_ALIASES_WORKSHEET_NAME
+                ],
                 SourceReportItemKey.ShortagesPaid => [PAID_SHORTAGES_REPORT_WORKSHEET_NAME],
                 _ => null,
             };
