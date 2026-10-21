@@ -5,7 +5,8 @@
     "isCheckBalance": true,
     "isCheckOutgoingProducts": true,
     "isCheckAdditionalData": true,
-    "isAutoResorting": true,
+    "isManualResorting": true,
+    "isAutoResorting": false,
     "isConsiderInProgressStatusInAutoResorting": false,
     "isCombineAliases": true
   },

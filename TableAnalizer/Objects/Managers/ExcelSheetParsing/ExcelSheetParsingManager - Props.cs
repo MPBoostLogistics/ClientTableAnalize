@@ -230,19 +230,19 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         public static List<SourceReportCell> ResortsSourceCells { get; } =
         [
             new(columnNumber: 1,
-                nameOfFutureProperty: nameof(SKUItems.SKUBalances.SKUResortBalance.SKUResortUnit.SKUItemWrittenOffNumber),
+                nameOfFutureProperty: nameof(SKUResortUnit.SKUItemWrittenOffNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
                 isRequired: true, filterStrings: null),
             new(columnNumber: 2,
-                nameOfFutureProperty: nameof(SKUItems.SKUBalances.SKUResortBalance.SKUResortUnit.SKUItemAddedNumber),
+                nameOfFutureProperty: nameof(SKUResortUnit.SKUItemAddedNumber),
                 typeCodeKeyRow: ParsingTypeCode.LongTypeCode,
                 isRequired: true, filterStrings: null),
             new(columnNumber: 3,
-                nameOfFutureProperty: nameof(SKUItems.SKUBalances.SKUResortBalance.SKUResortUnit.SKUResortSum),
+                nameOfFutureProperty: nameof(SKUResortUnit.SKUResortSum),
                 typeCodeKeyRow: ParsingTypeCode.IntTypeCode,
                 isRequired: true, filterStrings: null),
             new(columnNumber: 4,
-                nameOfFutureProperty: nameof(SKUItems.SKUBalances.SKUResortBalance.SKUResortUnit.SKUResortComment),
+                nameOfFutureProperty: nameof(SKUResortUnit.SKUResortComment),
                 typeCodeKeyRow: ParsingTypeCode.StringTypeCode,
                 isRequired: false, filterStrings: null)
         ];

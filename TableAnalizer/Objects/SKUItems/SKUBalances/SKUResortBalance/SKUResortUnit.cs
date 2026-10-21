@@ -3,7 +3,6 @@ using TableAnalizer.Objects.Parsing;
 
 namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
 {
-
     /// <summary>
     /// Сущность для ручной пересортицы расхода товаров.
     /// </summary>

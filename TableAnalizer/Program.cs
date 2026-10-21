@@ -37,6 +37,8 @@ internal class Program
     /// </summary>
     private static bool isCheckAdditionalData;
 
+    private static bool isManualResorting;
+
     private static bool isAutoResorting;
 
     /// <summary>
@@ -77,7 +79,7 @@ internal class Program
             excelManager = new(appConfig);
             excelSheetsManager = new(appConfig);
             skuManager = new(appConfig, DeadlineDays, excelManager, excelSheetsManager);
-            anManager = new(appConfig);
+            anManager = new(appConfig, skuManager);
         }
         else
         {
@@ -122,6 +124,7 @@ internal class Program
             isCheckBalance = flagsSection.GetValue<bool>(nameof(isCheckBalance));
             isCheckOutgoingProducts = flagsSection.GetValue<bool>(nameof(isCheckOutgoingProducts));
             isCheckAdditionalData = flagsSection.GetValue<bool>(nameof(isCheckAdditionalData));
+            isManualResorting = flagsSection.GetValue<bool>("isManualResorting");
             isAutoResorting = flagsSection.GetValue<bool>("isAutoResorting");
             isConsiderInProgressStatusInAutoResorting = flagsSection.GetValue<bool>("isConsiderInProgressStatusInAutoResorting");
             isCombineAliases = flagsSection.GetValue<bool>("isCombineAliases");
@@ -353,6 +356,14 @@ internal class Program
 
             if (isTracing)
                 await TracingProgramExecution(new($"Артикулов для финального отчета: {skusForTargetReportTask.Result.Count}.", false, false));
+
+            // Article manual-sorting
+            if (isManualResorting && anManager != null)
+            {
+                Task<bool> manualResortTasks = anManager.SetManualResorts(ref skuForTargetReports, isConsiderInProgressStatusInAutoResorting);
+                await Task.Run(() => manualResortTasks);
+                manualResortTasks!.Wait();
+            }
 
             // Article analysis and automatic re-sorting
             if (isAutoResorting)

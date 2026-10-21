@@ -1,15 +1,16 @@
 using Microsoft.Extensions.Configuration;
+using TableAnalizer.Objects.Parsing;
+using TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public class AnalyticalManager(IConfiguration config) : BaseManager(config)
+    public class AnalyticalManager(IConfiguration config, SKUManager skuManager) : BaseManager(config)
     {
-        #region Fields
+        private readonly SKUManager skuManager = skuManager;
 
-        /// <summary>
-        /// Предикат, определяющий, учитывать ли статус "В работе" в автопересортах.
-        /// </summary>
+
+        #region Fields
 
         /// <summary>
         /// Предикат: артикул параллельных клинтов и ожидание меньше общего прихода
@@ -192,6 +193,54 @@ namespace TableAnalizer.Objects.Managers
             return Task.CompletedTask;
         }
 
+        public Task<bool> SetManualResorts(ref List<SKUForFinalReport> skuForTargetReports, bool isConsiderInProgressStatusInAutoResorting)
+        {
+            if (skuManager.SkuResortUnits.Count() == 0)
+                return Task.FromResult(false);
+
+            // Initial set collections
+            var updateDataTask = UpdateDataForResorts(ref skuForTargetReports, isConsiderInProgressStatusInAutoResorting);
+            Task.Run(() => updateDataTask);
+            updateDataTask.Wait();
+
+            // Get manual resort utins 
+            List<(long key, List<ParsingRowEntity> value)>? listCollection = [.. skuManager.SkuResortUnits!.GetValuesList()];
+            if (listCollection is null || listCollection.Count == 0)
+                return Task.FromResult(false);
+
+            foreach (var (skuNumber, listEntities) in listCollection)
+            {
+                var units = (((List<ParsingRowEntity>?)listEntities)?.Cast<SKUResortUnit>().ToList()) ??
+                    throw new InvalidCastException("Cannot cast collection to IList<SKUResortUnit>.");
+
+                foreach (var skuResortUnit in units)
+                {
+
+                    SKUForFinalReport? underSKU = skuForTargetReports.FirstOrDefault(el => el.SKUNumber == skuResortUnit.SKUItemAddedNumber);
+                    SKUForFinalReport? overSku = skuForTargetReports.FirstOrDefault(el => el.SKUNumber == skuResortUnit.SKUItemWrittenOffNumber);
+
+                    if (underSKU != null && overSku != null)
+                    {
+                        int underReceiptSkuIndex = skuForTargetReports.IndexOf(underSKU);
+                        int overReceiptSkuIndex = skuForTargetReports.IndexOf(overSku);
+
+
+                        MakeResort(
+                            true,
+                            ref skuForTargetReports,
+                            ResortConsumptionTarget.ResortingConsumptionByOutgoing,
+                            underReceiptSkuIndex,
+                            overReceiptSkuIndex,
+                            skuResortUnit.SKUResortSum);
+                    }
+                    else
+                        throw new ArgumentNullException($"Null values of underSKUIndex or overSKUIndex");
+                }
+            }
+
+            return Task.FromResult(true);
+        }
+
         /// <summary>
         /// Устанавливает автоматические пересорты.
         /// </summary>
@@ -214,6 +263,7 @@ namespace TableAnalizer.Objects.Managers
                 _ => null
             };
 
+            // Определение связанных списков с перерасходами и недорасходами.
             LinkedList<SKUForFinalReport>? overspendingList = DefinesListWithOverspending(resortTarget);
             LinkedList<SKUForFinalReport>? underspandingList = DefinesListWithUnderspanding(resortTarget);
 
@@ -268,7 +318,7 @@ namespace TableAnalizer.Objects.Managers
                                 int underConsumtionSkuIndex = skuForTargetReports.IndexOf(underSku);
                                 int overConsumtionSkuIndex = skuForTargetReports.IndexOf(overSku);
 
-                                MakeResort(ref skuForTargetReports, target, underConsumtionSkuIndex, overConsumtionSkuIndex, resortSum);
+                                MakeResort(false, ref skuForTargetReports, target, underConsumtionSkuIndex, overConsumtionSkuIndex, resortSum);
                             }
 
                             break;
@@ -290,7 +340,7 @@ namespace TableAnalizer.Objects.Managers
                             int underReceiptSkuIndex = skuForTargetReports.IndexOf(underSku);
                             int overReceiptSkuIndex = skuForTargetReports.IndexOf(overSku);
 
-                            MakeResort(ref skuForTargetReports, resortTarget, underReceiptSkuIndex, overReceiptSkuIndex, resortSum);
+                            MakeResort(false, ref skuForTargetReports, resortTarget, underReceiptSkuIndex, overReceiptSkuIndex, resortSum);
 
                             break;
                         default:
@@ -311,6 +361,12 @@ namespace TableAnalizer.Objects.Managers
 
             return Task.CompletedTask;
         }
+
+        /// <summary>
+        /// Определяет список с недорасходами.
+        /// </summary>
+        /// <param name="resortTarget">Цель (направление пересорта).</param>
+        /// <returns>Список с недорасходами (необязательно).</returns>
         private static LinkedList<SKUForFinalReport>? DefinesListWithUnderspanding(ResortConsumptionTarget resortTarget)
         {
             return resortTarget switch
@@ -322,10 +378,10 @@ namespace TableAnalizer.Objects.Managers
         }
 
         /// <summary>   
-        /// Defines the list with overspending.
+        /// Определяет список с перерасходами.
         /// </summary>
-        /// <param name="resortTarget">Resort target case.</param>
-        /// <returns>List with overspending (optional).</returns>
+        /// <param name="resortTarget">Цель (направление пересорта).</param>
+        /// <returns>>Список с перерасходами (необязательно).</returns>
         private static LinkedList<SKUForFinalReport>? DefinesListWithOverspending(ResortConsumptionTarget resortTarget)
         {
             return resortTarget switch
@@ -381,7 +437,7 @@ namespace TableAnalizer.Objects.Managers
                     int sum = sku.SKUReceiptTotal - sku.SKURansomsWaiting;
                     int skuIndex = skuForTargetReports.IndexOf(sku);
 
-                    MakeResort(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, skuIndex, skuIndex, sum);
+                    MakeResort(false, ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, skuIndex, skuIndex, sum);
                 }
             }
 
@@ -406,7 +462,15 @@ namespace TableAnalizer.Objects.Managers
             // }
         }
 
-        private static void MakeResort(ref List<SKUForFinalReport> skuForTargetReports, ResortConsumptionTarget target, int underSkuIndex, int overSkuIndex, int sum)
+        /// <summary>
+        /// Учитывает пересорт.
+        /// </summary>
+        /// <param name="skuForTargetReports">Список артикулов для конечного отчета.</param>
+        /// <param name="target">Цель прересортицы по перерасходу товаров.</param>
+        /// <param name="underSkuIndex"></param>
+        /// <param name="overSkuIndex"></param>
+        /// <param name="sum"></param>
+        private static void MakeResort(bool isManual, ref List<SKUForFinalReport> skuForTargetReports, ResortConsumptionTarget target, int underSkuIndex, int overSkuIndex, int sum)
         {
             if (int.IsNegative(underSkuIndex) || int.IsNegative(overSkuIndex))
             {
@@ -420,7 +484,7 @@ namespace TableAnalizer.Objects.Managers
             if (skuForTargetReports[underSkuIndex].IsParallelClientsSKU &&
                 isIndicesEqual && target == ResortConsumptionTarget.ResortingReceipt)
             {
-                skuForTargetReports[underSkuIndex].MakeResort(target, SKUResortDirection.InternalParallel, skuForTargetReports[overSkuIndex].SKUNumber, sum);
+                skuForTargetReports[underSkuIndex].MakeResort(isManual, target, SKUResortDirection.InternalParallel, skuForTargetReports[overSkuIndex].SKUNumber, sum);
             }
 
 
@@ -428,22 +492,22 @@ namespace TableAnalizer.Objects.Managers
             if (isIndicesNotEqual &&
                 (target == ResortConsumptionTarget.ResortingConsumptionByOutgoing || target == ResortConsumptionTarget.ResortingConsumptionByTransfer))
             {
-                skuForTargetReports[underSkuIndex].MakeResort(target, SKUResortDirection.Incoming, skuForTargetReports[overSkuIndex].SKUNumber, sum);
-                skuForTargetReports[overSkuIndex].MakeResort(target, SKUResortDirection.Outgoing, skuForTargetReports[underSkuIndex].SKUNumber, sum);
+                skuForTargetReports[underSkuIndex].MakeResort(isManual, target, SKUResortDirection.Incoming, skuForTargetReports[overSkuIndex].SKUNumber, sum);
+                skuForTargetReports[overSkuIndex].MakeResort(isManual, target, SKUResortDirection.Outgoing, skuForTargetReports[underSkuIndex].SKUNumber, sum);
             }
 
             // Пересорты приходов
             if (isIndicesNotEqual
                 && target == ResortConsumptionTarget.ResortingReceipt)
             {
-                skuForTargetReports[underSkuIndex].MakeResort(target, SKUResortDirection.Incoming, skuForTargetReports[overSkuIndex].SKUNumber, sum);
-                skuForTargetReports[overSkuIndex].MakeResort(target, SKUResortDirection.Outgoing, skuForTargetReports[underSkuIndex].SKUNumber, sum);
+                skuForTargetReports[underSkuIndex].MakeResort(isManual, target, SKUResortDirection.Incoming, skuForTargetReports[overSkuIndex].SKUNumber, sum);
+                skuForTargetReports[overSkuIndex].MakeResort(isManual, target, SKUResortDirection.Outgoing, skuForTargetReports[underSkuIndex].SKUNumber, sum);
             }
 
             // Списание экстра приходов
             if (isIndicesEqual && target == ResortConsumptionTarget.ResortingReceipt)
             {
-                skuForTargetReports[underSkuIndex].MakeResort(target, SKUResortDirection.Internal, skuForTargetReports[overSkuIndex].SKUNumber, sum);
+                skuForTargetReports[underSkuIndex].MakeResort(isManual, target, SKUResortDirection.Internal, skuForTargetReports[overSkuIndex].SKUNumber, sum);
             }
         }
 
@@ -493,7 +557,7 @@ namespace TableAnalizer.Objects.Managers
                     int sum = sku.SKUReceiptTotal - sku.SKURansomsWaiting;
                     int skuIndex = skuForTargetReports.IndexOf(sku);
 
-                    MakeResort(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, skuIndex, skuIndex, sum);
+                    MakeResort(false, ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, skuIndex, skuIndex, sum);
                 }
             }
 
