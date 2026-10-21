@@ -101,12 +101,14 @@ internal class Program
     /// </summary>
     private static void SetAppConfig()
     {
-        if (FileService.GetProjectDirectory(out DirectoryInfo? projectDirectory)
-                    && projectDirectory != null)
+        var pd = Directory.GetCurrentDirectory(); // GetProjectDirectory(out DirectoryInfo? projectDirectory)
+        Console.WriteLine(pd);
+
+        if (pd is not null && File.Exists(Path.Combine(pd, "config.json")))
         {
             var builder = new ConfigurationBuilder()
-                .SetBasePath(projectDirectory.FullName)
-                .AddJsonFile("config.json", optional: false);
+                .SetBasePath(pd)
+                .AddJsonFile("config.json", optional: false) ?? throw new Exception("Configuration builder is null");
 
             appConfig = builder.Build();
 
@@ -362,8 +364,7 @@ internal class Program
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByOutgoing, isConsiderInProgressStatusInAutoResorting),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByTransfer, isConsiderInProgressStatusInAutoResorting),
                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, isConsiderInProgressStatusInAutoResorting),
-                    AnalyticalManager.FixExtraReceipts(ref skuForTargetReports, true),
-
+                    AnalyticalManager.FixExtraReceipts(ref skuForTargetReports, true)
                 ];
 
                 for (int i = 0; i < fixAndAutoResortTasks.Length; i++)

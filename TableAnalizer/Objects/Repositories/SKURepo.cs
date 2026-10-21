@@ -198,13 +198,25 @@ namespace TableAnalizer.Objects.Repositories
                 skuRemainingBalance, skuWriteOffBalance, skuPaidShortageBalance, skuResortBalance!, averagePrice, maxRansomsDate, deadlineDays, isParallel);
         }
 
-        private static int CombineIntValues(int retriveValue, int newValue)
+        private static int CombineIntValues(int oldValue, int newValue)
         {
-            return (retriveValue == newValue) switch
+            return (oldValue > 0, newValue > 0) switch
             {
-                true => retriveValue,
-                false => retriveValue + newValue
+                (true, true) => (oldValue == newValue) switch
+                {
+                    true => oldValue,
+                    false => oldValue + newValue,
+                },
+                (false, true) => newValue,
+                (true, false) => oldValue,
+                (false, false) => 0
             };
+
+            // return (retriveValue == newValue) switch
+            // {
+            //     true => retriveValue,
+            //     false => retriveValue + newValue
+            // };
 
             // return retriveValue == newValue ?
             //     retriveValue :

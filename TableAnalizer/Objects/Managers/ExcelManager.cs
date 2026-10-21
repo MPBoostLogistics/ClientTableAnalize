@@ -98,6 +98,10 @@ namespace TableAnalizer.Objects.Managers
                 isWrapTextInHeader: false, degreeRotationTextInHeader: 0, сommentTextInHeader: string.Empty,
                 isCellUsedInClientReport: true, propertyName: nameof(SKUForFinalReport.SKUNumber),
                 parsingTypeCode: ParsingTypeCode.LongTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
+            new (columnName: "Комментарий по алиесам", columnWidth: 28, columnFormat: STRING_OR_INT_CELL_FORMAT,
+                isWrapTextInHeader: true, degreeRotationTextInHeader: 0, сommentTextInHeader: string.Empty,
+                isCellUsedInClientReport: true, propertyName: nameof(SKUForFinalReport.SKUAliasesComment),
+                parsingTypeCode: ParsingTypeCode.StringTypeCode, valueСheckingPredicate: null, typeFormula: null, targetCellSettings: defaultTargetCellSettings),
             new (columnName: "Бренд товара", columnWidth: 15, columnFormat: STRING_OR_INT_CELL_FORMAT,
                 isWrapTextInHeader: true, degreeRotationTextInHeader: 0, сommentTextInHeader: string.Empty,
                 isCellUsedInClientReport: true, propertyName: nameof(SKUForFinalReport.SKUBrand),
@@ -632,7 +636,7 @@ namespace TableAnalizer.Objects.Managers
                         OnManagerReached(new($"В ячейке таблицы (строка {rowNumber} && column number {columnNumber} равно null.", true, true));
 
 
-                    ValueAndSettingsToTableCell(ref tableCell!, value, finalReportCell, skuForTargetReport.FillColor, skuForTargetReport.SKUAliasesComment);
+                    ValueAndSettingsToTableCell(ref tableCell!, value, finalReportCell, skuForTargetReport.FillColor);
                 }
                 rowNumber++;
             }
@@ -707,7 +711,7 @@ namespace TableAnalizer.Objects.Managers
         /// <param name="finalReportCell">Объект FinalReportCell для настройки ячейки.</param>
         /// <param name="statusColor">Цвет статуса.</param>
         /// <param name="aliasesComment">Комментарий?</param>
-        private void ValueAndSettingsToTableCell(ref ExcelRange tableCell, object? value, in FinalReportCell finalReportCell, Color? statusColor, string? aliasesComment = null)
+        private void ValueAndSettingsToTableCell(ref ExcelRange tableCell, object? value, in FinalReportCell finalReportCell, Color? statusColor)
         {
             // Установка значения
             tableCell.Value = value;
@@ -750,25 +754,6 @@ namespace TableAnalizer.Objects.Managers
                 tableCell.Style.Font.Size = finalReportCell.CellSettings.FontSize;
                 tableCell.Style.Font.Bold = finalReportCell.CellSettings.IsTextBold;
                 tableCell.Style.Font.Color.SetColor(finalReportCell.CellSettings.TextСolor);
-            }
-
-            // Добавление комментария к ячейке.
-            bool isAliasComment = finalReportCell.ColumnName.Trim().Equals(SKUNumberColName.Trim(), StringComparison.CurrentCultureIgnoreCase) && aliasesComment != null && !string.IsNullOrEmpty(aliasesComment);
-            if (isAliasComment)
-            {
-                ExcelComment comm = tableCell.AddComment("");
-                comm.Font.Color = Color.Black;
-                comm.Font.Bold = true;
-
-                var message = comm.RichText.Add(aliasesComment);
-                message.Color = Color.Black;
-                message.Bold = false;
-                message.Size = tableCell.Style.Font.Size - 1;
-
-                comm.VerticalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignVerticalVml.Top;
-                comm.HorizontalAlignment = OfficeOpenXml.Drawing.Vml.eTextAlignHorizontalVml.Left;
-
-                comm.AutoFit = true;
             }
         }
 
