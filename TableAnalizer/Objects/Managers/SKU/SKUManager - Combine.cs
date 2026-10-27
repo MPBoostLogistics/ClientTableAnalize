@@ -7,7 +7,7 @@ namespace TableAnalizer.Objects.Managers
     /// <summary>
     ///  Функицональность для объединения артикулов по алиесам.
     /// </summary>
-    public partial class SKUManager : BaseManager
+    public partial class SKUManager
     {
         /// <summary>
         /// Комбинирует артикулы по алиасам для финального отчета
@@ -39,7 +39,7 @@ namespace TableAnalizer.Objects.Managers
             if (!FindTargetAndSourceSkusForCombine(aliasDataUnit, skus,
                 out List<SKUForFinalReport> combines, out List<long> sources).Result)
             {
-                OnManagerReached(new($"Не найдены артикулы для комбинирования по алиасам для {aliasDataUnit}", true, false));
+                //OnManagerReached(new($"Не найдены артикулы для комбинирования по алиасам для {aliasDataUnit}", true, false));
                 return;
             }
 

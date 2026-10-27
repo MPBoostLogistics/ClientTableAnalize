@@ -4,6 +4,8 @@ using System.Drawing;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
 using OfficeOpenXml.Style;
+using Microsoft.Extensions.Logging;
+
 using TableAnalizer.Objects.Managers.ExcelSheetParsing;
 using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.SKUItems;
@@ -11,7 +13,13 @@ using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public class ExcelManager : BaseManager
+    public interface IExcelManager
+    {
+
+    }
+
+
+    public class ExcelManager : BaseManager, IExcelManager
     {
         #region Fields
 
@@ -298,7 +306,7 @@ namespace TableAnalizer.Objects.Managers
         #endregion
 
         #region Constructors && destructors
-        public ExcelManager(IConfiguration config) : base(config)
+        public ExcelManager(IConfiguration config, ILogger<ReportFileManager> logger) : base(config)
         {
             ExcelPackage.License.SetNonCommercialPersonal("vegiwoo");
 

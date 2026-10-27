@@ -1,11 +1,13 @@
 ﻿using System.Text;
 using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+
 using TableAnalizer.Objects.ReportItems;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public class ReportFileManager(IConfiguration config) : BaseManager(config)
+    public class ReportFileManager(IConfiguration config, ILogger<ReportFileManager> logger) : BaseManager(config)
     {
         #region Fields 
 
@@ -13,7 +15,7 @@ namespace TableAnalizer.Objects.Managers
 
         private string? logisticsReportFirstName;
 
-      
+
         /// <summary>
         /// Dictionary of primary report files.
         /// </summary>

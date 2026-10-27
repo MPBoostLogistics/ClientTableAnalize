@@ -1,14 +1,14 @@
 {
   "Flags": {
-    "isTracing": true,
-    "isCheckRansoms": true,
-    "isCheckBalance": true,
-    "isCheckOutgoingProducts": true,
-    "isCheckAdditionalData": true,
-    "isManualResorting": true,
-    "isAutoResorting": false,
-    "isConsiderInProgressStatusInAutoResorting": false,
-    "isCombineAliases": true
+    "IsTracing": true,
+    "IsCheckRansoms": true,
+    "IsCheckBalance": true,
+    "IsCheckOutgoingProducts": true,
+    "IsCheckAdditionalData": true,
+    "IsManualResorting": true,
+    "IsAutoResorting": false,
+    "IsConsiderInProgressStatusInAutoResorting": false,
+    "IsCombineAliases": true
   },
   "Messages": {
     "GoodbyMessage": "\nThank you for using the program.\nHave a productive day!",
@@ -24,7 +24,7 @@
     "SumFormula": "SUM"
   },
   "Collections": {
-    "validFileExtensions": [
+    "ValidFilesExtentionsList": [
       ".xls",
       ".xlsx"
     ]

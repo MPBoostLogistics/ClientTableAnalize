@@ -16,6 +16,8 @@
   
   <ItemGroup>
     <PackageReference Include="EPPlus" Version="8.2.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.14" />
     <PackageReference Include="Vegiwoo.CSharpHelpers" Version="1.0.21" />
   </ItemGroup>
   <ItemGroup>

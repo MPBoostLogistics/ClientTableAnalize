@@ -1,15 +1,23 @@
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using OfficeOpenXml;
+using Microsoft.Extensions.Logging;
 using TableAnalizer.Utils;
+using Microsoft.Extensions.Options;
+
 
 namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
 {
+    public interface IExcelSheetParsingManager
+    {
+        public Task<(double, IEnumerable<RowData>?)> GetDataFromExcelSheet(SourceReportItemKey reportFileKey, ExcelPackage package, string sheetName);
+    }
+
+
     /// <summary>
     /// Менеджер для парсинга данных из таблиц Excel.
     /// </summary>
-    public partial class ExcelSheetParsingManager : BaseManager
+    public partial class ExcelSheetParsingManager : BaseManager, IExcelSheetParsingManager
     {
         #region Fields
         public const int DEFAULT_INERATE_STEP = 1;
@@ -68,7 +76,7 @@ namespace TableAnalizer.Objects.Managers.ExcelSheetParsing
         #endregion
 
         #region Constructors && destructors
-        public ExcelSheetParsingManager(IConfiguration config) : base(config)
+        public ExcelSheetParsingManager(IConfiguration config, ILogger<ExcelSheetParsingManager> logger, IOptions<ProgramOptions> options) : base(config)
         {
             ExcelPackage.License.SetNonCommercialPersonal("vegiwoo");
         }

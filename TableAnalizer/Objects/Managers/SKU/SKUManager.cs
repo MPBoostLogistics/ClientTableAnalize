@@ -3,6 +3,7 @@
 using System.Diagnostics;
 using System.Drawing;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using OfficeOpenXml;
 using TableAnalizer.Interfaces;
 using TableAnalizer.Objects.Managers.ExcelSheetParsing;
@@ -16,12 +17,13 @@ using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 namespace TableAnalizer.Objects.Managers
 {
-    public partial class SKUManager(IConfiguration config, int deadLineDays, ExcelManager excelManager, ExcelSheetParsingManager excelSheetsManager) : BaseManager(config)
+    public partial class SKUManager
     {
         #region Variables and constants 
+        private IOptions<ProgramOptions> options;
         private const bool IS_REMOVE_BRAND_FROM_NAME = false;
-        private readonly ExcelManager excelManager = excelManager;
-        private readonly ExcelSheetParsingManager excelSheetsManager = excelSheetsManager;
+        private readonly IExcelManager excelManager;
+        private readonly IExcelSheetParsingManager excelSheetsManager;
         public static Dictionary<SKUSellmentStatus, string> StatusStrings = [];
 
         /// <summary>
@@ -42,7 +44,7 @@ namespace TableAnalizer.Objects.Managers
         #endregion
 
         #region Properties 
-        public int DeadlineDays { get; } = deadLineDays;
+        private int DeadlineDays { get; set; }
         public IRepository<long, SKU> SKUs { get; } = new SKURepo();
         public IRepository<long, List<ParsingRowEntity>> SkuRansomsBalanceUnits { get; } = new ParsingRowEntityRepo();
         public IRepository<long, List<ParsingRowEntity>> SkuRemainingBalanceUnits { get; } = new ParsingRowEntityRepo();
@@ -80,23 +82,33 @@ namespace TableAnalizer.Objects.Managers
 
         #endregion
 
+        #region Constructors and deconstructors
+        public SKUManager(IOptions<ProgramOptions> opt, IExcelManager exManager, IExcelSheetParsingManager exShManager)
+        {
+            options = opt;
+            excelManager = exManager;
+            excelSheetsManager = exShManager;
+
+            ReadConfig();
+        }
+        #endregion
+
+
         #region Functionality
 
-        protected override void AddConfigVariables()
+        public void ReadConfig()
         {
-            base.AddConfigVariables();
-
-            IConfigurationSection? stringsSection = config!.GetSection("Strings");
+            DeadlineDays = options?.Value.DeadlineDays ?? 0;
 
             // Set status strings variables
-            StatusStrings.Add(SKUSellmentStatus.FullSet, stringsSection.GetValue<string>("FullSetStatusString") ?? string.Empty);
-            StatusStrings.Add(SKUSellmentStatus.InWork, stringsSection.GetValue<string>("InWorkStatusString") ?? string.Empty);
-            StatusStrings.Add(SKUSellmentStatus.DelayFromPointsAndWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromPointsAndWarehouseStatusString") ?? string.Empty);
-            StatusStrings.Add(SKUSellmentStatus.DelayFromWarehouse, stringsSection.GetValue<string>("DelayDeliveryFromWarehouseStatusString") ?? string.Empty);
-            StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromPoints, stringsSection.GetValue<string>("DelayDeliveryFromPointsStatusString") ?? string.Empty);
-            StatusStrings.Add(SKUSellmentStatus.Unknown, stringsSection.GetValue<string>("UnknownStatusString") ?? string.Empty);
-            StatusStrings.Add(SKUSellmentStatus.DelayFromOrganization, stringsSection.GetValue<string>("DelayFromOrganizationStatusString") ?? string.Empty);
-            StatusStrings.Add(SKUSellmentStatus.DelayFromOrganizationAndWarehouse, stringsSection.GetValue<string>("DelayFromOrganizationAndWarehouseStatusString") ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.FullSet, options?.Value.FullSetStatusString ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.InWork, options?.Value.InWorkStatusString ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayFromPointsAndWarehouse, options?.Value.DelayDeliveryFromPointsAndWarehouseStatusString ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayFromWarehouse, options?.Value.DelayDeliveryFromWarehouseStatusString ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayDeliveryFromPoints, options?.Value.DelayDeliveryFromPointsStatusString ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.Unknown, options?.Value.UnknownStatusString ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayFromOrganization, options?.Value.DelayFromOrganizationStatusString ?? string.Empty);
+            StatusStrings.Add(SKUSellmentStatus.DelayFromOrganizationAndWarehouse, options?.Value.DelayFromOrganizationAndWarehouseStatusString ?? string.Empty);
         }
 
         public async Task<double> ReceivingAndProcessingData(SourceReportItemKey reportFileKey, ExcelPackage excelPackage)
@@ -145,8 +157,8 @@ namespace TableAnalizer.Objects.Managers
             getDataTask.Wait();
             var (time, data) = getDataTask.Result;
 
-            if (data is null)
-                return StopFuctionExecuting(ref stopwatch);
+            // if (data is null)
+            //     return StopFuctionExecuting(ref stopwatch);
 
             // Processing:
             // 1. Save balances for sku's
@@ -221,11 +233,11 @@ namespace TableAnalizer.Objects.Managers
             {
                 int skusWithPredicateCount = SKUs.GetValuesCount(predicateHandler.Invoke);
                 message = string.Concat(message, skusWithPredicateCount);
-                OnManagerReached(new(message, false, false));
+                // OnManagerReached(new(message, false, false));
             }
 
 
-            return StopFuctionExecuting(ref stopwatch);
+            return 0; // dummy
         }
 
         /// <summary>
@@ -429,10 +441,12 @@ namespace TableAnalizer.Objects.Managers
                 }
 
                 // Report for aliases
-                OnManagerReached(new($"Артикулов c алиасами: {SkuAliasesBalanceUnits.Count()}", false, false));
+                // OnManagerReached(new($"Артикулов c алиасами: {SkuAliasesBalanceUnits.Count()}", false, false));
             }
             else if (isPaidShortages)
             {
+                var ClientLogins = new List<string>(); // dummy
+
                 var skuPaidShortageDataUnits = from rowWithRawData in rowsWithRawData
                                                let unit = new SKUPaidShortageDataUnit(rowWithRawData.RowValues)
                                                where !string.IsNullOrEmpty(unit.ClientLogin) && ClientLogins.Contains(unit.ClientLogin)
