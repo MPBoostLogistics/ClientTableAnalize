@@ -39,17 +39,17 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Приход от точек, всего
         /// </summary>
-        public int SKUReceiptTotal => SKUReceiptGoods + SKUWriteOffFromPointsAndCouriers;
+        public int SKUReceiptPointsTotal => SKUReceiptPointsGoods + SKUWriteOffFromPointsAndCouriers;
 
         /// <summary>
         /// из них, Склад: Приход товарами
         /// </summary>
-        public int SKUReceiptGoods { get; set; } = 0; // Суммируется при объединении алиасов
+        public int SKUReceiptPointsGoods { get; set; } = 0; // Суммируется при объединении алиасов
 
         /// <summary>
         /// Оприходовано по ордерам пересорта.
         /// </summary>
-        public int SKUReceiptsOnResortOrders { get; set; } = 0;
+        public int SKUReceiptsPointsOnResortOrders { get; set; } = 0;
 
         /// <summary>
         /// Списано по ордерам пересорта.
@@ -180,7 +180,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                 SKUWriteOffOnResortOrders = sku.SKURemainingBalance.SKUWriteOffOnResortOrders;
 
                 // Приход товарами и ордерами пересортов (минус расход ордерами пересорьтов)
-                SKUReceiptGoods = SKUWriteOffOnResortOrders > 0 ?
+                SKUReceiptPointsGoods = SKUWriteOffOnResortOrders > 0 ?
                     sku.SKURemainingBalance.SKUReceipt - SKUWriteOffOnResortOrders :
                     sku.SKURemainingBalance.SKUReceipt;
 

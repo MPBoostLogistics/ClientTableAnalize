@@ -98,7 +98,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                     if (SKUWriteOffFromPointsViaWarehouseShortage == 0) return 0;
 
                     difference = SKUWriteOffFromPointsViaWarehouseShortage;
-                    SKUReceiptGoods -= difference;
+                    SKUReceiptPointsGoods -= difference;
                     SKUWriteOffFromPointsViaWarehouseShortage = 0;
 
                     SKUReceipComment = $"Приход уменьшен на списанное от точек: {difference}";
@@ -121,7 +121,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                     if (SKUWrittenOffFromPointsViaWarehouseAdjustment == 0) return 0;
 
                     difference = SKUWrittenOffFromPointsViaWarehouseAdjustment;
-                    SKUReceiptGoods -= difference;
+                    SKUReceiptPointsGoods -= difference;
                     SKUWrittenOffFromPointsViaWarehouseAdjustment = 0;
 
                     SKUReceipComment = $"Приход уменьшен на коррект. от точек: {difference}";

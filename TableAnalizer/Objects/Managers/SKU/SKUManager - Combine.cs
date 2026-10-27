@@ -57,7 +57,7 @@ namespace TableAnalizer.Objects.Managers
             combines.First().SKURansomsWaiting = combines.Sum(el => el.SKURansomsWaiting);
 
             // combines receipt, receipt comment  && write off from points
-            combines.First().SKUReceiptGoods = combines.Sum(el => el.SKUReceiptGoods);
+            combines.First().SKUReceiptPointsGoods = combines.Sum(el => el.SKUReceiptPointsGoods);
 
             if (combines.Any(el => !string.IsNullOrEmpty(el.SKUReceipComment)))
             {

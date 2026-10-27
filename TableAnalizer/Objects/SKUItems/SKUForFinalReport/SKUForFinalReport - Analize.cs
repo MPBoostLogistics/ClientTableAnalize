@@ -14,28 +14,28 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
         /// <summary>
         /// Приход товаров нормализован (соответствует ожиданию).
         /// </summary>
-        public bool IsReceiptNormalizedToWaiting => SKUReceiptTotal == SKURansomsWaiting;
+        public bool IsReceiptNormalizedToWaiting => SKUReceiptPointsTotal == SKURansomsWaiting;
 
         /// <summary>
         /// Склад: Приход от точек меньше ожидания
         /// </summary>
         public int UnderReceipt =>
-            SKUReceiptTotal < SKURansomsWaiting ?
-            SKURansomsWaiting - SKUReceiptTotal :
+            SKUReceiptPointsTotal < SKURansomsWaiting ?
+            SKURansomsWaiting - SKUReceiptPointsTotal :
             0;
 
         /// <summary>
         /// Склад: Приход от точек больше ожидания (экстра-приход)
         /// </summary>
         public int OverReceipt =>
-            SKUReceiptTotal > SKURansomsWaiting ?
-            SKUReceiptTotal - SKURansomsWaiting :
+            SKUReceiptPointsTotal > SKURansomsWaiting ?
+            SKUReceiptPointsTotal - SKURansomsWaiting :
             0;
 
         /// <summary>
         /// Общий взаиморасчет нормализован относительно прихода и остатка
         /// </summary>
-        public bool IsSettlementNormalizedToReceipt => SKUReceiptTotal == SKUSummarySettlement + SKURemaining;
+        public bool IsSettlementNormalizedToReceipt => SKUReceiptPointsTotal == SKUSummarySettlement + SKURemaining;
 
         /// <summary>
         /// Общий взаиморасчет нормализован относительно ожидания

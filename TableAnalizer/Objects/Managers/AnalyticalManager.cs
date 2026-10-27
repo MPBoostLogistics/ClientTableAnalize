@@ -17,7 +17,7 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         private static Func<SKUForFinalReport, bool> ParallelClientSkuWithExtraReceiptPredicate => (sku) =>
             sku.IsParallelClientsSKU &&
-            sku.SKURansomsWaiting < sku.SKUReceiptTotal;
+            sku.SKURansomsWaiting < sku.SKUReceiptPointsTotal;
 
         private static Func<SKUForFinalReport, bool> OverPredicateConsumptionByOutgoingProducts => (sku) =>
             !sku.IsSkuNormalize
@@ -36,7 +36,7 @@ namespace TableAnalizer.Objects.Managers
         private static Func<SKUForFinalReport, bool> OverPredicateByReceipt => (sku) =>
             !sku.IsSkuNormalize &&
             sku.OverReceipt > 0 &&
-            int.IsPositive(sku.SKUReceiptGoods - sku.OverReceipt);
+            int.IsPositive(sku.SKUReceiptPointsGoods - sku.OverReceipt);
 
         private static Func<SKUForFinalReport, bool> UnderPredicateByReceipt => (sku) =>
             !sku.IsSkuNormalize &&
@@ -48,7 +48,7 @@ namespace TableAnalizer.Objects.Managers
         private static Func<SKUForFinalReport, bool> ExtraPredicateByReceipt => (sku) =>
             !sku.IsSkuNormalize &&
             (sku.SKUSummarySettlement + sku.SKURemaining) == sku.SKURansomsWaiting &&
-            sku.SKUReceiptTotal > sku.SKURansomsWaiting;
+            sku.SKUReceiptPointsTotal > sku.SKURansomsWaiting;
 
         /// <summary>
         /// Были списания недостач точек через склад
@@ -221,17 +221,25 @@ namespace TableAnalizer.Objects.Managers
 
                     if (underSKU != null && overSku != null)
                     {
-                        int underReceiptSkuIndex = skuForTargetReports.IndexOf(underSKU);
-                        int overReceiptSkuIndex = skuForTargetReports.IndexOf(overSku);
+                        // Если не учитывать артикулы в работе и не прошел дедлайн у одного из артикулов
+                        if ((!underSKU!.isDeadline || !overSku!.isDeadline) && !isConsiderInProgressStatusInAutoResorting)
+                        {
+                            continue; // Пропускаем такую пару
+                        }
+                        else
+                        {
+                            int underReceiptSkuIndex = skuForTargetReports.IndexOf(underSKU);
+                            int overReceiptSkuIndex = skuForTargetReports.IndexOf(overSku);
 
 
-                        MakeResort(
-                            true,
-                            ref skuForTargetReports,
-                            ResortConsumptionTarget.ResortingConsumptionByOutgoing,
-                            underReceiptSkuIndex,
-                            overReceiptSkuIndex,
-                            skuResortUnit.SKUResortSum);
+                            MakeResort(
+                                true,
+                                ref skuForTargetReports,
+                                ResortConsumptionTarget.ResortingConsumptionByOutgoing,
+                                underReceiptSkuIndex,
+                                overReceiptSkuIndex,
+                                skuResortUnit.SKUResortSum);
+                        }
                     }
                     else
                         throw new ArgumentNullException($"Null values of underSKUIndex or overSKUIndex");
@@ -434,7 +442,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var sku in extraSkusByReceipt!)
                 {
-                    int sum = sku.SKUReceiptTotal - sku.SKURansomsWaiting;
+                    int sum = sku.SKUReceiptPointsTotal - sku.SKURansomsWaiting;
                     int skuIndex = skuForTargetReports.IndexOf(sku);
 
                     MakeResort(false, ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, skuIndex, skuIndex, sum);
@@ -554,7 +562,7 @@ namespace TableAnalizer.Objects.Managers
             {
                 foreach (var sku in parallelClientSkuWithExtraReceipt!)
                 {
-                    int sum = sku.SKUReceiptTotal - sku.SKURansomsWaiting;
+                    int sum = sku.SKUReceiptPointsTotal - sku.SKURansomsWaiting;
                     int skuIndex = skuForTargetReports.IndexOf(sku);
 
                     MakeResort(false, ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, skuIndex, skuIndex, sum);

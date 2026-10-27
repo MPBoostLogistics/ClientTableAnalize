@@ -96,32 +96,32 @@ namespace TableAnalizer.Objects.SKUItems.SKUForTargetReports
                     switch (dir)
                     {
                         case SKUResortDirection.Incoming:
-                            SKUReceiptGoods += sum;
+                            SKUReceiptPointsGoods += sum;
                             SKUReceipComment = $"плюс {sum} от арт. {skuNumber}";
                             break;
                         case SKUResortDirection.Outgoing:
-                            SKUReceiptGoods -= sum;
+                            SKUReceiptPointsGoods -= sum;
                             SKUReceipComment = $"минус {sum} на арт. {skuNumber}";
                             break;
                         case SKUResortDirection.InternalParallel:
-                            if (SKUReceiptGoods >= sum)
+                            if (SKUReceiptPointsGoods >= sum)
                             {
-                                SKUReceiptGoods -= sum;
+                                SKUReceiptPointsGoods -= sum;
                                 SKUReceipComment = $"- приход списано: {sum} (апк-) ???";
                             }
                             break;
                         case SKUResortDirection.Internal:
 
-                            if (SKUReceiptGoods >= sum)
+                            if (SKUReceiptPointsGoods >= sum)
                             {
-                                SKUReceiptGoods -= sum;
+                                SKUReceiptPointsGoods -= sum;
                                 SKUResortsComment = $"- приход списано: {sum} (эп)";
                             }
 
                             // Final balance receipt
-                            if (SKUReceiptTotal > SKURansomsWaiting)
+                            if (SKUReceiptPointsTotal > SKURansomsWaiting)
                             {
-                                SKUReceiptGoods -= SKUReceiptTotal - SKURansomsWaiting;
+                                SKUReceiptPointsGoods -= SKUReceiptPointsTotal - SKURansomsWaiting;
                             }
 
                             break;
