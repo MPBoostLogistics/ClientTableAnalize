@@ -9,13 +9,17 @@ using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Serilog;
 
 using TableAnalizer.Objects;
 using TableAnalizer.Objects.Managers;
-using TableAnalizer.Objects.Managers.ExcelSheetParsing;
 using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.ReportItems;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
+using TableAnalizer.Services.Analytics;
+using TableAnalizer.Services.Excel;
+using TableAnalizer.Services.Parsing;
+using TableAnalizer.Services.SKU;
 
 namespace TableAnalizer
 {
@@ -68,7 +72,6 @@ namespace TableAnalizer
         #endregion
 
         #region Properties 
-        private static int DeadlineDays { get; set; }
         private static int TraceDelay { get; set; }
         private static string TraceInfoFlag { get; set; } = string.Empty;
         private static string TraceErrorFlag { get; set; } = string.Empty;
@@ -77,10 +80,14 @@ namespace TableAnalizer
 
         private static ReportFileManager? reportFileManager;
         private static ExcelManager? excelManager;
-        private static ExcelSheetParsingManager? excelSheetsManager;
         private static SKUManager? skuManager;
         private static AnalyticalManager? anManager;
-        private static ParsingManager? parManager;
+
+        private static IReportFileService reportService;
+        private static IExcelFileService exFileService;
+        private static IParsingService parsService;
+        private static ISKUService skuService;
+        private static IAnalyticalService analytService;
         #endregion
 
         #region Functionality
@@ -91,18 +98,15 @@ namespace TableAnalizer
         /// <remarks>Шаг 1, Ревизия 112026</remarks>
         private static async Task Main(string[] args)
         {
-            var host = RegisterConfigAndManagers(args);
+            using var host = CreateHost(args);
+            using var scope = host.Services.CreateScope();
 
-            if (host != null)
-            {
-                // Создание менеджеров
-                reportFileManager = host.Services.GetRequiredService<ReportFileManager>();
-                excelManager = host.Services.GetRequiredService<ExcelManager>();
-                excelSheetsManager = host.Services.GetRequiredService<ExcelSheetParsingManager>();
-                skuManager = host.Services.GetRequiredService<SKUManager>();
-                anManager = host.Services.GetRequiredService<AnalyticalManager>();
-                parManager = host.Services.GetRequiredService<ParsingManager>();
-            }
+            // Получение сервисов.
+            reportService = scope.ServiceProvider.GetRequiredService<IReportFileService>();
+            exFileService = scope.ServiceProvider.GetRequiredService<IExcelFileService>();
+            parsService = scope.ServiceProvider.GetRequiredService<IParsingService>();
+            skuService = scope.ServiceProvider.GetRequiredService<ISKUService>();
+            analytService = scope.ServiceProvider.GetRequiredService<IAnalyticalService>();
 
             // var analizeTask = Analyze();
             // await Task.Run(() => analizeTask);
@@ -113,140 +117,65 @@ namespace TableAnalizer
             // exitTask.Wait();
         }
 
-        private static IHost CreateHost(string[] args)
-        {
-            return Host.CreateDefaultBuilder(args)
-                .ConfigureAppConfiguration((context, configuration) =>
-                {
-                    configuration.AddJsonFile(
-                        "config.json",
-                        optional: false,
-                        reloadOnChange: true);
-                })
-                .ConfigureServices((context, services) =>
-                {
-                    var configuration = context.Configuration;
-
-                    services.Configure<ProgramOptions>(options =>
-                    {
-                        configuration.GetSection("Flags").Bind(options);
-                        configuration.GetSection("Messages").Bind(options);
-                        configuration.GetSection("Numbers").Bind(options);
-                        configuration.GetSection("Formulas").Bind(options);
-                        configuration.GetSection("Collections").Bind(options);
-                        configuration.GetSection("Strings").Bind(options);
-                    });
-
-                    // Регистрация менеджеров.
-                    services.AddTransient<IExcelSheetParsingManager, ExcelSheetParsingManager>();
-                    services.AddTransient<IExcelManager, ExcelManager>();
-                    services.AddTransient<ParsingManager>();
-                })
-                .Build();
-        }
-
         /// <summary>
-        /// Регистрирует конфигурацию и менеджеры для логирования.
+        /// Чтение конфигрурации, создание хоста со службами.
         /// </summary>
         /// <param name="args">Строковые аргументы.</param>
-        /// <returns>Объект IHost (опционально).</returns>
+        /// <returns>Объект IHost.</returns>
         /// <remarks>Шаг 2, Ревизия 112026</remarks>
-        private static IHost? RegisterConfigAndManagers(string[] args)
+        private static IHost CreateHost(string[] args)
         {
-            IHost? host = Host.CreateDefaultBuilder(args)
-                .ConfigureAppConfiguration((context, configuration) =>
-                {
-                    var directory = Directory.GetCurrentDirectory();
-                    var filePath = Path.Combine(directory, "config.json");
+            var hostBuilder = Host.CreateDefaultBuilder(args)
+                 .ConfigureAppConfiguration((context, configuration) =>
+                 {
+                     configuration.AddJsonFile(
+                         "config.json",
+                         optional: false,
+                         reloadOnChange: true);
+                 })
+                 .ConfigureServices((context, services) =>
+                 {
+                     var configuration = context.Configuration;
 
-                    if (!File.Exists(filePath))
-                        throw new FileNotFoundException("Не найден config.json", filePath);
+                     services.Configure<ProgramOptions>(options =>
+                     {
+                         configuration.GetSection("Flags").Bind(options);
+                         configuration.GetSection("Messages").Bind(options);
+                         configuration.GetSection("Numbers").Bind(options);
+                         configuration.GetSection("Formulas").Bind(options);
+                         configuration.GetSection("Collections").Bind(options);
+                         configuration.GetSection("Strings").Bind(options);
+                     });
 
-                    configuration
-                        .SetBasePath(directory)
-                        .AddJsonFile("config.json", optional: false, reloadOnChange: true);
-                })
-                .ConfigureServices((context, services) =>
-                {
-                    // RegisterProgramConfiguration(context.Configuration);
+                     services.AddTransient<IReportFileService, ReportFileService>();
+                     services.AddTransient<IExcelFileService, ExcelFileService>();
+                     services.AddTransient<IParsingService, ParsingService>();
+                     services.AddTransient<ISKUService, SKUService>();
+                     services.AddTransient<IAnalyticalService, AnalyticalService>();
+                 });
 
-                    // Add options
-                    services.Configure<ProgramOptions>(
-                        context.Configuration.GetSection("Flags"));
+#if DEBUG
+            // Добавление логирования в файл.
+            hostBuilder.UseSerilog((context, services, loggerConfiguration) =>
+            {
+                loggerConfiguration
+                    .MinimumLevel.Debug()
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console()
+                    .WriteTo.File(
+                        "logs/log-.txt",
+                        rollingInterval: RollingInterval.Day);
+            });
+#endif
 
-                    services.Configure<ProgramOptions>(
-                        context.Configuration.GetSection("Messages"));
-
-                    services.Configure<ProgramOptions>(
-                        context.Configuration.GetSection("Numbers"));
-
-                    services.Configure<ProgramOptions>(
-                        context.Configuration.GetSection("Formulas"));
-
-                    services.Configure<ProgramOptions>(
-                        context.Configuration.GetSection("Collections"));
-
-                    services.Configure<ProgramOptions>(
-                        context.Configuration.GetSection("Strings"));
-
-                    // Add managers
-                    services.AddTransient<ReportFileManager>();
-                    services.AddTransient<ExcelManager>();
-                    services.AddTransient<IExcelManager, ExcelManager>();
-                    services.AddTransient<ExcelSheetParsingManager>();
-                    services.AddTransient<IExcelSheetParsingManager, ExcelSheetParsingManager>();
-                    services.AddTransient<SKUManager>();
-                    services.AddTransient<AnalyticalManager>();
-                    services.AddTransient<ParsingManager>();
-                })
-               .Build();
-
-            return host;
+            return hostBuilder.Build(); ;
         }
-
-
-        // /// <summary>
-        // /// Читает конфигурацию программы.
-        // /// </summary>
-        // /// <remarks>Шаг 1, Ревизия 112026</remarks>
-        // private static void RegisterProgramConfiguration(IConfiguration config)
-        // {
-        //     appConfig = config;
-
-        //     // Получение строковых  значений
-        //     IConfigurationSection? stringsSection = appConfig.GetSection("Strings");
-        //     appVersion = stringsSection.GetValue<string>("AppVersion");
-
-        //     // Получение булевых значений
-        //     IConfigurationSection? flagsSection = appConfig.GetSection("Flags");
-        //     isTracing = flagsSection.GetValue<bool>("isTracing");
-        //     isCheckRansoms = flagsSection.GetValue<bool>(nameof(isCheckRansoms));
-        //     isCheckBalance = flagsSection.GetValue<bool>(nameof(isCheckBalance));
-        //     isCheckOutgoingProducts = flagsSection.GetValue<bool>(nameof(isCheckOutgoingProducts));
-        //     isCheckAdditionalData = flagsSection.GetValue<bool>(nameof(isCheckAdditionalData));
-        //     isManualResorting = flagsSection.GetValue<bool>("isManualResorting");
-        //     isAutoResorting = flagsSection.GetValue<bool>("isAutoResorting");
-        //     isConsiderInProgressStatusInAutoResorting = flagsSection.GetValue<bool>("isConsiderInProgressStatusInAutoResorting");
-        //     isCombineAliases = flagsSection.GetValue<bool>("isCombineAliases");
-
-        //     IConfigurationSection? messagesSection = appConfig.GetSection("Messages");
-        //     goodByMessage = messagesSection.GetValue<string>("GoodbyMessage");
-        //     TraceInfoFlag = messagesSection.GetValue<string>("TraceInfoFlag");
-        //     TraceErrorFlag = messagesSection.GetValue<string>("TraceErrorFlag");
-
-        //     IConfigurationSection? numbersSection = appConfig.GetSection("Numbers");
-        //     TraceDelay = numbersSection.GetValue<int>("TraceDelay");
-        //     DeadlineDays = numbersSection.GetValue<int>("DeadlineDays");
-        // }
-
 
 
         /// <remarks>oct 2025 ver.</remarks>
         private static async Task Analyze()
         {
             await Task.Delay(10); // dummy
-            // SubscribeManagersToEvents();
-            Console.Clear();
 
             // Get client report path, type of target report from console.
             var getDataFromConsoleTask = GetPrimaryDataFromConsole();

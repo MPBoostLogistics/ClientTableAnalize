@@ -3,16 +3,33 @@ using Microsoft.Extensions.Options;
 
 namespace TableAnalizer.Services.Excel
 {
-    public interface IExcelService
+    public interface IExcelFileService : IService
     {
 
     }
 
-    public partial class ExcelService : IExcelService
+    public partial class ExcelFileService : IExcelFileService
     {
-        public ExcelService(ILogger<ExcelService> logger, IOptions<ProgramOptions> options)
-        {
+        #region Fields
+        private readonly ProgramOptions _options;
+        private readonly ILogger<ExcelFileService> _logger;
+        #endregion
 
+        #region Properties
+        public string ServiceName { get; private set; }
+        #endregion
+
+        public ExcelFileService(ILogger<ExcelFileService> logger, IOptions<ProgramOptions> options)
+        {
+            _logger = logger;
+            _options = options.Value;
+
+            ServiceName = GetType().Name;
+
+            if (_options.IsTracing)
+            {
+                _logger.LogInformation("{TraceInfoFlag} Создан {ServiceName}", _options.TraceInfoFlag, ServiceName);
+            }
         }
     }
 }
