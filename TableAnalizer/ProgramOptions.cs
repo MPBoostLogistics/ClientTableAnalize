@@ -1,5 +1,8 @@
 namespace TableAnalizer
 {
+    /// <summary>
+    /// Опции запуска программы, читаются из config.json и передаются в менеджеры.
+    /// </summary>
     public sealed class ProgramOptions
     {
         #region Properties ("Flags" section )
@@ -50,5 +53,3 @@ namespace TableAnalizer
         #endregion
     }
 }
-
-

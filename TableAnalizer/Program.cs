@@ -19,7 +19,6 @@ using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 
 namespace TableAnalizer
 {
-
     internal class Program
     {
         #region Variables and constants   
@@ -88,11 +87,12 @@ namespace TableAnalizer
         /// <summary>
         /// Точка входа в программу.
         /// </summary>
-        /// <param name="args"Строковые аргументы.></param>
+        /// <param name="args"Строковые аргументы></param>
         /// <remarks>Шаг 1, Ревизия 112026</remarks>
         private static async Task Main(string[] args)
         {
-            var host = RegisterConfigManagers(args);
+            var host = RegisterConfigAndManagers(args);
+
             if (host != null)
             {
                 // Создание менеджеров
@@ -104,13 +104,45 @@ namespace TableAnalizer
                 parManager = host.Services.GetRequiredService<ParsingManager>();
             }
 
-            var analizeTask = Analyze();
-            await Task.Run(() => analizeTask);
-            analizeTask.Wait();
+            // var analizeTask = Analyze();
+            // await Task.Run(() => analizeTask);
+            // analizeTask.Wait();
 
-            var exitTask = TracingProgramExecution(new(goodByMessage, false, true));
-            await Task.Run(() => exitTask);
-            exitTask.Wait();
+            // var exitTask = TracingProgramExecution(new(goodByMessage, false, true));
+            // await Task.Run(() => exitTask);
+            // exitTask.Wait();
+        }
+
+        private static IHost CreateHost(string[] args)
+        {
+            return Host.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration((context, configuration) =>
+                {
+                    configuration.AddJsonFile(
+                        "config.json",
+                        optional: false,
+                        reloadOnChange: true);
+                })
+                .ConfigureServices((context, services) =>
+                {
+                    var configuration = context.Configuration;
+
+                    services.Configure<ProgramOptions>(options =>
+                    {
+                        configuration.GetSection("Flags").Bind(options);
+                        configuration.GetSection("Messages").Bind(options);
+                        configuration.GetSection("Numbers").Bind(options);
+                        configuration.GetSection("Formulas").Bind(options);
+                        configuration.GetSection("Collections").Bind(options);
+                        configuration.GetSection("Strings").Bind(options);
+                    });
+
+                    // Регистрация менеджеров.
+                    services.AddTransient<IExcelSheetParsingManager, ExcelSheetParsingManager>();
+                    services.AddTransient<IExcelManager, ExcelManager>();
+                    services.AddTransient<ParsingManager>();
+                })
+                .Build();
         }
 
         /// <summary>
@@ -119,7 +151,7 @@ namespace TableAnalizer
         /// <param name="args">Строковые аргументы.</param>
         /// <returns>Объект IHost (опционально).</returns>
         /// <remarks>Шаг 2, Ревизия 112026</remarks>
-        private static IHost? RegisterConfigManagers(string[] args)
+        private static IHost? RegisterConfigAndManagers(string[] args)
         {
             IHost? host = Host.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((context, configuration) =>
@@ -136,7 +168,7 @@ namespace TableAnalizer
                 })
                 .ConfigureServices((context, services) =>
                 {
-                    RegisterProgramConfiguration(context.Configuration);
+                    // RegisterProgramConfiguration(context.Configuration);
 
                     // Add options
                     services.Configure<ProgramOptions>(
@@ -159,7 +191,9 @@ namespace TableAnalizer
 
                     // Add managers
                     services.AddTransient<ReportFileManager>();
+                    services.AddTransient<ExcelManager>();
                     services.AddTransient<IExcelManager, ExcelManager>();
+                    services.AddTransient<ExcelSheetParsingManager>();
                     services.AddTransient<IExcelSheetParsingManager, ExcelSheetParsingManager>();
                     services.AddTransient<SKUManager>();
                     services.AddTransient<AnalyticalManager>();
@@ -171,39 +205,39 @@ namespace TableAnalizer
         }
 
 
-        /// <summary>
-        /// Читает конфигурацию программы.
-        /// </summary>
-        /// <remarks>Шаг 1, Ревизия 112026</remarks>
-        private static void RegisterProgramConfiguration(IConfiguration config)
-        {
-            appConfig = config;
+        // /// <summary>
+        // /// Читает конфигурацию программы.
+        // /// </summary>
+        // /// <remarks>Шаг 1, Ревизия 112026</remarks>
+        // private static void RegisterProgramConfiguration(IConfiguration config)
+        // {
+        //     appConfig = config;
 
-            // Получение строковых  значений
-            IConfigurationSection? stringsSection = appConfig.GetSection("Strings");
-            appVersion = stringsSection.GetValue<string>("AppVersion");
+        //     // Получение строковых  значений
+        //     IConfigurationSection? stringsSection = appConfig.GetSection("Strings");
+        //     appVersion = stringsSection.GetValue<string>("AppVersion");
 
-            // Получение булевых значений
-            IConfigurationSection? flagsSection = appConfig.GetSection("Flags");
-            isTracing = flagsSection.GetValue<bool>("isTracing");
-            isCheckRansoms = flagsSection.GetValue<bool>(nameof(isCheckRansoms));
-            isCheckBalance = flagsSection.GetValue<bool>(nameof(isCheckBalance));
-            isCheckOutgoingProducts = flagsSection.GetValue<bool>(nameof(isCheckOutgoingProducts));
-            isCheckAdditionalData = flagsSection.GetValue<bool>(nameof(isCheckAdditionalData));
-            isManualResorting = flagsSection.GetValue<bool>("isManualResorting");
-            isAutoResorting = flagsSection.GetValue<bool>("isAutoResorting");
-            isConsiderInProgressStatusInAutoResorting = flagsSection.GetValue<bool>("isConsiderInProgressStatusInAutoResorting");
-            isCombineAliases = flagsSection.GetValue<bool>("isCombineAliases");
+        //     // Получение булевых значений
+        //     IConfigurationSection? flagsSection = appConfig.GetSection("Flags");
+        //     isTracing = flagsSection.GetValue<bool>("isTracing");
+        //     isCheckRansoms = flagsSection.GetValue<bool>(nameof(isCheckRansoms));
+        //     isCheckBalance = flagsSection.GetValue<bool>(nameof(isCheckBalance));
+        //     isCheckOutgoingProducts = flagsSection.GetValue<bool>(nameof(isCheckOutgoingProducts));
+        //     isCheckAdditionalData = flagsSection.GetValue<bool>(nameof(isCheckAdditionalData));
+        //     isManualResorting = flagsSection.GetValue<bool>("isManualResorting");
+        //     isAutoResorting = flagsSection.GetValue<bool>("isAutoResorting");
+        //     isConsiderInProgressStatusInAutoResorting = flagsSection.GetValue<bool>("isConsiderInProgressStatusInAutoResorting");
+        //     isCombineAliases = flagsSection.GetValue<bool>("isCombineAliases");
 
-            IConfigurationSection? messagesSection = appConfig.GetSection("Messages");
-            goodByMessage = messagesSection.GetValue<string>("GoodbyMessage");
-            TraceInfoFlag = messagesSection.GetValue<string>("TraceInfoFlag");
-            TraceErrorFlag = messagesSection.GetValue<string>("TraceErrorFlag");
+        //     IConfigurationSection? messagesSection = appConfig.GetSection("Messages");
+        //     goodByMessage = messagesSection.GetValue<string>("GoodbyMessage");
+        //     TraceInfoFlag = messagesSection.GetValue<string>("TraceInfoFlag");
+        //     TraceErrorFlag = messagesSection.GetValue<string>("TraceErrorFlag");
 
-            IConfigurationSection? numbersSection = appConfig.GetSection("Numbers");
-            TraceDelay = numbersSection.GetValue<int>("TraceDelay");
-            DeadlineDays = numbersSection.GetValue<int>("DeadlineDays");
-        }
+        //     IConfigurationSection? numbersSection = appConfig.GetSection("Numbers");
+        //     TraceDelay = numbersSection.GetValue<int>("TraceDelay");
+        //     DeadlineDays = numbersSection.GetValue<int>("DeadlineDays");
+        // }
 
 
 
