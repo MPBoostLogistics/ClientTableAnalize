@@ -54,10 +54,5 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         /// </summary>
         public int SKURemaining { get; private set; }
         #endregion
-
-        #region Functionality
-        public override string ToString() =>
-            $"Строка с данными баланса арт: {SKUNumber}, строка {RowNumber}, receipt: {SKUReceipt}, remaining: {SKURemaining}";
-        #endregion
     }
 }

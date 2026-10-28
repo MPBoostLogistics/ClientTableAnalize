@@ -3,6 +3,7 @@ using System.Reflection;
 using TableAnalizer.Interfaces;
 using TableAnalizer.Objects.Managers;
 using TableAnalizer.Objects.Managers.ExcelSheetParsing;
+using TableAnalizer.Services.Parsing;
 
 namespace TableAnalizer.Objects.Parsing
 {

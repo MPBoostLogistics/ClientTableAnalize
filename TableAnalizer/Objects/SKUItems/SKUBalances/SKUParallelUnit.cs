@@ -17,10 +17,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
 
 
         #region Functionality
-        public override string ToString()
-        {
-            return $"SKUParallelUnit: {SKUNumber}";
-        }
         #endregion
     }
 }

@@ -16,10 +16,7 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         #endregion Properties
 
         #region Functionality
-        public override string ToString()
-        {
-            return $"SKUAdjustment: {SKUSourceNumber} - {SKUAdjustmentSum}, comment: {SKUAdjustmentComment}";
-        }
+
 
         #endregion
     }

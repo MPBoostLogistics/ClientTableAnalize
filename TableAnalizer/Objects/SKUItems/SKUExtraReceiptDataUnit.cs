@@ -15,10 +15,7 @@ namespace TableAnalizer.Objects.SKUItems
         #endregion Properties
 
         #region Functionality
-        public override string ToString()
-        {
-            return $"Resort: SKU {SKUNumber}, count: {SKUExtraReceiptCount}, comment: {ResortComment}";
-        }
+
         #endregion
     }
 }

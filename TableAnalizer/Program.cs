@@ -9,14 +9,15 @@ using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Serilog;
 
 using TableAnalizer.Objects;
 using TableAnalizer.Objects.Managers;
-using TableAnalizer.Objects.Parsing;
 using TableAnalizer.Objects.ReportItems;
 using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
 using TableAnalizer.Services.Analytics;
+using TableAnalizer.Services.Console;
 using TableAnalizer.Services.Excel;
 using TableAnalizer.Services.Parsing;
 using TableAnalizer.Services.SKU;
@@ -25,7 +26,11 @@ namespace TableAnalizer
 {
     internal class Program
     {
-        #region Variables and constants   
+        #region Fields
+
+        static Microsoft.Extensions.Logging.ILogger? mainLogger;
+        private const string separatorString = "----------------------";
+
         /// <summary>
         /// Текущая версия приложения.
         /// </summary>
@@ -83,6 +88,7 @@ namespace TableAnalizer
         private static SKUManager? skuManager;
         private static AnalyticalManager? anManager;
 
+        private static IConsoleService consoleService;
         private static IReportFileService reportService;
         private static IExcelFileService exFileService;
         private static IParsingService parsService;
@@ -98,15 +104,36 @@ namespace TableAnalizer
         /// <remarks>Шаг 1, Ревизия 112026</remarks>
         private static async Task Main(string[] args)
         {
-            using var host = CreateHost(args);
-            using var scope = host.Services.CreateScope();
+            using (var host = CreateHost(args))
+            {
+                mainLogger = host.Services
+                        .GetRequiredService<ILoggerFactory>()
+                        .CreateLogger("Program");
 
-            // Получение сервисов.
-            reportService = scope.ServiceProvider.GetRequiredService<IReportFileService>();
-            exFileService = scope.ServiceProvider.GetRequiredService<IExcelFileService>();
-            parsService = scope.ServiceProvider.GetRequiredService<IParsingService>();
-            skuService = scope.ServiceProvider.GetRequiredService<ISKUService>();
-            analytService = scope.ServiceProvider.GetRequiredService<IAnalyticalService>();
+                mainLogger.LogInformation(separatorString);
+                mainLogger.LogInformation("Новый запуск приложения");
+
+                using (var scope = host.Services.CreateScope())
+                {
+                    // Получение сервисов.
+                    parsService = scope.ServiceProvider.GetRequiredService<IParsingService>();
+                    consoleService = scope.ServiceProvider.GetRequiredService<IConsoleService>();
+                    reportService = scope.ServiceProvider.GetRequiredService<IReportFileService>();
+                    exFileService = scope.ServiceProvider.GetRequiredService<IExcelFileService>();
+                    skuService = scope.ServiceProvider.GetRequiredService<ISKUService>();
+                    analytService = scope.ServiceProvider.GetRequiredService<IAnalyticalService>();
+
+                    // Получение первичных данных от пользователя из консоли.
+                    var getDataFromConsoleTask = consoleService.GetPrimaryDataFromConsole();
+                    await Task.Run(async () => getDataFromConsoleTask);
+                    getDataFromConsoleTask.Wait();
+                    mainLogger.LogInformation("Директория с клиентскими отчетами {ServiceName}", getDataFromConsoleTask.Result);
+                }
+
+                mainLogger.LogInformation("Приложение завершило работу.");
+
+            }
+
 
             // var analizeTask = Analyze();
             // await Task.Run(() => analizeTask);
@@ -147,9 +174,10 @@ namespace TableAnalizer
                          configuration.GetSection("Strings").Bind(options);
                      });
 
+                     services.AddTransient<IParsingService, ParsingService>();
+                     services.AddTransient<IConsoleService, ConsoleService>();
                      services.AddTransient<IReportFileService, ReportFileService>();
                      services.AddTransient<IExcelFileService, ExcelFileService>();
-                     services.AddTransient<IParsingService, ParsingService>();
                      services.AddTransient<ISKUService, SKUService>();
                      services.AddTransient<IAnalyticalService, AnalyticalService>();
                  });
@@ -187,11 +215,11 @@ namespace TableAnalizer
             await Task.Run(async () => checkingForPresenceDataTask);
             checkingForPresenceDataTask.Wait();
 
-            // Start analize
-            await TracingProgramExecution(new("Анализ первичных данных начат...", false, false));
-            var analyzeСlientReportTask = AnalyzePresenceData();
-            await Task.Run(() => analyzeСlientReportTask);
-            analyzeСlientReportTask?.Wait();
+            // // Start analize
+            // await TracingProgramExecution(new("Анализ первичных данных начат...", false, false));
+            // var analyzeСlientReportTask = AnalyzePresenceData();
+            // await Task.Run(() => analyzeСlientReportTask);
+            // analyzeСlientReportTask?.Wait();
 
             // UnsubscribeManagersFromEvents();
         }
@@ -217,45 +245,8 @@ namespace TableAnalizer
             ClientReportsDirectoryPath = getReportsTask.Result!;
 
             await TracingProgramExecution(new($"Директория с клиентскими данными: {ClientReportsDirectoryPath.Name}", false, false));
-
-            // Get order period start date  
-            // DataFromConsole orderPeriodStartDateData = new(
-            //   questionMessage: "Укажите дату начала заказов клиента: ",
-            //   errorMessage: "Дата начала заказов не указана или указана неверно.\nПроверьте правильность ввода и повторите попытку.",
-            //   typeCode: ParsingTypeCode.DataOnlyTypeCode,
-            //   isRequred: true);
-
-            // var getStartDateTask = GetValueFromConsole<DateOnly?>(orderPeriodStartDateData);
-            // await Task.Run(() => getStartDateTask);
-            // getStartDateTask.Wait();
-
-            //OrderPeriodStartDate = getStartDateTask.Result ?? orderPeriodStartDateDefault;
             OrderPeriodStartDate = new DateOnly(2022, 12, 26);
             await TracingProgramExecution(new($"Дата начала заказов: {OrderPeriodStartDate}", false, false));
-
-            // // Select report direction
-            // DataFromConsole reportDirectionData = new(
-            //     questionMessage: "Выберите целевой тип отчета:\n1. Внутренний (для работы отдела логистики)\n2. Внешний (для предоставления клиенту)\nESC: Выход из программы.",
-            //     errorMessage: "Клавиша нажата неверно.\nПроверьте правильность ввода и повторите попытку.",
-            //     typeCode: ParsingTypeCode.StringTypeCode, // Dummy
-            //     isRequred: true);
-
-            // var reportDirectionTask = GetKeyFromConsole(reportDirectionData, [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape]);
-            // await Task.Run(() => reportDirectionTask);
-            // reportDirectionTask.Wait();
-
-            // switch (reportDirectionTask.Result)
-            // {
-            //     case ConsoleKey.D1:
-            //         ReportFileManager.ReportRecipientType = TargetReportRecipientType.Internal;
-            //         break;
-            //     case ConsoleKey.D2:
-            //         ReportFileManager.ReportRecipientType = TargetReportRecipientType.External;
-            //         break;
-            //     case ConsoleKey.Escape:
-            //         ReportFileManager.ReportRecipientType = null;
-            //         break;
-            // }
         }
 
         /// <summary>

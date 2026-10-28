@@ -17,13 +17,5 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         public ClaimExecutor ClaimExecutor { get; private set; }
         public ClaimResolutionStatus ClaimResolutionStatus { get; private set; }
         #endregion
-
-        #region Functionality
-        public override string ToString()
-        {
-            return $"SKUPaidShortageDataUnit: {SKUNumber}, sum: {SKUSum}, amount: {SKUAmount}, exec: {ClaimExecutor}";
-        }
-
-        #endregion
     }
 }

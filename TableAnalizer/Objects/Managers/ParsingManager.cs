@@ -1,5 +1,6 @@
 using System.Globalization;
 using TableAnalizer.Interfaces;
+using TableAnalizer.Services.Parsing;
 
 namespace TableAnalizer.Objects.Managers
 {

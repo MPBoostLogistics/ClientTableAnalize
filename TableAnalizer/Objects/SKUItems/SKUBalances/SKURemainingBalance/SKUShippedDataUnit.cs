@@ -13,9 +13,5 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         public int SKUShippedCount { get; private set; }
 
         #endregion
-        #region  Constructors   
-        override public string ToString() =>
-            $"SKUShippedDataUnit -> SKUNumber: {SKUNumber}, SKUShippedCount: {SKUShippedCount}";
-        #endregion
     }
 }

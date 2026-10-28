@@ -27,7 +27,7 @@ namespace TableAnalizer.Services.SKU
 
             if (_options.IsTracing)
             {
-                _logger.LogInformation("{TraceInfoFlag} Создан {ServiceName}", _options.TraceInfoFlag, ServiceName);
+                _logger.LogInformation("Создана служба  {ServiceName}", ServiceName);
             }
         }
     }

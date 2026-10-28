@@ -28,13 +28,5 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances.SKUResortBalance
         /// </summary>
         public string? SKUResortComment { get; set; }
         #endregion Properties
-
-        #region Functionality
-        public override string ToString()
-        {
-            return $"Пересорт расхода из доп. (ручн.): {SKUItemWrittenOffNumber} на {SKUItemAddedNumber}, {SKUResortSum} шт., коммен.: {SKUResortComment}";
-        }
-
-        #endregion
     }
 }

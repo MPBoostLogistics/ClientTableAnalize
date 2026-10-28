@@ -13,8 +13,6 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalances
         public int SKUTransferedCount { get; private set; }
 
         #endregion
-        #region  Constructors   
-        override public string ToString() => $"number: {SKUNumber}, transfered: {SKUTransferedCount}";
-        #endregion
+
     }
 }

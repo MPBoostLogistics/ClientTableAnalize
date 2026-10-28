@@ -10,13 +10,5 @@ namespace TableAnalizer.Objects.SKUItems.SKUBalance
         public List<long> SKUAliasNumbers { get; set; } = [];
         public string? AliasComment { get; set; }
         #endregion Properties
-
-        #region Functionality
-        public override string ToString()
-        {
-            string combinedString = string.Join(",", SKUAliasNumbers.ToArray());
-            return $"SKU: {SKUSourceNumber} - {combinedString}, comment: {AliasComment}";
-        }
-        #endregion
     }
 }
