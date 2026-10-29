@@ -44,6 +44,7 @@ namespace TableAnalizer.Services.Console
         /// Получение первичных данных из консоли от пользователя.
         /// </summary>
         /// <returns>Объект DirectoryInfo?</returns>
+        /// <remarks>Шаг 2, Ревизия 112026</remarks>
         public async Task<DirectoryInfo> GetPrimaryDataFromConsole()
         {
             DataFromConsole cletientReportPathData = new(
@@ -59,6 +60,12 @@ namespace TableAnalizer.Services.Console
             return getReportsTask.Result!;
         }
 
+        /// <summary>
+        /// Получить значение обобщего типа из консоли.
+        /// </summary>
+        /// <typeparam name="T">Тип данных.</typeparam>
+        /// <param name="data">Сущность интерации получения данных.</param>
+        /// <returns>Значение с определеным типом.</returns>
         private async Task<T?> GetValueFromConsole<T>(DataFromConsole data)
         {
             T? type = default;

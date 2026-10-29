@@ -1,7 +1,7 @@
 namespace TableAnalizer.Objects
 {
     /// <summary>
-    /// Type of primary data for reports
+    /// Тип первичных данных для отчетов.
     /// </summary>
     public enum PrimaryDataType
     {

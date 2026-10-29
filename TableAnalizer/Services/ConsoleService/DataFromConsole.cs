@@ -2,6 +2,13 @@ using TableAnalizer.Objects;
 
 namespace TableAnalizer.Services.Console
 {
+    /// <summary>
+    /// Сущность итерации ввода из командной строки.
+    /// </summary>
+    /// <param name="questionMessage">Сообщение вопроса к пользователю в консоли.</param>
+    /// <param name="errorMessage">Сообщение ошибки пользователю в консоль.</param>
+    /// <param name="typeCode">Код типа данных, получаемых из консоли.</param>
+    /// <param name="isRequred">Флаг обязательного значения.</param>
     public class DataFromConsole(string questionMessage, string errorMessage, ParsingTypeCode typeCode, bool isRequred)
     {
         #region Properties

@@ -115,7 +115,7 @@ namespace TableAnalizer
 
                 using (var scope = host.Services.CreateScope())
                 {
-                    // Получение сервисов.
+                    // Создание сервисов.
                     parsService = scope.ServiceProvider.GetRequiredService<IParsingService>();
                     consoleService = scope.ServiceProvider.GetRequiredService<IConsoleService>();
                     reportService = scope.ServiceProvider.GetRequiredService<IReportFileService>();
@@ -123,15 +123,41 @@ namespace TableAnalizer
                     skuService = scope.ServiceProvider.GetRequiredService<ISKUService>();
                     analytService = scope.ServiceProvider.GetRequiredService<IAnalyticalService>();
 
-                    // Получение первичных данных от пользователя из консоли.
+                    // Получение директории с первичными данными из консоли.
                     var getDataFromConsoleTask = consoleService.GetPrimaryDataFromConsole();
                     await Task.Run(async () => getDataFromConsoleTask);
                     getDataFromConsoleTask.Wait();
                     mainLogger.LogInformation("Директория с клиентскими отчетами {ServiceName}", getDataFromConsoleTask.Result);
+
+                    // Проверка данных (постоянные).
+                    var getPermanentDataTask = reportService!.CheckOfAvailailityData(null, PrimaryDataType.Permanent);
+                    await Task.Run(() => getPermanentDataTask);
+                    getPermanentDataTask.Wait();
+
+                    bool permanentDataTaskResult = getPermanentDataTask.Result;
+
+                    if (!permanentDataTaskResult)
+                    {
+                        mainLogger.LogCritical("Постоянные данные не валидны.");
+                        ConsoleAppService.ConsoleAppExit("");
+                    }
+
+                    // // Проверка данных (переменные, клиентские).
+                    // var getVariableDataTask = reportService!.CheckOfAvailailityData(ClientReportsDirectoryPath!.FullName, PrimaryDataType.Variable);
+                    // await Task.Run(() => getVariableDataTask);
+                    // getVariableDataTask.Wait();
+
+                    // bool variableDataTaskResult = getVariableDataTask.Result;
+
+                    // if (!variableDataTaskResult)
+                    // {
+                    //     mainLogger.LogCritical("Переменные данные не валидны.");
+                    //     ConsoleAppService.ConsoleAppExit("");
+                    // }
+
                 }
 
-                mainLogger.LogInformation("Приложение завершило работу.");
-
+                mainLogger.LogInformation("Приложение успешно завершило работу");
             }
 
 
@@ -205,15 +231,10 @@ namespace TableAnalizer
         {
             await Task.Delay(10); // dummy
 
-            // Get client report path, type of target report from console.
-            var getDataFromConsoleTask = GetPrimaryDataFromConsole();
-            await Task.Run(async () => getDataFromConsoleTask);
-            getDataFromConsoleTask.Wait();
-
-            // Checking for the presence of data (permanent and new).
-            var checkingForPresenceDataTask = CheckingForPresenceData();
-            await Task.Run(async () => checkingForPresenceDataTask);
-            checkingForPresenceDataTask.Wait();
+            // // Checking for the presence of data (permanent and new).
+            // var checkingForPresenceDataTask = CheckingForPresenceData();
+            // await Task.Run(async () => checkingForPresenceDataTask);
+            // checkingForPresenceDataTask.Wait();
 
             // // Start analize
             // await TracingProgramExecution(new("Анализ первичных данных начат...", false, false));
@@ -224,60 +245,37 @@ namespace TableAnalizer
             // UnsubscribeManagersFromEvents();
         }
 
-        /// <summary>
-        /// Get primary data from manager in console.
-        /// </summary>
-        /// <returns>Async Task</returns>
-        /// <remarks>oct 2025 ver.</remarks>
-        private static async Task GetPrimaryDataFromConsole()
-        {
-            // Get client reports path
-            DataFromConsole cletientReportPathData = new(
-                questionMessage: "Укажите путь к директории с клиентскими данными: ",
-                errorMessage: "Путь к директории с клиентскими данными не указан или указан неверно.\nПроверьте правильность ввода и повторите попытку.",
-                typeCode: ParsingTypeCode.DirectoryTypeCode,
-                isRequred: true);
 
-            var getReportsTask = GetValueFromConsole<DirectoryInfo?>(cletientReportPathData);
-            await Task.Run(() => getReportsTask);
-            getReportsTask.Wait();
-
-            ClientReportsDirectoryPath = getReportsTask.Result!;
-
-            await TracingProgramExecution(new($"Директория с клиентскими данными: {ClientReportsDirectoryPath.Name}", false, false));
-            OrderPeriodStartDate = new DateOnly(2022, 12, 26);
-            await TracingProgramExecution(new($"Дата начала заказов: {OrderPeriodStartDate}", false, false));
-        }
 
         /// <summary>
         /// Checking for the presence of permanent and variable data.
         /// </summary>
         /// <returns>Async task as void</returns>
         /// <remarks>oct 2025 ver.</remarks>
-        private static async Task CheckingForPresenceData()
-        {
-            // Checking for the presence of permanent data
-            var getPermanentDataTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Permanent);
-            await Task.Run(() => getPermanentDataTask);
-            getPermanentDataTask.Wait();
+        // private static async Task CheckingForPresenceData()
+        // {
+        //     // Checking for the presence of permanent data
+        //     var getPermanentDataTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Permanent);
+        //     await Task.Run(() => getPermanentDataTask);
+        //     getPermanentDataTask.Wait();
 
-            await TracingProgramExecution(
-                new(!getPermanentDataTask.Result.isError ?
-                    "Первичнные постоянные данные валидны." :
-                    getPermanentDataTask.Result.message,
-                    getPermanentDataTask.Result.isError, getPermanentDataTask.Result.isError));
+        //     await TracingProgramExecution(
+        //         new(!getPermanentDataTask.Result.isError ?
+        //             "Первичнные постоянные данные валидны." :
+        //             getPermanentDataTask.Result.message,
+        //             getPermanentDataTask.Result.isError, getPermanentDataTask.Result.isError));
 
-            // Checking for the presence of variable data
-            var getVariableDataTask = reportFileManager!.CheckOfAvailailityData(ClientReportsDirectoryPath!.FullName, PrimaryDataType.Variable);
-            await Task.Run(() => getVariableDataTask);
-            getVariableDataTask.Wait();
+        //     // Checking for the presence of variable data
+        //     var getVariableDataTask = reportFileManager!.CheckOfAvailailityData(ClientReportsDirectoryPath!.FullName, PrimaryDataType.Variable);
+        //     await Task.Run(() => getVariableDataTask);
+        //     getVariableDataTask.Wait();
 
-            await TracingProgramExecution(new(!getVariableDataTask.Result.isError ?
-                 "Первичнные переменные данные валидны." :
-                 getVariableDataTask.Result.message,
-             getVariableDataTask.Result.isError,
-             getVariableDataTask.Result.isError));
-        }
+        //     await TracingProgramExecution(new(!getVariableDataTask.Result.isError ?
+        //          "Первичнные переменные данные валидны." :
+        //          getVariableDataTask.Result.message,
+        //      getVariableDataTask.Result.isError,
+        //      getVariableDataTask.Result.isError));
+        // }
 
         private static async Task AnalyzePresenceData()
         {
@@ -489,43 +487,6 @@ namespace TableAnalizer
                             return null;
                     }
             }
-        }
-
-        /// <summary>
-        /// Get value from manager in console.
-        /// </summary>
-        /// <typeparam name="T">Type of returned value.</typeparam>
-        /// <param name="data">DataFromConsole object with parsing data.</param>
-        /// <returns>Value for generic type or null.</returns>
-        /// <remarks>oct 2025 ver.</remarks>
-        private static async Task<T?> GetValueFromConsole<T>(DataFromConsole data)
-        {
-            T? type = default;
-            while (type is null)
-            {
-                var getValueTask = GetStringFromConsole(data);
-                await Task.Run(() => getValueTask);
-                getValueTask.Wait();
-
-                if (!string.IsNullOrEmpty(getValueTask.Result) &&
-                    ParsingManager.Parse(getValueTask.Result!.Trim('\''),
-                    data.TypeCode,
-                    data.IsRequred,
-                    out object? resultObj) &&
-                    resultObj is T info)
-                {
-                    type = info;
-                    break;
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Console.WriteLine("Значение не указано или указано неверно.\nПроверьте правильность ввода и повторите попытку.");
-                    await Task.Delay(TraceDelay + 1000);
-                    continue;
-                }
-            }
-            return type;
         }
 
         /// <summary>
