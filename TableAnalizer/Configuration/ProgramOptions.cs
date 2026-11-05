@@ -1,4 +1,4 @@
-namespace TableAnalizer
+namespace TableAnalizer.Configuration
 {
     /// <summary>
     /// Опции запуска программы, читаются из config.json и передаются в менеджеры.

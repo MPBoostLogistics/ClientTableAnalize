@@ -1,9 +1,10 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TableAnalizer.Configuration;
 using TableAnalizer.Objects;
 using TableAnalizer.Objects.ReportItems;
 
-namespace TableAnalizer.Services.Parsing
+namespace TableAnalizer.Services
 {
     public interface IReportFileService : IService
     {

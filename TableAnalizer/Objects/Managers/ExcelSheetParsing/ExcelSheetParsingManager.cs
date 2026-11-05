@@ -4,6 +4,7 @@ using OfficeOpenXml;
 using Microsoft.Extensions.Logging;
 using TableAnalizer.Utils;
 using Microsoft.Extensions.Options;
+using TableAnalizer.Configuration;
 
 
 namespace TableAnalizer.Objects.Managers.ExcelSheetParsing

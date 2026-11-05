@@ -1,16 +1,12 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-
+using TableAnalizer.Configuration;
 using TableAnalizer.Objects;
-using TableAnalizer.Services.Parsing;
+using TableAnalizer.Services;
+using TableAnalizer.Services.Console;
 
-namespace TableAnalizer.Services.Console
+namespace TableAnalizer.Console
 {
-    public interface IConsoleService : IService
-    {
-        public Task<DirectoryInfo> GetPrimaryDataFromConsole();
-    }
-
     public partial class ConsoleService : IConsoleService
     {
         #region Fields

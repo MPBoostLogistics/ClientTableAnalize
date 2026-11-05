@@ -3,596 +3,636 @@
 
 // Unicode:  https://www.compart.com/en/unicode/
 
-using System.Diagnostics;
-using System.Text;
-using CSharpHelpers.Services;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Serilog;
-
-using TableAnalizer.Objects;
-using TableAnalizer.Objects.Managers;
-using TableAnalizer.Objects.ReportItems;
-using TableAnalizer.Objects.SKUItems.SKUForTargetReports;
-using TableAnalizer.Services.Analytics;
-using TableAnalizer.Services.Console;
-using TableAnalizer.Services.Excel;
-using TableAnalizer.Services.Parsing;
-using TableAnalizer.Services.SKU;
+using TableAnalizer.Application;
 
 namespace TableAnalizer
 {
-    internal class Program
+
+    using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Hosting;
+    using Serilog;
+
+    internal static class Program
     {
-        #region Fields
-
-        static Microsoft.Extensions.Logging.ILogger? mainLogger;
-        private const string separatorString = "----------------------";
-
-        /// <summary>
-        /// Текущая версия приложения.
-        /// </summary>
-        private static string appVersion = string.Empty;
-        /// <summary>
-        /// Сообщение о завершении работы программы.
-        /// </summary>
-        private static string goodByMessage = string.Empty;
-        /// <summary>
-        /// Флаг трассировки работы приложения.
-        /// </summary>
-        private static bool isTracing;
-        /// <summary>
-        /// Флаг учета (проверки) выкупов
-        /// </summary>
-        private static bool isCheckRansoms;
-        /// <summary>
-        /// Флаг учета (проверки) баланса (прихода и остатков) товаров на складе
-        /// </summary>
-        private static bool isCheckBalance;
-        /// <summary>
-        /// Флаг учета (проверки) баланса расхода товаров со склада
-        /// </summary>
-        private static bool isCheckOutgoingProducts;
-        /// <summary>
-        /// Флаг учета (проверки) данных дополнительного отчета
-        /// </summary>
-        private static bool isCheckAdditionalData;
-
-        private static bool isManualResorting;
-
-        private static bool isAutoResorting;
-
-        /// <summary>
-        /// Флаг учета статуса "В работе" при автопересортах.
-        /// </summary>
-        private static bool isConsiderInProgressStatusInAutoResorting;
-        private static bool isCombineAliases;
-
-        private static readonly DateOnly orderPeriodStartDateDefault = DateOnly.Parse("2022-12-26");
-
-        private static IConfiguration? appConfig;
-
-        #endregion
-
-        #region Properties 
-        private static int TraceDelay { get; set; }
-        private static string TraceInfoFlag { get; set; } = string.Empty;
-        private static string TraceErrorFlag { get; set; } = string.Empty;
-        private static DirectoryInfo? ClientReportsDirectoryPath { get; set; } = null;
-        private static DateOnly OrderPeriodStartDate { get; set; } = orderPeriodStartDateDefault;
-
-        private static ReportFileManager? reportFileManager;
-        private static ExcelManager? excelManager;
-        private static SKUManager? skuManager;
-        private static AnalyticalManager? anManager;
-
-        private static IConsoleService consoleService;
-        private static IReportFileService reportService;
-        private static IExcelFileService exFileService;
-        private static IParsingService parsService;
-        private static ISKUService skuService;
-        private static IAnalyticalService analytService;
-        #endregion
-
-        #region Functionality
-        /// <summary>
-        /// Точка входа в программу.
-        /// </summary>
-        /// <param name="args"Строковые аргументы></param>
-        /// <remarks>Шаг 1, Ревизия 112026</remarks>
-        private static async Task Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
-            using (var host = CreateHost(args))
-            {
-                mainLogger = host.Services
-                        .GetRequiredService<ILoggerFactory>()
-                        .CreateLogger("Program");
+            using var host = CreateHost(args);
 
-                mainLogger.LogInformation(separatorString);
-                mainLogger.LogInformation("Новый запуск приложения");
+            var workflow = host.Services
+                .GetRequiredService<IPrimaryDataWorkflow>();
 
-                using (var scope = host.Services.CreateScope())
-                {
-                    // Создание сервисов.
-                    parsService = scope.ServiceProvider.GetRequiredService<IParsingService>();
-                    consoleService = scope.ServiceProvider.GetRequiredService<IConsoleService>();
-                    reportService = scope.ServiceProvider.GetRequiredService<IReportFileService>();
-                    exFileService = scope.ServiceProvider.GetRequiredService<IExcelFileService>();
-                    skuService = scope.ServiceProvider.GetRequiredService<ISKUService>();
-                    analytService = scope.ServiceProvider.GetRequiredService<IAnalyticalService>();
-
-                    // Получение директории с первичными данными из консоли.
-                    var getDataFromConsoleTask = consoleService.GetPrimaryDataFromConsole();
-                    await Task.Run(async () => getDataFromConsoleTask);
-                    getDataFromConsoleTask.Wait();
-                    mainLogger.LogInformation("Директория с клиентскими отчетами {ServiceName}", getDataFromConsoleTask.Result);
-
-                    // Проверка данных (постоянные).
-                    var getPermanentDataTask = reportService!.CheckOfAvailailityData(null, PrimaryDataType.Permanent);
-                    await Task.Run(() => getPermanentDataTask);
-                    getPermanentDataTask.Wait();
-
-                    bool permanentDataTaskResult = getPermanentDataTask.Result;
-
-                    if (!permanentDataTaskResult)
-                    {
-                        mainLogger.LogCritical("Постоянные данные не валидны.");
-                        ConsoleAppService.ConsoleAppExit("");
-                    }
-
-                    // // Проверка данных (переменные, клиентские).
-                    // var getVariableDataTask = reportService!.CheckOfAvailailityData(ClientReportsDirectoryPath!.FullName, PrimaryDataType.Variable);
-                    // await Task.Run(() => getVariableDataTask);
-                    // getVariableDataTask.Wait();
-
-                    // bool variableDataTaskResult = getVariableDataTask.Result;
-
-                    // if (!variableDataTaskResult)
-                    // {
-                    //     mainLogger.LogCritical("Переменные данные не валидны.");
-                    //     ConsoleAppService.ConsoleAppExit("");
-                    // }
-
-                }
-
-                mainLogger.LogInformation("Приложение успешно завершило работу");
-            }
-
-
-            // var analizeTask = Analyze();
-            // await Task.Run(() => analizeTask);
-            // analizeTask.Wait();
-
-            // var exitTask = TracingProgramExecution(new(goodByMessage, false, true));
-            // await Task.Run(() => exitTask);
-            // exitTask.Wait();
+            return await workflow.RunAsync();
         }
 
-        /// <summary>
-        /// Чтение конфигрурации, создание хоста со службами.
-        /// </summary>
-        /// <param name="args">Строковые аргументы.</param>
-        /// <returns>Объект IHost.</returns>
-        /// <remarks>Шаг 2, Ревизия 112026</remarks>
         private static IHost CreateHost(string[] args)
         {
-            var hostBuilder = Host.CreateDefaultBuilder(args)
-                 .ConfigureAppConfiguration((context, configuration) =>
-                 {
-                     configuration.AddJsonFile(
-                         "config.json",
-                         optional: false,
-                         reloadOnChange: true);
-                 })
-                 .ConfigureServices((context, services) =>
-                 {
-                     var configuration = context.Configuration;
-
-                     services.Configure<ProgramOptions>(options =>
-                     {
-                         configuration.GetSection("Flags").Bind(options);
-                         configuration.GetSection("Messages").Bind(options);
-                         configuration.GetSection("Numbers").Bind(options);
-                         configuration.GetSection("Formulas").Bind(options);
-                         configuration.GetSection("Collections").Bind(options);
-                         configuration.GetSection("Strings").Bind(options);
-                     });
-
-                     services.AddTransient<IParsingService, ParsingService>();
-                     services.AddTransient<IConsoleService, ConsoleService>();
-                     services.AddTransient<IReportFileService, ReportFileService>();
-                     services.AddTransient<IExcelFileService, ExcelFileService>();
-                     services.AddTransient<ISKUService, SKUService>();
-                     services.AddTransient<IAnalyticalService, AnalyticalService>();
-                 });
-
-#if DEBUG
-            // Добавление логирования в файл.
-            hostBuilder.UseSerilog((context, services, loggerConfiguration) =>
-            {
-                loggerConfiguration
-                    .MinimumLevel.Debug()
-                    .Enrich.FromLogContext()
-                    .WriteTo.Console()
-                    .WriteTo.File(
-                        "logs/log-.txt",
-                        rollingInterval: RollingInterval.Day);
-            });
-#endif
-
-            return hostBuilder.Build(); ;
+            return Host.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration((_, configuration) =>
+                {
+                    configuration.AddJsonFile(
+                        "config.json",
+                        optional: false,
+                        reloadOnChange: true);
+                })
+                .ConfigureServices((context, services) =>
+                {
+                    services.AddApplication();
+                    services.AddApplicationServices(context.Configuration);
+                })
+                .UseSerilog((context, services, loggerConfiguration) =>
+                {
+                    loggerConfiguration
+                        .MinimumLevel.Debug()
+                        .Enrich.FromLogContext()
+                        .WriteTo.Console()
+                        .WriteTo.File(
+                            "logs/log-.txt",
+                            rollingInterval: RollingInterval.Day);
+                }).Build();
         }
-
-
-        /// <remarks>oct 2025 ver.</remarks>
-        private static async Task Analyze()
-        {
-            await Task.Delay(10); // dummy
-
-            // // Checking for the presence of data (permanent and new).
-            // var checkingForPresenceDataTask = CheckingForPresenceData();
-            // await Task.Run(async () => checkingForPresenceDataTask);
-            // checkingForPresenceDataTask.Wait();
-
-            // // Start analize
-            // await TracingProgramExecution(new("Анализ первичных данных начат...", false, false));
-            // var analyzeСlientReportTask = AnalyzePresenceData();
-            // await Task.Run(() => analyzeСlientReportTask);
-            // analyzeСlientReportTask?.Wait();
-
-            // UnsubscribeManagersFromEvents();
-        }
-
-
-
-        /// <summary>
-        /// Checking for the presence of permanent and variable data.
-        /// </summary>
-        /// <returns>Async task as void</returns>
-        /// <remarks>oct 2025 ver.</remarks>
-        // private static async Task CheckingForPresenceData()
-        // {
-        //     // Checking for the presence of permanent data
-        //     var getPermanentDataTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Permanent);
-        //     await Task.Run(() => getPermanentDataTask);
-        //     getPermanentDataTask.Wait();
-
-        //     await TracingProgramExecution(
-        //         new(!getPermanentDataTask.Result.isError ?
-        //             "Первичнные постоянные данные валидны." :
-        //             getPermanentDataTask.Result.message,
-        //             getPermanentDataTask.Result.isError, getPermanentDataTask.Result.isError));
-
-        //     // Checking for the presence of variable data
-        //     var getVariableDataTask = reportFileManager!.CheckOfAvailailityData(ClientReportsDirectoryPath!.FullName, PrimaryDataType.Variable);
-        //     await Task.Run(() => getVariableDataTask);
-        //     getVariableDataTask.Wait();
-
-        //     await TracingProgramExecution(new(!getVariableDataTask.Result.isError ?
-        //          "Первичнные переменные данные валидны." :
-        //          getVariableDataTask.Result.message,
-        //      getVariableDataTask.Result.isError,
-        //      getVariableDataTask.Result.isError));
-        // }
-
-        private static async Task AnalyzePresenceData()
-        {
-            List<SourceReportItemKey> existingKeys = ReportFileManager.PrimaryReportFiles.Select(el => el.Key).ToList();
-
-            // Report analysis tasks
-            if (existingKeys is not null && existingKeys.Count > 0)
-            {
-                // Ransoms task
-                if (isCheckRansoms && existingKeys.Contains(SourceReportItemKey.Ransoms))
-                {
-                    Task ransomsTask = ReceivingAndProcessingData(SourceReportItemKey.Ransoms);
-                    await Task.Run(async () => await ransomsTask);
-                    ransomsTask.Wait();
-                }
-
-                // Balance task
-                if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.Balance))
-                {
-                    var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Balance);
-                    await Task.Run(async () => await currentTask);
-                    currentTask.Wait();
-                }
-
-                // WriteOff points via warehouse task (shortage)
-                if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseShortage))
-                {
-                    var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
-                    await Task.Run(async () => await currentTask);
-                    currentTask.Wait();
-                }
-
-                // WriteOff points via warehouse task (adjustment)
-                if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment))
-                {
-                    var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
-                    await Task.Run(async () => await currentTask);
-                    currentTask.Wait();
-                }
-
-                // WriteOff points task 
-                if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.WriteOffPoints))
-                {
-                    var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPoints);
-                    await Task.Run(async () => await currentTask);
-                    currentTask.Wait();
-                }
-
-                // Outgoing products task
-                if (isCheckOutgoingProducts && existingKeys.Contains(SourceReportItemKey.OutgoingProducts))
-                {
-                    var currentTask = ReceivingAndProcessingData(SourceReportItemKey.OutgoingProducts);
-                    await Task.Run(async () => await currentTask);
-                    currentTask.Wait();
-                }
-
-                // Transfer task
-                if (isCheckOutgoingProducts && existingKeys.Contains(SourceReportItemKey.Transfered))
-                {
-                    var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Transfered);
-                    await Task.Run(async () => await currentTask);
-                    currentTask.Wait();
-                }
-
-                // Additional task
-                if (isCheckAdditionalData && existingKeys.Contains(SourceReportItemKey.Additional))
-                {
-                    var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Additional);
-                    await Task.Run(async () => await currentTask);
-                    currentTask.Wait();
-                }
-
-                // Paid shortages task
-                if (isCheckBalance && isCheckOutgoingProducts && existingKeys.Contains(SourceReportItemKey.ShortagesPaid))
-                {
-                    var currentTask = ReceivingAndProcessingData(SourceReportItemKey.ShortagesPaid);
-                    await Task.Run(async () => await currentTask);
-                    currentTask.Wait();
-                }
-
-                // Delete old files
-                Task deletOldReportsTask = reportFileManager!.DeletOldReports(isTracing);
-                await Task.Run(() => deletOldReportsTask);
-                deletOldReportsTask.Wait();
-
-                // Make and combine skus for target report
-                Task<List<SKUForFinalReport>>? skusForTargetReportTask;
-                List<SKUForFinalReport>? skuForTargetReports = [];
-
-                skusForTargetReportTask = !isCombineAliases || skuManager!.SkuAliasesBalanceUnits.Count() == 0 ?
-                    skuManager!.MakeSkusForTargetReport() :
-                    skuManager!.MakeAndCombineSkusForTargetReport();
-
-                await Task.Run(() => skusForTargetReportTask);
-                skusForTargetReportTask!.Wait();
-                skuForTargetReports = skusForTargetReportTask.Result;
-
-                if (isTracing)
-                    await TracingProgramExecution(new($"Артикулов для финального отчета: {skusForTargetReportTask.Result.Count}.", false, false));
-
-                // Article manual-sorting
-                if (isManualResorting && anManager != null)
-                {
-                    Task<bool> manualResortTasks = anManager.SetManualResorts(ref skuForTargetReports, isConsiderInProgressStatusInAutoResorting);
-                    await Task.Run(() => manualResortTasks);
-                    manualResortTasks!.Wait();
-                }
-
-                // Article analysis and automatic re-sorting
-                if (isAutoResorting)
-                {
-                    Task[] fixAndAutoResortTasks =
-                    [
-                        AnalyticalManager.FixReceiptBySKUsOfParallelClients(ref skuForTargetReports, isConsiderInProgressStatusInAutoResorting),
-                    AnalyticalManager.FixWriteOffByPointsThroughWarehouse(ref skuForTargetReports, isConsiderInProgressStatusInAutoResorting),
-                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByOutgoing, isConsiderInProgressStatusInAutoResorting),
-                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByTransfer, isConsiderInProgressStatusInAutoResorting),
-                    AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, isConsiderInProgressStatusInAutoResorting),
-                    AnalyticalManager.FixExtraReceipts(ref skuForTargetReports, true)
-                    ];
-
-                    for (int i = 0; i < fixAndAutoResortTasks.Length; i++)
-                    {
-                        await Task.Run(() => fixAndAutoResortTasks[i]);
-                    }
-
-                    Task.WaitAll(fixAndAutoResortTasks);
-                }
-
-                // Final analize
-                Task skusForTargetFinaAnalizelTask = AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports);
-                await Task.Run(() => skusForTargetFinaAnalizelTask);
-                skusForTargetFinaAnalizelTask!.Wait();
-
-                // Создение и сохранение итоговых отчетов 
-                var createAndSaveFinalReportsTask = excelManager!.CreateAndSaveFinalReports(skuForTargetReports, isTracing);
-                await Task.Run(() => createAndSaveFinalReportsTask);
-                createAndSaveFinalReportsTask.Wait();
-            }
-            else
-            {
-                // Error exit 
-                await TracingProgramExecution(new(string.Concat("There are no reports available for analysis.\n", goodByMessage), true, true));
-            }
-        }
-
-        /// <summary>
-        /// Receiving and processing data from seller reports.
-        /// </summary>
-        /// <param name="reportFileKey">Key of source file with report.</param>
-        private static async Task<double> ReceivingAndProcessingData(SourceReportItemKey reportFileKey)
-        {
-            var getReportFileTask = ReportFileManager.GetSourceReport(reportFileKey);
-            await Task.Run(async () => await getReportFileTask);
-            getReportFileTask.Wait();
-
-            PrimaryReportFileItem? reportFile = getReportFileTask.Result;
-
-            if (reportFile is not null && reportFile.Info is not null)
-            {
-                // Make ExcelPackage
-                using var package = excelManager!.CreateExcelPackage(reportFileKey, reportFile.Info);
-
-                // Receiving and processing data
-                Task<double>? receivingAndProcessingDataTask = skuManager!.ReceivingAndProcessingData(reportFileKey, package!);
-                if (receivingAndProcessingDataTask is not null)
-                {
-                    await Task.Run(async () => await receivingAndProcessingDataTask);
-                    receivingAndProcessingDataTask.Wait();
-                }
-
-                // Return time
-                return receivingAndProcessingDataTask?.Result ?? 0.00;
-            }
-            else
-            {
-                await TracingProgramExecution(new($"No report for key: {reportFileKey}", false, false));
-                return 0.0;
-            }
-        }
-
-        private static async Task<TargetReportRecipientType?> GetTargetReportRecipientTypeFromConsole(int delay)
-        {
-            StringBuilder rawReportStringBuilder = new("Select the report direction:\n");
-            rawReportStringBuilder.Append($"1: Internal (for internal work)\n");
-            rawReportStringBuilder.Append($"2: External (for client)\n");
-            rawReportStringBuilder.Append($"ESC: Exit\n");
-            var createRawReportString = rawReportStringBuilder.ToString();
-
-            ConsoleKey[] validkeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
-            ConsoleKey? selectKey = ConsoleAppService.GetUserKeyFromConsole(createRawReportString);
-
-            switch (selectKey is null || !validkeys.Contains((ConsoleKey)selectKey))
-            {
-                case true:
-                    await TracingProgramExecution(new("Invalid value, please try again.", true, false));
-                    return await GetTargetReportRecipientTypeFromConsole(delay);
-                case false:
-                    switch ((ConsoleKey)selectKey)
-                    {
-                        case ConsoleKey.D1:
-                            return TargetReportRecipientType.Internal;
-                        case ConsoleKey.D2:
-                            return TargetReportRecipientType.External;
-                        case ConsoleKey.Escape:
-                            ConsoleAppService.ConsoleAppExit(goodByMessage);
-                            return null;
-                        default:
-                            return null;
-                    }
-            }
-        }
-
-        /// <summary>
-        /// Get string value from manager in console.
-        /// </summary>
-        /// <param name="data">DataFromConsole object with parsing data.</param>
-        /// <returns>String value or null.</returns>
-        private static async Task<string?> GetStringFromConsole(DataFromConsole data)
-        {
-            string? value = null;
-            while (value is null)
-            {
-                Console.Clear();
-                Console.ForegroundColor = ConsoleColor.DarkBlue;
-                Console.WriteLine(data.QuestionMessage);
-
-                value = Console.ReadLine();
-                if (!string.IsNullOrEmpty(value))
-                {
-                    break;
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Console.WriteLine(data.ErrorMessage);
-                    await Task.Delay(TraceDelay + 1000);
-                    await GetStringFromConsole(data);
-                }
-            }
-
-            return value;
-        }
-
-        private static async Task<ConsoleKey> GetKeyFromConsole(DataFromConsole data, List<ConsoleKey> validKeys)
-        {
-            ConsoleKey? key = null;
-            while (!key.HasValue)
-            {
-                Console.Clear();
-                Console.ForegroundColor = ConsoleColor.DarkBlue;
-                Console.WriteLine(data.QuestionMessage);
-
-                key = Console.ReadKey().Key;
-
-                if (validKeys.Contains(key.Value))
-                {
-                    Console.Clear();
-                    break;
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Console.WriteLine($"\n{data.ErrorMessage}");
-                    await Task.Delay(TraceDelay + 1000);
-                    await GetKeyFromConsole(data, validKeys);
-                }
-            }
-            return key.Value;
-        }
-
-        private static void Report(object? sender, ManagerReachedEventArgs e)
-        {
-            Task.Run(async () => await TracingProgramExecution(e));
-        }
-        private static async Task TracingProgramExecution(ManagerReachedEventArgs args)
-        {
-            string flag;
-            if (isTracing)
-            {
-                switch (args.IsError)
-                {
-                    case false:
-                        Console.ForegroundColor = ConsoleColor.DarkBlue;
-                        flag = TraceInfoFlag;
-                        break;
-                    case true:
-                        Console.ForegroundColor = ConsoleColor.DarkRed;
-                        flag = TraceErrorFlag;
-                        break;
-                }
-
-                Trace.WriteLine($"{flag}{args.Message}");
-                await Task.Delay(TraceDelay);
-                Console.ResetColor();
-            }
-
-            if (args.IsExit)
-            {
-                // UnsubscribeManagersFromEvents();
-                Trace.Flush();
-            }
-        }
-
-        // private static void SubscribeManagersToEvents()
-        // {
-        //     List<BaseManager?> managers = [reportFileManager, excelManager, excelSheetsManager, skuManager, anManager];
-        //     foreach (var item in managers)
-        //         if (item != null) item.ManagerReached += Report;
-        // }
-
-        // private static void UnsubscribeManagersFromEvents()
-        // {
-        //     List<BaseManager?> managers = [reportFileManager, excelManager, excelSheetsManager, skuManager, anManager];
-        //     foreach (var item in managers)
-        //         if (item != null) item.ManagerReached -= Report;
-        // }
-        #endregion
     }
+    // internal class Program
+    // {
+
+
+
+
+
+
+
+    //     //         // #region Fields
+
+    //     //         // static Microsoft.Extensions.Logging.ILogger? mainLogger;
+    //     //         // private const string separatorString = "----------------------";
+
+    //     //         // /// <summary>
+    //     //         // /// Текущая версия приложения.
+    //     //         // /// </summary>
+    //     //         // private static string appVersion = string.Empty;
+    //     //         // /// <summary>
+    //     //         // /// Сообщение о завершении работы программы.
+    //     //         // /// </summary>
+    //     //         // private static string goodByMessage = string.Empty;
+    //     //         // /// <summary>
+    //     //         // /// Флаг трассировки работы приложения.
+    //     //         // /// </summary>
+    //     //         // private static bool isTracing;
+    //     //         // /// <summary>
+    //     //         // /// Флаг учета (проверки) выкупов
+    //     //         // /// </summary>
+    //     //         // private static bool isCheckRansoms;
+    //     //         // /// <summary>
+    //     //         // /// Флаг учета (проверки) баланса (прихода и остатков) товаров на складе
+    //     //         // /// </summary>
+    //     //         // private static bool isCheckBalance;
+    //     //         // /// <summary>
+    //     //         // /// Флаг учета (проверки) баланса расхода товаров со склада
+    //     //         // /// </summary>
+    //     //         // private static bool isCheckOutgoingProducts;
+    //     //         // /// <summary>
+    //     //         // /// Флаг учета (проверки) данных дополнительного отчета
+    //     //         // /// </summary>
+    //     //         // private static bool isCheckAdditionalData;
+
+    //     //         // private static bool isManualResorting;
+
+    //     //         // private static bool isAutoResorting;
+
+    //     //         // /// <summary>
+    //     //         // /// Флаг учета статуса "В работе" при автопересортах.
+    //     //         // /// </summary>
+    //     //         // private static bool isConsiderInProgressStatusInAutoResorting;
+    //     //         // private static bool isCombineAliases;
+
+    //     //         // private static readonly DateOnly orderPeriodStartDateDefault = DateOnly.Parse("2022-12-26");
+
+    //     //         // private static IConfiguration? appConfig;
+
+    //     //         // #endregion
+
+    //     //         // #region Properties 
+    //     //         // private static int TraceDelay { get; set; }
+    //     //         // private static string TraceInfoFlag { get; set; } = string.Empty;
+    //     //         // private static string TraceErrorFlag { get; set; } = string.Empty;
+    //     //         // private static DirectoryInfo? ClientReportsDirectoryPath { get; set; } = null;
+    //     //         // private static DateOnly OrderPeriodStartDate { get; set; } = orderPeriodStartDateDefault;
+
+    //     //         // private static ReportFileManager? reportFileManager;
+    //     //         // private static ExcelManager? excelManager;
+    //     //         // private static SKUManager? skuManager;
+    //     //         // private static AnalyticalManager? anManager;
+
+    //     //         // private static IConsoleService consoleService;
+    //     //         // private static IReportFileService reportService;
+    //     //         // private static IExcelFileService exFileService;
+    //     //         // private static IParsingService parsService;
+    //     //         // private static ISKUService skuService;
+    //     //         // private static IAnalyticalService analytService;
+    //     //         // #endregion
+
+    //     //         // #region Functionality
+    //     //         /// <summary>
+    //     //         /// Точка входа в программу.
+    //     //         /// </summary>
+    //     //         /// <param name="args"Строковые аргументы></param>
+    //     //         /// <remarks>Шаг 1, Ревизия 112026</remarks>
+    //     //         private static async Task Main(string[] args)
+    //     //         {
+    //     //             using (var host = CreateHost(args))
+    //     //             {
+    //     //                 mainLogger = host.Services
+    //     //                         .GetRequiredService<ILoggerFactory>()
+    //     //                         .CreateLogger("Program");
+
+    //     //                 mainLogger.LogInformation(separatorString);
+    //     //                 mainLogger.LogInformation("Новый запуск приложения");
+
+    //     //                 using (var scope = host.Services.CreateScope())
+    //     //                 {
+    //     //                     // Создание сервисов.
+    //     //                     parsService = scope.ServiceProvider.GetRequiredService<IParsingService>();
+    //     //                     consoleService = scope.ServiceProvider.GetRequiredService<IConsoleService>();
+    //     //                     reportService = scope.ServiceProvider.GetRequiredService<IReportFileService>();
+    //     //                     exFileService = scope.ServiceProvider.GetRequiredService<IExcelFileService>();
+    //     //                     skuService = scope.ServiceProvider.GetRequiredService<ISKUService>();
+    //     //                     analytService = scope.ServiceProvider.GetRequiredService<IAnalyticalService>();
+
+
+    //     //                     // Здесь будет цепочка основных задач - вызова методов разных служб,
+    //     //                     // Куда вынести эту логитку?:
+
+    //     //                     // Получение директории с первичными данными из консоли.
+    //     //                     var getDataFromConsoleTask = consoleService.GetPrimaryDataFromConsole();
+    //     //                     await Task.Run(async () => getDataFromConsoleTask);
+    //     //                     getDataFromConsoleTask.Wait();
+    //     //                     mainLogger.LogInformation("Директория с клиентскими отчетами {ServiceName}", getDataFromConsoleTask.Result);
+
+    //     //                     // Проверка данных (постоянные).
+    //     //                     var getPermanentDataTask = reportService!.CheckOfAvailailityData(null, PrimaryDataType.Permanent);
+    //     //                     await Task.Run(() => getPermanentDataTask);
+    //     //                     getPermanentDataTask.Wait();
+
+    //     //                     bool permanentDataTaskResult = getPermanentDataTask.Result;
+
+    //     //                     if (!permanentDataTaskResult)
+    //     //                     {
+    //     //                         mainLogger.LogCritical("Постоянные данные не валидны.");
+    //     //                         ConsoleAppService.ConsoleAppExit("");
+    //     //                     }
+
+    //     //                     // // Проверка данных (переменные, клиентские).
+    //     //                     // var getVariableDataTask = reportService!.CheckOfAvailailityData(ClientReportsDirectoryPath!.FullName, PrimaryDataType.Variable);
+    //     //                     // await Task.Run(() => getVariableDataTask);
+    //     //                     // getVariableDataTask.Wait();
+
+    //     //                     // bool variableDataTaskResult = getVariableDataTask.Result;
+
+    //     //                     // if (!variableDataTaskResult)
+    //     //                     // {
+    //     //                     //     mainLogger.LogCritical("Переменные данные не валидны.");
+    //     //                     //     ConsoleAppService.ConsoleAppExit("");
+    //     //                     // }
+
+    //     //                 }
+
+    //     //                 mainLogger.LogInformation("Приложение успешно завершило работу");
+    //     //             }
+
+
+    //     //             // var analizeTask = Analyze();
+    //     //             // await Task.Run(() => analizeTask);
+    //     //             // analizeTask.Wait();
+
+    //     //             // var exitTask = TracingProgramExecution(new(goodByMessage, false, true));
+    //     //             // await Task.Run(() => exitTask);
+    //     //             // exitTask.Wait();
+    //     //         }
+
+    //     //         /// <summary>
+    //     //         /// Чтение конфигрурации, создание хоста со службами.
+    //     //         /// </summary>
+    //     //         /// <param name="args">Строковые аргументы.</param>
+    //     //         /// <returns>Объект IHost.</returns>
+    //     //         /// <remarks>Шаг 2, Ревизия 112026</remarks>
+    //     //         private static IHost CreateHost(string[] args)
+    //     //         {
+    //     //             var hostBuilder = Host.CreateDefaultBuilder(args)
+    //     //                  .ConfigureAppConfiguration((context, configuration) =>
+    //     //                  {
+    //     //                      configuration.AddJsonFile(
+    //     //                          "config.json",
+    //     //                          optional: false,
+    //     //                          reloadOnChange: true);
+    //     //                  })
+    //     //                  .ConfigureServices((context, services) =>
+    //     //                  {
+    //     //                      var configuration = context.Configuration;
+
+    //     //                      services.Configure<ProgramOptions>(options =>
+    //     //                      {
+    //     //                          configuration.GetSection("Flags").Bind(options);
+    //     //                          configuration.GetSection("Messages").Bind(options);
+    //     //                          configuration.GetSection("Numbers").Bind(options);
+    //     //                          configuration.GetSection("Formulas").Bind(options);
+    //     //                          configuration.GetSection("Collections").Bind(options);
+    //     //                          configuration.GetSection("Strings").Bind(options);
+    //     //                      });
+
+    //     //                      services.AddTransient<IParsingService, ParsingService>();
+    //     //                      services.AddTransient<IConsoleService, ConsoleService>();
+    //     //                      services.AddTransient<IReportFileService, ReportFileService>();
+    //     //                      services.AddTransient<IExcelFileService, ExcelFileService>();
+    //     //                      services.AddTransient<ISKUService, SKUService>();
+    //     //                      services.AddTransient<IAnalyticalService, AnalyticalService>();
+    //     //                  });
+
+    //     // #if DEBUG
+    //     //             // Добавление логирования в файл.
+    //     //             hostBuilder.UseSerilog((context, services, loggerConfiguration) =>
+    //     //             {
+    //     //                 loggerConfiguration
+    //     //                     .MinimumLevel.Debug()
+    //     //                     .Enrich.FromLogContext()
+    //     //                     .WriteTo.Console()
+    //     //                     .WriteTo.File(
+    //     //                         "logs/log-.txt",
+    //     //                         rollingInterval: RollingInterval.Day);
+    //     //             });
+    //     // #endif
+
+    //     //             return hostBuilder.Build(); ;
+    //     //         }
+
+
+    //     //         /// <remarks>oct 2025 ver.</remarks>
+    //     //         private static async Task Analyze()
+    //     //         {
+    //     //             await Task.Delay(10); // dummy
+
+    //     //             // // Checking for the presence of data (permanent and new).
+    //     //             // var checkingForPresenceDataTask = CheckingForPresenceData();
+    //     //             // await Task.Run(async () => checkingForPresenceDataTask);
+    //     //             // checkingForPresenceDataTask.Wait();
+
+    //     //             // // Start analize
+    //     //             // await TracingProgramExecution(new("Анализ первичных данных начат...", false, false));
+    //     //             // var analyzeСlientReportTask = AnalyzePresenceData();
+    //     //             // await Task.Run(() => analyzeСlientReportTask);
+    //     //             // analyzeСlientReportTask?.Wait();
+
+    //     //             // UnsubscribeManagersFromEvents();
+    //     //         }
+
+
+
+    //     //         /// <summary>
+    //     //         /// Checking for the presence of permanent and variable data.
+    //     //         /// </summary>
+    //     //         /// <returns>Async task as void</returns>
+    //     //         /// <remarks>oct 2025 ver.</remarks>
+    //     //         // private static async Task CheckingForPresenceData()
+    //     //         // {
+    //     //         //     // Checking for the presence of permanent data
+    //     //         //     var getPermanentDataTask = reportFileManager!.CheckOfAvailailityData(null, PrimaryDataType.Permanent);
+    //     //         //     await Task.Run(() => getPermanentDataTask);
+    //     //         //     getPermanentDataTask.Wait();
+
+    //     //         //     await TracingProgramExecution(
+    //     //         //         new(!getPermanentDataTask.Result.isError ?
+    //     //         //             "Первичнные постоянные данные валидны." :
+    //     //         //             getPermanentDataTask.Result.message,
+    //     //         //             getPermanentDataTask.Result.isError, getPermanentDataTask.Result.isError));
+
+    //     //         //     // Checking for the presence of variable data
+    //     //         //     var getVariableDataTask = reportFileManager!.CheckOfAvailailityData(ClientReportsDirectoryPath!.FullName, PrimaryDataType.Variable);
+    //     //         //     await Task.Run(() => getVariableDataTask);
+    //     //         //     getVariableDataTask.Wait();
+
+    //     //         //     await TracingProgramExecution(new(!getVariableDataTask.Result.isError ?
+    //     //         //          "Первичнные переменные данные валидны." :
+    //     //         //          getVariableDataTask.Result.message,
+    //     //         //      getVariableDataTask.Result.isError,
+    //     //         //      getVariableDataTask.Result.isError));
+    //     //         // }
+
+    //     //         private static async Task AnalyzePresenceData()
+    //     //         {
+    //     //             List<SourceReportItemKey> existingKeys = ReportFileManager.PrimaryReportFiles.Select(el => el.Key).ToList();
+
+    //     //             // Report analysis tasks
+    //     //             if (existingKeys is not null && existingKeys.Count > 0)
+    //     //             {
+    //     //                 // Ransoms task
+    //     //                 if (isCheckRansoms && existingKeys.Contains(SourceReportItemKey.Ransoms))
+    //     //                 {
+    //     //                     Task ransomsTask = ReceivingAndProcessingData(SourceReportItemKey.Ransoms);
+    //     //                     await Task.Run(async () => await ransomsTask);
+    //     //                     ransomsTask.Wait();
+    //     //                 }
+
+    //     //                 // Balance task
+    //     //                 if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.Balance))
+    //     //                 {
+    //     //                     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Balance);
+    //     //                     await Task.Run(async () => await currentTask);
+    //     //                     currentTask.Wait();
+    //     //                 }
+
+    //     //                 // WriteOff points via warehouse task (shortage)
+    //     //                 if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseShortage))
+    //     //                 {
+    //     //                     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseShortage);
+    //     //                     await Task.Run(async () => await currentTask);
+    //     //                     currentTask.Wait();
+    //     //                 }
+
+    //     //                 // WriteOff points via warehouse task (adjustment)
+    //     //                 if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment))
+    //     //                 {
+    //     //                     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment);
+    //     //                     await Task.Run(async () => await currentTask);
+    //     //                     currentTask.Wait();
+    //     //                 }
+
+    //     //                 // WriteOff points task 
+    //     //                 if (isCheckBalance && existingKeys.Contains(SourceReportItemKey.WriteOffPoints))
+    //     //                 {
+    //     //                     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.WriteOffPoints);
+    //     //                     await Task.Run(async () => await currentTask);
+    //     //                     currentTask.Wait();
+    //     //                 }
+
+    //     //                 // Outgoing products task
+    //     //                 if (isCheckOutgoingProducts && existingKeys.Contains(SourceReportItemKey.OutgoingProducts))
+    //     //                 {
+    //     //                     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.OutgoingProducts);
+    //     //                     await Task.Run(async () => await currentTask);
+    //     //                     currentTask.Wait();
+    //     //                 }
+
+    //     //                 // Transfer task
+    //     //                 if (isCheckOutgoingProducts && existingKeys.Contains(SourceReportItemKey.Transfered))
+    //     //                 {
+    //     //                     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Transfered);
+    //     //                     await Task.Run(async () => await currentTask);
+    //     //                     currentTask.Wait();
+    //     //                 }
+
+    //     //                 // Additional task
+    //     //                 if (isCheckAdditionalData && existingKeys.Contains(SourceReportItemKey.Additional))
+    //     //                 {
+    //     //                     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.Additional);
+    //     //                     await Task.Run(async () => await currentTask);
+    //     //                     currentTask.Wait();
+    //     //                 }
+
+    //     //                 // Paid shortages task
+    //     //                 if (isCheckBalance && isCheckOutgoingProducts && existingKeys.Contains(SourceReportItemKey.ShortagesPaid))
+    //     //                 {
+    //     //                     var currentTask = ReceivingAndProcessingData(SourceReportItemKey.ShortagesPaid);
+    //     //                     await Task.Run(async () => await currentTask);
+    //     //                     currentTask.Wait();
+    //     //                 }
+
+    //     //                 // Delete old files
+    //     //                 Task deletOldReportsTask = reportFileManager!.DeletOldReports(isTracing);
+    //     //                 await Task.Run(() => deletOldReportsTask);
+    //     //                 deletOldReportsTask.Wait();
+
+    //     //                 // Make and combine skus for target report
+    //     //                 Task<List<SKUForFinalReport>>? skusForTargetReportTask;
+    //     //                 List<SKUForFinalReport>? skuForTargetReports = [];
+
+    //     //                 skusForTargetReportTask = !isCombineAliases || skuManager!.SkuAliasesBalanceUnits.Count() == 0 ?
+    //     //                     skuManager!.MakeSkusForTargetReport() :
+    //     //                     skuManager!.MakeAndCombineSkusForTargetReport();
+
+    //     //                 await Task.Run(() => skusForTargetReportTask);
+    //     //                 skusForTargetReportTask!.Wait();
+    //     //                 skuForTargetReports = skusForTargetReportTask.Result;
+
+    //     //                 if (isTracing)
+    //     //                     await TracingProgramExecution(new($"Артикулов для финального отчета: {skusForTargetReportTask.Result.Count}.", false, false));
+
+    //     //                 // Article manual-sorting
+    //     //                 if (isManualResorting && anManager != null)
+    //     //                 {
+    //     //                     Task<bool> manualResortTasks = anManager.SetManualResorts(ref skuForTargetReports, isConsiderInProgressStatusInAutoResorting);
+    //     //                     await Task.Run(() => manualResortTasks);
+    //     //                     manualResortTasks!.Wait();
+    //     //                 }
+
+    //     //                 // Article analysis and automatic re-sorting
+    //     //                 if (isAutoResorting)
+    //     //                 {
+    //     //                     Task[] fixAndAutoResortTasks =
+    //     //                     [
+    //     //                         AnalyticalManager.FixReceiptBySKUsOfParallelClients(ref skuForTargetReports, isConsiderInProgressStatusInAutoResorting),
+    //     //                     AnalyticalManager.FixWriteOffByPointsThroughWarehouse(ref skuForTargetReports, isConsiderInProgressStatusInAutoResorting),
+    //     //                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByOutgoing, isConsiderInProgressStatusInAutoResorting),
+    //     //                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingConsumptionByTransfer, isConsiderInProgressStatusInAutoResorting),
+    //     //                     AnalyticalManager.SetAutoResorts(ref skuForTargetReports, ResortConsumptionTarget.ResortingReceipt, isConsiderInProgressStatusInAutoResorting),
+    //     //                     AnalyticalManager.FixExtraReceipts(ref skuForTargetReports, true)
+    //     //                     ];
+
+    //     //                     for (int i = 0; i < fixAndAutoResortTasks.Length; i++)
+    //     //                     {
+    //     //                         await Task.Run(() => fixAndAutoResortTasks[i]);
+    //     //                     }
+
+    //     //                     Task.WaitAll(fixAndAutoResortTasks);
+    //     //                 }
+
+    //     //                 // Final analize
+    //     //                 Task skusForTargetFinaAnalizelTask = AnalyticalManager.FinalAnalizeSkus(ref skuForTargetReports);
+    //     //                 await Task.Run(() => skusForTargetFinaAnalizelTask);
+    //     //                 skusForTargetFinaAnalizelTask!.Wait();
+
+    //     //                 // Создение и сохранение итоговых отчетов 
+    //     //                 var createAndSaveFinalReportsTask = excelManager!.CreateAndSaveFinalReports(skuForTargetReports, isTracing);
+    //     //                 await Task.Run(() => createAndSaveFinalReportsTask);
+    //     //                 createAndSaveFinalReportsTask.Wait();
+    //     //             }
+    //     //             else
+    //     //             {
+    //     //                 // Error exit 
+    //     //                 await TracingProgramExecution(new(string.Concat("There are no reports available for analysis.\n", goodByMessage), true, true));
+    //     //             }
+    //     //         }
+
+    //     //         /// <summary>
+    //     //         /// Receiving and processing data from seller reports.
+    //     //         /// </summary>
+    //     //         /// <param name="reportFileKey">Key of source file with report.</param>
+    //     //         private static async Task<double> ReceivingAndProcessingData(SourceReportItemKey reportFileKey)
+    //     //         {
+    //     //             var getReportFileTask = ReportFileManager.GetSourceReport(reportFileKey);
+    //     //             await Task.Run(async () => await getReportFileTask);
+    //     //             getReportFileTask.Wait();
+
+    //     //             PrimaryReportFileItem? reportFile = getReportFileTask.Result;
+
+    //     //             if (reportFile is not null && reportFile.Info is not null)
+    //     //             {
+    //     //                 // Make ExcelPackage
+    //     //                 using var package = excelManager!.CreateExcelPackage(reportFileKey, reportFile.Info);
+
+    //     //                 // Receiving and processing data
+    //     //                 Task<double>? receivingAndProcessingDataTask = skuManager!.ReceivingAndProcessingData(reportFileKey, package!);
+    //     //                 if (receivingAndProcessingDataTask is not null)
+    //     //                 {
+    //     //                     await Task.Run(async () => await receivingAndProcessingDataTask);
+    //     //                     receivingAndProcessingDataTask.Wait();
+    //     //                 }
+
+    //     //                 // Return time
+    //     //                 return receivingAndProcessingDataTask?.Result ?? 0.00;
+    //     //             }
+    //     //             else
+    //     //             {
+    //     //                 await TracingProgramExecution(new($"No report for key: {reportFileKey}", false, false));
+    //     //                 return 0.0;
+    //     //             }
+    //     //         }
+
+    //     //         private static async Task<TargetReportRecipientType?> GetTargetReportRecipientTypeFromConsole(int delay)
+    //     //         {
+    //     //             StringBuilder rawReportStringBuilder = new("Select the report direction:\n");
+    //     //             rawReportStringBuilder.Append($"1: Internal (for internal work)\n");
+    //     //             rawReportStringBuilder.Append($"2: External (for client)\n");
+    //     //             rawReportStringBuilder.Append($"ESC: Exit\n");
+    //     //             var createRawReportString = rawReportStringBuilder.ToString();
+
+    //     //             ConsoleKey[] validkeys = [ConsoleKey.D1, ConsoleKey.D2, ConsoleKey.Escape];
+    //     //             ConsoleKey? selectKey = ConsoleAppService.GetUserKeyFromConsole(createRawReportString);
+
+    //     //             switch (selectKey is null || !validkeys.Contains((ConsoleKey)selectKey))
+    //     //             {
+    //     //                 case true:
+    //     //                     await TracingProgramExecution(new("Invalid value, please try again.", true, false));
+    //     //                     return await GetTargetReportRecipientTypeFromConsole(delay);
+    //     //                 case false:
+    //     //                     switch ((ConsoleKey)selectKey)
+    //     //                     {
+    //     //                         case ConsoleKey.D1:
+    //     //                             return TargetReportRecipientType.Internal;
+    //     //                         case ConsoleKey.D2:
+    //     //                             return TargetReportRecipientType.External;
+    //     //                         case ConsoleKey.Escape:
+    //     //                             ConsoleAppService.ConsoleAppExit(goodByMessage);
+    //     //                             return null;
+    //     //                         default:
+    //     //                             return null;
+    //     //                     }
+    //     //             }
+    //     //         }
+
+    //     //         /// <summary>
+    //     //         /// Get string value from manager in console.
+    //     //         /// </summary>
+    //     //         /// <param name="data">DataFromConsole object with parsing data.</param>
+    //     //         /// <returns>String value or null.</returns>
+    //     //         private static async Task<string?> GetStringFromConsole(DataFromConsole data)
+    //     //         {
+    //     //             string? value = null;
+    //     //             while (value is null)
+    //     //             {
+    //     //                 Console.Clear();
+    //     //                 Console.ForegroundColor = ConsoleColor.DarkBlue;
+    //     //                 Console.WriteLine(data.QuestionMessage);
+
+    //     //                 value = Console.ReadLine();
+    //     //                 if (!string.IsNullOrEmpty(value))
+    //     //                 {
+    //     //                     break;
+    //     //                 }
+    //     //                 else
+    //     //                 {
+    //     //                     Console.ForegroundColor = ConsoleColor.DarkRed;
+    //     //                     Console.WriteLine(data.ErrorMessage);
+    //     //                     await Task.Delay(TraceDelay + 1000);
+    //     //                     await GetStringFromConsole(data);
+    //     //                 }
+    //     //             }
+
+    //     //             return value;
+    //     //         }
+
+    //     //         private static async Task<ConsoleKey> GetKeyFromConsole(DataFromConsole data, List<ConsoleKey> validKeys)
+    //     //         {
+    //     //             ConsoleKey? key = null;
+    //     //             while (!key.HasValue)
+    //     //             {
+    //     //                 Console.Clear();
+    //     //                 Console.ForegroundColor = ConsoleColor.DarkBlue;
+    //     //                 Console.WriteLine(data.QuestionMessage);
+
+    //     //                 key = Console.ReadKey().Key;
+
+    //     //                 if (validKeys.Contains(key.Value))
+    //     //                 {
+    //     //                     Console.Clear();
+    //     //                     break;
+    //     //                 }
+    //     //                 else
+    //     //                 {
+    //     //                     Console.ForegroundColor = ConsoleColor.DarkRed;
+    //     //                     Console.WriteLine($"\n{data.ErrorMessage}");
+    //     //                     await Task.Delay(TraceDelay + 1000);
+    //     //                     await GetKeyFromConsole(data, validKeys);
+    //     //                 }
+    //     //             }
+    //     //             return key.Value;
+    //     //         }
+
+    //     //         private static void Report(object? sender, ManagerReachedEventArgs e)
+    //     //         {
+    //     //             Task.Run(async () => await TracingProgramExecution(e));
+    //     //         }
+    //     //         private static async Task TracingProgramExecution(ManagerReachedEventArgs args)
+    //     //         {
+    //     //             string flag;
+    //     //             if (isTracing)
+    //     //             {
+    //     //                 switch (args.IsError)
+    //     //                 {
+    //     //                     case false:
+    //     //                         Console.ForegroundColor = ConsoleColor.DarkBlue;
+    //     //                         flag = TraceInfoFlag;
+    //     //                         break;
+    //     //                     case true:
+    //     //                         Console.ForegroundColor = ConsoleColor.DarkRed;
+    //     //                         flag = TraceErrorFlag;
+    //     //                         break;
+    //     //                 }
+
+    //     //                 Trace.WriteLine($"{flag}{args.Message}");
+    //     //                 await Task.Delay(TraceDelay);
+    //     //                 Console.ResetColor();
+    //     //             }
+
+    //     //             if (args.IsExit)
+    //     //             {
+    //     //                 // UnsubscribeManagersFromEvents();
+    //     //                 Trace.Flush();
+    //     //             }
+    //     //         }
+
+    //     //         // private static void SubscribeManagersToEvents()
+    //     //         // {
+    //     //         //     List<BaseManager?> managers = [reportFileManager, excelManager, excelSheetsManager, skuManager, anManager];
+    //     //         //     foreach (var item in managers)
+    //     //         //         if (item != null) item.ManagerReached += Report;
+    //     //         // }
+
+    //     //         // private static void UnsubscribeManagersFromEvents()
+    //     //         // {
+    //     //         //     List<BaseManager?> managers = [reportFileManager, excelManager, excelSheetsManager, skuManager, anManager];
+    //     //         //     foreach (var item in managers)
+    //     //         //         if (item != null) item.ManagerReached -= Report;
+    //     //         // }
+    //     //         #endregion
+
+    // }
 }

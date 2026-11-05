@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TableAnalizer.Configuration;
 
-namespace TableAnalizer.Services.Analytics
+namespace TableAnalizer.Services
 {
     public interface IAnalyticalService : IService
     {

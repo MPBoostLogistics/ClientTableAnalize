@@ -1,9 +1,11 @@
 using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using TableAnalizer.Configuration;
 using TableAnalizer.Objects;
+using TableAnalizer.Services.Parsing;
 
-namespace TableAnalizer.Services.Parsing
+namespace TableAnalizer.Services
 {
     public interface IParsingService : IService
     {

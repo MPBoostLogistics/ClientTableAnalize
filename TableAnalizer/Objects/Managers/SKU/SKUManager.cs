@@ -5,6 +5,7 @@ using System.Drawing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using OfficeOpenXml;
+using TableAnalizer.Configuration;
 using TableAnalizer.Interfaces;
 using TableAnalizer.Objects.Managers.ExcelSheetParsing;
 using TableAnalizer.Objects.Parsing;
