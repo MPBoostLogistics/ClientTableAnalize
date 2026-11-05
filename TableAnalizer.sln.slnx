@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="TableAnalizer.Tests/TableAnalizer.Tests.csproj" />
+  <Project Path="TableAnalizer/TableAnalizer.csproj" />
+</Solution>
