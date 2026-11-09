@@ -21,10 +21,10 @@ namespace TableAnalizer.Objects.Managers
         /// </summary>
         public static Dictionary<SourceReportItemKey, PrimaryReportFileItem> PrimaryReportFiles { get; private set; } = new()
         {
-            { SourceReportItemKey.ShortagesPaid, new PrimaryReportFileItem(PrimaryDataType.Permanent, [@"Write-off\s\-\sshortages\spaid"], 7, isOptionalReport: false)},
-            { SourceReportItemKey.WriteOffPointsAndCouriers, new PrimaryReportFileItem(PrimaryDataType.Permanent, [@"Write-off\s\-\spoints\sand\scouriers"], 7, isOptionalReport: false)},
-            { SourceReportItemKey.WriteOffPointsViaWarehouseShortage, new PrimaryReportFileItem(PrimaryDataType.Permanent, [@"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sshortages"], 0, isOptionalReport: false) },
-            { SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, new PrimaryReportFileItem(PrimaryDataType.Permanent, [@"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sadjustment"], 0, isOptionalReport: false)},
+            { SourceReportItemKey.ShortagesPaid, new PrimaryReportFileItem(PrimaryDataType.Constant, [@"Write-off\s\-\sshortages\spaid"], 7, isOptionalReport: false)},
+            { SourceReportItemKey.WriteOffPointsAndCouriers, new PrimaryReportFileItem(PrimaryDataType.Constant, [@"Write-off\s\-\spoints\sand\scouriers"], 7, isOptionalReport: false)},
+            { SourceReportItemKey.WriteOffPointsViaWarehouseShortage, new PrimaryReportFileItem(PrimaryDataType.Constant, [@"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sshortages"], 0, isOptionalReport: false) },
+            { SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, new PrimaryReportFileItem(PrimaryDataType.Constant, [@"Write-off\s\-\spoints\sthrough\sthe\swarehouse\sadjustment"], 0, isOptionalReport: false)},
             { SourceReportItemKey.Ransoms, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"Отчет\sвыкупов\sпо\sклиенту\s\S+", @"Отчет_выкупов_по_клиентам_\S+"], 0, isOptionalReport: false)},
             { SourceReportItemKey.Balance, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bбаланс\b"], 7, isOptionalReport: false)},
             { SourceReportItemKey.OutgoingProducts, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bрасходы\b"], 7, isOptionalReport: true)},
@@ -93,7 +93,7 @@ namespace TableAnalizer.Objects.Managers
             }
 
             // Checking of a directory existence  
-            FileService.GetDirectoryInfo(primaryDataKey == PrimaryDataType.Permanent ? PermanentDataSourcePath : clientDataPath!, out directoryInfo);
+            FileService.GetDirectoryInfo(primaryDataKey == PrimaryDataType.Constant ? PermanentDataSourcePath : clientDataPath!, out directoryInfo);
             if (directoryInfo == null)
             {
                 var path = primaryDataKey == PrimaryDataType.Variable ? clientDataPath : PermanentDataSourcePath;
@@ -137,7 +137,7 @@ namespace TableAnalizer.Objects.Managers
             var dataPath = primaryDataKey == PrimaryDataType.Variable ? clientDataPath : PermanentDataSourcePath;
 
             int permanentDataTypeCount = PrimaryReportFiles
-                .Count(p => p.Value.DataType is PrimaryDataType.Permanent && !p.Value.IsOptionalReport);
+                .Count(p => p.Value.DataType is PrimaryDataType.Constant && !p.Value.IsOptionalReport);
 
             int variableDataTypeCount = PrimaryReportFiles
                 .Count(p => p.Value.DataType is PrimaryDataType.Variable && !p.Value.IsOptionalReport);
@@ -150,7 +150,7 @@ namespace TableAnalizer.Objects.Managers
                 if (GetFilesOfPrimaryData(directoryInfo, ref fileInfos, ValidFileExtensions) && fileInfos is not null && fileInfos.Length > 0)
                 {
                     // Checking the number of files (only for permanent data)
-                    if (primaryDataKey == PrimaryDataType.Permanent && fileInfos!.Length < PrimaryReportFiles.Count(p => p.Value.DataType is PrimaryDataType.Permanent))
+                    if (primaryDataKey == PrimaryDataType.Constant && fileInfos!.Length < PrimaryReportFiles.Count(p => p.Value.DataType is PrimaryDataType.Constant))
                     {
                         isError = true;
                         stringBuilder.Append($"Directory '{PermanentDataSourcePath}' contains less files than required ({permanentDataTypeCount}).\n");

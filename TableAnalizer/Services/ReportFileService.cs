@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using TableAnalizer.Configuration;
@@ -9,15 +10,18 @@ namespace TableAnalizer.Services
     public interface IReportFileService : IService
     {
         /// <summary>
-        /// Директория на локальном компьютере с постоянными данными.
+        /// Директория на локальном компьютере с постоянными данными для отчетов.
         /// </summary>
-        string PermanentDataSourcePath { get; set; }
+        string ConstantDataReportsPath { get; set; }
 
         /// <summary>
         /// Логин (логины) клиента (-тов) для отчета.
         /// </summary>
         public List<string> ClientLogins { get; set; }
 
+        /// <summary>
+        /// Общая директории для отчетов всех клиентов.
+        /// </summary>
         public string BaseFinalReportsDirectoryPath { get; set; }
 
         /// <summary>
@@ -25,7 +29,9 @@ namespace TableAnalizer.Services
         /// </summary>
         public string FinalReportFilePath { get; set; }
 
-        Task<bool> CheckOfAvailailityData(string? clientDataPath, PrimaryDataType primaryDataKey);
+        public Dictionary<SourceReportItemKey, PrimaryReportFileItem> PrimaryReportFiles { get; set; }
+        public bool GetDirectoryOfPrimaryData(string? clientDataPath, PrimaryDataType primaryDataKey, out DirectoryInfo? directoryInfo);
+        public bool CheckOfAvailailityData(string? clientDataPath, PrimaryDataType primaryDataKey);
     }
 
     public partial class ReportFileService : IReportFileService
@@ -33,6 +39,7 @@ namespace TableAnalizer.Services
         #region Fields
         private readonly ProgramOptions _options;
         private readonly ILogger<ReportFileService> _logger;
+
         /// <summary>
         /// Ключи базовый путей в файловой системе.
         /// </summary>
@@ -41,33 +48,22 @@ namespace TableAnalizer.Services
 
         #region Properties
         public string ServiceName { get; private set; } = string.Empty;
-        public string PermanentDataSourcePath { get; set; } = string.Empty;
-
+        public string ConstantDataReportsPath { get; set; } = string.Empty;
         public List<string> ValidFileExtensions { get; set; } = [];
-
         public List<string> ClientLogins { get; set; } = [];
-
         public string BaseFinalReportsDirectoryPath { get; set; } = string.Empty;
-
         public string FinalReportFilePath { get; set; } = string.Empty;
-
         public string LogisticsReportFirstName { get; private set; } = string.Empty;
-
-
-        // @"^Write-off - points and couriers\.xlsx$",
-        //@"^Write-off - shortages paid\.xlsx$",
-        //@"^Write-off - points through the warehouse shortages\.xlsx$",
-        //@"^Write-off - points through the warehouse adjustment\.xlsx$"
 
         /// <summary>
         /// Словарь с типами первичных отчетов клиента.
         /// </summary>
-        public static Dictionary<SourceReportItemKey, PrimaryReportFileItem> PrimaryReportFiles { get; private set; } = new()
+        public Dictionary<SourceReportItemKey, PrimaryReportFileItem> PrimaryReportFiles { get; set; } = new()
         {
-            { SourceReportItemKey.ShortagesPaid, new PrimaryReportFileItem(PrimaryDataType.Permanent, [@"^Write-off - shortages paid\.xlsx$"], 7, isOptionalReport: false)},
-            { SourceReportItemKey.WriteOffPointsAndCouriers, new PrimaryReportFileItem(PrimaryDataType.Permanent, [@"^Write-off - points and couriers\.xlsx$"], 7, isOptionalReport: false)},
-            { SourceReportItemKey.WriteOffPointsViaWarehouseShortage, new PrimaryReportFileItem(PrimaryDataType.Permanent, [@"^Write-off - points through the warehouse shortages\.xlsx$"], 0, isOptionalReport: false) },
-            { SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, new PrimaryReportFileItem(PrimaryDataType.Permanent, [@"^Write-off - points through the warehouse adjustment\.xlsx$"], 0, isOptionalReport: false)},
+            { SourceReportItemKey.ShortagesPaid, new PrimaryReportFileItem(PrimaryDataType.Constant, [@"Write-off - shortages paid\.xlsx"], 7, isOptionalReport: false)},
+            { SourceReportItemKey.WriteOffPointsAndCouriers, new PrimaryReportFileItem(PrimaryDataType.Constant, [@"Write-off - points and couriers\.xlsx"], 7, isOptionalReport: false)},
+            { SourceReportItemKey.WriteOffPointsViaWarehouseShortage, new PrimaryReportFileItem(PrimaryDataType.Constant, [@"Write-off - points through the warehouse shortages\.xlsx"], 0, isOptionalReport: false) },
+            { SourceReportItemKey.WriteOffPointsViaWarehouseAdjustment, new PrimaryReportFileItem(PrimaryDataType.Constant, [@"Write-off - points through the warehouse adjustment\.xlsx"], 0, isOptionalReport: false)},
             { SourceReportItemKey.Ransoms, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"Отчет\sвыкупов\sпо\sклиенту\s\S+", @"Отчет_выкупов_по_клиентам_\S+"], 0, isOptionalReport: false)},
             { SourceReportItemKey.Balance, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bбаланс\b"], 7, isOptionalReport: false)},
             { SourceReportItemKey.OutgoingProducts, new PrimaryReportFileItem(PrimaryDataType.Variable, [@"\d+\s+\bрасходы\b"], 7, isOptionalReport: true)},
@@ -98,9 +94,9 @@ namespace TableAnalizer.Services
         #region Methods
         private void GetAppConfig()
         {
-            if (!string.IsNullOrEmpty(_options.PermanentDataSourcePath))
+            if (!string.IsNullOrEmpty(_options.ConstantDataReportsPath))
             {
-                PermanentDataSourcePath = _options.PermanentDataSourcePath;
+                ConstantDataReportsPath = _options.ConstantDataReportsPath;
             }
             else
             {
@@ -148,19 +144,19 @@ namespace TableAnalizer.Services
         /// Проверяет наличие и корректность необходимых данных для создания итогового отчета.
         /// </summary>
         /// <param name="clientDataPath">Путь к директории  с первичными данными клиента (опционально).</param>
-        /// <param name="primaryDataKey">Тип первичных данных (постоянные или переменные).</param>
+        /// <param name="primaryDataType">Тип первичных данных (постоянные или переменные).</param>
         /// <returns>Флаг проверки предоставленных данных.</returns>
-        public async Task<bool> CheckOfAvailailityData(string? clientDataPath, PrimaryDataType primaryDataKey)
+        public bool CheckOfAvailailityData(string? clientDataPath, PrimaryDataType primaryDataType)
         {
             // Путь к директории с данными.
-            var dataPath = primaryDataKey == PrimaryDataType.Variable ?
+            var dataPath = primaryDataType == PrimaryDataType.Variable ?
                 clientDataPath :
-                PermanentDataSourcePath;
+                ConstantDataReportsPath;
 
             _logger.LogInformation("Проверяю данные по пути: {dataPath}...", dataPath);
 
-            int permanentDataTypeCount = PrimaryReportFiles
-                .Count(p => p.Value.DataType is PrimaryDataType.Permanent && !p.Value.IsOptionalReport);
+            int constantDataTypeCount = PrimaryReportFiles
+                .Count(p => p.Value.DataType is PrimaryDataType.Constant && !p.Value.IsOptionalReport);
 
             int variableDataTypeCount = PrimaryReportFiles
                 .Count(p => p.Value.DataType is PrimaryDataType.Variable && !p.Value.IsOptionalReport);
@@ -168,7 +164,7 @@ namespace TableAnalizer.Services
             DirectoryInfo? directoryInfo = null;
             FileInfo[]? fileInfos = null;
 
-            if (!GetDirectoryOfPrimaryData(dataPath, primaryDataKey, ref directoryInfo) && directoryInfo == null)
+            if (!GetDirectoryOfPrimaryData(dataPath, primaryDataType, out directoryInfo) && directoryInfo == null)
             {
                 var error = $"Директория '{dataPath}' не существует.";
                 _logger.LogError("{error}", error);
@@ -183,26 +179,22 @@ namespace TableAnalizer.Services
             }
 
             // Проверка количества файлов (только для постоянных данных).
-            if (primaryDataKey == PrimaryDataType.Permanent && fileInfos!.Length < PrimaryReportFiles.Count(p => p.Value.DataType is PrimaryDataType.Permanent))
+            if (primaryDataType == PrimaryDataType.Constant && fileInfos!.Length < PrimaryReportFiles.Count(p => p.Value.DataType is PrimaryDataType.Constant))
             {
-                var errorMessage = $"В директории '{PermanentDataSourcePath}' содержится меньше файлов, чем требуется ({permanentDataTypeCount}).";
+                var errorMessage = $"В директории '{ConstantDataReportsPath}' содержится меньше файлов, чем требуется ({constantDataTypeCount}).";
                 _logger.LogError("{errorMessage}", errorMessage);
                 return false;
             }
 
             // Проверка предоставленных файлов.
-            var checkingReportsTask = CheckingReportsByPrimaryDataType(primaryDataKey, fileInfos!);
-            await Task.Run(() => checkingReportsTask);
-            checkingReportsTask.Wait();
+            CheckingReportsByPrimaryDataType(primaryDataType, fileInfos!);
 
             // Определение пути для конечного отчета.
-            var finalReportFileNameTask = DefineDirInfoForClientFinalReport(BaseFinalReportsDirectoryPath);
-            await Task.Run(() => finalReportFileNameTask);
-            finalReportFileNameTask.Wait();
+            DefineDirInfoForClientFinalReport(BaseFinalReportsDirectoryPath);
 
             return directoryInfo != null &&
                 fileInfos is not null && fileInfos?.Length > 0 &&
-                fileInfos!.Length == PrimaryReportFiles.Count(p => p.Value.DataType is PrimaryDataType.Permanent) &&
+                fileInfos!.Length == PrimaryReportFiles.Count(p => p.Value.DataType is PrimaryDataType.Constant) &&
                 ClientLogins.Count > 0 &&
                 !string.IsNullOrEmpty(BaseFinalReportsDirectoryPath) &&
                 !string.IsNullOrEmpty(FinalReportFilePath) &&
@@ -215,22 +207,25 @@ namespace TableAnalizer.Services
         /// <param name="clientDataPath">Строковая переменная, содержащая путь к данным клиентским первичным данным.(Необязательно)</param>
         /// <param name="primaryDataKey">Ключ первичных данных (постонные или первичные данные).</param>
         /// <param name="directoryInfo">Сущность найденной диретокрии.</param>
-        private bool GetDirectoryOfPrimaryData(string? clientDataPath, PrimaryDataType primaryDataKey, ref DirectoryInfo? directoryInfo)
+        public bool GetDirectoryOfPrimaryData(string? clientDataPath, PrimaryDataType primaryDataKey, out DirectoryInfo? directoryInfo)
         {
+            directoryInfo = null;
+
             // Если клиентские данные, проверка строковой переменной на наличие пути к источнику данных.
             if (primaryDataKey == PrimaryDataType.Variable && string.IsNullOrEmpty(clientDataPath))
             {
                 var errorMessage = $"Путь к источнику переменных данных не задан или каталог не существует:\n'{clientDataPath}'";
                 _logger.LogError("{errorMessage}", errorMessage);
+
                 return false;
             }
 
             // Проверка существования диретории по переданному ключу.
-            GetDirectoryInfo(primaryDataKey == PrimaryDataType.Permanent ? PermanentDataSourcePath : clientDataPath!, out directoryInfo);
+            GetDirectoryInfo(primaryDataKey == PrimaryDataType.Constant ? ConstantDataReportsPath : clientDataPath!, out directoryInfo);
             if (directoryInfo == null)
             {
-                var path = primaryDataKey == PrimaryDataType.Variable ? clientDataPath : PermanentDataSourcePath;
-                var errorMessage = $"Путь к источнику данных для ключа '{primaryDataKey}' не задан, либо директория не существует: '{path}'";
+                var path = primaryDataKey == PrimaryDataType.Variable ? clientDataPath : ConstantDataReportsPath;
+                var errorMessage = $"Путь к источнику данных для типа '{primaryDataKey}' не задан, либо директория не существует: '{path}'";
                 _logger.LogError("{errorMessage}", errorMessage);
                 return false;
             }
@@ -316,7 +311,7 @@ namespace TableAnalizer.Services
         /// <param name="primaryDataType">Тип первичных данных для отчетов.</param>
         /// <param name="fileInfos">Найденные файлы.</param>
         /// <returns>Флаг успешного завершения операции.</returns>
-        private async Task<bool> CheckingReportsByPrimaryDataType(PrimaryDataType primaryDataType, FileInfo[] fileInfos)
+        private bool CheckingReportsByPrimaryDataType(PrimaryDataType primaryDataType, FileInfo[] fileInfos)
         {
             foreach (var fileInfo in fileInfos)
             {
@@ -336,11 +331,7 @@ namespace TableAnalizer.Services
 
                     // Получить логины клиента из названия файла и определение пути к целевому отчету клиента.
                     if (primaryReportFileItem.Key == SourceReportItemKey.Ransoms)
-                    {
-                        var getLoginsAndFinalReportPathTask = GetLoginsAndFinalReportPath(fileInfo);
-                        await Task.Run(() => getLoginsAndFinalReportPathTask);
-                        getLoginsAndFinalReportPathTask.Wait();
-                    }
+                        GetLoginsAndFinalReportPath(fileInfo);
 
                     primaryReportFileItem.Value.Set(fileInfo);
                 }
@@ -364,13 +355,13 @@ namespace TableAnalizer.Services
         /// </summary>
         /// <param name="fileInfo">Объект FileInfo.</param>
         /// <returns></returns>
-        private async Task GetLoginsAndFinalReportPath(FileInfo fileInfo)
+        private bool GetLoginsAndFinalReportPath(FileInfo fileInfo)
         {
             ClientLogins = GetLoginsFromFilename(fileInfo.Name);
             var message = $"Логины клиентов для отчета: {string.Join(", ", ClientLogins)}";
             _logger.LogInformation("{message}", message);
 
-            await DefineDirInfoForClientFinalReport(BaseFinalReportsDirectoryPath);
+            return DefineDirInfoForClientFinalReport(BaseFinalReportsDirectoryPath);
         }
 
         /// <summary>
@@ -442,7 +433,7 @@ namespace TableAnalizer.Services
         /// </summary>
         /// <param name="basePath"></param>
         /// <returns>Task</returns>
-        public async Task<bool> DefineDirInfoForClientFinalReport(string basePath)
+        public bool DefineDirInfoForClientFinalReport(string basePath)
         {
             if (ClientLogins is null || ClientLogins.Count == 0)
             {

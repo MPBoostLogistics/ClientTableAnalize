@@ -37,11 +37,11 @@ namespace TableAnalizer.Console
 
         #region Methods
         /// <summary>
-        /// Получение первичных данных из консоли от пользователя.
+        /// Получение первичных данных (пути в директории с данными клиента) из консоли от пользователя.
         /// </summary>
-        /// <returns>Объект DirectoryInfo?</returns>
-        /// <remarks>Шаг 2, Ревизия 112026</remarks>
-        public async Task<DirectoryInfo> GetPrimaryDataFromConsole()
+        /// <returns>Объект DirectoryInfo (опционально).</returns>
+        /// <remarks>Шаг 2, Ревизия 112026.</remarks>
+        public DirectoryInfo? GetPrimaryDataFromConsole()
         {
             DataFromConsole cletientReportPathData = new(
                 questionMessage: "Укажите путь к директории с клиентскими данными: ",
@@ -49,11 +49,7 @@ namespace TableAnalizer.Console
                 typeCode: ParsingTypeCode.DirectoryTypeCode,
                 isRequred: true);
 
-            var getReportsTask = GetValueFromConsole<DirectoryInfo?>(cletientReportPathData);
-            await Task.Run(() => getReportsTask);
-            getReportsTask.Wait();
-
-            return getReportsTask.Result!;
+            return GetValueFromConsole<DirectoryInfo?>(cletientReportPathData);
         }
 
         /// <summary>
@@ -62,17 +58,15 @@ namespace TableAnalizer.Console
         /// <typeparam name="T">Тип данных.</typeparam>
         /// <param name="data">Сущность интерации получения данных.</param>
         /// <returns>Значение с определеным типом.</returns>
-        private async Task<T?> GetValueFromConsole<T>(DataFromConsole data)
+        private T? GetValueFromConsole<T>(DataFromConsole data)
         {
             T? type = default;
             while (type is null)
             {
-                var getValueTask = GetStringFromConsole(data);
-                await Task.Run(() => getValueTask);
-                getValueTask.Wait();
+                string? value = GetStringFromConsole(data);
 
-                if (!string.IsNullOrEmpty(getValueTask.Result) &&
-                    _parsingService.Parse(getValueTask.Result!.Trim('\''),
+                if (!string.IsNullOrEmpty(value) &&
+                    _parsingService.Parse(value.Trim('\''),
                     data.TypeCode,
                     data.IsRequred,
                     out object? resultObj) &&
@@ -85,14 +79,13 @@ namespace TableAnalizer.Console
                 {
                     System.Console.ForegroundColor = ConsoleColor.DarkRed;
                     System.Console.WriteLine("Значение не указано или указано неверно.\nПроверьте правильность ввода и повторите попытку.");
-                    await Task.Delay(_options.TraceDelay);
                     continue;
                 }
             }
             return type;
         }
 
-        private async Task<string?> GetStringFromConsole(DataFromConsole data)
+        private static string? GetStringFromConsole(DataFromConsole data)
         {
             string? value = null;
             while (value is null)
@@ -110,8 +103,7 @@ namespace TableAnalizer.Console
                 {
                     System.Console.ForegroundColor = ConsoleColor.DarkRed;
                     System.Console.WriteLine(data.ErrorMessage);
-                    await Task.Delay(_options.TraceDelay);
-                    await GetStringFromConsole(data);
+                    GetStringFromConsole(data);
                 }
             }
 

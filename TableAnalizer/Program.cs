@@ -13,7 +13,7 @@ namespace TableAnalizer
     using Microsoft.Extensions.Hosting;
     using Serilog;
 
-    internal static class Program
+    public static class Program
     {
         public static async Task<int> Main(string[] args)
         {
@@ -25,7 +25,7 @@ namespace TableAnalizer
             return await workflow.RunAsync();
         }
 
-        private static IHost CreateHost(string[] args)
+        public static IHost CreateHost(string[] args)
         {
             return Host.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((_, configuration) =>

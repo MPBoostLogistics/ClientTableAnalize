@@ -2,6 +2,7 @@ namespace TableAnalizer.Application
 {
     using Microsoft.Extensions.Logging;
     using TableAnalizer.Console;
+    using TableAnalizer.Objects;
     using TableAnalizer.Services;
 
     public sealed class PrimaryDataWorkflow(
@@ -26,29 +27,18 @@ namespace TableAnalizer.Application
         public async Task<int> RunAsync(
             CancellationToken cancellationToken = default)
         {
-            // Workflow приложения
-            // Получить постоянные данные приложения и проверить их, лог
-            // Получить постоянные данные приложения и проверить их, лог 
+            // var clientDataDirectory = _consoleService.GetPrimaryDataFromConsole();
+            // if (clientDataDirectory is not null)
+            //     _logger.LogInformation("Директория с клиентскими отчетами: {Directory}", clientDataDirectory.FullName);
 
+            var permanentDataIsValid = _reportService.CheckOfAvailailityData(null, PrimaryDataType.Constant);
+            if (!permanentDataIsValid)
+            {
+                _logger.LogCritical("Постоянные данные не валидны.");
+                return 1;
+            }
+            _logger.LogInformation("Постоянные данные валидны.");
 
-
-            // var reportsDirectory =
-            //     await _consoleService.GetPrimaryDataFromConsole();
-
-            // _logger.LogInformation(
-            //     "Директория с клиентскими отчетами: {Directory}",
-            //     reportsDirectory);
-
-            // var permanentDataIsValid =
-            //     await _reportService.CheckOfAvailailityData(
-            //         null,
-            //         PrimaryDataType.Permanent);
-
-            // if (!permanentDataIsValid)
-            // {
-            //     _logger.LogCritical("Постоянные данные не валидны.");
-            //     return 1;
-            // }
 
             // var variableDataIsValid =
             //     await _reportService.CheckOfAvailailityData(

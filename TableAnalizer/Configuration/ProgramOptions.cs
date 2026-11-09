@@ -39,7 +39,7 @@ namespace TableAnalizer.Configuration
 
         #region Properties ("Strings" section)
         public string? BaseFinalReportsDirectoryPath { get; set; }
-        public string? PermanentDataSourcePath { get; set; }
+        public string? ConstantDataReportsPath { get; set; }
         public string? AppVersion { get; set; }
         public string? LogisticsReportFirstName { get; set; }
         public string? FullSetStatusString { get; set; }

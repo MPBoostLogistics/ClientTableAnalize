@@ -18,4 +18,14 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\TableAnalizer\TableAnalizer.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+  <None Include="../TableAnalizer/config.json"
+        Link="config.json"
+        CopyToOutputDirectory="PreserveNewest" />
+</ItemGroup>
+
 </Project>
