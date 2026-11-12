@@ -207,7 +207,7 @@ namespace TableAnalizer.Objects.Managers
                 if (primaryReportFileItem.Value != null)
                 {
                     // Checking a file's expiration date  
-                    if (primaryReportFileItem.Value.BestBeforeDate > 0 && fileInfo.LastWriteTime.AddDays(primaryReportFileItem.Value.BestBeforeDate) < DateTime.Now)
+                    if (primaryReportFileItem.Value.DataValidityPeriodInDays > 0 && fileInfo.LastWriteTime.AddDays(primaryReportFileItem.Value.DataValidityPeriodInDays) < DateTime.Now)
                     {
                         isError = true;
                         stringBuilder.Append($"Data in file by key '{primaryReportFileItem.Key}' has expired. Please update file.\n");

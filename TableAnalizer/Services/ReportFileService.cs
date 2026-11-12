@@ -31,6 +31,9 @@ namespace TableAnalizer.Services
 
         public Dictionary<SourceReportItemKey, PrimaryReportFileItem> PrimaryReportFiles { get; set; }
         public bool GetDirectoryOfPrimaryData(string? clientDataPath, PrimaryDataType primaryDataKey, out DirectoryInfo? directoryInfo);
+        public bool GetFilesOfPrimaryData(DirectoryInfo directoryInfo, ref FileInfo[]? fileInfos, string[] extensions);
+        public bool SearchFilesByDataTypeAndRegex(PrimaryDataType primaryDataType, in FileInfo[] fileInfos);
+        public bool CheckDataValidity(PrimaryDataType primaryDataType);
         public bool CheckOfAvailailityData(string? clientDataPath, PrimaryDataType primaryDataKey);
     }
 
@@ -155,22 +158,17 @@ namespace TableAnalizer.Services
 
             _logger.LogInformation("Проверяю данные по пути: {dataPath}...", dataPath);
 
-            int constantDataTypeCount = PrimaryReportFiles
-                .Count(p => p.Value.DataType is PrimaryDataType.Constant && !p.Value.IsOptionalReport);
-
-            int variableDataTypeCount = PrimaryReportFiles
-                .Count(p => p.Value.DataType is PrimaryDataType.Variable && !p.Value.IsOptionalReport);
-
-            DirectoryInfo? directoryInfo = null;
             FileInfo[]? fileInfos = null;
 
-            if (!GetDirectoryOfPrimaryData(dataPath, primaryDataType, out directoryInfo) && directoryInfo == null)
+            // Получаем сущность директории с первичными данными по их типу. (directoryInfo).
+            if (!GetDirectoryOfPrimaryData(dataPath, primaryDataType, out DirectoryInfo? directoryInfo) && directoryInfo == null)
             {
                 var error = $"Директория '{dataPath}' не существует.";
                 _logger.LogError("{error}", error);
                 return false;
             }
 
+            // Из ранее определенной директории получаем массив файлов по расширениям. 
             if (!GetFilesOfPrimaryData(directoryInfo!, ref fileInfos, [.. ValidFileExtensions]) && fileInfos is null && fileInfos?.Length == 0)
             {
                 var error = $"Директория '{dataPath}' пустая, либо в ней отсутствуют файлы с указанными расширениями.";
@@ -178,40 +176,33 @@ namespace TableAnalizer.Services
                 return false;
             }
 
-            // Проверка количества файлов (только для постоянных данных).
-            if (primaryDataType == PrimaryDataType.Constant && fileInfos!.Length < PrimaryReportFiles.Count(p => p.Value.DataType is PrimaryDataType.Constant))
-            {
-                var errorMessage = $"В директории '{ConstantDataReportsPath}' содержится меньше файлов, чем требуется ({constantDataTypeCount}).";
-                _logger.LogError("{errorMessage}", errorMessage);
+            // Проверяем полноту предоставленных данных (имена файлов соответствуют регуркам) и 
+            // актуальность данных по предельному сроку (если он установлен для конкретного отчета).чы
+            if (!SearchFilesByDataTypeAndRegex(primaryDataType, in fileInfos!) ||
+                !CheckDataValidity(primaryDataType))
                 return false;
-            }
 
-            // Проверка предоставленных файлов.
-            CheckingReportsByPrimaryDataType(primaryDataType, fileInfos!);
+            // Из имени файла отчета по выкупам получаем логин клиентова.
+            if (primaryDataType == PrimaryDataType.Variable &&
+                PrimaryReportFiles[SourceReportItemKey.Ransoms].Info != null)
+                _ = GetLoginsAndFinalReportPath(PrimaryReportFiles[SourceReportItemKey.Ransoms].Info!);
 
-            // Определение пути для конечного отчета.
-            DefineDirInfoForClientFinalReport(BaseFinalReportsDirectoryPath);
-
-            return directoryInfo != null &&
-                fileInfos is not null && fileInfos?.Length > 0 &&
-                fileInfos!.Length == PrimaryReportFiles.Count(p => p.Value.DataType is PrimaryDataType.Constant) &&
+            return !PrimaryReportFiles.Any(el => !el.Value.IsOptionalReport && el.Value.Info == null) &&
                 ClientLogins.Count > 0 &&
-                !string.IsNullOrEmpty(BaseFinalReportsDirectoryPath) &&
-                !string.IsNullOrEmpty(FinalReportFilePath) &&
-                !string.IsNullOrEmpty(LogisticsReportFirstName);
+                !string.IsNullOrEmpty(FinalReportFilePath);
         }
 
         /// <summary>
-        /// Получает дирееторию с первичными данными.
+        /// Получает директорию с первичными данными.
         /// </summary>
-        /// <param name="clientDataPath">Строковая переменная, содержащая путь к данным клиентским первичным данным.(Необязательно)</param>
-        /// <param name="primaryDataKey">Ключ первичных данных (постонные или первичные данные).</param>
-        /// <param name="directoryInfo">Сущность найденной диретокрии.</param>
+        /// <param name="clientDataPath">Строковая переменная, содержащая путь к первичным данным.(Необязательно)</param>
+        /// <param name="primaryDataKey">Тип первичных данных (постоянные или переменные).</param>
+        /// <param name="directoryInfo">Сущность найденной директории.</param>
         public bool GetDirectoryOfPrimaryData(string? clientDataPath, PrimaryDataType primaryDataKey, out DirectoryInfo? directoryInfo)
         {
             directoryInfo = null;
 
-            // Если клиентские данные, проверка строковой переменной на наличие пути к источнику данных.
+            // Если это переменные (клиентские данные), проверка строковой переменной на наличие пути к источнику данных.
             if (primaryDataKey == PrimaryDataType.Variable && string.IsNullOrEmpty(clientDataPath))
             {
                 var errorMessage = $"Путь к источнику переменных данных не задан или каталог не существует:\n'{clientDataPath}'";
@@ -220,7 +211,7 @@ namespace TableAnalizer.Services
                 return false;
             }
 
-            // Проверка существования диретории по переданному ключу.
+            // Проверка существования диретории по переданному типу данных.
             GetDirectoryInfo(primaryDataKey == PrimaryDataType.Constant ? ConstantDataReportsPath : clientDataPath!, out directoryInfo);
             if (directoryInfo == null)
             {
@@ -234,13 +225,13 @@ namespace TableAnalizer.Services
         }
 
         /// <summary>
-        /// Получает файлы первичных данных.
+        /// Получает файлы первичных данных по указанным расширениям.
         /// </summary>
         /// <param name="directoryInfo">Объект DirectoryInfo для поиска файлов.</param>
         /// <param name="fileInfos">Массив объектов FileInfo или null.</param>
         /// <param name="extensions">Допустимые расширения файлов.</param>
         /// <returns>Флаг наличия файлов.</returns>
-        private bool GetFilesOfPrimaryData(DirectoryInfo directoryInfo, ref FileInfo[]? fileInfos, string[] extensions)
+        public bool GetFilesOfPrimaryData(DirectoryInfo directoryInfo, ref FileInfo[]? fileInfos, string[] extensions)
         {
             if (!SearchFilesInDirectory(directoryInfo, out fileInfos, extensions) || fileInfos == null || fileInfos.Length == 0)
             {
@@ -259,6 +250,7 @@ namespace TableAnalizer.Services
         /// <param name="directoryInfo">Объект типа DirectoryInfo (опционально).</param>
         /// <param name="isCreateNewDirectory"Создавать новую диреторию в случае ее отсутсвия.</param>
         /// <returns>Флаг существования директории.</returns>
+        /// <remarks>revision 012026</remarks>
         public static bool GetDirectoryInfo(string dirPath, out DirectoryInfo? directoryInfo, bool isCreateNewDirectory = false)
         {
             string path = dirPath;
@@ -277,12 +269,13 @@ namespace TableAnalizer.Services
         }
 
         /// <summary>
-        /// Ищет файлы в указанной директории.
+        /// Ищет файлы в указанной директории по определенным расширениям (опционально).
         /// </summary>
-        /// <param name="dirInfo">Объект DirectoryInfo директории.</param>
+        /// <param name="dirInfo">Объект директории.</param>
         /// <param name="fileInfos">Массив объектов FileInfo (опционально).</param>
         /// <param name="extensions">Массив допустимых разрешений файлов.</param>
         /// <returns>Флаг количества найденных файлов (больше 0).</returns>
+        /// <remarks>revision 012026</remarks>
         public bool SearchFilesInDirectory(DirectoryInfo dirInfo, out FileInfo[]? fileInfos, string[]? extensions = null)
         {
             fileInfos = null;
@@ -292,12 +285,11 @@ namespace TableAnalizer.Services
             {
                 var errorMessage = "По пути '" + dirInfo + "' нет файлов";
                 _logger.LogError("{errorMessage}", errorMessage);
-                return false;
             }
 
             if (extensions != null && extensions.Length != 0)
             {
-                IEnumerable<FileInfo> collection = fileInfos.Where(fileInfo => extensions.Contains(fileInfo.Extension));
+                IEnumerable<FileInfo> collection = fileInfos!.Where(fileInfo => extensions.Contains(fileInfo.Extension));
                 List<FileInfo> list = [.. collection];
                 fileInfos = [.. list];
             }
@@ -306,49 +298,51 @@ namespace TableAnalizer.Services
         }
 
         /// <summary>
-        /// Проверяет файлы по типу первичных данных для отчетов (постоянные или переменные).
+        /// Ищет файлы в предоставленной директории по совпадению имени файла регулярному выражению и записывает их в словарь. 
         /// </summary>
-        /// <param name="primaryDataType">Тип первичных данных для отчетов.</param>
-        /// <param name="fileInfos">Найденные файлы.</param>
-        /// <returns>Флаг успешного завершения операции.</returns>
-        private bool CheckingReportsByPrimaryDataType(PrimaryDataType primaryDataType, FileInfo[] fileInfos)
+        /// <param name="primaryDataType">Тип данных (постоянные или переменнные).</param>
+        /// <param name="fileInfos">Массив объектов FileInfo.</param>
+        /// <returns>Булев флаг - у всех объетов словаря PrimaryReportFiles с указанным типом данных записаны FileInfo.</returns>
+        /// <remarks>revision 012026</remarks>
+        public bool SearchFilesByDataTypeAndRegex(PrimaryDataType primaryDataType, in FileInfo[] fileInfos)
         {
-            foreach (var fileInfo in fileInfos)
+            // Получение объектов из словаря по типу данных (постоянные или переменные).
+            var objs = PrimaryReportFiles
+                .Where(el => el.Value.DataType == primaryDataType)
+                .ToList();
+
+            // Цикл поиска сопадения имени файла по регулярному выражению и запись FileInfo в элемент словаря.
+            foreach (var ob in objs)
             {
-                var primaryReportFileItem = PrimaryReportFiles
-                    .FirstOrDefault(prfi => prfi.Value.RegexesForFileName
-                        .FirstOrDefault(r => r.IsMatch(fileInfo.Name)) != null);
+                // Проверка наличия файла по имени (соответствие регулярному выражению).
+                FileInfo? matchFile = fileInfos
+                    .FirstOrDefault(fi => ob.Value.RegexesForFileName
+                        .First().IsMatch(fi.Name));
 
-                if (primaryReportFileItem.Value != null)
+                if (matchFile != null)
                 {
-                    // Проверка срока действия файла
-                    if (primaryReportFileItem.Value.BestBeforeDate > 0 && fileInfo.LastWriteTime.AddDays(primaryReportFileItem.Value.BestBeforeDate) < DateTime.Now)
-                    {
-                        var errorMessage = $"Данные в файле по ключу '{primaryReportFileItem.Key}' устарели. Пожалуйста, обновите файл.";
-                        _logger.LogError("{errorMessage}", errorMessage);
-                        break;
-                    }
-
-                    // Получить логины клиента из названия файла и определение пути к целевому отчету клиента.
-                    if (primaryReportFileItem.Key == SourceReportItemKey.Ransoms)
-                        GetLoginsAndFinalReportPath(fileInfo);
-
-                    primaryReportFileItem.Value.Set(fileInfo);
+                    PrimaryReportFiles[ob.Key].Set(matchFile);
+                    continue;
                 }
+
+                var errorMessage = $"Не предоставлен файл по ключу {ob.Key} - нет совпадений имени файла по регулярному выражению";
+                _logger.LogError("{errorMessage}", errorMessage);
+                break;
             }
 
-            // Checking missing files
-            PrimaryReportFiles.Where(d => d.Value.DataType == primaryDataType).ToList().ForEach(d =>
-            {
-                if (d.Value.Info == null && !d.Value.IsOptionalReport)
-                {
-                    var error = $"Файл с данными для ключа '{d.Key}' отсутствует в директории.";
-                    _logger.LogError("{error}", error);
-                }
-            });
-
-            return true;
+            return PrimaryReportFiles
+                .Count(el => el.Value.DataType == primaryDataType && el.Value.Info != null) == objs.Count;
         }
+
+        /// <summary>
+        /// Проверяет актуальность данных (дата последнего изменения файла не должна выходить за срок актуальности в днях если он установлен).
+        /// </summary>
+        /// <param name="primaryDataType">Тип первичных данных для отчетов.</param>
+        /// <returns>Флаг проверки.</returns>
+        /// <remarks>revision 012026</remarks>
+        public bool CheckDataValidity(PrimaryDataType primaryDataType) =>
+            !PrimaryReportFiles
+                .Any(el => el.Value.DataType == primaryDataType && !el.Value.IsDataHasNotExpired());
 
         /// <summary>
         /// Получает список клиентских аккаунтов на основе имени входящего отчёта и определяет путь до конечной папки итогового.
@@ -481,6 +475,7 @@ namespace TableAnalizer.Services
             // например, /Users/dmitrijsamarcev/Documents/MPBoostClients/79136726993/LogisticsReport 79136726993 30-10-2025.xlsx
             return !string.IsNullOrEmpty(FinalReportFilePath);
         }
+
         #endregion
     }
 }

@@ -6,7 +6,7 @@ namespace TableAnalizer.Objects.ReportItems
     /// <summary>
     /// Сущность для файла с первичнымм данными;
     /// </summary>
-    public class PrimaryReportFileItem(PrimaryDataType primaryDataType, List<string> regexPatterns, int bestBeforeDate, bool isOptionalReport = true)
+    public class PrimaryReportFileItem(PrimaryDataType primaryDataType, List<string> regexPatterns, int dataValidityPeriodInDays, bool isOptionalReport = true)
     {
         #region Properties
         /// <summary>
@@ -22,9 +22,9 @@ namespace TableAnalizer.Objects.ReportItems
         /// </summary>
         public Regex[] RegexesForFileName { get; } = regexPatterns.CreateRegexArray();
         /// <summary>
-        /// Дата окончания действия данных.
+        /// Cрок окончания актуальности данных в днях.
         /// </summary>
-        public int BestBeforeDate { get; } = bestBeforeDate;
+        public int DataValidityPeriodInDays { get; } = dataValidityPeriodInDays;
         /// <summary>
         /// Флаг обязательности отчета.
         /// </summary>
@@ -32,9 +32,23 @@ namespace TableAnalizer.Objects.ReportItems
         #endregion
 
         #region Functionality
+        /// <summary>
+        /// Записывает объект FileInfo.
+        /// </summary>
+        /// <param name="fileInfo">Объект FileInfo для отчета. </param>
         public void Set(FileInfo fileInfo)
         {
             Info = fileInfo;
+        }
+
+        /// <summary>
+        /// Проверяет не истекла ли актуальность предоставляемых данных.
+        /// </summary>
+        /// <returns></returns>
+        public bool IsDataHasNotExpired()
+        {
+            if (DataValidityPeriodInDays == 0) return true;
+            return Info?.LastWriteTime.AddDays(DataValidityPeriodInDays) > DateTime.Now;
         }
         #endregion
     }

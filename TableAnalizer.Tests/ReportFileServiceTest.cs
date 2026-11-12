@@ -21,6 +21,7 @@ public class ReportFileServiceTest(HostFixture fixture, ITestOutputHelper output
     [Fact]
     public async Task ConstantDataTest()
     {
+        // Создание сервиса, получение нужной службы и  опций.
         using var scope = _host.Services.CreateScope();
         var reportFileService = scope.ServiceProvider.GetRequiredService<IReportFileService>();
         ProgramOptions? options = _host.Services
@@ -35,11 +36,17 @@ public class ReportFileServiceTest(HostFixture fixture, ITestOutputHelper output
         reportFileService.GetDirectoryOfPrimaryData(null, PrimaryDataType.Constant, out DirectoryInfo? constantDatadirectoryInfo);
         Assert.NotNull(constantDatadirectoryInfo);
 
-        // Определение количества необходимых файлов с постоянными данными
-        int constantDataTypeCount = reportFileService.PrimaryReportFiles
-                .Count(p => p.Value.DataType is PrimaryDataType.Constant && !p.Value.IsOptionalReport);
-        Assert.Equal(4, constantDataTypeCount);
+        // Получение файлов из директории
+        FileInfo[] fileInfos = [];
+        reportFileService.GetFilesOfPrimaryData(constantDatadirectoryInfo, ref fileInfos!, [.. options.ValidFilesExtentionsList!]);
+        Assert.Equal(4, fileInfos.Length);
 
+        // Проверка предоставленных файлов (имя сооветствует регулярке).
+        var isExistensCheck = reportFileService.SearchFilesByDataTypeAndRegex(PrimaryDataType.Constant, fileInfos);
+        Assert.True(isExistensCheck);
 
+        // Анализ валидности данных 
+        var isValidityCheck = reportFileService.CheckDataValidity(PrimaryDataType.Constant);
+        Assert.True(isValidityCheck);
     }
 }
