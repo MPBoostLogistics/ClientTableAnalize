@@ -311,13 +311,19 @@ namespace TableAnalizer.Services
                 .Where(el => el.Value.DataType == primaryDataType)
                 .ToList();
 
-            // Цикл поиска сопадения имени файла по регулярному выражению и запись FileInfo в элемент словаря.
+            // Сбрасываем предыдущие результаты: иначе Info прошлого клиента
+            // будет ошибочно принят за найденный файл текущего.
             foreach (var ob in objs)
             {
-                // Проверка наличия файла по имени (соответствие регулярному выражению).
+                ob.Value.Reset();
+            }
+
+            // Цикл поиска совпадения имени файла по регулярному выражению.
+            foreach (var ob in objs)
+            {
                 FileInfo? matchFile = fileInfos
                     .FirstOrDefault(fi => ob.Value.RegexesForFileName
-                        .First().IsMatch(fi.Name));
+                        .Any(rx => rx.IsMatch(fi.Name)));
 
                 if (matchFile != null)
                 {
