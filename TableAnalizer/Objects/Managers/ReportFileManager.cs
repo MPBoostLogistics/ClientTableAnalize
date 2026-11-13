@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 using TableAnalizer.Objects.ReportItems;
+using TableAnalizer.Services;
 
 namespace TableAnalizer.Objects.Managers
 {

@@ -49,4 +49,40 @@ public class ReportFileServiceTest(HostFixture fixture, ITestOutputHelper output
         var isValidityCheck = reportFileService.CheckDataValidity(PrimaryDataType.Constant);
         Assert.True(isValidityCheck);
     }
+
+    [Fact]
+    public async Task SearchFilesByDataTypeAndRegex_ResetsPreviousClientData()
+    {
+        using var scope = _host.Services.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<IReportFileService>();
+
+        // Прогон 1: находим файлы.
+        FileInfo[] files1 = [new(@"/Users/dmitrijsamarcev/Documents/Programming/CSharp/TableAnalizer/TableAnalizer.Tests/files/79649245792 баланс.xlsx")];
+        service.SearchFilesByDataTypeAndRegex(PrimaryDataType.Variable, files1);
+        Assert.NotNull(service.PrimaryReportFiles[SourceReportItemKey.Balance].Info);
+
+        // Прогон 2: файл не найден — Info должен быть null.
+        FileInfo[] files2 = [];
+        var result = service.SearchFilesByDataTypeAndRegex(PrimaryDataType.Variable, files2);
+
+        Assert.False(result);
+        Assert.Null(service.PrimaryReportFiles[SourceReportItemKey.Balance].Info);
+    }
+
+    [Fact]
+    public async Task SearchFilesByDataTypeAndRegex_MatchesBySecondRegex()
+    {
+        using var scope = _host.Services.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<IReportFileService>();
+
+        // "Отчет_выкупов_по_клиентам_Иванов.xlsx" подходит только под ВТОРУЮ регулярку
+        // у ключа Ransoms: "Отчет_выкупов_по_клиентам_\S+"
+        // Первая — "Отчет\sвыкупов\sпо\sклиенту\s\S+" — не подходит.
+        FileInfo[] files = [new(@"C:\temp\Отчет_выкупов_по_клиентам_Иванов.xlsx")];
+
+        var result = service.SearchFilesByDataTypeAndRegex(PrimaryDataType.Variable, files);
+
+        Assert.NotNull(service.PrimaryReportFiles[SourceReportItemKey.Ransoms].Info);
+    }
+
 }

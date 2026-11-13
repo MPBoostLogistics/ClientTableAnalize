@@ -1,7 +1,8 @@
 using System.Text.RegularExpressions;
+using TableAnalizer.Objects;
 using TableAnalizer.Utils;
 
-namespace TableAnalizer.Objects.ReportItems
+namespace TableAnalizer.Services
 {
     /// <summary>
     /// Сущность для файла с первичнымм данными;
@@ -58,7 +59,8 @@ namespace TableAnalizer.Objects.ReportItems
         public bool IsDataHasNotExpired()
         {
             if (DataValidityPeriodInDays == 0) return true;
-            return Info?.LastWriteTime.AddDays(DataValidityPeriodInDays) > DateTime.Now;
+            if (Info == null) return true;      // файла нет — это не «просрочено»
+            return Info.LastWriteTime.AddDays(DataValidityPeriodInDays) > DateTime.Now;
         }
         #endregion
     }

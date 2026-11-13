@@ -328,16 +328,27 @@ namespace TableAnalizer.Services
                 if (matchFile != null)
                 {
                     PrimaryReportFiles[ob.Key].Set(matchFile);
-                    continue;
                 }
-
-                var errorMessage = $"Не предоставлен файл по ключу {ob.Key} - нет совпадений имени файла по регулярному выражению";
-                _logger.LogError("{errorMessage}", errorMessage);
-                break;
+                else
+                {
+                    var errorMessage = $"Не предоставлен файл по ключу {ob.Key} - нет совпадений имени файла по регулярному выражению";
+                    _logger.LogError("{errorMessage}", errorMessage);
+                }
             }
 
-            return PrimaryReportFiles
-                .Count(el => el.Value.DataType == primaryDataType && el.Value.Info != null) == objs.Count;
+            // Обязательные отчеты по указанному типу должны быть найдены.
+            bool requiredFound = PrimaryReportFiles
+                .Where(el => el.Value.DataType == primaryDataType && !el.Value.IsOptionalReport)
+                .All(el => el.Value.Info != null);
+
+            // Опциональные отчеты — предупреждение, не ошибка.
+            foreach (var el in PrimaryReportFiles.Where(el => el.Value.DataType == primaryDataType && el.Value.IsOptionalReport))
+            {
+                if (el.Value.Info == null)
+                    _logger.LogWarning("Не предоставлен опциональный отчет по ключу {ReportKey}", el.Key);
+            }
+
+            return requiredFound;
         }
 
         /// <summary>
